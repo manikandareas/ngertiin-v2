@@ -100,6 +100,7 @@ export const users = pgTable(
     id: uuid().primaryKey().defaultRandom(),
     clerk_user_id: varchar().notNull(),
     display_name: varchar(),
+    timezone: varchar().notNull().default("UTC"),
     created_at: createdAt(),
     updated_at: updatedAt(),
   },
