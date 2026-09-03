@@ -1,8 +1,18 @@
-import { drizzle, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
+import type { ExtractTablesWithRelations } from "drizzle-orm";
+import {
+  drizzle,
+  type PostgresJsDatabase,
+  type PostgresJsTransaction,
+} from "drizzle-orm/postgres-js";
 import postgres, { type Sql } from "postgres";
 import * as schema from "./schema.js";
 
 export * from "./schema.js";
+
+export type DatabaseTransaction = PostgresJsTransaction<
+  typeof schema,
+  ExtractTablesWithRelations<typeof schema>
+>;
 
 export class DatabaseClient {
   readonly connection: Sql;

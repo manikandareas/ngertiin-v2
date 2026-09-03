@@ -129,8 +129,40 @@ export const sources = pgTable(
   },
   (table) => [
     index("sources_user_id_idx").on(table.user_id),
+    index("sources_user_created_id_idx").on(
+      table.user_id,
+      table.created_at.desc(),
+      table.id.desc(),
+    ),
     index("sources_status_idx").on(table.status),
     index("sources_content_hash_idx").on(table.content_hash),
+  ],
+);
+
+export const idempotency_records = pgTable(
+  "idempotency_records",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    user_id: uuid()
+      .notNull()
+      .references(() => users.id),
+    method: varchar({ length: 16 }).notNull(),
+    route: varchar({ length: 255 }).notNull(),
+    key: varchar({ length: 255 }).notNull(),
+    payload_hash: varchar({ length: 64 }).notNull(),
+    response_status: integer(),
+    response_body: jsonb(),
+    expires_at: timestamp({ withTimezone: true, mode: "date" }).notNull(),
+    created_at: createdAt(),
+  },
+  (table) => [
+    uniqueIndex("idempotency_records_scope_idx").on(
+      table.user_id,
+      table.method,
+      table.route,
+      table.key,
+    ),
+    index("idempotency_records_expires_at_idx").on(table.expires_at),
   ],
 );
 
@@ -528,6 +560,7 @@ export const xp_events = pgTable(
 
 export const usersRelations = relations(users, ({ many, one }) => ({
   sources: many(sources),
+  idempotency_records: many(idempotency_records),
   generation_requests: many(generation_requests),
   modules: many(modules),
   generation_runs: many(generation_runs),
@@ -538,6 +571,13 @@ export const usersRelations = relations(users, ({ many, one }) => ({
   adaptive_interventions: many(adaptive_interventions),
   user_stats: one(user_stats),
   xp_events: many(xp_events),
+}));
+
+export const idempotencyRecordsRelations = relations(idempotency_records, ({ one }) => ({
+  user: one(users, {
+    fields: [idempotency_records.user_id],
+    references: [users.id],
+  }),
 }));
 
 export const sourcesRelations = relations(sources, ({ many, one }) => ({
