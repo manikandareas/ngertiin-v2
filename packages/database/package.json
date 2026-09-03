@@ -1,0 +1,19 @@
+{
+  "name": "@ngertiin/database",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "bun build ./src/index.ts --outdir ./dist --target bun --external postgres",
+    "typecheck": "tsc -p tsconfig.json",
+    "dev": "bun build ./src/index.ts --outdir ./dist --target bun --watch"
+  },
+  "dependencies": {
+    "drizzle-orm": "0.45.2",
+    "postgres": "3.4.9"
+  },
+  "devDependencies": {}
+}

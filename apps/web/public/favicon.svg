@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img">
+  <title>Ngerti.in</title>
+  <rect width="64" height="64" rx="16" fill="#0d9488" />
+  <path d="M18 17h21a7 7 0 0 1 7 7v24H25a7 7 0 0 1-7-7V17Z" fill="#fff" />
+  <path d="M25 25h14M25 32h14M25 39h9" stroke="#0d9488" stroke-width="3" stroke-linecap="round" />
+</svg>

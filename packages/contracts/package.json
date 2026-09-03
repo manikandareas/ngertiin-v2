@@ -1,0 +1,19 @@
+{
+  "name": "@ngertiin/contracts",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./environment": "./src/environment/public.ts",
+    "./health": "./src/health/public.ts"
+  },
+  "scripts": {
+    "build": "bun build ./src/environment/public.ts ./src/health/public.ts --outdir ./dist --root ./src --target bun",
+    "typecheck": "tsc -p tsconfig.json",
+    "dev": "bun build ./src/environment/public.ts ./src/health/public.ts --outdir ./dist --root ./src --target bun --watch"
+  },
+  "dependencies": {
+    "zod": "4.5.4"
+  },
+  "devDependencies": {}
+}

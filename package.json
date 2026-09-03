@@ -1,0 +1,30 @@
+{
+  "name": "ngertiin",
+  "private": true,
+  "version": "0.0.0",
+  "packageManager": "bun@1.3.10",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "bun --filter './apps/*' dev",
+    "dev:web": "bun --cwd apps/web dev",
+    "dev:api": "bun --cwd apps/api dev",
+    "dev:worker": "bun --cwd apps/worker dev",
+    "build": "bun --filter '@ngertiin/*' build",
+    "typecheck": "bun --filter '@ngertiin/*' typecheck",
+    "lint": "biome lint .",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
+    "infra:config": "docker compose config --quiet",
+    "infra:up": "docker compose up -d --wait postgres redis minio && docker compose run --rm --no-deps minio-init",
+    "infra:down": "docker compose down",
+    "infra:logs": "docker compose logs -f"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.12",
+    "@types/bun": "1.4.0",
+    "typescript": "6.0.2"
+  }
+}
