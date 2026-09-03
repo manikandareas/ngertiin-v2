@@ -1,6 +1,6 @@
 # Ngerti.in API Contract
 
-Status: **proposed v1 baseline**
+Status: **accepted v1 baseline**
 
 Audience: web, API, worker, and contract-package implementers
 
@@ -17,7 +17,7 @@ It is intentionally product-facing:
 - all authorization, progression, mastery, adaptive, XP, and state-transition rules remain
   authoritative on the server.
 
-After this proposal is accepted, request and response schemas in `packages/contracts` should become
+With this baseline accepted, request and response schemas in `packages/contracts` become
 the executable source of truth. Database records must not be returned directly as API DTOs.
 
 The recommended delivery order is defined in
@@ -1252,12 +1252,11 @@ The v1 API contract is sufficient when these scenarios pass at the public HTTP b
 18. Provider, storage, queue, and validation failures return safe recoverable states without raw
     internal details.
 
-## 17. Proposed Defaults Requiring Product Sign-off
+## 17. Accepted v1 Defaults
 
-The contract is implementable with the following recommended defaults, but these values should be
-confirmed before schemas are frozen:
+The following defaults are accepted for the v1 contract baseline:
 
-| Decision | Proposed default |
+| Decision | Accepted v1 default |
 |---|---|
 | Maximum PDF size | `25 MiB` |
 | Maximum sources per Module | `10` |

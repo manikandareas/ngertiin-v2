@@ -85,6 +85,7 @@ Stores the local application identity associated with Clerk.
 | `id` | `uuid` | PK |
 | `clerk_user_id` | `varchar` | UNIQUE, NOT NULL |
 | `display_name` | `varchar` | NULL |
+| `timezone` | `varchar` | NOT NULL, DEFAULT `UTC` |
 | `created_at` | `timestamptz` | NOT NULL |
 | `updated_at` | `timestamptz` | NOT NULL |
 
