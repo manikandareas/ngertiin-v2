@@ -5,7 +5,7 @@ import { user_stats, users } from "@ngertiin/database";
 import { eq } from "drizzle-orm";
 import { API_ENV } from "../config.js";
 import { ProductError } from "../http/product-error.js";
-import { setLocalUserId, type ProductRequest } from "../http/request-context.js";
+import { type ProductRequest, setLocalUserId } from "../http/request-context.js";
 import { InfrastructureService } from "../infrastructure/infrastructure.service.js";
 
 function bearerToken(request: ProductRequest): string {
