@@ -4,8 +4,8 @@ Fondasi runnable untuk Ngerti.in: Bun monorepo berisi React/Vite web app, NestJS
 standalone NestJS worker, serta paket bersama untuk kontrak, database, storage, dan utilitas
 infrastruktur.
 
-Bootstrap ini sengaja belum memiliki schema atau fitur domain. Tujuannya membuktikan seluruh
-technology stack dapat dikonfigurasi dan saling terhubung.
+Schema PostgreSQL awal mengikuti `docs/database-erd.md` dan dikelola sebagai migration SQL
+dengan Drizzle Kit. Fitur domain aplikasi belum diimplementasikan.
 
 ## Prasyarat
 
@@ -18,6 +18,7 @@ technology stack dapat dikonfigurasi dan saling terhubung.
 cp .env.example .env
 bun install --frozen-lockfile
 bun infra:up
+bun db:migrate
 bun dev
 ```
 
@@ -44,6 +45,10 @@ bun typecheck
 bun lint
 bun format
 bun format:check
+bun db:generate      # hasilkan migration setelah mengubah schema
+bun db:check         # validasi konsistensi snapshot migration
+bun db:migrate       # terapkan migration yang belum dijalankan
+bun db:studio        # buka Drizzle Studio
 bun infra:config
 bun infra:up
 bun infra:logs

@@ -1,9 +1,12 @@
 import { drizzle, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import postgres, { type Sql } from "postgres";
+import * as schema from "./schema.js";
+
+export * from "./schema.js";
 
 export class DatabaseClient {
   readonly connection: Sql;
-  readonly db: PostgresJsDatabase;
+  readonly db: PostgresJsDatabase<typeof schema>;
 
   constructor(databaseUrl: string) {
     this.connection = postgres(databaseUrl, {
@@ -12,7 +15,7 @@ export class DatabaseClient {
       connect_timeout: 5,
       idle_timeout: 20,
     });
-    this.db = drizzle(this.connection);
+    this.db = drizzle(this.connection, { schema });
   }
 
   async check(): Promise<void> {
