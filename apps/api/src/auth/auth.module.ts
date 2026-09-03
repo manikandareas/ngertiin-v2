@@ -1,8 +1,10 @@
 import { Module } from "@nestjs/common";
-import { ClerkVerifierService } from "./clerk-verifier.service.js";
+import { InfrastructureModule } from "../infrastructure/infrastructure.module.js";
+import { ClerkAuthGuard } from "./clerk-auth.guard.js";
 
 @Module({
-  providers: [ClerkVerifierService],
-  exports: [ClerkVerifierService],
+  imports: [InfrastructureModule],
+  providers: [ClerkAuthGuard],
+  exports: [ClerkAuthGuard],
 })
 export class AuthModule {}
