@@ -4,6 +4,7 @@ import { AppShell } from "../components/app-shell";
 import { AuthenticatedRoute } from "./authenticated-route";
 
 const DashboardPage = lazy(() => import("../pages/dashboard"));
+const NewModulePage = lazy(() => import("../pages/new-module"));
 const ProfilePage = lazy(() => import("../pages/profile"));
 const SignInPage = lazy(() => import("../pages/sign-in"));
 
@@ -22,6 +23,14 @@ export function AppRoutes() {
           element={
             <AuthenticatedRoute>
               <DashboardPage />
+            </AuthenticatedRoute>
+          }
+        />
+        <Route
+          path="/modules/new"
+          element={
+            <AuthenticatedRoute>
+              <NewModulePage />
             </AuthenticatedRoute>
           }
         />

@@ -29,8 +29,8 @@ export default function DashboardPage() {
             terautentikasi.
           </p>
           <Button asChild className="mt-8">
-            <Link to="/profile">
-              Atur profil <ArrowRight aria-hidden="true" className="ml-2 size-4" />
+            <Link to="/modules/new">
+              Buat modul <ArrowRight aria-hidden="true" className="ml-2 size-4" />
             </Link>
           </Button>
         </div>

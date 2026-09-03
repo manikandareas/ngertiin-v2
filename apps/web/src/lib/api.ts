@@ -1,10 +1,17 @@
 import {
+  type CreateTextSourceBodyInput,
+  createTextSourceResponseSchema,
   type CurrentUser,
+  getSourceResponseSchema,
   getCurrentUserResponseSchema,
+  type ListSourcesQueryInput,
+  type ListSourcesResponse,
+  listSourcesResponseSchema,
   type PatchCurrentUserBody,
   type ProblemDetail,
   patchCurrentUserResponseSchema,
   problemDetailSchema,
+  type Source,
 } from "@ngertiin/contracts/api";
 import { webEnvironment } from "../config";
 
@@ -76,5 +83,53 @@ export async function patchCurrentUser(
     method: "PATCH",
     body: JSON.stringify(input),
   });
+  return response.data;
+}
+
+export async function createTextSource(
+  tokenResolver: TokenResolver,
+  input: CreateTextSourceBodyInput,
+  idempotencyKey: string,
+): Promise<Source> {
+  const response = await requestApi(
+    "/sources/text",
+    tokenResolver,
+    createTextSourceResponseSchema,
+    {
+      method: "POST",
+      headers: { "Idempotency-Key": idempotencyKey },
+      body: JSON.stringify(input),
+    },
+  );
+  return response.data;
+}
+
+export async function listSources(
+  tokenResolver: TokenResolver,
+  query: ListSourcesQueryInput = {},
+): Promise<ListSourcesResponse> {
+  const search = new URLSearchParams();
+  if (query.type !== undefined) {
+    search.set("type", query.type);
+  }
+  if (query.status !== undefined) {
+    search.set("status", query.status);
+  }
+  if (query.limit !== undefined) {
+    search.set("limit", String(query.limit));
+  }
+  if (query.cursor !== undefined) {
+    search.set("cursor", query.cursor);
+  }
+  const suffix = search.size > 0 ? `?${search.toString()}` : "";
+  return requestApi(`/sources${suffix}`, tokenResolver, listSourcesResponseSchema);
+}
+
+export async function getSource(tokenResolver: TokenResolver, sourceId: string): Promise<Source> {
+  const response = await requestApi(
+    `/sources/${encodeURIComponent(sourceId)}`,
+    tokenResolver,
+    getSourceResponseSchema,
+  );
   return response.data;
 }
