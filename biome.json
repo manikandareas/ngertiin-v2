@@ -22,5 +22,12 @@
       "quoteStyle": "double",
       "semicolons": "always"
     }
+  },
+  "assist": {
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
   }
 }
