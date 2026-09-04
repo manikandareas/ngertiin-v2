@@ -1,4 +1,10 @@
 export {
+  type Dashboard,
+  dashboardSchema,
+  type GetDashboardResponse,
+  getDashboardResponseSchema,
+} from "./dashboard/dashboard.js";
+export {
   type Attempt,
   type AssessmentAnswer,
   assessmentAnswerSchema,
@@ -54,6 +60,8 @@ export {
   type CreateModuleBodyInput,
   createModuleResponseSchema,
   type CreateModuleResponse,
+  archiveModuleResponseSchema,
+  type ArchiveModuleResponse,
   completeNodeResponseSchema,
   type CompleteNodeResponse,
   type CompleteNodeResult,
@@ -162,6 +170,8 @@ export {
   type PatchCurrentUserBody,
   patchCurrentUserResponseSchema,
   type PatchCurrentUserResponse,
+  type UserStats,
+  userStatsSchema,
 } from "./users/current-user.js";
 export {
   type AdaptiveDecision,

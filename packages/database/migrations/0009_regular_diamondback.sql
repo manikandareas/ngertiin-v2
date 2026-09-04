@@ -1,0 +1,2 @@
+CREATE INDEX "modules_owner_updated_id_idx" ON "modules" USING btree ("owner_id","updated_at" DESC NULLS FIRST,"id" DESC NULLS FIRST);--> statement-breakpoint
+CREATE INDEX "user_module_progress_user_status_updated_module_idx" ON "user_module_progress" USING btree ("user_id","status","updated_at" DESC NULLS FIRST,"module_id" DESC NULLS FIRST);

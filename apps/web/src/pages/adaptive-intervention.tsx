@@ -8,6 +8,7 @@ import {
   useAdaptiveIntervention,
 } from "../features/modules/api/use-modules";
 import { ApiProblemError } from "../lib/api";
+import { nextLearningRoute } from "../features/modules/next-learning-route";
 
 export default function AdaptiveInterventionPage() {
   const { interventionId = "" } = useParams();
@@ -40,7 +41,8 @@ export default function AdaptiveInterventionPage() {
   const decide = async (value: "accept" | "decline") => {
     try {
       const updated = await decision.mutateAsync({ decision: value, key: crypto.randomUUID() });
-      if (value === "decline") navigate(`/modules/${updated.moduleId}/journey`);
+      const destination = nextLearningRoute(updated.nextAction);
+      if (destination) navigate(destination);
     } catch {
       /* rendered below */
     }
@@ -48,6 +50,7 @@ export default function AdaptiveInterventionPage() {
   const learningNode =
     data.nodes.find((node) => node.progress.status === "in_progress") ??
     data.nodes.find((node) => node.progress.status === "available");
+  const destination = nextLearningRoute(data.nextAction);
   return (
     <AppShell>
       <main className="mx-auto max-w-3xl">
@@ -107,14 +110,16 @@ export default function AdaptiveInterventionPage() {
             </p>
           </section>
         ) : null}
-        {(data.status === "available" || data.status === "in_progress") && learningNode ? (
+        {(data.status === "available" || data.status === "in_progress") &&
+        learningNode &&
+        destination ? (
           <section className="mt-7 rounded-3xl border border-teal-200 bg-white p-7">
             <h2 className="text-xl font-bold">Materi penguatan siap</h2>
             <p className="mt-2 text-slate-600">
               Ada {data.nodes.length} langkah terfokus sebelum kembali ke perjalanan utama.
             </p>
             <Button asChild className="mt-5">
-              <Link to={`/modules/${data.moduleId}/nodes/${learningNode.id}`}>
+              <Link to={destination}>
                 {data.status === "in_progress" ? "Lanjutkan penguatan" : "Mulai penguatan"}
                 <ArrowRight className="ml-2 size-4" />
               </Link>
@@ -137,7 +142,7 @@ export default function AdaptiveInterventionPage() {
               {data.status === "completed" ? "Penguatan selesai" : "Review dilewati"}
             </h2>
             <Button asChild className="mt-5">
-              <Link to={`/modules/${data.moduleId}/journey`}>
+              <Link to={destination ?? `/modules/${data.moduleId}/journey`}>
                 Kembali ke Core Journey
                 <ArrowRight className="ml-2 size-4" />
               </Link>

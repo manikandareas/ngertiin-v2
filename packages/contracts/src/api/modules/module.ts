@@ -311,6 +311,7 @@ export const createModuleResponseSchema = successEnvelopeSchema(
 );
 export const listModulesResponseSchema = paginatedSuccessEnvelopeSchema(moduleSummarySchema);
 export const getModuleResponseSchema = successEnvelopeSchema(moduleSummarySchema);
+export const archiveModuleResponseSchema = successEnvelopeSchema(moduleSummarySchema);
 export const getGenerationResponseSchema = successEnvelopeSchema(generationStatusSchema);
 export const retryGenerationResponseSchema = createModuleResponseSchema;
 export const getJourneyResponseSchema = successEnvelopeSchema(journeySummarySchema);
@@ -356,5 +357,6 @@ export type CompleteNodeResponse = z.infer<typeof completeNodeResponseSchema>;
 export type CreateModuleResponse = z.infer<typeof createModuleResponseSchema>;
 export type ListModulesResponse = z.infer<typeof listModulesResponseSchema>;
 export type GetModuleResponse = z.infer<typeof getModuleResponseSchema>;
+export type ArchiveModuleResponse = z.infer<typeof archiveModuleResponseSchema>;
 export type GetGenerationResponse = z.infer<typeof getGenerationResponseSchema>;
 export type RetryGenerationResponse = z.infer<typeof retryGenerationResponseSchema>;

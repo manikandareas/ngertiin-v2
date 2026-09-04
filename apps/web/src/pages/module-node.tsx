@@ -7,11 +7,13 @@ import { Button } from "../components/ui/button";
 import {
   useAttempt,
   useCompleteNode,
+  useModule,
   useNode,
   useStartNode,
   useSubmitAttempt,
 } from "../features/modules/api/use-modules";
 import { ApiProblemError } from "../lib/api";
+import { nextLearningRoute } from "../features/modules/next-learning-route";
 
 function Lesson({ activity }: { activity: Extract<PublicActivity, { type: "lesson" }> }) {
   return (
@@ -101,6 +103,7 @@ function Assessment({
   answer,
   onAnswer,
   result,
+  readOnly,
 }: {
   activity: Exclude<PublicActivity, { type: "lesson" | "flashcard" }>;
   answer: AssessmentAnswer | undefined;
@@ -111,6 +114,7 @@ function Assessment({
         { evaluationStatus: "completed" }
       >["activityResults"][number]
     | undefined;
+  readOnly: boolean;
 }) {
   const prompt =
     activity.type === "multiple_choice"
@@ -136,6 +140,7 @@ function Assessment({
                 name={activity.id}
                 onChange={() => onAnswer({ optionIndex })}
                 type="radio"
+                disabled={readOnly}
               />
               <span>{option}</span>
             </label>
@@ -153,6 +158,7 @@ function Assessment({
                 name={activity.id}
                 onChange={() => onAnswer({ value })}
                 type="radio"
+                disabled={readOnly}
               />
               <span>{value ? "Benar" : "Salah"}</span>
             </label>
@@ -170,6 +176,7 @@ function Assessment({
             }}
             placeholder="Tulis jawabanmu di sini…"
             value={answer && "text" in answer ? answer.text : ""}
+            disabled={readOnly}
           />
           <p className="mt-2 text-right text-xs text-slate-500" id={`${activity.id}-counter`}>
             {Array.from(answer && "text" in answer ? answer.text : "").length.toLocaleString()} /
@@ -212,6 +219,7 @@ function AttemptSummary({ result }: { result: AttemptResult }) {
       </div>
     );
   }
+  const destination = nextLearningRoute(result.nextAction);
   return (
     <section className="mt-8 rounded-3xl border border-teal-200 bg-white p-7 shadow-sm">
       <p className="text-sm font-semibold uppercase tracking-wide text-teal-700">
@@ -269,20 +277,9 @@ function AttemptSummary({ result }: { result: AttemptResult }) {
       <p className="mt-5 text-sm text-slate-600">
         Langkah berikutnya: {result.nextAction.type.replaceAll("_", " ")}
       </p>
-      {result.nextAction.type === "offer_optional_review" ||
-      result.nextAction.type === "wait_for_adaptive" ? (
+      {destination ? (
         <Button asChild className="mt-5">
-          <Link to={`/adaptive-interventions/${result.nextAction.interventionId}`}>
-            Buka dukungan belajar
-            <ArrowRight className="ml-2 size-4" />
-          </Link>
-        </Button>
-      ) : result.nextAction.type === "start_core_node" ||
-        result.nextAction.type === "resume_core_node" ||
-        result.nextAction.type === "start_adaptive_node" ||
-        result.nextAction.type === "resume_adaptive_node" ? (
-        <Button asChild className="mt-5">
-          <Link to={`/modules/${result.nextAction.moduleId}/nodes/${result.nextAction.nodeId}`}>
+          <Link to={destination}>
             Lanjutkan belajar
             <ArrowRight className="ml-2 size-4" />
           </Link>
@@ -297,6 +294,7 @@ export default function ModuleNodePage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const attemptId = searchParams.get("attemptId") ?? undefined;
+  const moduleQuery = useModule(moduleId);
   const nodeQuery = useNode(moduleId, nodeId);
   const attemptQuery = useAttempt(attemptId, moduleId, nodeId);
   const start = useStartNode(moduleId, nodeId);
@@ -307,19 +305,23 @@ export default function ModuleNodePage() {
   const [answers, setAnswers] = useState<Record<string, AssessmentAnswer>>({});
 
   useEffect(() => {
-    if (nodeQuery.data?.node.progress.status !== "available" || startedNodeId.current === nodeId)
+    if (
+      moduleQuery.data?.status !== "ready" ||
+      nodeQuery.data?.node.progress.status !== "available" ||
+      startedNodeId.current === nodeId
+    )
       return;
     startedNodeId.current = nodeId;
     start.mutate();
-  }, [nodeId, nodeQuery.data?.node.progress.status, start.mutate]);
+  }, [moduleQuery.data?.status, nodeId, nodeQuery.data?.node.progress.status, start.mutate]);
 
-  if (nodeQuery.isPending)
+  if (nodeQuery.isPending || moduleQuery.isPending)
     return (
       <AppShell>
         <p className="text-sm text-slate-500">Memuat node…</p>
       </AppShell>
     );
-  if (nodeQuery.isError || !nodeQuery.data)
+  if (nodeQuery.isError || moduleQuery.isError || !nodeQuery.data || !moduleQuery.data)
     return (
       <AppShell>
         <div className="mx-auto max-w-2xl rounded-3xl border border-red-200 bg-white p-8">
@@ -330,8 +332,10 @@ export default function ModuleNodePage() {
     );
 
   const data = nodeQuery.data;
+  const readOnly = moduleQuery.data.status === "archived";
   const completed = data.node.progress.status === "completed";
   const canComplete =
+    !readOnly &&
     data.activities.length > 0 &&
     data.activities.every(
       (activity) => activity.type === "lesson" || activity.type === "flashcard",
@@ -361,16 +365,7 @@ export default function ModuleNodePage() {
   async function handleComplete() {
     try {
       const result = await complete.mutateAsync();
-      if (
-        result.nextAction.type === "start_core_node" ||
-        result.nextAction.type === "resume_core_node" ||
-        result.nextAction.type === "start_adaptive_node" ||
-        result.nextAction.type === "resume_adaptive_node"
-      ) {
-        navigate(`/modules/${moduleId}/nodes/${result.nextAction.nodeId}`);
-      } else {
-        navigate(`/modules/${moduleId}/journey`);
-      }
+      navigate(nextLearningRoute(result.nextAction) ?? `/modules/${moduleId}/journey`);
     } catch {
       /* Mutation state renders the safe error. */
     }
@@ -388,11 +383,8 @@ export default function ModuleNodePage() {
         })),
       });
       setSearchParams({ attemptId: result.attempt.id }, { replace: true });
-      if (
-        result.nextAction.type === "offer_optional_review" ||
-        result.nextAction.type === "wait_for_adaptive"
-      )
-        navigate(`/adaptive-interventions/${result.nextAction.interventionId}`);
+      const destination = nextLearningRoute(result.nextAction);
+      if (destination) navigate(destination);
     } catch {
       /* Mutation state renders the safe error and keeps submissionId for retry. */
     }
@@ -442,6 +434,7 @@ export default function ModuleNodePage() {
                       )
                     : undefined
                 }
+                readOnly={readOnly}
               />
             ),
           )}
@@ -451,7 +444,11 @@ export default function ModuleNodePage() {
             {errorMessage}
           </p>
         ) : null}
-        {completed ? (
+        {readOnly ? (
+          <p className="mt-8 rounded-2xl bg-slate-100 p-4 font-medium text-slate-700">
+            Module ini diarsipkan. Konten tersedia dalam mode baca saja.
+          </p>
+        ) : completed ? (
           <p className="mt-8 rounded-2xl bg-teal-50 p-4 font-medium text-teal-900">
             Node ini sudah selesai. Kamu sedang membukanya kembali untuk review.
           </p>
@@ -465,7 +462,7 @@ export default function ModuleNodePage() {
             <ArrowRight className="ml-2 size-4" />
           </Button>
         ) : null}
-        {hasAssessments ? (
+        {hasAssessments && !readOnly ? (
           <div className="mt-8">
             <div className="flex gap-3">
               {!attemptResult ? (

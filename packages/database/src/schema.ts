@@ -297,6 +297,11 @@ export const modules = pgTable(
   },
   (table) => [
     index("modules_owner_id_idx").on(table.owner_id),
+    index("modules_owner_updated_id_idx").on(
+      table.owner_id,
+      table.updated_at.desc().nullsFirst(),
+      table.id.desc().nullsFirst(),
+    ),
     index("modules_status_idx").on(table.status),
     uniqueIndex("modules_generation_request_idx").on(table.generation_request_id),
     check(
@@ -473,6 +478,12 @@ export const user_module_progress = pgTable(
   },
   (table) => [
     uniqueIndex("user_module_progress_user_module_idx").on(table.user_id, table.module_id),
+    index("user_module_progress_user_status_updated_module_idx").on(
+      table.user_id,
+      table.status,
+      table.updated_at.desc().nullsFirst(),
+      table.module_id.desc().nullsFirst(),
+    ),
     check(
       "user_module_progress_percentage_check",
       sql`${table.progress_percentage} >= 0 AND ${table.progress_percentage} <= 100`,

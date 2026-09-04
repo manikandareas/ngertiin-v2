@@ -1,8 +1,10 @@
-import { ArrowRight, Check, Circle, LockKeyhole } from "lucide-react";
+import { Archive, ArrowRight, Check, Circle, LockKeyhole } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import { AppShell } from "../components/app-shell";
 import { Button } from "../components/ui/button";
-import { useJourney } from "../features/modules/api/use-modules";
+import { useArchiveModule, useJourney, useModule } from "../features/modules/api/use-modules";
+import { nextLearningRoute } from "../features/modules/next-learning-route";
+import { ApiProblemError } from "../lib/api";
 
 const statusLabel = {
   locked: "Terkunci",
@@ -14,15 +16,17 @@ const statusLabel = {
 export default function ModuleJourneyPage() {
   const { moduleId } = useParams();
   const journey = useJourney(moduleId);
+  const moduleQuery = useModule(moduleId);
+  const archive = useArchiveModule(moduleId ?? "");
 
-  if (journey.isPending) {
+  if (journey.isPending || moduleQuery.isPending) {
     return (
       <AppShell>
         <p className="text-sm text-slate-500">Memuat Journey…</p>
       </AppShell>
     );
   }
-  if (journey.isError || !journey.data) {
+  if (journey.isError || moduleQuery.isError || !journey.data || !moduleQuery.data) {
     return (
       <AppShell>
         <div className="mx-auto max-w-2xl rounded-3xl border border-red-200 bg-white p-8">
@@ -34,19 +38,41 @@ export default function ModuleJourneyPage() {
   }
 
   const data = journey.data;
-  const selectedNodeId =
-    data.nextAction.type === "start_core_node" ||
-    data.nextAction.type === "resume_core_node" ||
-    data.nextAction.type === "start_adaptive_node" ||
-    data.nextAction.type === "resume_adaptive_node"
-      ? data.nextAction.nodeId
-      : null;
+  const module = moduleQuery.data;
+  const destination = nextLearningRoute(data.nextAction);
+  const archiveError =
+    archive.error instanceof ApiProblemError
+      ? archive.error.problem.detail
+      : archive.isError
+        ? "Module belum dapat diarsipkan."
+        : null;
+
+  async function handleArchive(): Promise<void> {
+    if (!window.confirm("Arsipkan Module ini? Progress dan riwayat tetap dapat dibaca.")) return;
+    try {
+      await archive.mutateAsync();
+    } catch {
+      // Mutation state renders the safe error.
+    }
+  }
 
   return (
     <AppShell>
       <div className="mx-auto max-w-3xl">
-        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-teal-700">Journey</p>
-        <h1 className="mt-3 text-4xl font-bold tracking-tight">{data.module.title}</h1>
+        <div className="flex flex-wrap items-start justify-between gap-5">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-teal-700">
+              Journey
+            </p>
+            <h1 className="mt-3 text-4xl font-bold tracking-tight">{data.module.title}</h1>
+          </div>
+          {module.status === "ready" ? (
+            <Button disabled={archive.isPending} onClick={handleArchive} variant="outline">
+              <Archive className="mr-2 size-4" />
+              {archive.isPending ? "Mengarsipkan…" : "Archive"}
+            </Button>
+          ) : null}
+        </div>
         {data.module.description ? (
           <p className="mt-4 text-lg leading-8 text-slate-600">{data.module.description}</p>
         ) : null}
@@ -67,9 +93,13 @@ export default function ModuleJourneyPage() {
               style={{ width: `${data.progress.percentage}%` }}
             />
           </div>
-          {selectedNodeId ? (
+          {module.status === "archived" ? (
+            <p className="mt-6 rounded-2xl bg-slate-100 p-4 font-medium text-slate-700">
+              Module ini diarsipkan. Journey dan riwayat tetap tersedia dalam mode baca saja.
+            </p>
+          ) : destination ? (
             <Button asChild className="mt-6 w-full sm:w-auto">
-              <Link to={`/modules/${data.module.id}/nodes/${selectedNodeId}`}>
+              <Link to={destination}>
                 {data.nextAction.type === "resume_core_node" ||
                 data.nextAction.type === "resume_adaptive_node"
                   ? "Lanjutkan belajar"
@@ -81,16 +111,14 @@ export default function ModuleJourneyPage() {
             <p className="mt-6 rounded-2xl bg-teal-50 p-4 font-medium text-teal-800">
               Semua Core Node sudah selesai.
             </p>
-          ) : data.nextAction.type === "offer_optional_review" ||
-            data.nextAction.type === "wait_for_adaptive" ? (
-            <Button asChild className="mt-6 w-full sm:w-auto">
-              <Link to={`/adaptive-interventions/${data.nextAction.interventionId}`}>
-                Buka dukungan belajar
-                <ArrowRight className="ml-2 size-4" />
-              </Link>
-            </Button>
           ) : null}
         </section>
+
+        {archiveError ? (
+          <p className="mt-4 text-sm text-red-700" role="alert">
+            {archiveError}
+          </p>
+        ) : null}
 
         <ol className="mt-8 space-y-3">
           {data.nodes.map((node) => {

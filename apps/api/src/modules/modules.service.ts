@@ -456,6 +456,123 @@ export class ModulesService {
     };
   }
 
+  async getDashboardModules(userId: string): Promise<{
+    continueLearning: { module: ModuleSummary } | null;
+    modules: ModuleSummary[];
+  }> {
+    const activeRequiredIntervention = sql<boolean>`exists (
+      select 1 from ${adaptive_interventions} intervention
+      where intervention.user_id = ${userId}
+        and intervention.module_id = ${modules.id}
+        and intervention.required = true
+        and intervention.status in ('offered', 'generating', 'available', 'in_progress', 'failed')
+    )`;
+    const acceptedOptionalIntervention = sql<boolean>`exists (
+      select 1 from ${adaptive_interventions} intervention
+      where intervention.user_id = ${userId}
+        and intervention.module_id = ${modules.id}
+        and intervention.required = false
+        and intervention.status in ('generating', 'available', 'in_progress', 'failed')
+    )`;
+    const priority = sql<number>`case
+      when ${activeRequiredIntervention} then 1
+      when ${acceptedOptionalIntervention} then 2
+      when ${modules.status} = 'ready' and ${user_module_progress.status} = 'in_progress' then 3
+      when ${modules.status} = 'ready' and ${user_module_progress.status} = 'not_started' then 4
+      when ${modules.status} = 'generating' then 5
+      else 6
+    end`;
+    const selectFields = {
+      id: modules.id,
+      title: modules.title,
+      description: modules.description,
+      difficulty: modules.difficulty,
+      status: modules.status,
+      estimatedMinutes: modules.estimated_minutes,
+      createdAt: modules.created_at,
+      updatedAt: modules.updated_at,
+      progressStatus: user_module_progress.status,
+      progressPercentage: user_module_progress.progress_percentage,
+      currentNodeId: user_module_progress.current_node_id,
+    };
+    const baseJoin = and(
+      eq(user_module_progress.module_id, modules.id),
+      eq(user_module_progress.user_id, userId),
+    );
+
+    const [candidateRows, previewRows] = await Promise.all([
+      this.infrastructure.database.db
+        .select(selectFields)
+        .from(modules)
+        .leftJoin(user_module_progress, baseJoin)
+        .where(
+          and(
+            eq(modules.owner_id, userId),
+            sql`${modules.status} <> 'archived'`,
+            sql`${priority} < 6`,
+          ),
+        )
+        .orderBy(
+          priority,
+          sql`case when ${priority} = 3 then ${user_module_progress.updated_at} end desc`,
+          sql`case when ${priority} in (4, 5) then ${modules.created_at} end desc`,
+          desc(modules.updated_at),
+          desc(modules.id),
+        )
+        .limit(1),
+      this.infrastructure.database.db
+        .select(selectFields)
+        .from(modules)
+        .leftJoin(user_module_progress, baseJoin)
+        .where(and(eq(modules.owner_id, userId), sql`${modules.status} <> 'archived'`))
+        .orderBy(desc(modules.updated_at), desc(modules.id))
+        .limit(6),
+    ]);
+
+    const candidate = candidateRows[0];
+    const mergedRows = [
+      ...(candidate ? [candidate] : []),
+      ...previewRows.filter((row) => row.id !== candidate?.id),
+    ] as ModuleRow[];
+    const summaries = await this.readSummaries(userId, mergedRows);
+    const byId = new Map(summaries.map((summary) => [summary.id, summary]));
+    const candidateSummary = candidate ? byId.get(candidate.id) : undefined;
+
+    return {
+      continueLearning: candidateSummary ? { module: candidateSummary } : null,
+      modules: previewRows.flatMap((row) => {
+        const summary = byId.get(row.id);
+        return summary ? [summary] : [];
+      }),
+    };
+  }
+
+  async archiveModule(userId: string, moduleId: string): Promise<ModuleSummary> {
+    await this.infrastructure.database.db.transaction(async (transaction) => {
+      const [module] = await transaction
+        .select({ status: modules.status })
+        .from(modules)
+        .where(and(eq(modules.id, moduleId), eq(modules.owner_id, userId)))
+        .for("update")
+        .limit(1);
+      if (!module) this.notFound();
+      if (module.status === "archived") return;
+      if (module.status !== "ready") {
+        throw new ProductError(
+          409,
+          "MODULE_ARCHIVE_NOT_ALLOWED",
+          "Module cannot be archived",
+          "Only a ready Module can be archived.",
+        );
+      }
+      await transaction
+        .update(modules)
+        .set({ status: "archived", updated_at: new Date() })
+        .where(eq(modules.id, moduleId));
+    });
+    return this.getModule(userId, moduleId);
+  }
+
   async getModule(userId: string, moduleId: string): Promise<ModuleSummary> {
     const [row] = await this.infrastructure.database.db
       .select({

@@ -13,6 +13,8 @@ import {
   UseGuards,
 } from "@nestjs/common";
 import {
+  type ArchiveModuleResponse,
+  archiveModuleResponseSchema,
   type CompleteNodeResponse,
   type CreateModuleBody,
   type CreateModuleResponse,
@@ -176,6 +178,19 @@ export class ModulesController {
     );
     response.status(result.status);
     return retryGenerationResponseSchema.parse(result.body);
+  }
+
+  @Post(":moduleId/archive")
+  @HttpCode(200)
+  async archiveModule(
+    @Req() request: ProductRequest,
+    @Param(new ZodValidationPipe(moduleParamsSchema)) params: ModuleParams,
+  ): Promise<ArchiveModuleResponse> {
+    const module = await this.modulesService.archiveModule(
+      getLocalUserId(request),
+      params.moduleId,
+    );
+    return archiveModuleResponseSchema.parse({ data: module });
   }
 
   @Get(":moduleId")

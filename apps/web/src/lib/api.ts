@@ -12,6 +12,8 @@ import {
   type CreateTextSourceBodyInput,
   type CreateUrlSourceBodyInput,
   type CurrentUser,
+  type Dashboard,
+  archiveModuleResponseSchema,
   completeNodeResponseSchema,
   createModuleResponseSchema,
   createPdfSourceResponseSchema,
@@ -21,6 +23,7 @@ import {
   type GenerationStatus,
   generationEventSchema,
   getCurrentUserResponseSchema,
+  getDashboardResponseSchema,
   getAttemptResponseSchema,
   getGenerationResponseSchema,
   getJourneyResponseSchema,
@@ -107,6 +110,11 @@ async function requestApi<Value>(
 
 export async function getCurrentUser(tokenResolver: TokenResolver): Promise<CurrentUser> {
   const response = await requestApi("/me", tokenResolver, getCurrentUserResponseSchema);
+  return response.data;
+}
+
+export async function getDashboard(tokenResolver: TokenResolver): Promise<Dashboard> {
+  const response = await requestApi("/dashboard", tokenResolver, getDashboardResponseSchema);
   return response.data;
 }
 
@@ -247,6 +255,19 @@ export async function getModule(
     `/modules/${encodeURIComponent(moduleId)}`,
     tokenResolver,
     getModuleResponseSchema,
+  );
+  return response.data;
+}
+
+export async function archiveModule(
+  tokenResolver: TokenResolver,
+  moduleId: string,
+): Promise<ModuleSummary> {
+  const response = await requestApi(
+    `/modules/${encodeURIComponent(moduleId)}/archive`,
+    tokenResolver,
+    archiveModuleResponseSchema,
+    { method: "POST" },
   );
   return response.data;
 }

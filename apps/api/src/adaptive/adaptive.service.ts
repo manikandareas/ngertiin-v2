@@ -70,17 +70,28 @@ export class AdaptiveService {
             status: adaptive_interventions.status,
             required: adaptive_interventions.required,
             moduleId: adaptive_interventions.module_id,
+            moduleStatus: modules.status,
           })
           .from(adaptive_interventions)
+          .innerJoin(modules, eq(modules.id, adaptive_interventions.module_id))
           .where(
             and(
               eq(adaptive_interventions.id, interventionId),
               eq(adaptive_interventions.user_id, userId),
+              eq(modules.owner_id, userId),
             ),
           )
           .for("update")
           .limit(1);
         if (!intervention) this.notFound();
+        if (intervention.moduleStatus !== "ready") {
+          throw new ProductError(
+            409,
+            "MODULE_NOT_LEARNABLE",
+            "Module is not learnable",
+            "Only a ready Module accepts adaptive decisions.",
+          );
+        }
         if (intervention.required || intervention.status !== "offered") {
           throw new ProductError(
             409,

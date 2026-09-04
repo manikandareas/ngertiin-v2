@@ -14,12 +14,21 @@ export function AppShell({ children }: { children: ReactNode }) {
             </span>
             Ngerti.in
           </Link>
-          <nav className="flex items-center gap-2" aria-label="Navigasi utama">
+          <nav
+            className="flex flex-wrap items-center justify-end gap-1 text-sm"
+            aria-label="Navigasi utama"
+          >
             <Button asChild variant="outline">
-              <Link to="/profile">Profil</Link>
+              <Link to="/dashboard">Dashboard</Link>
             </Button>
             <Button asChild variant="outline">
-              <Link to="/sign-in">Masuk</Link>
+              <Link to="/modules">Modules</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link to="/modules/new">Create Module</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link to="/profile">Profile</Link>
             </Button>
           </nav>
         </div>

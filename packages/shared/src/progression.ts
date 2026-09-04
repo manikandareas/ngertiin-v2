@@ -45,6 +45,7 @@ export function selectLearningAction(input: {
   currentCoreNodeStatus?: ProgressNode["status"];
   intervention?: LearningInterventionState | null;
 }): NextLearningAction {
+  if (input.moduleStatus === "archived") return { type: "none" };
   if (input.moduleStatus === "generating")
     return { type: "wait_for_module", moduleId: input.moduleId };
   if (input.moduleStatus === "failed") return { type: "retry_module", moduleId: input.moduleId };

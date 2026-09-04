@@ -14,16 +14,18 @@ export const ianaTimezoneSchema = z
   .string()
   .refine(isIanaTimezone, "Expected a valid IANA timezone.");
 
+export const userStatsSchema = z.object({
+  totalXp: z.number(),
+  currentStreak: z.number(),
+  longestStreak: z.number(),
+  lastLearningDate: z.string().date().nullable(),
+});
+
 export const currentUserSchema = z.object({
   id: uuidSchema,
   displayName: z.string().nullable(),
   timezone: ianaTimezoneSchema,
-  stats: z.object({
-    totalXp: z.number(),
-    currentStreak: z.number(),
-    longestStreak: z.number(),
-    lastLearningDate: z.string().date().nullable(),
-  }),
+  stats: userStatsSchema,
 });
 
 export const patchCurrentUserBodySchema = z
@@ -45,6 +47,7 @@ export const getCurrentUserResponseSchema = successEnvelopeSchema(currentUserSch
 export const patchCurrentUserResponseSchema = successEnvelopeSchema(currentUserSchema);
 
 export type CurrentUser = z.infer<typeof currentUserSchema>;
+export type UserStats = z.infer<typeof userStatsSchema>;
 export type PatchCurrentUserBody = z.infer<typeof patchCurrentUserBodySchema>;
 export type GetCurrentUserResponse = z.infer<typeof getCurrentUserResponseSchema>;
 export type PatchCurrentUserResponse = z.infer<typeof patchCurrentUserResponseSchema>;

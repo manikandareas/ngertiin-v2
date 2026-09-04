@@ -9,5 +9,6 @@ import { ModulesService } from "./modules.service.js";
   imports: [AuthModule, IdempotencyModule, InfrastructureModule],
   controllers: [ModulesController],
   providers: [ModulesService],
+  exports: [ModulesService],
 })
 export class ModulesModule {}

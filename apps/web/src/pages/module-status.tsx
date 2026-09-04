@@ -1,6 +1,6 @@
 import { ArrowRight, CheckCircle2, CircleDashed, RotateCcw, TriangleAlert } from "lucide-react";
 import { type ReactNode, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, Navigate, useParams } from "react-router-dom";
 import { AppShell } from "../components/app-shell";
 import { Button } from "../components/ui/button";
 import {
@@ -28,9 +28,11 @@ function retryErrorMessage(error: unknown, isError: boolean): string | null {
 export default function ModuleStatusPage() {
   const { moduleId } = useParams();
   const [streamRestart, setStreamRestart] = useState(0);
-  const fallbackPolling = useGenerationStream(moduleId, streamRestart);
   const moduleQuery = useModule(moduleId);
-  const generationQuery = useGeneration(moduleId, fallbackPolling);
+  const generationEnabled =
+    moduleQuery.data?.status === "generating" || moduleQuery.data?.status === "failed";
+  const fallbackPolling = useGenerationStream(moduleId, streamRestart, generationEnabled);
+  const generationQuery = useGeneration(moduleId, fallbackPolling, generationEnabled);
   const retryGeneration = useRetryGeneration(moduleId ?? "");
   const [retryKey, setRetryKey] = useState<string | null>(null);
   const generation = generationQuery.data;
@@ -49,7 +51,7 @@ export default function ModuleStatusPage() {
     }
   }
 
-  if (moduleQuery.isPending || generationQuery.isPending) {
+  if (moduleQuery.isPending) {
     return (
       <AppShell>
         <p className="text-sm text-slate-500">Memuat status Module…</p>
@@ -57,17 +59,37 @@ export default function ModuleStatusPage() {
     );
   }
 
-  if (moduleQuery.isError || generationQuery.isError || !module || !generation) {
+  if (moduleQuery.isError || !module) {
     return (
       <AppShell>
         <div className="mx-auto max-w-2xl rounded-3xl border border-red-200 bg-white p-8">
           <h1 className="text-2xl font-bold">Module belum dapat dimuat</h1>
           <p className="mt-3 text-slate-600">Periksa koneksi atau akses Module, lalu coba lagi.</p>
-          <Button
-            className="mt-6"
-            onClick={() => Promise.all([moduleQuery.refetch(), generationQuery.refetch()])}
-            variant="outline"
-          >
+          <Button className="mt-6" onClick={() => moduleQuery.refetch()} variant="outline">
+            Coba lagi
+          </Button>
+        </div>
+      </AppShell>
+    );
+  }
+
+  if (module.status === "ready" || module.status === "archived") {
+    return <Navigate replace to={`/modules/${module.id}/journey`} />;
+  }
+
+  if (generationQuery.isPending) {
+    return (
+      <AppShell>
+        <p className="text-sm text-slate-500">Memuat status Module…</p>
+      </AppShell>
+    );
+  }
+  if (generationQuery.isError || !generation) {
+    return (
+      <AppShell>
+        <div className="mx-auto max-w-2xl rounded-3xl border border-red-200 bg-white p-8">
+          <h1 className="text-2xl font-bold">Status generasi belum dapat dimuat</h1>
+          <Button className="mt-6" onClick={() => generationQuery.refetch()} variant="outline">
             Coba lagi
           </Button>
         </div>
