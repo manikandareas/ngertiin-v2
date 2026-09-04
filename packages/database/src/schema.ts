@@ -21,6 +21,12 @@ import {
 export const source_type = pgEnum("source_type", ["pdf", "url", "text"]);
 export const source_status = pgEnum("source_status", ["pending", "processing", "ready", "failed"]);
 export const source_content_type = pgEnum("source_content_type", ["page", "section", "content"]);
+export const source_processing_status = pgEnum("source_processing_status", [
+  "queued",
+  "processing",
+  "completed",
+  "failed",
+]);
 export const source_role = pgEnum("source_role", ["primary", "reference", "supplementary"]);
 export const module_difficulty = pgEnum("module_difficulty", [
   "beginner",
@@ -124,6 +130,7 @@ export const sources = pgTable(
     content_hash: varchar(),
     status: source_status().notNull(),
     metadata: jsonb(),
+    failure: jsonb(),
     created_at: createdAt(),
     updated_at: updatedAt(),
   },
@@ -182,8 +189,40 @@ export const source_contents = pgTable(
     created_at: createdAt(),
   },
   (table) => [
-    index("source_contents_source_position_idx").on(table.source_id, table.position),
+    uniqueIndex("source_contents_source_position_idx").on(table.source_id, table.position),
     index("source_contents_source_page_idx").on(table.source_id, table.page_number),
+    check("source_contents_position_check", sql`${table.position} > 0`),
+    check(
+      "source_contents_page_number_check",
+      sql`${table.page_number} IS NULL OR ${table.page_number} > 0`,
+    ),
+  ],
+);
+
+export const source_processing_runs = pgTable(
+  "source_processing_runs",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    source_id: uuid()
+      .notNull()
+      .references(() => sources.id),
+    bullmq_job_id: varchar(),
+    status: source_processing_status().notNull(),
+    error: jsonb(),
+    metadata: jsonb(),
+    started_at: optionalTimestamp(),
+    finished_at: optionalTimestamp(),
+    created_at: createdAt(),
+  },
+  (table) => [
+    index("source_processing_runs_source_idx").on(table.source_id),
+    index("source_processing_runs_status_created_idx").on(table.status, table.created_at),
+    uniqueIndex("source_processing_runs_bullmq_job_idx")
+      .on(table.bullmq_job_id)
+      .where(sql`${table.bullmq_job_id} IS NOT NULL`),
+    uniqueIndex("source_processing_runs_active_source_idx")
+      .on(table.source_id)
+      .where(sql`${table.status} IN ('queued', 'processing')`),
   ],
 );
 
@@ -601,7 +640,15 @@ export const sourcesRelations = relations(sources, ({ many, one }) => ({
     references: [users.id],
   }),
   source_contents: many(source_contents),
+  processing_runs: many(source_processing_runs),
   generation_request_sources: many(generation_request_sources),
+}));
+
+export const sourceProcessingRunsRelations = relations(source_processing_runs, ({ one }) => ({
+  source: one(sources, {
+    fields: [source_processing_runs.source_id],
+    references: [sources.id],
+  }),
 }));
 
 export const sourceContentsRelations = relations(source_contents, ({ one }) => ({

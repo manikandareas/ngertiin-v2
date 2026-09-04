@@ -12,6 +12,7 @@ export class InfrastructureService implements OnModuleInit, OnApplicationShutdow
   readonly database: DatabaseClient;
   readonly storage: S3StorageService;
   readonly redis: Redis;
+  readonly sourceProcessingQueue: Queue;
   readonly moduleGenerationQueue: Queue;
 
   constructor(@Inject(WORKER_ENV) environment: WorkerEnvironment) {
@@ -30,6 +31,10 @@ export class InfrastructureService implements OnModuleInit, OnApplicationShutdow
       retryStrategy: (attempt) => Math.min(attempt * 200, 2_000),
     });
     this.redis.on("error", () => undefined);
+    this.sourceProcessingQueue = new Queue(QUEUE_NAMES.sourceProcessing, {
+      connection: this.redis,
+    });
+    this.sourceProcessingQueue.on("error", () => undefined);
     this.moduleGenerationQueue = new Queue(QUEUE_NAMES.moduleGeneration, {
       connection: this.redis,
     });
@@ -47,6 +52,7 @@ export class InfrastructureService implements OnModuleInit, OnApplicationShutdow
           this.database.check(),
           this.redis.ping(),
           this.storage.check(),
+          this.sourceProcessingQueue.waitUntilReady(),
           this.moduleGenerationQueue.waitUntilReady(),
         ]),
         startupTimeout,
@@ -63,6 +69,7 @@ export class InfrastructureService implements OnModuleInit, OnApplicationShutdow
   }
 
   private async close(): Promise<void> {
+    await this.sourceProcessingQueue.close();
     await this.moduleGenerationQueue.close();
     await this.database.close();
     if (this.redis.status === "ready") {

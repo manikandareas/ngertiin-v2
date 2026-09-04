@@ -71,6 +71,15 @@ function definitionFor(exception: unknown): ProblemDefinition {
         detail: "The requested resource was not found.",
       };
     }
+    if (status === 413) {
+      return {
+        status,
+        code: "SOURCE_TOO_LARGE",
+        type: "source-too-large",
+        title: "Source is too large",
+        detail: "The PDF must not exceed 25 MiB.",
+      };
+    }
   }
 
   return {

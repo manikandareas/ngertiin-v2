@@ -37,6 +37,10 @@ const moduleCursorSchema = z
   })
   .strict();
 
+const sourceMetadataSchema = z
+  .object({ page_count: z.number().int().nonnegative().optional() })
+  .loose();
+
 const fallbackGenerationFailure: GenerationFailure = {
   code: "GENERATION_FAILED",
   message: "Module generation could not be completed.",
@@ -113,7 +117,12 @@ export class ModulesService {
       async (transaction) => {
         const requestedSourceIds = input.sources.map((source) => source.sourceId);
         const ownedSources = await transaction
-          .select({ id: sources.id, type: sources.type, status: sources.status })
+          .select({
+            id: sources.id,
+            type: sources.type,
+            status: sources.status,
+            metadata: sources.metadata,
+          })
           .from(sources)
           .where(and(eq(sources.user_id, userId), inArray(sources.id, requestedSourceIds)))
           .orderBy(asc(sources.id))
@@ -155,28 +164,39 @@ export class ModulesService {
               "Every selected Source must be ready before generation starts.",
             );
           }
-          if (source.type !== "text") {
-            throw new ProductError(
-              409,
-              "GENERATION_NOT_AVAILABLE",
-              "Generation is not available",
-              "Only ready text Sources can be generated in this milestone.",
-            );
-          }
           if (selected.selector) {
-            throw new ProductError(
-              422,
-              "VALIDATION_ERROR",
-              "Request validation failed",
-              "Selectors cannot be used with text Sources.",
-              [
-                {
-                  path: `sources.${index}.selector`,
-                  code: "selector_not_allowed",
-                  message: "Selectors cannot be used with text Sources.",
-                },
-              ],
-            );
+            const metadata = sourceMetadataSchema.safeParse(source.metadata);
+            const pageCount = metadata.success ? metadata.data.page_count : undefined;
+            if (source.type !== "pdf") {
+              throw new ProductError(
+                422,
+                "VALIDATION_ERROR",
+                "Request validation failed",
+                "Page selectors can only be used with PDF Sources.",
+                [
+                  {
+                    path: `sources.${index}.selector`,
+                    code: "selector_not_allowed",
+                    message: "Page selectors can only be used with PDF Sources.",
+                  },
+                ],
+              );
+            }
+            if (pageCount === undefined || selected.selector.pages.to > pageCount) {
+              throw new ProductError(
+                422,
+                "VALIDATION_ERROR",
+                "Request validation failed",
+                "The selected page range exceeds the PDF page count.",
+                [
+                  {
+                    path: `sources.${index}.selector.pages.to`,
+                    code: "page_range_out_of_bounds",
+                    message: `Page range must end at or before page ${pageCount ?? 0}.`,
+                  },
+                ],
+              );
+            }
           }
         }
 

@@ -5,3 +5,7 @@ export {
   type ModuleGenerationStep,
   moduleGenerationJobSchema,
 } from "./module-generation.js";
+export {
+  type SourceProcessingJob,
+  sourceProcessingJobSchema,
+} from "./source-processing.js";

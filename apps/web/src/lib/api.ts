@@ -1,8 +1,12 @@
 import {
+  type CreatePdfSourceFieldsInput,
+  createPdfSourceResponseSchema,
   type CreateModuleBodyInput,
   createModuleResponseSchema,
   type CreateTextSourceBodyInput,
   createTextSourceResponseSchema,
+  type CreateUrlSourceBodyInput,
+  createUrlSourceResponseSchema,
   type CurrentUser,
   type GenerationEvent,
   generationEventSchema,
@@ -23,6 +27,7 @@ import {
   patchCurrentUserResponseSchema,
   problemDetailSchema,
   retryGenerationResponseSchema,
+  retrySourceResponseSchema,
   type Source,
 } from "@ngertiin/contracts/api";
 import { webEnvironment } from "../config";
@@ -61,7 +66,7 @@ async function requestApi<Value>(
 
   const headers = new Headers(init?.headers);
   headers.set("Authorization", `Bearer ${token}`);
-  if (init?.body !== undefined) {
+  if (init?.body !== undefined && !(init.body instanceof FormData)) {
     headers.set("Content-Type", "application/json");
   }
 
@@ -116,6 +121,36 @@ export async function createTextSource(
   return response.data;
 }
 
+export async function createUrlSource(
+  tokenResolver: TokenResolver,
+  input: CreateUrlSourceBodyInput,
+  idempotencyKey: string,
+): Promise<Source> {
+  const response = await requestApi("/sources/url", tokenResolver, createUrlSourceResponseSchema, {
+    method: "POST",
+    headers: { "Idempotency-Key": idempotencyKey },
+    body: JSON.stringify(input),
+  });
+  return response.data;
+}
+
+export async function createPdfSource(
+  tokenResolver: TokenResolver,
+  fields: CreatePdfSourceFieldsInput,
+  file: File,
+  idempotencyKey: string,
+): Promise<Source> {
+  const body = new FormData();
+  if (fields.title !== undefined) body.set("title", fields.title);
+  body.set("file", file);
+  const response = await requestApi("/sources/pdf", tokenResolver, createPdfSourceResponseSchema, {
+    method: "POST",
+    headers: { "Idempotency-Key": idempotencyKey },
+    body,
+  });
+  return response.data;
+}
+
 export async function listSources(
   tokenResolver: TokenResolver,
   query: ListSourcesQueryInput = {},
@@ -142,6 +177,20 @@ export async function getSource(tokenResolver: TokenResolver, sourceId: string):
     `/sources/${encodeURIComponent(sourceId)}`,
     tokenResolver,
     getSourceResponseSchema,
+  );
+  return response.data;
+}
+
+export async function retrySource(
+  tokenResolver: TokenResolver,
+  sourceId: string,
+  idempotencyKey: string,
+): Promise<Source> {
+  const response = await requestApi(
+    `/sources/${encodeURIComponent(sourceId)}/retry`,
+    tokenResolver,
+    retrySourceResponseSchema,
+    { method: "POST", headers: { "Idempotency-Key": idempotencyKey } },
   );
   return response.data;
 }

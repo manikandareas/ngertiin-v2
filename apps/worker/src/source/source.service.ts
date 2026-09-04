@@ -1,13 +1,26 @@
 import { createHash } from "node:crypto";
 import { Inject, Injectable } from "@nestjs/common";
 import type { SourceRole } from "@ngertiin/contracts/api";
-import { generation_request_sources, generation_requests, sources } from "@ngertiin/database";
-import { and, asc, eq } from "drizzle-orm";
+import {
+  generation_request_sources,
+  generation_requests,
+  source_contents,
+  sources,
+} from "@ngertiin/database";
+import { and, asc, eq, inArray } from "drizzle-orm";
+import { z } from "zod";
 import { InfrastructureService } from "../infrastructure/infrastructure.service.js";
 import { SourceError } from "./source.error.js";
 
 const MAX_CHUNK_CODE_POINTS = 20_000;
 const CHUNK_OVERLAP_CODE_POINTS = 500;
+const sourceSelectorSchema = z
+  .object({
+    pages: z
+      .object({ from: z.number().int().positive(), to: z.number().int().positive() })
+      .strict(),
+  })
+  .strict();
 
 export interface SourceContext {
   readonly id: string;
@@ -70,27 +83,78 @@ export class SourceService {
       .orderBy(asc(generation_request_sources.priority), asc(sources.id));
     if (rows.length === 0) throw new SourceError("context_missing");
 
-    for (const row of rows) {
-      if (
-        row.userId !== input.userId ||
-        row.type !== "text" ||
-        row.status !== "ready" ||
-        row.selector !== null ||
-        !row.text?.trim()
-      ) {
-        throw new SourceError("context_invalid");
-      }
+    const contentRows = await this.infrastructure.database.db
+      .select({
+        sourceId: source_contents.source_id,
+        type: source_contents.type,
+        position: source_contents.position,
+        pageNumber: source_contents.page_number,
+        content: source_contents.content,
+      })
+      .from(source_contents)
+      .where(
+        inArray(
+          source_contents.source_id,
+          rows.map((row) => row.id),
+        ),
+      )
+      .orderBy(asc(source_contents.source_id), asc(source_contents.position));
+    const contentBySource = new Map<string, typeof contentRows>();
+    for (const content of contentRows) {
+      const grouped = contentBySource.get(content.sourceId) ?? [];
+      grouped.push(content);
+      contentBySource.set(content.sourceId, grouped);
     }
 
-    return this.chunkSources(
-      rows.map((row) => ({
+    const contexts: SourceContext[] = [];
+    for (const row of rows) {
+      if (row.userId !== input.userId || row.status !== "ready") {
+        throw new SourceError("context_invalid");
+      }
+
+      let text: string;
+      if (row.type === "text") {
+        if (row.selector !== null || !row.text?.trim()) {
+          throw new SourceError("context_invalid");
+        }
+        text = row.text;
+      } else if (row.type === "url") {
+        if (row.selector !== null) throw new SourceError("context_invalid");
+        const contents = contentBySource.get(row.id) ?? [];
+        if (contents.length === 0 || contents.some((content) => content.type !== "content")) {
+          throw new SourceError("context_invalid");
+        }
+        text = contents.map((content) => content.content).join("\n\n");
+      } else {
+        const parsedSelector =
+          row.selector === null ? null : sourceSelectorSchema.safeParse(row.selector);
+        if (parsedSelector !== null && !parsedSelector.success) {
+          throw new SourceError("context_invalid");
+        }
+        const contents = (contentBySource.get(row.id) ?? []).filter((content) => {
+          if (content.type !== "page" || content.pageNumber === null) return false;
+          if (parsedSelector === null) return true;
+          return (
+            content.pageNumber >= parsedSelector.data.pages.from &&
+            content.pageNumber <= parsedSelector.data.pages.to
+          );
+        });
+        if (contents.length === 0) throw new SourceError("context_invalid");
+        text = contents
+          .map((content) => `## Page ${content.pageNumber}\n\n${content.content}`)
+          .join("\n\n");
+      }
+      if (!text.trim()) throw new SourceError("context_invalid");
+      contexts.push({
         id: row.id,
         title: row.title,
         role: row.role,
         priority: row.priority,
-        text: row.text as string,
-      })),
-    );
+        text,
+      });
+    }
+
+    return this.chunkSources(contexts);
   }
 
   private chunkSources(sourceContexts: SourceContext[]): SourceChunk[] {

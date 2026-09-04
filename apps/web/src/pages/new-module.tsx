@@ -1,8 +1,11 @@
 import { useAuth } from "@clerk/react";
 import {
   type CreateModuleBodyInput,
+  type CreatePdfSourceFieldsInput,
   createModuleBodySchema,
   type CreateTextSourceBodyInput,
+  type CreateUrlSourceBodyInput,
+  MAX_PDF_SIZE_BYTES,
   type Source,
 } from "@ngertiin/contracts/api";
 import { useQueryClient } from "@tanstack/react-query";
@@ -12,8 +15,12 @@ import {
   ChevronDown,
   ChevronUp,
   FileText,
+  Link,
+  LoaderCircle,
   Plus,
+  RefreshCw,
   Sparkles,
+  Upload,
 } from "lucide-react";
 import { type FormEvent, type ReactNode, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -22,13 +29,24 @@ import { Button } from "../components/ui/button";
 import { useCreateModule } from "../features/modules/api/use-modules";
 import {
   sourcesQueryRootKey,
+  useCreatePdfSource,
   useCreateTextSource,
+  useCreateUrlSource,
+  useRetrySource,
   useSources,
 } from "../features/sources/api/use-sources";
 import { ApiProblemError } from "../lib/api";
 
-type RetriableSourceCommand = { key: string; title: string; text: string };
-type SelectedSource = { sourceId: string; role: "primary" | "reference" | "supplementary" };
+type SourceInputKind = "text" | "url" | "pdf";
+type RetriableSourceCommand =
+  | { kind: "text"; key: string; title: string; text: string }
+  | { kind: "url"; key: string; title: string; url: string }
+  | { kind: "pdf"; key: string; title: string; file: File };
+type SelectedSource = {
+  sourceId: string;
+  role: "primary" | "reference" | "supplementary";
+  selector?: { pages: { from: number; to: number } };
+};
 type RetriableModuleCommand = { key: string; fingerprint: string; input: CreateModuleBodyInput };
 type SourceOptionProps = {
   source: Source;
@@ -38,6 +56,10 @@ type SourceOptionProps = {
   onToggle: () => void;
   onRoleChange: (role: SelectedSource["role"]) => void;
   onMove: (direction: -1 | 1) => void;
+  onPageRangeChange: (range: { from: number; to: number } | undefined) => void;
+  onRetry: () => void;
+  retryError: string | null;
+  retrying: boolean;
 };
 
 const dateFormatter = new Intl.DateTimeFormat("id-ID", {
@@ -50,26 +72,22 @@ function fieldMessage(error: unknown, path: string): string | undefined {
   return error.problem.errors?.find((fieldError) => fieldError.path === path)?.message;
 }
 
-function sourceTypeLabel(source: Source): string {
-  if (source.type === "text") return "Teks";
-  if (source.type === "pdf") return "PDF";
-  return "URL";
-}
+const sourceTypeLabels: Record<Source["type"], string> = {
+  text: "Teks",
+  pdf: "PDF",
+  url: "URL",
+};
+
+const sourceStatusLabels: Record<Source["status"], string> = {
+  pending: "Menunggu diproses",
+  processing: "Sedang diproses",
+  ready: "Siap dipakai",
+  failed: "Gagal diproses",
+};
 
 function mutationErrorMessage(error: unknown, isError: boolean, fallback: string): string | null {
   if (error instanceof ApiProblemError) return error.problem.detail;
   return isError ? fallback : null;
-}
-
-function submitLabel(
-  isPending: boolean,
-  isError: boolean,
-  pendingLabel: string,
-  idleLabel: string,
-): string {
-  if (isPending) return pendingLabel;
-  if (isError) return "Coba lagi";
-  return idleLabel;
 }
 
 function SourceOption({
@@ -80,8 +98,13 @@ function SourceOption({
   onToggle,
   onRoleChange,
   onMove,
+  onPageRangeChange,
+  onRetry,
+  retryError,
+  retrying,
 }: SourceOptionProps) {
-  const selectable = source.type === "text" && source.status === "ready";
+  const selectable = source.status === "ready";
+  const pageCount = source.pageCount ?? 1;
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-4 transition-colors hover:border-teal-300">
       <label className={selectable ? "flex cursor-pointer gap-4" : "flex cursor-not-allowed gap-4"}>
@@ -100,14 +123,45 @@ function SourceOption({
             {source.title ?? "Materi tanpa judul"}
           </span>
           <span className="mt-1 block text-sm text-slate-500">
-            {sourceTypeLabel(source)} · {source.status} ·{" "}
+            {sourceTypeLabels[source.type]} · {sourceStatusLabels[source.status]} ·{" "}
             {dateFormatter.format(new Date(source.createdAt))}
           </span>
-          {!selectable ? (
-            <span className="mt-1 block text-xs text-amber-700">Belum tersedia untuk M2.</span>
+          {source.type === "pdf" && source.pageCount ? (
+            <span className="mt-1 block text-xs text-slate-500">{source.pageCount} halaman</span>
+          ) : null}
+          {source.status === "pending" || source.status === "processing" ? (
+            <span className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-amber-700">
+              <LoaderCircle aria-hidden="true" className="size-3.5 animate-spin" />
+              Status diperbarui otomatis
+            </span>
           ) : null}
         </span>
       </label>
+      {source.status === "failed" && source.failure ? (
+        <div className="mt-3 rounded-xl bg-red-50 p-3 text-sm text-red-800">
+          <p>{source.failure.message}</p>
+          {source.failure.retryable ? (
+            <Button
+              className="mt-3 gap-2"
+              disabled={retrying}
+              onClick={onRetry}
+              type="button"
+              variant="outline"
+            >
+              <RefreshCw
+                aria-hidden="true"
+                className={retrying ? "size-4 animate-spin" : "size-4"}
+              />
+              {retrying ? "Mengirim…" : "Coba proses lagi"}
+            </Button>
+          ) : null}
+          {retryError ? (
+            <p className="mt-2 text-xs" role="alert">
+              {retryError}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
       {selection ? (
         <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-slate-100 pt-4">
           <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -145,6 +199,65 @@ function SourceOption({
               <ChevronDown aria-hidden="true" className="size-4" />
             </Button>
           </div>
+          {source.type === "pdf" ? (
+            <div className="w-full border-t border-slate-100 pt-4">
+              <label className="flex items-center gap-2 text-sm font-medium">
+                <input
+                  checked={selection.selector !== undefined}
+                  onChange={(event) =>
+                    onPageRangeChange(event.target.checked ? { from: 1, to: pageCount } : undefined)
+                  }
+                  type="checkbox"
+                />
+                Gunakan rentang halaman tertentu
+              </label>
+              {selection.selector ? (
+                <div className="mt-3 flex items-center gap-3">
+                  <label
+                    className="text-xs font-semibold text-slate-600"
+                    htmlFor={`from-${source.id}`}
+                  >
+                    Dari
+                  </label>
+                  <input
+                    className="w-20 rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                    id={`from-${source.id}`}
+                    max={pageCount}
+                    min={1}
+                    onChange={(event) =>
+                      onPageRangeChange({
+                        from: Number(event.target.value),
+                        to: selection.selector?.pages.to ?? pageCount,
+                      })
+                    }
+                    type="number"
+                    value={selection.selector.pages.from}
+                  />
+                  <label
+                    className="text-xs font-semibold text-slate-600"
+                    htmlFor={`to-${source.id}`}
+                  >
+                    Sampai
+                  </label>
+                  <input
+                    className="w-20 rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                    id={`to-${source.id}`}
+                    max={pageCount}
+                    min={1}
+                    onChange={(event) =>
+                      onPageRangeChange({
+                        from: selection.selector?.pages.from ?? 1,
+                        to: Number(event.target.value),
+                      })
+                    }
+                    type="number"
+                    value={selection.selector.pages.to}
+                  />
+                  <span className="text-xs text-slate-500">dari {pageCount}</span>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       ) : null}
     </div>
@@ -156,22 +269,37 @@ export default function NewModulePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const sourcesQuery = useSources({ limit: 20 });
-  const createSource = useCreateTextSource();
+  const createTextSource = useCreateTextSource();
+  const createUrlSource = useCreateUrlSource();
+  const createPdfSource = useCreatePdfSource();
+  const retrySource = useRetrySource();
   const createModule = useCreateModule();
+  const [sourceInputKind, setSourceInputKind] = useState<SourceInputKind>("text");
   const [title, setTitle] = useState("");
   const [text, setText] = useState("");
+  const [url, setUrl] = useState("");
+  const [pdf, setPdf] = useState<File | null>(null);
+  const [pdfInputVersion, setPdfInputVersion] = useState(0);
   const [instruction, setInstruction] = useState("");
   const [sourceRetry, setSourceRetry] = useState<RetriableSourceCommand | null>(null);
+  const [processingRetryKeys, setProcessingRetryKeys] = useState<Record<string, string>>({});
   const [moduleRetry, setModuleRetry] = useState<RetriableModuleCommand | null>(null);
   const [moduleValidationError, setModuleValidationError] = useState<string | null>(null);
   const [selectedSources, setSelectedSources] = useState<SelectedSource[]>([]);
   const sources = sourcesQuery.data?.pages.flatMap((page) => page.data) ?? [];
   const selectedIndex = new Map(selectedSources.map((source, index) => [source.sourceId, index]));
-  const titleError = fieldMessage(createSource.error, "title");
-  const textError = fieldMessage(createSource.error, "text");
+  const activeSourceMutation = {
+    text: createTextSource,
+    url: createUrlSource,
+    pdf: createPdfSource,
+  }[sourceInputKind];
+  const titleError = fieldMessage(activeSourceMutation.error, "title");
+  const textError = fieldMessage(createTextSource.error, "text");
+  const urlError = fieldMessage(createUrlSource.error, "url");
+  const pdfError = fieldMessage(createPdfSource.error, "file");
   const sourceError = mutationErrorMessage(
-    createSource.error,
-    createSource.isError,
+    activeSourceMutation.error,
+    activeSourceMutation.isError,
     "Source belum dapat dibuat. Periksa koneksi lalu coba lagi.",
   );
   const moduleError = mutationErrorMessage(
@@ -179,18 +307,26 @@ export default function NewModulePage() {
     createModule.isError,
     "Module belum dapat dibuat. Periksa koneksi lalu coba lagi.",
   );
-  const sourceSubmitLabel = submitLabel(
-    createSource.isPending,
-    createSource.isError,
-    "Menyimpan…",
-    "Simpan Source",
-  );
-  const moduleSubmitLabel = submitLabel(
-    createModule.isPending,
-    createModule.isError,
-    "Mengirim…",
-    "Generate Module",
-  );
+  let sourceSubmitLabel = sourceInputKind === "text" ? "Simpan Source" : "Tambahkan Source";
+  if (activeSourceMutation.isPending) {
+    sourceSubmitLabel = sourceInputKind === "text" ? "Menyimpan…" : "Mengunggah…";
+  } else if (activeSourceMutation.isError) {
+    sourceSubmitLabel = "Coba lagi";
+  }
+
+  let moduleSubmitLabel = "Generate Module";
+  if (createModule.isPending) moduleSubmitLabel = "Mengirim…";
+  else if (createModule.isError) moduleSubmitLabel = "Coba lagi";
+
+  let pdfMessage = "Maksimum 25 MiB. PDF diproses per halaman.";
+  let pdfMessageClass = "mt-2 text-sm text-slate-500";
+  if (pdfError) {
+    pdfMessage = pdfError;
+    pdfMessageClass = "mt-2 text-sm text-red-700";
+  } else if (pdf && pdf.size > MAX_PDF_SIZE_BYTES) {
+    pdfMessage = "File melebihi batas 25 MiB.";
+    pdfMessageClass = "mt-2 text-sm text-red-700";
+  }
 
   function invalidateModuleCommand(): void {
     setModuleRetry(null);
@@ -198,33 +334,99 @@ export default function NewModulePage() {
     if (createModule.isError || createModule.isSuccess) createModule.reset();
   }
 
+  function resetSourceMutations(): void {
+    createTextSource.reset();
+    createUrlSource.reset();
+    createPdfSource.reset();
+  }
+
+  function changeSourceInputKind(kind: SourceInputKind): void {
+    setSourceInputKind(kind);
+    setSourceRetry(null);
+    resetSourceMutations();
+  }
+
   async function handleSourceSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
-    const canRetry =
-      sourceRetry !== null && sourceRetry.title === title && sourceRetry.text === text;
-    const command = canRetry ? sourceRetry : { key: crypto.randomUUID(), title, text };
+    let command: RetriableSourceCommand;
+    if (sourceInputKind === "text") {
+      command =
+        sourceRetry?.kind === "text" && sourceRetry.title === title && sourceRetry.text === text
+          ? sourceRetry
+          : { kind: "text", key: crypto.randomUUID(), title, text };
+    } else if (sourceInputKind === "url") {
+      command =
+        sourceRetry?.kind === "url" && sourceRetry.title === title && sourceRetry.url === url
+          ? sourceRetry
+          : { kind: "url", key: crypto.randomUUID(), title, url };
+    } else {
+      if (!pdf) return;
+      command =
+        sourceRetry?.kind === "pdf" && sourceRetry.title === title && sourceRetry.file === pdf
+          ? sourceRetry
+          : { kind: "pdf", key: crypto.randomUUID(), title, file: pdf };
+    }
     setSourceRetry(command);
-    const input: CreateTextSourceBodyInput = {
-      ...(command.title.length > 0 ? { title: command.title } : {}),
-      text: command.text,
-    };
     try {
-      const source = await createSource.mutateAsync({ input, key: command.key });
-      setSelectedSources((current) =>
-        current.some((selected) => selected.sourceId === source.id)
-          ? current
-          : [
-              ...current,
-              { sourceId: source.id, role: current.length === 0 ? "primary" : "reference" },
-            ],
-      );
+      let source: Source;
+      if (command.kind === "text") {
+        const input: CreateTextSourceBodyInput = {
+          ...(command.title.length > 0 ? { title: command.title } : {}),
+          text: command.text,
+        };
+        source = await createTextSource.mutateAsync({ input, key: command.key });
+      } else if (command.kind === "url") {
+        const input: CreateUrlSourceBodyInput = {
+          ...(command.title.length > 0 ? { title: command.title } : {}),
+          url: command.url,
+        };
+        source = await createUrlSource.mutateAsync({ input, key: command.key });
+      } else {
+        const fields: CreatePdfSourceFieldsInput = {
+          ...(command.title.length > 0 ? { title: command.title } : {}),
+        };
+        source = await createPdfSource.mutateAsync({
+          fields,
+          file: command.file,
+          key: command.key,
+        });
+      }
+      if (source.status === "ready") {
+        setSelectedSources((current) =>
+          current.some((selected) => selected.sourceId === source.id)
+            ? current
+            : [
+                ...current,
+                { sourceId: source.id, role: current.length === 0 ? "primary" : "reference" },
+              ],
+        );
+      }
       setTitle("");
       setText("");
+      setUrl("");
+      setPdf(null);
+      setPdfInputVersion((current) => current + 1);
       setSourceRetry(null);
       invalidateModuleCommand();
       await queryClient.invalidateQueries({ queryKey: sourcesQueryRootKey(userId) });
     } catch {
       // Mutation state renders the safe error and preserves the command key.
+    }
+  }
+
+  async function handleProcessingRetry(sourceId: string): Promise<void> {
+    const key = processingRetryKeys[sourceId] ?? crypto.randomUUID();
+    setProcessingRetryKeys((current) => ({ ...current, [sourceId]: key }));
+    try {
+      await retrySource.mutateAsync({ sourceId, key });
+      setProcessingRetryKeys((current) => {
+        const next = { ...current };
+        delete next[sourceId];
+        return next;
+      });
+      await queryClient.invalidateQueries({ queryKey: sourcesQueryRootKey(userId) });
+    } catch {
+      // The safe failure remains visible and the same idempotency key is reused.
     }
   }
 
@@ -240,6 +442,19 @@ export default function NewModulePage() {
   function updateRole(sourceId: string, role: SelectedSource["role"]): void {
     setSelectedSources((current) =>
       current.map((source) => (source.sourceId === sourceId ? { ...source, role } : source)),
+    );
+    invalidateModuleCommand();
+  }
+
+  function updatePageRange(
+    sourceId: string,
+    range: { from: number; to: number } | undefined,
+  ): void {
+    setSelectedSources((current) =>
+      current.map((source) => {
+        if (source.sourceId !== sourceId) return source;
+        return { ...source, selector: range ? { pages: range } : undefined };
+      }),
     );
     invalidateModuleCommand();
   }
@@ -313,11 +528,23 @@ export default function NewModulePage() {
               index={index}
               key={source.id}
               onMove={(direction) => moveSource(source.id, direction)}
+              onPageRangeChange={(range) => updatePageRange(source.id, range)}
+              onRetry={() => handleProcessingRetry(source.id)}
               onRoleChange={(role) => updateRole(source.id, role)}
               onToggle={() => toggleSource(source.id)}
               selection={selectedSources[index]}
               source={source}
               total={selectedSources.length}
+              retryError={
+                retrySource.isError && retrySource.variables?.sourceId === source.id
+                  ? mutationErrorMessage(
+                      retrySource.error,
+                      true,
+                      "Retry belum dapat dikirim. Coba lagi.",
+                    )
+                  : null
+              }
+              retrying={retrySource.isPending && retrySource.variables?.sourceId === source.id}
             />
           );
         })}
@@ -335,7 +562,7 @@ export default function NewModulePage() {
           Mulai dari materi yang ingin kamu pahami.
         </h1>
         <p className="mt-4 max-w-2xl text-lg leading-8 text-slate-600">
-          Tempel materi sekali, lalu atur Source utama dan urutan prioritas untuk Module.
+          Tambahkan teks, tautan publik, atau PDF, lalu atur Source utama dan prioritas Module.
         </p>
 
         <section className="mt-10 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
@@ -344,9 +571,32 @@ export default function NewModulePage() {
               <Plus aria-hidden="true" className="size-5" />
             </span>
             <div>
-              <h2 className="text-xl font-bold">Tambah materi teks</h2>
-              <p className="text-sm text-slate-500">Isi materi tidak akan ditampilkan kembali.</p>
+              <h2 className="text-xl font-bold">Tambah materi</h2>
+              <p className="text-sm text-slate-500">Pilih satu format Source untuk ditambahkan.</p>
             </div>
+          </div>
+          <div className="mt-6 grid grid-cols-3 gap-2 rounded-2xl bg-slate-100 p-1.5">
+            {(
+              [
+                { kind: "text", label: "Teks", icon: FileText },
+                { kind: "url", label: "URL", icon: Link },
+                { kind: "pdf", label: "PDF", icon: Upload },
+              ] as const
+            ).map(({ kind, label, icon: Icon }) => (
+              <button
+                className={
+                  sourceInputKind === kind
+                    ? "flex items-center justify-center gap-2 rounded-xl bg-white px-3 py-2.5 text-sm font-semibold text-slate-950 shadow-sm"
+                    : "flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-600 hover:text-slate-950"
+                }
+                key={kind}
+                onClick={() => changeSourceInputKind(kind)}
+                type="button"
+              >
+                <Icon aria-hidden="true" className="size-4" />
+                {label}
+              </button>
+            ))}
           </div>
           <form className="mt-8 space-y-6" onSubmit={handleSourceSubmit}>
             <div>
@@ -355,46 +605,103 @@ export default function NewModulePage() {
               </label>
               <input
                 className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none focus:border-teal-600"
-                disabled={createSource.isPending}
+                disabled={activeSourceMutation.isPending}
                 id="source-title"
                 onChange={(event) => {
                   setTitle(event.target.value);
                   setSourceRetry(null);
-                  createSource.reset();
+                  resetSourceMutations();
                 }}
                 placeholder="Contoh: Catatan sistem pencernaan"
                 value={title}
               />
               {titleError ? <p className="mt-2 text-sm text-red-700">{titleError}</p> : null}
             </div>
-            <div>
-              <label className="text-sm font-semibold" htmlFor="source-text">
-                Materi belajar
-              </label>
-              <textarea
-                className="mt-2 min-h-56 w-full resize-y rounded-xl border border-slate-300 bg-white px-4 py-3 leading-7 outline-none focus:border-teal-600"
-                disabled={createSource.isPending}
-                id="source-text"
-                onChange={(event) => {
-                  setText(event.target.value);
-                  setSourceRetry(null);
-                  createSource.reset();
-                }}
-                placeholder="Tempel catatan, artikel, atau materi belajar di sini…"
-                value={text}
-              />
-              {textError ? (
-                <p className="mt-2 text-sm text-red-700">{textError}</p>
-              ) : (
-                <p className="mt-2 text-sm text-slate-500">Maksimum 100.000 karakter Unicode.</p>
-              )}
-            </div>
-            {sourceError && !titleError && !textError ? (
+            {sourceInputKind === "text" ? (
+              <div>
+                <label className="text-sm font-semibold" htmlFor="source-text">
+                  Materi belajar
+                </label>
+                <textarea
+                  className="mt-2 min-h-56 w-full resize-y rounded-xl border border-slate-300 bg-white px-4 py-3 leading-7 outline-none focus:border-teal-600"
+                  disabled={createTextSource.isPending}
+                  id="source-text"
+                  onChange={(event) => {
+                    setText(event.target.value);
+                    setSourceRetry(null);
+                    createTextSource.reset();
+                  }}
+                  placeholder="Tempel catatan, artikel, atau materi belajar di sini…"
+                  value={text}
+                />
+                {textError ? (
+                  <p className="mt-2 text-sm text-red-700">{textError}</p>
+                ) : (
+                  <p className="mt-2 text-sm text-slate-500">Maksimum 100.000 karakter Unicode.</p>
+                )}
+              </div>
+            ) : null}
+            {sourceInputKind === "url" ? (
+              <div>
+                <label className="text-sm font-semibold" htmlFor="source-url">
+                  URL halaman publik
+                </label>
+                <input
+                  className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none focus:border-teal-600"
+                  disabled={createUrlSource.isPending}
+                  id="source-url"
+                  onChange={(event) => {
+                    setUrl(event.target.value);
+                    setSourceRetry(null);
+                    createUrlSource.reset();
+                  }}
+                  placeholder="https://contoh.id/artikel"
+                  type="url"
+                  value={url}
+                />
+                {urlError ? (
+                  <p className="mt-2 text-sm text-red-700">{urlError}</p>
+                ) : (
+                  <p className="mt-2 text-sm text-slate-500">
+                    Hanya halaman HTTP/HTTPS publik tanpa login.
+                  </p>
+                )}
+              </div>
+            ) : null}
+            {sourceInputKind === "pdf" ? (
+              <div>
+                <label className="text-sm font-semibold" htmlFor="source-pdf">
+                  File PDF
+                </label>
+                <input
+                  accept="application/pdf,.pdf"
+                  className="mt-2 block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm file:mr-4 file:rounded-full file:border-0 file:bg-slate-100 file:px-4 file:py-2 file:font-semibold"
+                  disabled={createPdfSource.isPending}
+                  id="source-pdf"
+                  key={pdfInputVersion}
+                  onChange={(event) => {
+                    setPdf(event.target.files?.[0] ?? null);
+                    setSourceRetry(null);
+                    createPdfSource.reset();
+                  }}
+                  required
+                  type="file"
+                />
+                <p className={pdfMessageClass}>{pdfMessage}</p>
+              </div>
+            ) : null}
+            {sourceError && !titleError && !textError && !urlError && !pdfError ? (
               <p className="text-sm text-red-700" role="alert">
                 {sourceError}
               </p>
             ) : null}
-            <Button disabled={createSource.isPending} type="submit">
+            <Button
+              disabled={
+                activeSourceMutation.isPending ||
+                (sourceInputKind === "pdf" && (!pdf || pdf.size > MAX_PDF_SIZE_BYTES))
+              }
+              type="submit"
+            >
               {sourceSubmitLabel}
             </Button>
           </form>

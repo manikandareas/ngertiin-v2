@@ -29,6 +29,13 @@
       "when": 1788497133393,
       "tag": "0003_lean_namorita",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1788512812087,
+      "tag": "0004_chubby_wendell_vaughn",
+      "breakpoints": true
     }
   ]
 }
