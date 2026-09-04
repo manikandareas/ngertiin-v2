@@ -1,6 +1,6 @@
-import { CheckCircle2, CircleDashed, RotateCcw, TriangleAlert } from "lucide-react";
+import { ArrowRight, CheckCircle2, CircleDashed, RotateCcw, TriangleAlert } from "lucide-react";
 import { type ReactNode, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { AppShell } from "../components/app-shell";
 import { Button } from "../components/ui/button";
 import {
@@ -116,9 +116,16 @@ export default function ModuleStatusPage() {
             </dd>
           </div>
         </dl>
-        <p className="mt-7 rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-600">
-          Journey shell sudah siap. Konten belajar dan aksi node akan diaktifkan pada M4.
-        </p>
+        <Button asChild className="mt-7">
+          <Link to={`/modules/${module.id}/journey`}>
+            {module.nextAction.type === "resume_core_node"
+              ? "Lanjutkan Journey"
+              : module.nextAction.type === "module_completed"
+                ? "Review Journey"
+                : "Mulai Journey"}
+            <ArrowRight aria-hidden="true" className="ml-2 size-4" />
+          </Link>
+        </Button>
       </section>
     );
   } else {

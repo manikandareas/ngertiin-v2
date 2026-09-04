@@ -609,7 +609,14 @@ export const xp_events = pgTable(
     reference_id: uuid(),
     created_at: createdAt(),
   },
-  (table) => [index("xp_events_user_created_idx").on(table.user_id, table.created_at.desc())],
+  (table) => [
+    index("xp_events_user_created_idx").on(table.user_id, table.created_at.desc()),
+    uniqueIndex("xp_events_user_reason_reference_idx").on(
+      table.user_id,
+      table.reason,
+      table.reference_id,
+    ),
+  ],
 );
 
 export const usersRelations = relations(users, ({ many, one }) => ({

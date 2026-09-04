@@ -6,6 +6,8 @@ import { AuthenticatedRoute } from "./authenticated-route";
 const DashboardPage = lazy(() => import("../pages/dashboard"));
 const NewModulePage = lazy(() => import("../pages/new-module"));
 const ModuleStatusPage = lazy(() => import("../pages/module-status"));
+const ModuleJourneyPage = lazy(() => import("../pages/module-journey"));
+const ModuleNodePage = lazy(() => import("../pages/module-node"));
 const ProfilePage = lazy(() => import("../pages/profile"));
 const SignInPage = lazy(() => import("../pages/sign-in"));
 
@@ -32,6 +34,22 @@ export function AppRoutes() {
           element={
             <AuthenticatedRoute>
               <NewModulePage />
+            </AuthenticatedRoute>
+          }
+        />
+        <Route
+          path="/modules/:moduleId/journey"
+          element={
+            <AuthenticatedRoute>
+              <ModuleJourneyPage />
+            </AuthenticatedRoute>
+          }
+        />
+        <Route
+          path="/modules/:moduleId/nodes/:nodeId"
+          element={
+            <AuthenticatedRoute>
+              <ModuleNodePage />
             </AuthenticatedRoute>
           }
         />

@@ -3,12 +3,17 @@ import type { CreateModuleBodyInput, GenerationStatus } from "@ngertiin/contract
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import {
+  completeNode,
   createModule,
   getGeneration,
+  getJourney,
   getModule,
+  getNode,
   retryGeneration,
   streamGenerationEvents,
+  startNode,
 } from "../../../lib/api";
+import { currentUserQueryKey } from "../../current-user/api/use-current-user";
 
 const reconnectDelays = [1_000, 2_000, 4_000, 8_000] as const;
 
@@ -21,6 +26,18 @@ export function generationQueryKey(
   moduleId: string | undefined,
 ) {
   return ["module-generation", userId, moduleId] as const;
+}
+
+export function journeyQueryKey(userId: string | null | undefined, moduleId: string | undefined) {
+  return ["module-journey", userId, moduleId] as const;
+}
+
+export function nodeQueryKey(
+  userId: string | null | undefined,
+  moduleId: string | undefined,
+  nodeId: string | undefined,
+) {
+  return ["module-node", userId, moduleId, nodeId] as const;
 }
 
 export function useCreateModule() {
@@ -37,6 +54,55 @@ export function useModule(moduleId: string | undefined) {
     queryKey: moduleQueryKey(userId, moduleId),
     queryFn: () => getModule(getToken, moduleId as string),
     enabled: Boolean(userId && moduleId),
+  });
+}
+
+export function useJourney(moduleId: string | undefined) {
+  const { getToken, userId } = useAuth();
+  return useQuery({
+    queryKey: journeyQueryKey(userId, moduleId),
+    queryFn: () => getJourney(getToken, moduleId as string),
+    enabled: Boolean(userId && moduleId),
+  });
+}
+
+export function useNode(moduleId: string | undefined, nodeId: string | undefined) {
+  const { getToken, userId } = useAuth();
+  return useQuery({
+    queryKey: nodeQueryKey(userId, moduleId, nodeId),
+    queryFn: () => getNode(getToken, moduleId as string, nodeId as string),
+    enabled: Boolean(userId && moduleId && nodeId),
+  });
+}
+
+function useProgressCacheSync(moduleId: string, nodeId: string) {
+  const { userId } = useAuth();
+  const queryClient = useQueryClient();
+  return async (): Promise<void> => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: journeyQueryKey(userId, moduleId) }),
+      queryClient.invalidateQueries({ queryKey: moduleQueryKey(userId, moduleId) }),
+      queryClient.invalidateQueries({ queryKey: nodeQueryKey(userId, moduleId, nodeId) }),
+      queryClient.invalidateQueries({ queryKey: currentUserQueryKey(userId) }),
+    ]);
+  };
+}
+
+export function useStartNode(moduleId: string, nodeId: string) {
+  const { getToken } = useAuth();
+  const sync = useProgressCacheSync(moduleId, nodeId);
+  return useMutation({
+    mutationFn: () => startNode(getToken, moduleId, nodeId),
+    onSuccess: sync,
+  });
+}
+
+export function useCompleteNode(moduleId: string, nodeId: string) {
+  const { getToken } = useAuth();
+  const sync = useProgressCacheSync(moduleId, nodeId);
+  return useMutation({
+    mutationFn: () => completeNode(getToken, moduleId, nodeId),
+    onSuccess: sync,
   });
 }
 

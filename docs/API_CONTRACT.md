@@ -864,6 +864,10 @@ Returns `200`:
 
 Repeating completion returns the already completed state with `xpAwarded = 0`.
 
+For M4, completing a Core Node made exclusively of lesson and/or flashcard activities awards
+exactly `10 XP`. The XP Event uses reason `node_completed` and the Core Node ID as its qualifying
+reference; that user/reason/reference combination is unique.
+
 ## 10. Assessment Attempts
 
 ### 10.1 Submit Attempt

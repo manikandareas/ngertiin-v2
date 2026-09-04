@@ -562,6 +562,10 @@ adaptive_completed
 
 `user_stats.total_xp` is a cached aggregate and must remain reconcilable with the XP event ledger.
 
+Completing a Core Node that contains only lesson and/or flashcard activities awards exactly `10 XP`.
+The qualifying ledger entry uses reason `node_completed` and the Core Node ID as `reference_id`;
+the tuple `(user_id, reason, reference_id)` is unique, so replay never awards XP twice.
+
 ---
 
 # 28. Streak Rules

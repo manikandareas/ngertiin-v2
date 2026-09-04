@@ -1,18 +1,32 @@
 import { createHash, randomUUID } from "node:crypto";
 import { Inject, Injectable } from "@nestjs/common";
 import type {
+  CompleteNodeResult,
   CreateModuleBody,
   CreateModuleResponse,
   GenerationFailure,
   GenerationPhase,
   GenerationStatus,
+  JourneyNode,
+  JourneySummary,
   ListModulesQuery,
   ListModulesResponse,
   ModuleSummary,
+  NextLearningAction,
+  NodeActionResult,
+  NodeDetail,
+  NodeProgress,
+  PublicActivity,
 } from "@ngertiin/contracts/api";
-import { generationFailureSchema, timestampSchema, uuidSchema } from "@ngertiin/contracts/api";
+import {
+  generationFailureSchema,
+  publicActivitySchema,
+  timestampSchema,
+  uuidSchema,
+} from "@ngertiin/contracts/api";
 import { MODULE_GENERATION_STEPS } from "@ngertiin/contracts/jobs";
 import {
+  activities,
   type DatabaseTransaction,
   generation_request_sources,
   generation_requests,
@@ -23,6 +37,9 @@ import {
   node_progress,
   sources,
   user_module_progress,
+  user_stats,
+  users,
+  xp_events,
 } from "@ngertiin/database";
 import { and, asc, desc, eq, inArray, lt, or, type SQL, sql } from "drizzle-orm";
 import { z } from "zod";
@@ -70,6 +87,98 @@ type GenerationStepRow = {
   step: string;
   status: "pending" | "processing" | "completed" | "failed";
 };
+
+type ProgressNodeRow = {
+  id: string;
+  origin: "core" | "adaptive";
+  type: "lesson" | "flashcard" | "quiz" | "checkpoint" | "review" | "practice" | "remedial_quiz";
+  title: string;
+  description: string | null;
+  position: number;
+  interventionId: string | null;
+  status: "locked" | "available" | "in_progress" | "completed";
+  bestScore: string | null;
+  attemptCount: number;
+};
+
+function mapNodeProgress(
+  row: Pick<ProgressNodeRow, "status" | "bestScore" | "attemptCount">,
+): NodeProgress {
+  return {
+    status: row.status,
+    bestScore: row.bestScore === null ? null : Number(row.bestScore),
+    attemptCount: row.attemptCount,
+  };
+}
+
+function mapJourneyNode(row: ProgressNodeRow): JourneyNode {
+  return {
+    id: row.id,
+    origin: row.origin,
+    type: row.type,
+    title: row.title,
+    description: row.description,
+    position: row.position,
+    progress: mapNodeProgress(row),
+    ...(row.interventionId ? { interventionId: row.interventionId } : {}),
+  };
+}
+
+function selectNextAction(input: {
+  moduleId: string;
+  moduleStatus: ModuleRow["status"];
+  progressStatus: ModuleRow["progressStatus"];
+  currentNodeId: string | null;
+  nodes: Array<Pick<ProgressNodeRow, "id" | "status">>;
+}): NextLearningAction {
+  if (input.moduleStatus === "archived") return { type: "none" };
+  if (input.moduleStatus === "generating") {
+    return { type: "wait_for_module", moduleId: input.moduleId };
+  }
+  if (input.progressStatus === "completed") {
+    return { type: "module_completed", moduleId: input.moduleId };
+  }
+  const activeNode =
+    input.nodes.find(
+      (node) =>
+        node.id === input.currentNodeId &&
+        (node.status === "in_progress" || node.status === "available"),
+    ) ??
+    input.nodes.find((node) => node.status === "in_progress") ??
+    input.nodes.find((node) => node.status === "available");
+  if (!activeNode) return { type: "none" };
+  return {
+    type: activeNode.status === "in_progress" ? "resume_core_node" : "start_core_node",
+    moduleId: input.moduleId,
+    nodeId: activeNode.id,
+  };
+}
+
+function percentage(completed: number, total: number): number {
+  if (total === 0) return 0;
+  return Math.round((completed / total) * 10_000) / 100;
+}
+
+function mapModuleProgress(
+  status: "not_started" | "in_progress" | "completed",
+  storedPercentage: string,
+  nodes: Array<Pick<ProgressNodeRow, "status">>,
+): JourneySummary["progress"] {
+  return {
+    status,
+    percentage: Number(storedPercentage),
+    completedCoreNodes: nodes.filter((node) => node.status === "completed").length,
+    totalCoreNodes: nodes.length,
+  };
+}
+
+function nextCalendarDate(date: string): string {
+  const parsed = new Date(`${date}T00:00:00.000Z`);
+  parsed.setUTCDate(parsed.getUTCDate() + 1);
+  return parsed.toISOString().slice(0, 10);
+}
+
+const NON_ASSESSMENT_NODE_XP = 10;
 
 function findCurrentStep(
   runStatus: GenerationStatus["state"],
@@ -392,6 +501,395 @@ export class ModulesService {
     return summary;
   }
 
+  async getJourney(userId: string, moduleId: string): Promise<JourneySummary> {
+    const [module] = await this.infrastructure.database.db
+      .select({
+        id: modules.id,
+        title: modules.title,
+        description: modules.description,
+        difficulty: modules.difficulty,
+        estimatedMinutes: modules.estimated_minutes,
+        status: modules.status,
+        progressStatus: user_module_progress.status,
+        progressPercentage: user_module_progress.progress_percentage,
+        currentNodeId: user_module_progress.current_node_id,
+      })
+      .from(modules)
+      .leftJoin(
+        user_module_progress,
+        and(
+          eq(user_module_progress.module_id, modules.id),
+          eq(user_module_progress.user_id, userId),
+        ),
+      )
+      .where(and(eq(modules.id, moduleId), eq(modules.owner_id, userId)))
+      .limit(1);
+    if (!module) this.notFound();
+    if (module.status !== "ready" && module.status !== "archived") {
+      throw new ProductError(
+        409,
+        "MODULE_NOT_READY",
+        "Module is not ready",
+        "The Module journey is not available until generation completes.",
+      );
+    }
+    if (
+      !module.title ||
+      !module.difficulty ||
+      !module.progressStatus ||
+      module.progressPercentage === null
+    ) {
+      throw new Error("Ready Module is missing initialized learning state.");
+    }
+
+    const rows: ProgressNodeRow[] = (await this.infrastructure.database.db
+      .select({
+        id: module_nodes.id,
+        origin: module_nodes.origin,
+        type: module_nodes.type,
+        title: module_nodes.title,
+        description: module_nodes.description,
+        position: module_nodes.core_position,
+        interventionId: module_nodes.adaptive_intervention_id,
+        status: node_progress.status,
+        bestScore: node_progress.best_score,
+        attemptCount: node_progress.attempt_count,
+      })
+      .from(module_nodes)
+      .innerJoin(
+        node_progress,
+        and(eq(node_progress.node_id, module_nodes.id), eq(node_progress.user_id, userId)),
+      )
+      .where(and(eq(module_nodes.module_id, moduleId), eq(module_nodes.origin, "core")))
+      .orderBy(asc(module_nodes.core_position))) as ProgressNodeRow[];
+
+    return {
+      module: {
+        id: module.id,
+        title: module.title,
+        description: module.description,
+        difficulty: module.difficulty,
+        estimatedMinutes: module.estimatedMinutes,
+      },
+      progress: mapModuleProgress(module.progressStatus, module.progressPercentage, rows),
+      nodes: rows.map(mapJourneyNode),
+      nextAction: selectNextAction({
+        moduleId,
+        moduleStatus: module.status,
+        progressStatus: module.progressStatus,
+        currentNodeId: module.currentNodeId,
+        nodes: rows,
+      }),
+    };
+  }
+
+  async getNode(userId: string, moduleId: string, nodeId: string): Promise<NodeDetail> {
+    const journey = await this.getJourney(userId, moduleId);
+    const node = journey.nodes.find(
+      (candidate) => candidate.id === nodeId && candidate.origin === "core",
+    );
+    if (!node) this.notFound();
+    if (node.progress.status === "locked") {
+      throw new ProductError(
+        409,
+        "NODE_LOCKED",
+        "Node is locked",
+        "Complete the preceding learning node before opening this content.",
+      );
+    }
+
+    const rows = await this.infrastructure.database.db
+      .select({
+        id: activities.id,
+        type: activities.type,
+        position: activities.position,
+        content: activities.content,
+      })
+      .from(activities)
+      .where(eq(activities.node_id, nodeId))
+      .orderBy(asc(activities.position));
+
+    return {
+      node,
+      activities: rows.map((row) => this.mapPublicActivity(row)),
+      moduleProgress: journey.progress,
+      nextAction: journey.nextAction,
+    };
+  }
+
+  async startNode(userId: string, moduleId: string, nodeId: string): Promise<NodeActionResult> {
+    return this.infrastructure.database.db.transaction(async (transaction) => {
+      const module = await this.lockLearnableModule(transaction, userId, moduleId);
+      const [moduleProgress] = await transaction
+        .select({ id: user_module_progress.id })
+        .from(user_module_progress)
+        .where(
+          and(
+            eq(user_module_progress.user_id, userId),
+            eq(user_module_progress.module_id, moduleId),
+          ),
+        )
+        .for("update")
+        .limit(1);
+      if (!moduleProgress) throw new Error("Ready Module is missing Module progress.");
+
+      const [progress] = await transaction
+        .select({
+          id: node_progress.id,
+          status: node_progress.status,
+          bestScore: node_progress.best_score,
+          attemptCount: node_progress.attempt_count,
+        })
+        .from(node_progress)
+        .innerJoin(module_nodes, eq(module_nodes.id, node_progress.node_id))
+        .where(
+          and(
+            eq(node_progress.user_id, userId),
+            eq(node_progress.node_id, nodeId),
+            eq(module_nodes.module_id, moduleId),
+            eq(module_nodes.origin, "core"),
+          ),
+        )
+        .for("update", { of: node_progress })
+        .limit(1);
+      if (!progress) this.notFound();
+      if (progress.status === "locked") this.nodeLocked();
+
+      if (progress.status === "available") {
+        const now = new Date();
+        await transaction
+          .update(node_progress)
+          .set({ status: "in_progress", started_at: now, updated_at: now })
+          .where(eq(node_progress.id, progress.id));
+        await transaction
+          .update(user_module_progress)
+          .set({
+            status: "in_progress",
+            current_node_id: nodeId,
+            started_at: sql`coalesce(${user_module_progress.started_at}, current_timestamp)`,
+            updated_at: now,
+          })
+          .where(eq(user_module_progress.id, moduleProgress.id));
+      }
+
+      const state = await this.readProgressState(transaction, userId, moduleId);
+      const current = state.nodes.find((node) => node.id === nodeId);
+      if (!current) this.notFound();
+      return {
+        nodeProgress: mapNodeProgress(current),
+        moduleProgress: mapModuleProgress(
+          state.progress.status,
+          state.progress.percentage,
+          state.nodes,
+        ),
+        nextAction: selectNextAction({
+          moduleId,
+          moduleStatus: module.status,
+          progressStatus: state.progress.status,
+          currentNodeId: state.progress.currentNodeId,
+          nodes: state.nodes,
+        }),
+      };
+    });
+  }
+
+  async completeNode(
+    userId: string,
+    moduleId: string,
+    nodeId: string,
+  ): Promise<CompleteNodeResult> {
+    return this.infrastructure.database.db.transaction(async (transaction) => {
+      const module = await this.lockLearnableModule(transaction, userId, moduleId);
+      const [moduleProgress] = await transaction
+        .select({ id: user_module_progress.id })
+        .from(user_module_progress)
+        .where(
+          and(
+            eq(user_module_progress.user_id, userId),
+            eq(user_module_progress.module_id, moduleId),
+          ),
+        )
+        .for("update")
+        .limit(1);
+      if (!moduleProgress) throw new Error("Ready Module is missing Module progress.");
+
+      const [progress] = await transaction
+        .select({
+          id: node_progress.id,
+          status: node_progress.status,
+          bestScore: node_progress.best_score,
+          attemptCount: node_progress.attempt_count,
+          position: module_nodes.core_position,
+        })
+        .from(node_progress)
+        .innerJoin(module_nodes, eq(module_nodes.id, node_progress.node_id))
+        .where(
+          and(
+            eq(node_progress.user_id, userId),
+            eq(node_progress.node_id, nodeId),
+            eq(module_nodes.module_id, moduleId),
+            eq(module_nodes.origin, "core"),
+          ),
+        )
+        .for("update", { of: node_progress })
+        .limit(1);
+      if (!progress) this.notFound();
+      if (progress.status === "locked") this.nodeLocked();
+
+      const activityTypes = await transaction
+        .select({ type: activities.type })
+        .from(activities)
+        .where(eq(activities.node_id, nodeId));
+      if (
+        activityTypes.some(
+          ({ type }) =>
+            type === "multiple_choice" || type === "true_false" || type === "short_answer",
+        )
+      ) {
+        throw new ProductError(
+          409,
+          "ATTEMPT_REQUIRED",
+          "Assessment attempt required",
+          "This node contains assessment activities and must be completed through an Attempt.",
+        );
+      }
+
+      let xpAwarded = 0;
+      if (progress.status !== "completed") {
+        const now = new Date();
+        await transaction
+          .update(node_progress)
+          .set({
+            status: "completed",
+            started_at: sql`coalesce(${node_progress.started_at}, current_timestamp)`,
+            completed_at: now,
+            updated_at: now,
+          })
+          .where(eq(node_progress.id, progress.id));
+
+        const [nextNode] = await transaction
+          .select({ id: module_nodes.id })
+          .from(module_nodes)
+          .where(
+            and(
+              eq(module_nodes.module_id, moduleId),
+              eq(module_nodes.origin, "core"),
+              sql`${module_nodes.core_position} > ${progress.position}`,
+            ),
+          )
+          .orderBy(asc(module_nodes.core_position))
+          .limit(1);
+        if (nextNode) {
+          await transaction
+            .update(node_progress)
+            .set({ status: "available", updated_at: now })
+            .where(
+              and(
+                eq(node_progress.user_id, userId),
+                eq(node_progress.node_id, nextNode.id),
+                eq(node_progress.status, "locked"),
+              ),
+            );
+        }
+
+        const afterNodeUpdate = await this.readProgressState(transaction, userId, moduleId);
+        const completed = afterNodeUpdate.nodes.filter(
+          (node) => node.status === "completed",
+        ).length;
+        const total = afterNodeUpdate.nodes.length;
+        const isCompleted = total > 0 && completed === total;
+        const nextCurrent = isCompleted
+          ? null
+          : (afterNodeUpdate.nodes.find(
+              (node) => node.status === "in_progress" || node.status === "available",
+            )?.id ?? null);
+        await transaction
+          .update(user_module_progress)
+          .set({
+            status: isCompleted ? "completed" : "in_progress",
+            current_node_id: nextCurrent,
+            progress_percentage: String(percentage(completed, total)),
+            started_at: sql`coalesce(${user_module_progress.started_at}, current_timestamp)`,
+            completed_at: isCompleted ? now : null,
+            updated_at: now,
+          })
+          .where(eq(user_module_progress.id, moduleProgress.id));
+
+        const [stats] = await transaction
+          .select({
+            totalXp: user_stats.total_xp,
+            currentStreak: user_stats.current_streak,
+            longestStreak: user_stats.longest_streak,
+            lastLearningDate: user_stats.last_learning_date,
+            learningDate: sql<string>`(current_timestamp at time zone ${users.timezone})::date`,
+          })
+          .from(user_stats)
+          .innerJoin(users, eq(users.id, user_stats.user_id))
+          .where(eq(user_stats.user_id, userId))
+          .for("update", { of: user_stats })
+          .limit(1);
+        if (!stats) throw new Error("User is missing learning statistics.");
+
+        const [event] = await transaction
+          .insert(xp_events)
+          .values({
+            user_id: userId,
+            module_id: moduleId,
+            amount: NON_ASSESSMENT_NODE_XP,
+            reason: "node_completed",
+            reference_id: nodeId,
+            created_at: now,
+          })
+          .onConflictDoNothing({
+            target: [xp_events.user_id, xp_events.reason, xp_events.reference_id],
+          })
+          .returning({ id: xp_events.id });
+        if (event) {
+          xpAwarded = NON_ASSESSMENT_NODE_XP;
+          const sameDay = stats.lastLearningDate === stats.learningDate;
+          const consecutive =
+            stats.lastLearningDate !== null &&
+            nextCalendarDate(stats.lastLearningDate) === stats.learningDate;
+          const currentStreak = sameDay
+            ? stats.currentStreak
+            : consecutive
+              ? stats.currentStreak + 1
+              : 1;
+          await transaction
+            .update(user_stats)
+            .set({
+              total_xp: stats.totalXp + NON_ASSESSMENT_NODE_XP,
+              current_streak: currentStreak,
+              longest_streak: Math.max(stats.longestStreak, currentStreak),
+              last_learning_date: stats.learningDate,
+              updated_at: now,
+            })
+            .where(eq(user_stats.user_id, userId));
+        }
+      }
+
+      const state = await this.readProgressState(transaction, userId, moduleId);
+      const current = state.nodes.find((node) => node.id === nodeId);
+      if (!current) this.notFound();
+      return {
+        nodeProgress: mapNodeProgress(current),
+        moduleProgress: mapModuleProgress(
+          state.progress.status,
+          state.progress.percentage,
+          state.nodes,
+        ),
+        xpAwarded,
+        nextAction: selectNextAction({
+          moduleId,
+          moduleStatus: module.status,
+          progressStatus: state.progress.status,
+          currentNodeId: state.progress.currentNodeId,
+          nodes: state.nodes,
+        }),
+      };
+    });
+  }
+
   async getGeneration(userId: string, moduleId: string): Promise<GenerationStatus> {
     const [ownedModule] = await this.infrastructure.database.db
       .select({ id: modules.id })
@@ -614,30 +1112,22 @@ export class ModulesService {
         : null;
 
       let nextAction: ModuleSummary["nextAction"];
-      if (row.status === "generating") {
-        nextAction = { type: "wait_for_module", moduleId: row.id };
-      } else if (row.status === "failed") {
+      if (row.status === "failed") {
         if (failureByModule.get(row.id)?.retryable === true) {
           nextAction = { type: "retry_module", moduleId: row.id };
         } else {
           nextAction = { type: "none" };
         }
-      } else if (row.status === "archived") {
-        nextAction = { type: "none" };
-      } else if (row.progressStatus === "completed") {
-        nextAction = { type: "module_completed", moduleId: row.id };
       } else {
-        const activeNode =
-          moduleNodes.find(
-            (node) => node.id === row.currentNodeId && node.status === "in_progress",
-          ) ??
-          moduleNodes.find((node) => node.status === "in_progress" || node.status === "available");
-        if (activeNode) {
-          const type = activeNode.status === "in_progress" ? "resume_core_node" : "start_core_node";
-          nextAction = { type, moduleId: row.id, nodeId: activeNode.id };
-        } else {
-          nextAction = { type: "none" };
-        }
+        nextAction = selectNextAction({
+          moduleId: row.id,
+          moduleStatus: row.status,
+          progressStatus: row.progressStatus,
+          currentNodeId: row.currentNodeId,
+          nodes: moduleNodes.flatMap((node) =>
+            node.status ? [{ id: node.id, status: node.status }] : [],
+          ),
+        });
       }
 
       return {
@@ -653,6 +1143,116 @@ export class ModulesService {
         updatedAt: row.updatedAt.toISOString(),
       };
     });
+  }
+
+  private async lockLearnableModule(
+    transaction: DatabaseTransaction,
+    userId: string,
+    moduleId: string,
+  ): Promise<{ status: "ready" }> {
+    const [module] = await transaction
+      .select({ status: modules.status })
+      .from(modules)
+      .where(and(eq(modules.id, moduleId), eq(modules.owner_id, userId)))
+      .for("update")
+      .limit(1);
+    if (!module) this.notFound();
+    if (module.status !== "ready") {
+      throw new ProductError(
+        409,
+        "MODULE_NOT_LEARNABLE",
+        "Module is not learnable",
+        "Only a ready Module accepts learning progress changes.",
+      );
+    }
+    return { status: module.status };
+  }
+
+  private async readProgressState(
+    transaction: DatabaseTransaction,
+    userId: string,
+    moduleId: string,
+  ): Promise<{
+    progress: {
+      status: "not_started" | "in_progress" | "completed";
+      percentage: string;
+      currentNodeId: string | null;
+    };
+    nodes: ProgressNodeRow[];
+  }> {
+    const [progress] = await transaction
+      .select({
+        status: user_module_progress.status,
+        percentage: user_module_progress.progress_percentage,
+        currentNodeId: user_module_progress.current_node_id,
+      })
+      .from(user_module_progress)
+      .where(
+        and(eq(user_module_progress.user_id, userId), eq(user_module_progress.module_id, moduleId)),
+      )
+      .limit(1);
+    if (!progress) throw new Error("Ready Module is missing Module progress.");
+    const nodes = (await transaction
+      .select({
+        id: module_nodes.id,
+        origin: module_nodes.origin,
+        type: module_nodes.type,
+        title: module_nodes.title,
+        description: module_nodes.description,
+        position: module_nodes.core_position,
+        interventionId: module_nodes.adaptive_intervention_id,
+        status: node_progress.status,
+        bestScore: node_progress.best_score,
+        attemptCount: node_progress.attempt_count,
+      })
+      .from(module_nodes)
+      .innerJoin(
+        node_progress,
+        and(eq(node_progress.node_id, module_nodes.id), eq(node_progress.user_id, userId)),
+      )
+      .where(and(eq(module_nodes.module_id, moduleId), eq(module_nodes.origin, "core")))
+      .orderBy(asc(module_nodes.core_position))) as ProgressNodeRow[];
+    return { progress, nodes };
+  }
+
+  private mapPublicActivity(row: {
+    id: string;
+    type: "lesson" | "flashcard" | "multiple_choice" | "true_false" | "short_answer";
+    position: number;
+    content: unknown;
+  }): PublicActivity {
+    if (row.type !== "lesson") return publicActivitySchema.parse(row);
+    const content = row.content as Record<string, unknown>;
+    return publicActivitySchema.parse({
+      id: row.id,
+      type: row.type,
+      position: row.position,
+      content: {
+        explanation: content.explanation,
+        keyPoints: content.keyPoints,
+        ...(typeof content.introduction === "string" ? { introduction: content.introduction } : {}),
+        ...(Array.isArray(content.examples) ? { examples: content.examples } : {}),
+        ...(typeof content.summary === "string" ? { summary: content.summary } : {}),
+      },
+    });
+  }
+
+  private notFound(): never {
+    throw new ProductError(
+      404,
+      "NOT_FOUND",
+      "Resource not found",
+      "The requested resource was not found.",
+    );
+  }
+
+  private nodeLocked(): never {
+    throw new ProductError(
+      409,
+      "NODE_LOCKED",
+      "Node is locked",
+      "Complete the preceding learning node before opening this content.",
+    );
   }
 
   private async queueGenerationRun(

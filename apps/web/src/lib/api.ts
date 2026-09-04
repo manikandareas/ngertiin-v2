@@ -1,27 +1,34 @@
 import {
-  type CreatePdfSourceFieldsInput,
-  createPdfSourceResponseSchema,
+  type CompleteNodeResult,
   type CreateModuleBodyInput,
-  createModuleResponseSchema,
+  type CreatePdfSourceFieldsInput,
   type CreateTextSourceBodyInput,
-  createTextSourceResponseSchema,
   type CreateUrlSourceBodyInput,
-  createUrlSourceResponseSchema,
   type CurrentUser,
+  completeNodeResponseSchema,
+  createModuleResponseSchema,
+  createPdfSourceResponseSchema,
+  createTextSourceResponseSchema,
+  createUrlSourceResponseSchema,
   type GenerationEvent,
-  generationEventSchema,
   type GenerationStatus,
-  getGenerationResponseSchema,
+  generationEventSchema,
   getCurrentUserResponseSchema,
+  getGenerationResponseSchema,
+  getJourneyResponseSchema,
   getModuleResponseSchema,
+  getNodeResponseSchema,
   getSourceResponseSchema,
+  type JourneySummary,
   type ListModulesQueryInput,
   type ListModulesResponse,
-  listModulesResponseSchema,
   type ListSourcesQueryInput,
   type ListSourcesResponse,
+  listModulesResponseSchema,
   listSourcesResponseSchema,
   type ModuleSummary,
+  type NodeActionResult,
+  type NodeDetail,
   type PatchCurrentUserBody,
   type ProblemDetail,
   patchCurrentUserResponseSchema,
@@ -29,6 +36,7 @@ import {
   retryGenerationResponseSchema,
   retrySourceResponseSchema,
   type Source,
+  startNodeResponseSchema,
 } from "@ngertiin/contracts/api";
 import { webEnvironment } from "../config";
 
@@ -255,6 +263,59 @@ export async function retryGeneration(
     tokenResolver,
     retryGenerationResponseSchema,
     { method: "POST", headers: { "Idempotency-Key": idempotencyKey } },
+  );
+  return response.data;
+}
+
+export async function getJourney(
+  tokenResolver: TokenResolver,
+  moduleId: string,
+): Promise<JourneySummary> {
+  const response = await requestApi(
+    `/modules/${encodeURIComponent(moduleId)}/journey`,
+    tokenResolver,
+    getJourneyResponseSchema,
+  );
+  return response.data;
+}
+
+export async function getNode(
+  tokenResolver: TokenResolver,
+  moduleId: string,
+  nodeId: string,
+): Promise<NodeDetail> {
+  const response = await requestApi(
+    `/modules/${encodeURIComponent(moduleId)}/nodes/${encodeURIComponent(nodeId)}`,
+    tokenResolver,
+    getNodeResponseSchema,
+  );
+  return response.data;
+}
+
+export async function startNode(
+  tokenResolver: TokenResolver,
+  moduleId: string,
+  nodeId: string,
+): Promise<NodeActionResult> {
+  const response = await requestApi(
+    `/modules/${encodeURIComponent(moduleId)}/nodes/${encodeURIComponent(nodeId)}/start`,
+    tokenResolver,
+    startNodeResponseSchema,
+    { method: "POST" },
+  );
+  return response.data;
+}
+
+export async function completeNode(
+  tokenResolver: TokenResolver,
+  moduleId: string,
+  nodeId: string,
+): Promise<CompleteNodeResult> {
+  const response = await requestApi(
+    `/modules/${encodeURIComponent(moduleId)}/nodes/${encodeURIComponent(nodeId)}/complete`,
+    tokenResolver,
+    completeNodeResponseSchema,
+    { method: "POST" },
   );
   return response.data;
 }

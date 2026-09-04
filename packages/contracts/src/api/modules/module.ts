@@ -200,6 +200,112 @@ export const listModulesQuerySchema = z
   .strict();
 
 export const moduleParamsSchema = z.object({ moduleId: uuidSchema }).strict();
+export const moduleNodeParamsSchema = z
+  .object({ moduleId: uuidSchema, nodeId: uuidSchema })
+  .strict();
+
+export const nodeProgressStatusSchema = z.enum(["locked", "available", "in_progress", "completed"]);
+
+export const nodeProgressSchema = z.object({
+  status: nodeProgressStatusSchema,
+  bestScore: z.number().min(0).max(100).nullable(),
+  attemptCount: z.number().int().nonnegative(),
+});
+
+export const journeyNodeSchema = z.object({
+  id: uuidSchema,
+  origin: z.enum(["core", "adaptive"]),
+  type: z.enum([
+    "lesson",
+    "flashcard",
+    "quiz",
+    "checkpoint",
+    "review",
+    "practice",
+    "remedial_quiz",
+  ]),
+  title: z.string(),
+  description: z.string().nullable(),
+  position: z.number().int().positive(),
+  progress: nodeProgressSchema,
+  interventionId: uuidSchema.optional(),
+});
+
+const lessonActivitySchema = z.object({
+  id: uuidSchema,
+  type: z.literal("lesson"),
+  position: z.number().int().positive(),
+  content: z.object({
+    introduction: z.string().optional(),
+    explanation: z.string(),
+    keyPoints: z.array(z.string()),
+    examples: z.array(z.string()).optional(),
+    summary: z.string().optional(),
+  }),
+});
+
+const flashcardActivitySchema = z.object({
+  id: uuidSchema,
+  type: z.literal("flashcard"),
+  position: z.number().int().positive(),
+  content: z.object({
+    cards: z.array(z.object({ front: z.string(), back: z.string(), conceptKey: z.string() })),
+  }),
+});
+
+export const publicActivitySchema = z.discriminatedUnion("type", [
+  lessonActivitySchema,
+  flashcardActivitySchema,
+  z.object({
+    id: uuidSchema,
+    type: z.literal("multiple_choice"),
+    position: z.number().int().positive(),
+    content: z.object({ question: z.string(), options: z.array(z.string()) }),
+  }),
+  z.object({
+    id: uuidSchema,
+    type: z.literal("true_false"),
+    position: z.number().int().positive(),
+    content: z.object({ statement: z.string() }),
+  }),
+  z.object({
+    id: uuidSchema,
+    type: z.literal("short_answer"),
+    position: z.number().int().positive(),
+    content: z.object({ prompt: z.string() }),
+  }),
+]);
+
+export const journeySummarySchema = z.object({
+  module: z.object({
+    id: uuidSchema,
+    title: z.string(),
+    description: z.string().nullable(),
+    difficulty: z.enum(["beginner", "intermediate", "advanced"]),
+    estimatedMinutes: z.number().int().positive().nullable(),
+  }),
+  progress: moduleProgressSchema,
+  nodes: z.array(journeyNodeSchema),
+  nextAction: nextLearningActionSchema,
+});
+
+export const nodeDetailSchema = z.object({
+  node: journeyNodeSchema,
+  activities: z.array(publicActivitySchema),
+  moduleProgress: moduleProgressSchema,
+  nextAction: nextLearningActionSchema,
+});
+
+export const nodeActionResultSchema = z.object({
+  nodeProgress: nodeProgressSchema,
+  moduleProgress: moduleProgressSchema,
+  nextAction: nextLearningActionSchema,
+});
+
+export const completeNodeResultSchema = nodeActionResultSchema.extend({
+  xpAwarded: z.number().int().nonnegative(),
+});
+
 export const createModuleResponseSchema = successEnvelopeSchema(
   z.object({ module: moduleSummarySchema, generation: generationStatusSchema }),
 );
@@ -207,6 +313,10 @@ export const listModulesResponseSchema = paginatedSuccessEnvelopeSchema(moduleSu
 export const getModuleResponseSchema = successEnvelopeSchema(moduleSummarySchema);
 export const getGenerationResponseSchema = successEnvelopeSchema(generationStatusSchema);
 export const retryGenerationResponseSchema = createModuleResponseSchema;
+export const getJourneyResponseSchema = successEnvelopeSchema(journeySummarySchema);
+export const getNodeResponseSchema = successEnvelopeSchema(nodeDetailSchema);
+export const startNodeResponseSchema = successEnvelopeSchema(nodeActionResultSchema);
+export const completeNodeResponseSchema = successEnvelopeSchema(completeNodeResultSchema);
 
 export const generationEventSchema = z.discriminatedUnion("event", [
   z.object({ event: z.literal("generation.snapshot"), data: generationStatusSchema }),
@@ -217,6 +327,7 @@ export const generationEventSchema = z.discriminatedUnion("event", [
 
 export type ModuleStatus = z.infer<typeof moduleStatusSchema>;
 export type ModuleProgressStatus = z.infer<typeof moduleProgressStatusSchema>;
+export type NextLearningAction = z.infer<typeof nextLearningActionSchema>;
 export type ModuleSummary = z.infer<typeof moduleSummarySchema>;
 export type GenerationState = z.infer<typeof generationStateSchema>;
 export type GenerationPhase = z.infer<typeof generationPhaseSchema>;
@@ -229,6 +340,19 @@ export type CreateModuleBody = z.infer<typeof createModuleBodySchema>;
 export type ListModulesQueryInput = z.input<typeof listModulesQuerySchema>;
 export type ListModulesQuery = z.infer<typeof listModulesQuerySchema>;
 export type ModuleParams = z.infer<typeof moduleParamsSchema>;
+export type ModuleNodeParams = z.infer<typeof moduleNodeParamsSchema>;
+export type NodeProgressStatus = z.infer<typeof nodeProgressStatusSchema>;
+export type NodeProgress = z.infer<typeof nodeProgressSchema>;
+export type JourneyNode = z.infer<typeof journeyNodeSchema>;
+export type PublicActivity = z.infer<typeof publicActivitySchema>;
+export type JourneySummary = z.infer<typeof journeySummarySchema>;
+export type NodeDetail = z.infer<typeof nodeDetailSchema>;
+export type NodeActionResult = z.infer<typeof nodeActionResultSchema>;
+export type CompleteNodeResult = z.infer<typeof completeNodeResultSchema>;
+export type GetJourneyResponse = z.infer<typeof getJourneyResponseSchema>;
+export type GetNodeResponse = z.infer<typeof getNodeResponseSchema>;
+export type StartNodeResponse = z.infer<typeof startNodeResponseSchema>;
+export type CompleteNodeResponse = z.infer<typeof completeNodeResponseSchema>;
 export type CreateModuleResponse = z.infer<typeof createModuleResponseSchema>;
 export type ListModulesResponse = z.infer<typeof listModulesResponseSchema>;
 export type GetModuleResponse = z.infer<typeof getModuleResponseSchema>;

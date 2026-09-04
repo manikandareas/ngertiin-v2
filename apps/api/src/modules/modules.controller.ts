@@ -13,23 +13,33 @@ import {
   UseGuards,
 } from "@nestjs/common";
 import {
+  type CompleteNodeResponse,
   type CreateModuleBody,
   type CreateModuleResponse,
+  completeNodeResponseSchema,
   createModuleBodySchema,
   createModuleResponseSchema,
-  type GetGenerationResponse,
-  type GetModuleResponse,
   type GenerationState,
+  type GetGenerationResponse,
+  type GetJourneyResponse,
+  type GetModuleResponse,
+  type GetNodeResponse,
   getGenerationResponseSchema,
+  getJourneyResponseSchema,
   getModuleResponseSchema,
+  getNodeResponseSchema,
   type ListModulesQuery,
   type ListModulesResponse,
   listModulesQuerySchema,
   listModulesResponseSchema,
+  type ModuleNodeParams,
   type ModuleParams,
+  moduleNodeParamsSchema,
   moduleParamsSchema,
   type RetryGenerationResponse,
   retryGenerationResponseSchema,
+  type StartNodeResponse,
+  startNodeResponseSchema,
 } from "@ngertiin/contracts/api";
 import { ClerkAuthGuard } from "../auth/clerk-auth.guard.js";
 import { IdempotencyKeyPipe } from "../http/idempotency-key.pipe.js";
@@ -154,6 +164,54 @@ export class ModulesController {
       params.moduleId,
     );
     return getGenerationResponseSchema.parse({ data: generation });
+  }
+
+  @Get(":moduleId/journey")
+  async getJourney(
+    @Req() request: ProductRequest,
+    @Param(new ZodValidationPipe(moduleParamsSchema)) params: ModuleParams,
+  ): Promise<GetJourneyResponse> {
+    const journey = await this.modulesService.getJourney(getLocalUserId(request), params.moduleId);
+    return getJourneyResponseSchema.parse({ data: journey });
+  }
+
+  @Get(":moduleId/nodes/:nodeId")
+  async getNode(
+    @Req() request: ProductRequest,
+    @Param(new ZodValidationPipe(moduleNodeParamsSchema)) params: ModuleNodeParams,
+  ): Promise<GetNodeResponse> {
+    const node = await this.modulesService.getNode(
+      getLocalUserId(request),
+      params.moduleId,
+      params.nodeId,
+    );
+    return getNodeResponseSchema.parse({ data: node });
+  }
+
+  @Post(":moduleId/nodes/:nodeId/start")
+  async startNode(
+    @Req() request: ProductRequest,
+    @Param(new ZodValidationPipe(moduleNodeParamsSchema)) params: ModuleNodeParams,
+  ): Promise<StartNodeResponse> {
+    const result = await this.modulesService.startNode(
+      getLocalUserId(request),
+      params.moduleId,
+      params.nodeId,
+    );
+    return startNodeResponseSchema.parse({ data: result });
+  }
+
+  @Post(":moduleId/nodes/:nodeId/complete")
+  async completeNode(
+    @Req() request: ProductRequest,
+    @Param(new ZodValidationPipe(moduleNodeParamsSchema)) params: ModuleNodeParams,
+  ): Promise<CompleteNodeResponse> {
+    const result = await this.modulesService.completeNode(
+      getLocalUserId(request),
+      params.moduleId,
+      params.nodeId,
+    );
+    return completeNodeResponseSchema.parse({ data: result });
   }
 
   @Post(":moduleId/generation/retry")
