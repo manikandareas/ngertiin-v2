@@ -281,9 +281,9 @@ completed_core_nodes / total_core_nodes * 100
 1. Every assessment submission creates a new attempt.
 2. Attempts are immutable historical records.
 3. Re-attempts create additional attempt records.
-4. `attempt_number` increments per user and activity.
+4. `attempt_number` increments per user and assessment node.
 5. `best_score` in `node_progress` may be updated when a better score is achieved.
-6. Attempt responses must not be overwritten.
+6. One Attempt contains exactly one immutable response for every assessment Activity in the node.
 
 ---
 

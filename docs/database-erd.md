@@ -501,7 +501,7 @@ Stores per-node learning progress.
 
 ## 3.15 `attempts`
 
-Stores every user attempt on an activity.
+Stores every immutable assessment submission at user-and-node scope.
 
 | Column | Type | Constraints |
 |---|---|---|
@@ -509,30 +509,46 @@ Stores every user attempt on an activity.
 | `user_id` | `uuid` | FK → `users.id`, NOT NULL |
 | `module_id` | `uuid` | FK → `modules.id`, NOT NULL |
 | `node_id` | `uuid` | FK → `module_nodes.id`, NOT NULL |
-| `activity_id` | `uuid` | FK → `activities.id`, NOT NULL |
+| `submission_id` | `uuid` | NOT NULL, unique per user |
+| `submission_hash` | `varchar(64)` | NOT NULL, server-only replay fingerprint |
 | `attempt_number` | `integer` | NOT NULL |
-| `response` | `jsonb` | NOT NULL |
+| `evaluation_status` | `attempt_evaluation_status` | NOT NULL |
 | `score` | `numeric` | NULL |
 | `max_score` | `numeric` | NULL |
-| `evaluation` | `jsonb` | NULL |
-| `ai_feedback` | `text` | NULL |
+| `policy_outcome` | `attempt_policy_outcome` | NULL |
+| `xp_awarded` | `integer` | NOT NULL, DEFAULT 0 |
+| `failure` | `jsonb` | NULL, safe metadata only |
+| `evaluated_at` | `timestamptz` | NULL |
 | `created_at` | `timestamptz` | NOT NULL |
 
-### Example Evaluation
+### Unique Constraints
 
-```json
-{
-  "correct": 7,
-  "incorrect": 3,
-  "weakAreas": [
-    "digestive_enzymes"
-  ]
-}
+```text
+(user_id, submission_id)
+(user_id, node_id, attempt_number)
 ```
 
 ---
 
-## 3.16 `attempt_concept_results`
+## 3.16 `attempt_responses`
+
+Stores immutable per-Activity answers and safe deterministic evaluation results.
+
+| Column | Type | Constraints |
+|---|---|---|
+| `attempt_id` | `uuid` | FK → `attempts.id`, NOT NULL |
+| `activity_id` | `uuid` | FK → `activities.id`, NOT NULL |
+| `response` | `jsonb` | NOT NULL |
+| `score` | `numeric` | NULL |
+| `max_score` | `numeric` | NULL |
+| `evaluation` | `jsonb` | NULL, safe result only |
+| `created_at` | `timestamptz` | NOT NULL |
+
+Primary key: `(attempt_id, activity_id)`.
+
+---
+
+## 3.17 `attempt_concept_results`
 
 Stores concept-level performance derived from an attempt.
 
@@ -541,6 +557,9 @@ Stores concept-level performance derived from an attempt.
 | `attempt_id` | `uuid` | FK → `attempts.id`, NOT NULL |
 | `concept_id` | `uuid` | FK → `module_concepts.id`, NOT NULL |
 | `performance_score` | `numeric` | NOT NULL |
+| `mastery_score` | `numeric` | NOT NULL |
+| `confidence_score` | `numeric` | NOT NULL |
+| `evidence_count` | `integer` | NOT NULL |
 
 ### Primary Key
 
@@ -550,7 +569,7 @@ Stores concept-level performance derived from an attempt.
 
 ---
 
-## 3.17 `user_concept_mastery`
+## 3.18 `user_concept_mastery`
 
 Stores current mastery state for each concept.
 
@@ -579,7 +598,7 @@ confidence_score 0.0 - 1.0
 
 ---
 
-## 3.18 `adaptive_interventions`
+## 3.19 `adaptive_interventions`
 
 Represents an on-demand adaptive learning branch generated for a specific user.
 
@@ -617,7 +636,7 @@ Resume Core Journey
 
 ---
 
-## 3.19 `user_stats`
+## 3.20 `user_stats`
 
 Stores global gamification statistics.
 
@@ -632,7 +651,7 @@ Stores global gamification statistics.
 
 ---
 
-## 3.20 `xp_events`
+## 3.21 `xp_events`
 
 Stores the XP ledger.
 
@@ -843,7 +862,7 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    A[User Completes Activity] --> B[Create Attempt]
+    A[User Submits Assessment Node] --> B[Create Attempt and Activity Responses]
     B --> C[Calculate Concept Results]
     C --> D[Update Concept Mastery]
     D --> E{Adaptive Policy}
@@ -984,11 +1003,14 @@ ON node_progress (user_id, node_id);
 CREATE INDEX attempts_user_module_idx
 ON attempts (user_id, module_id);
 
-CREATE INDEX attempts_activity_idx
-ON attempts (activity_id);
-
 CREATE INDEX attempts_node_idx
 ON attempts (node_id);
+
+CREATE UNIQUE INDEX attempts_user_submission_idx
+ON attempts (user_id, submission_id);
+
+CREATE UNIQUE INDEX attempts_user_node_number_idx
+ON attempts (user_id, node_id, attempt_number);
 ```
 
 ## `user_concept_mastery`
@@ -1071,8 +1093,9 @@ generation_request_sources.selector
 activities.content
 activities.evaluation_config
 
-attempts.response
-attempts.evaluation
+attempts.failure
+attempt_responses.response
+attempt_responses.evaluation
 
 generation_runs.error
 generation_runs.metadata
@@ -1133,6 +1156,7 @@ generation_run_steps
 user_module_progress
 node_progress
 attempts
+attempt_responses
 attempt_concept_results
 user_concept_mastery
 ```
@@ -1180,6 +1204,7 @@ users
 │   │
 │   ├── user_module_progress
 │   ├── attempts
+│   │   └── attempt_responses
 │   └── adaptive_interventions
 │       └── adaptive module_nodes
 │
@@ -1207,9 +1232,10 @@ users
 13. user_module_progress
 14. node_progress
 15. attempts
-16. attempt_concept_results
-17. user_concept_mastery
-18. adaptive_interventions
-19. user_stats
-20. xp_events
+16. attempt_responses
+17. attempt_concept_results
+18. user_concept_mastery
+19. adaptive_interventions
+20. user_stats
+21. xp_events
 ```

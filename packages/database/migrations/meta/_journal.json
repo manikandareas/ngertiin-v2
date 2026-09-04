@@ -43,6 +43,13 @@
       "when": 1788520888362,
       "tag": "0005_familiar_wraith",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1788523235095,
+      "tag": "0006_unknown_cerise",
+      "breakpoints": true
     }
   ]
 }

@@ -208,7 +208,7 @@ export const nodeProgressStatusSchema = z.enum(["locked", "available", "in_progr
 
 export const nodeProgressSchema = z.object({
   status: nodeProgressStatusSchema,
-  bestScore: z.number().min(0).max(100).nullable(),
+  bestScore: z.number().min(0).max(1).nullable(),
   attemptCount: z.number().int().nonnegative(),
 });
 

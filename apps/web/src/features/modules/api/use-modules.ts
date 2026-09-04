@@ -1,17 +1,23 @@
 import { useAuth } from "@clerk/react";
-import type { CreateModuleBodyInput, GenerationStatus } from "@ngertiin/contracts/api";
+import type {
+  CreateModuleBodyInput,
+  GenerationStatus,
+  SubmitAttemptBody,
+} from "@ngertiin/contracts/api";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import {
   completeNode,
   createModule,
   getGeneration,
+  getAttempt,
   getJourney,
   getModule,
   getNode,
   retryGeneration,
   streamGenerationEvents,
   startNode,
+  submitAttempt,
 } from "../../../lib/api";
 import { currentUserQueryKey } from "../../current-user/api/use-current-user";
 
@@ -38,6 +44,10 @@ export function nodeQueryKey(
   nodeId: string | undefined,
 ) {
   return ["module-node", userId, moduleId, nodeId] as const;
+}
+
+export function attemptQueryKey(userId: string | null | undefined, attemptId: string | undefined) {
+  return ["attempt", userId, attemptId] as const;
 }
 
 export function useCreateModule() {
@@ -103,6 +113,30 @@ export function useCompleteNode(moduleId: string, nodeId: string) {
   return useMutation({
     mutationFn: () => completeNode(getToken, moduleId, nodeId),
     onSuccess: sync,
+  });
+}
+
+export function useAttempt(attemptId: string | undefined) {
+  const { getToken, userId } = useAuth();
+  return useQuery({
+    queryKey: attemptQueryKey(userId, attemptId),
+    queryFn: () => getAttempt(getToken, attemptId as string),
+    enabled: Boolean(userId && attemptId),
+    refetchInterval: (query) =>
+      query.state.data?.attempt.evaluationStatus === "evaluating" ? 1_000 : false,
+  });
+}
+
+export function useSubmitAttempt(moduleId: string, nodeId: string) {
+  const { getToken, userId } = useAuth();
+  const queryClient = useQueryClient();
+  const sync = useProgressCacheSync(moduleId, nodeId);
+  return useMutation({
+    mutationFn: (input: SubmitAttemptBody) => submitAttempt(getToken, moduleId, nodeId, input),
+    onSuccess: async (result) => {
+      queryClient.setQueryData(attemptQueryKey(userId, result.attempt.id), result);
+      await sync();
+    },
   });
 }
 

@@ -1,4 +1,5 @@
 import {
+  type AttemptResult,
   type CompleteNodeResult,
   type CreateModuleBodyInput,
   type CreatePdfSourceFieldsInput,
@@ -14,6 +15,7 @@ import {
   type GenerationStatus,
   generationEventSchema,
   getCurrentUserResponseSchema,
+  getAttemptResponseSchema,
   getGenerationResponseSchema,
   getJourneyResponseSchema,
   getModuleResponseSchema,
@@ -37,6 +39,8 @@ import {
   retrySourceResponseSchema,
   type Source,
   startNodeResponseSchema,
+  type SubmitAttemptBody,
+  submitAttemptResponseSchema,
 } from "@ngertiin/contracts/api";
 import { webEnvironment } from "../config";
 
@@ -316,6 +320,33 @@ export async function completeNode(
     tokenResolver,
     completeNodeResponseSchema,
     { method: "POST" },
+  );
+  return response.data;
+}
+
+export async function submitAttempt(
+  tokenResolver: TokenResolver,
+  moduleId: string,
+  nodeId: string,
+  input: SubmitAttemptBody,
+): Promise<AttemptResult> {
+  const response = await requestApi(
+    `/modules/${encodeURIComponent(moduleId)}/nodes/${encodeURIComponent(nodeId)}/attempts`,
+    tokenResolver,
+    submitAttemptResponseSchema,
+    { method: "POST", body: JSON.stringify(input) },
+  );
+  return response.data;
+}
+
+export async function getAttempt(
+  tokenResolver: TokenResolver,
+  attemptId: string,
+): Promise<AttemptResult> {
+  const response = await requestApi(
+    `/attempts/${encodeURIComponent(attemptId)}`,
+    tokenResolver,
+    getAttemptResponseSchema,
   );
   return response.data;
 }

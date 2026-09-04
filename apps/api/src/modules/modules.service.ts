@@ -37,15 +37,13 @@ import {
   node_progress,
   sources,
   user_module_progress,
-  user_stats,
-  users,
-  xp_events,
 } from "@ngertiin/database";
 import { and, asc, desc, eq, inArray, lt, or, type SQL, sql } from "drizzle-orm";
 import { z } from "zod";
 import { ProductError } from "../http/product-error.js";
 import { IdempotencyService } from "../idempotency/idempotency.service.js";
 import { InfrastructureService } from "../infrastructure/infrastructure.service.js";
+import { finalizeCoreNodeProgress } from "../progression/finalize-node-progress.js";
 
 const moduleCursorSchema = z
   .object({
@@ -154,11 +152,6 @@ function selectNextAction(input: {
   };
 }
 
-function percentage(completed: number, total: number): number {
-  if (total === 0) return 0;
-  return Math.round((completed / total) * 10_000) / 100;
-}
-
 function mapModuleProgress(
   status: "not_started" | "in_progress" | "completed",
   storedPercentage: string,
@@ -171,14 +164,6 @@ function mapModuleProgress(
     totalCoreNodes: nodes.length,
   };
 }
-
-function nextCalendarDate(date: string): string {
-  const parsed = new Date(`${date}T00:00:00.000Z`);
-  parsed.setUTCDate(parsed.getUTCDate() + 1);
-  return parsed.toISOString().slice(0, 10);
-}
-
-const NON_ASSESSMENT_NODE_XP = 10;
 
 function findCurrentStep(
   runStatus: GenerationStatus["state"],
@@ -699,27 +684,10 @@ export class ModulesService {
     nodeId: string,
   ): Promise<CompleteNodeResult> {
     return this.infrastructure.database.db.transaction(async (transaction) => {
-      const module = await this.lockLearnableModule(transaction, userId, moduleId);
-      const [moduleProgress] = await transaction
-        .select({ id: user_module_progress.id })
-        .from(user_module_progress)
-        .where(
-          and(
-            eq(user_module_progress.user_id, userId),
-            eq(user_module_progress.module_id, moduleId),
-          ),
-        )
-        .for("update")
-        .limit(1);
-      if (!moduleProgress) throw new Error("Ready Module is missing Module progress.");
-
+      await this.lockLearnableModule(transaction, userId, moduleId);
       const [progress] = await transaction
         .select({
-          id: node_progress.id,
           status: node_progress.status,
-          bestScore: node_progress.best_score,
-          attemptCount: node_progress.attempt_count,
-          position: module_nodes.core_position,
         })
         .from(node_progress)
         .innerJoin(module_nodes, eq(module_nodes.id, node_progress.node_id))
@@ -753,140 +721,12 @@ export class ModulesService {
           "This node contains assessment activities and must be completed through an Attempt.",
         );
       }
-
-      let xpAwarded = 0;
-      if (progress.status !== "completed") {
-        const now = new Date();
-        await transaction
-          .update(node_progress)
-          .set({
-            status: "completed",
-            started_at: sql`coalesce(${node_progress.started_at}, current_timestamp)`,
-            completed_at: now,
-            updated_at: now,
-          })
-          .where(eq(node_progress.id, progress.id));
-
-        const [nextNode] = await transaction
-          .select({ id: module_nodes.id })
-          .from(module_nodes)
-          .where(
-            and(
-              eq(module_nodes.module_id, moduleId),
-              eq(module_nodes.origin, "core"),
-              sql`${module_nodes.core_position} > ${progress.position}`,
-            ),
-          )
-          .orderBy(asc(module_nodes.core_position))
-          .limit(1);
-        if (nextNode) {
-          await transaction
-            .update(node_progress)
-            .set({ status: "available", updated_at: now })
-            .where(
-              and(
-                eq(node_progress.user_id, userId),
-                eq(node_progress.node_id, nextNode.id),
-                eq(node_progress.status, "locked"),
-              ),
-            );
-        }
-
-        const afterNodeUpdate = await this.readProgressState(transaction, userId, moduleId);
-        const completed = afterNodeUpdate.nodes.filter(
-          (node) => node.status === "completed",
-        ).length;
-        const total = afterNodeUpdate.nodes.length;
-        const isCompleted = total > 0 && completed === total;
-        const nextCurrent = isCompleted
-          ? null
-          : (afterNodeUpdate.nodes.find(
-              (node) => node.status === "in_progress" || node.status === "available",
-            )?.id ?? null);
-        await transaction
-          .update(user_module_progress)
-          .set({
-            status: isCompleted ? "completed" : "in_progress",
-            current_node_id: nextCurrent,
-            progress_percentage: String(percentage(completed, total)),
-            started_at: sql`coalesce(${user_module_progress.started_at}, current_timestamp)`,
-            completed_at: isCompleted ? now : null,
-            updated_at: now,
-          })
-          .where(eq(user_module_progress.id, moduleProgress.id));
-
-        const [stats] = await transaction
-          .select({
-            totalXp: user_stats.total_xp,
-            currentStreak: user_stats.current_streak,
-            longestStreak: user_stats.longest_streak,
-            lastLearningDate: user_stats.last_learning_date,
-            learningDate: sql<string>`(current_timestamp at time zone ${users.timezone})::date`,
-          })
-          .from(user_stats)
-          .innerJoin(users, eq(users.id, user_stats.user_id))
-          .where(eq(user_stats.user_id, userId))
-          .for("update", { of: user_stats })
-          .limit(1);
-        if (!stats) throw new Error("User is missing learning statistics.");
-
-        const [event] = await transaction
-          .insert(xp_events)
-          .values({
-            user_id: userId,
-            module_id: moduleId,
-            amount: NON_ASSESSMENT_NODE_XP,
-            reason: "node_completed",
-            reference_id: nodeId,
-            created_at: now,
-          })
-          .onConflictDoNothing({
-            target: [xp_events.user_id, xp_events.reason, xp_events.reference_id],
-          })
-          .returning({ id: xp_events.id });
-        if (event) {
-          xpAwarded = NON_ASSESSMENT_NODE_XP;
-          const sameDay = stats.lastLearningDate === stats.learningDate;
-          const consecutive =
-            stats.lastLearningDate !== null &&
-            nextCalendarDate(stats.lastLearningDate) === stats.learningDate;
-          const currentStreak = sameDay
-            ? stats.currentStreak
-            : consecutive
-              ? stats.currentStreak + 1
-              : 1;
-          await transaction
-            .update(user_stats)
-            .set({
-              total_xp: stats.totalXp + NON_ASSESSMENT_NODE_XP,
-              current_streak: currentStreak,
-              longest_streak: Math.max(stats.longestStreak, currentStreak),
-              last_learning_date: stats.learningDate,
-              updated_at: now,
-            })
-            .where(eq(user_stats.user_id, userId));
-        }
-      }
-
-      const state = await this.readProgressState(transaction, userId, moduleId);
-      const current = state.nodes.find((node) => node.id === nodeId);
-      if (!current) this.notFound();
-      return {
-        nodeProgress: mapNodeProgress(current),
-        moduleProgress: mapModuleProgress(
-          state.progress.status,
-          state.progress.percentage,
-          state.nodes,
-        ),
-        xpAwarded,
-        nextAction: selectNextAction({
-          moduleId,
-          moduleStatus: module.status,
-          progressStatus: state.progress.status,
-          currentNodeId: state.progress.currentNodeId,
-          nodes: state.nodes,
-        }),
-      };
+      return finalizeCoreNodeProgress(transaction, {
+        userId,
+        moduleId,
+        nodeId,
+        xp: { amount: 10, reason: "node_completed" },
+      });
     });
   }
 

@@ -84,6 +84,16 @@ export const adaptive_status = pgEnum("adaptive_status", [
   "failed",
   "skipped",
 ]);
+export const attempt_evaluation_status = pgEnum("attempt_evaluation_status", [
+  "evaluating",
+  "completed",
+  "failed",
+]);
+export const attempt_policy_outcome = pgEnum("attempt_policy_outcome", [
+  "continue",
+  "optional_review",
+  "required_intervention",
+]);
 export const xp_reason = pgEnum("xp_reason", [
   "node_completed",
   "quiz_completed",
@@ -475,7 +485,14 @@ export const node_progress = pgTable(
     completed_at: optionalTimestamp(),
     updated_at: updatedAt(),
   },
-  (table) => [uniqueIndex("node_progress_user_node_idx").on(table.user_id, table.node_id)],
+  (table) => [
+    uniqueIndex("node_progress_user_node_idx").on(table.user_id, table.node_id),
+    check(
+      "node_progress_best_score_check",
+      sql`${table.best_score} IS NULL OR (${table.best_score} >= 0 AND ${table.best_score} <= 1)`,
+    ),
+    check("node_progress_attempt_count_check", sql`${table.attempt_count} >= 0`),
+  ],
 );
 
 export const attempts = pgTable(
@@ -491,21 +508,63 @@ export const attempts = pgTable(
     node_id: uuid()
       .notNull()
       .references(() => module_nodes.id),
-    activity_id: uuid()
-      .notNull()
-      .references(() => activities.id),
+    submission_id: uuid().notNull(),
+    submission_hash: varchar({ length: 64 }).notNull(),
     attempt_number: integer().notNull(),
-    response: jsonb().notNull(),
+    evaluation_status: attempt_evaluation_status().notNull(),
     score: numeric(),
     max_score: numeric(),
-    evaluation: jsonb(),
-    ai_feedback: text(),
+    policy_outcome: attempt_policy_outcome(),
+    xp_awarded: integer().notNull().default(0),
+    failure: jsonb(),
+    evaluated_at: optionalTimestamp(),
     created_at: createdAt(),
   },
   (table) => [
     index("attempts_user_module_idx").on(table.user_id, table.module_id),
-    index("attempts_activity_idx").on(table.activity_id),
     index("attempts_node_idx").on(table.node_id),
+    uniqueIndex("attempts_user_submission_idx").on(table.user_id, table.submission_id),
+    uniqueIndex("attempts_user_node_number_idx").on(
+      table.user_id,
+      table.node_id,
+      table.attempt_number,
+    ),
+    check("attempts_attempt_number_check", sql`${table.attempt_number} > 0`),
+    check(
+      "attempts_score_check",
+      sql`${table.score} IS NULL OR (${table.score} >= 0 AND ${table.max_score} IS NOT NULL AND ${table.score} <= ${table.max_score})`,
+    ),
+    check("attempts_max_score_check", sql`${table.max_score} IS NULL OR ${table.max_score} > 0`),
+    check("attempts_xp_awarded_check", sql`${table.xp_awarded} >= 0`),
+  ],
+);
+
+export const attempt_responses = pgTable(
+  "attempt_responses",
+  {
+    attempt_id: uuid()
+      .notNull()
+      .references(() => attempts.id),
+    activity_id: uuid()
+      .notNull()
+      .references(() => activities.id),
+    response: jsonb().notNull(),
+    score: numeric(),
+    max_score: numeric(),
+    evaluation: jsonb(),
+    created_at: createdAt(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.attempt_id, table.activity_id] }),
+    index("attempt_responses_activity_idx").on(table.activity_id),
+    check(
+      "attempt_responses_score_check",
+      sql`${table.score} IS NULL OR (${table.score} >= 0 AND ${table.max_score} IS NOT NULL AND ${table.score} <= ${table.max_score})`,
+    ),
+    check(
+      "attempt_responses_max_score_check",
+      sql`${table.max_score} IS NULL OR ${table.max_score} > 0`,
+    ),
   ],
 );
 
@@ -519,8 +578,26 @@ export const attempt_concept_results = pgTable(
       .notNull()
       .references(() => module_concepts.id),
     performance_score: numeric().notNull(),
+    mastery_score: numeric().notNull(),
+    confidence_score: numeric().notNull(),
+    evidence_count: integer().notNull(),
   },
-  (table) => [primaryKey({ columns: [table.attempt_id, table.concept_id] })],
+  (table) => [
+    primaryKey({ columns: [table.attempt_id, table.concept_id] }),
+    check(
+      "attempt_concept_results_performance_score_check",
+      sql`${table.performance_score} >= 0 AND ${table.performance_score} <= 1`,
+    ),
+    check(
+      "attempt_concept_results_mastery_score_check",
+      sql`${table.mastery_score} >= 0 AND ${table.mastery_score} <= 1`,
+    ),
+    check(
+      "attempt_concept_results_confidence_score_check",
+      sql`${table.confidence_score} >= 0 AND ${table.confidence_score} <= 1`,
+    ),
+    check("attempt_concept_results_evidence_count_check", sql`${table.evidence_count} > 0`),
+  ],
 );
 
 export const user_concept_mastery = pgTable(
@@ -553,6 +630,7 @@ export const user_concept_mastery = pgTable(
       "user_concept_mastery_confidence_score_check",
       sql`${table.confidence_score} >= 0 AND ${table.confidence_score} <= 1`,
     ),
+    check("user_concept_mastery_evidence_count_check", sql`${table.evidence_count} > 0`),
   ],
 );
 
@@ -757,7 +835,7 @@ export const activitiesRelations = relations(activities, ({ many, one }) => ({
     fields: [activities.node_id],
     references: [module_nodes.id],
   }),
-  attempts: many(attempts),
+  attempt_responses: many(attempt_responses),
 }));
 
 export const generationRunsRelations = relations(generation_runs, ({ many, one }) => ({
@@ -826,12 +904,20 @@ export const attemptsRelations = relations(attempts, ({ many, one }) => ({
     fields: [attempts.node_id],
     references: [module_nodes.id],
   }),
-  activity: one(activities, {
-    fields: [attempts.activity_id],
-    references: [activities.id],
-  }),
+  responses: many(attempt_responses),
   concept_results: many(attempt_concept_results),
   triggered_interventions: many(adaptive_interventions),
+}));
+
+export const attemptResponsesRelations = relations(attempt_responses, ({ one }) => ({
+  attempt: one(attempts, {
+    fields: [attempt_responses.attempt_id],
+    references: [attempts.id],
+  }),
+  activity: one(activities, {
+    fields: [attempt_responses.activity_id],
+    references: [activities.id],
+  }),
 }));
 
 export const attemptConceptResultsRelations = relations(attempt_concept_results, ({ one }) => ({

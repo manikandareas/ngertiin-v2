@@ -1,10 +1,17 @@
-import type { PublicActivity } from "@ngertiin/contracts/api";
+import type { AttemptResult, DeterministicAnswer, PublicActivity } from "@ngertiin/contracts/api";
 import { ArrowLeft, ArrowRight, RotateCcw } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { AppShell } from "../components/app-shell";
 import { Button } from "../components/ui/button";
-import { useCompleteNode, useNode, useStartNode } from "../features/modules/api/use-modules";
+import {
+  useAttempt,
+  useCompleteNode,
+  useNode,
+  useStartNode,
+  useSubmitAttempt,
+} from "../features/modules/api/use-modules";
+import { ASSESSMENT_SUBMISSION_ENABLED } from "../features/modules/assessment-submission.gate";
 import { ApiProblemError } from "../lib/api";
 
 function Lesson({ activity }: { activity: Extract<PublicActivity, { type: "lesson" }> }) {
@@ -92,8 +99,14 @@ function Flashcards({ activity }: { activity: Extract<PublicActivity, { type: "f
 
 function Assessment({
   activity,
+  answer,
+  onAnswer,
+  result,
 }: {
   activity: Exclude<PublicActivity, { type: "lesson" | "flashcard" }>;
+  answer: DeterministicAnswer | undefined;
+  onAnswer: (answer: DeterministicAnswer) => void;
+  result: AttemptResult["attempt"]["activityResults"][number] | undefined;
 }) {
   const prompt =
     activity.type === "multiple_choice"
@@ -106,28 +119,116 @@ function Assessment({
       <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">Assessment</p>
       <h2 className="mt-3 text-xl font-bold">{prompt}</h2>
       {activity.type === "multiple_choice" ? (
-        <ul className="mt-5 space-y-2">
-          {activity.content.options.map((option) => (
-            <li className="rounded-xl border border-slate-200 p-3" key={option}>
-              {option}
-            </li>
+        <fieldset className="mt-5 space-y-2">
+          {activity.content.options.map((option, optionIndex) => (
+            <label
+              className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 p-3"
+              key={option}
+            >
+              <input
+                checked={Boolean(
+                  answer && "optionIndex" in answer && answer.optionIndex === optionIndex,
+                )}
+                name={activity.id}
+                onChange={() => onAnswer({ optionIndex })}
+                type="radio"
+              />
+              <span>{option}</span>
+            </label>
           ))}
-        </ul>
+        </fieldset>
+      ) : activity.type === "true_false" ? (
+        <fieldset className="mt-5 grid grid-cols-2 gap-3">
+          {[true, false].map((value) => (
+            <label
+              className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 p-3"
+              key={String(value)}
+            >
+              <input
+                checked={Boolean(answer && "value" in answer && answer.value === value)}
+                name={activity.id}
+                onChange={() => onAnswer({ value })}
+                type="radio"
+              />
+              <span>{value ? "Benar" : "Salah"}</span>
+            </label>
+          ))}
+        </fieldset>
+      ) : (
+        <p className="mt-5 text-sm text-amber-900">Jawaban singkat baru tersedia pada M6.</p>
+      )}
+      {result ? (
+        <div
+          className={`mt-5 rounded-xl p-4 text-sm ${result.correct ? "bg-teal-50 text-teal-900" : "bg-red-50 text-red-900"}`}
+        >
+          <p className="font-semibold">
+            {result.correct ? "Jawaban benar" : "Jawaban belum tepat"}
+          </p>
+          <p className="mt-1">{result.explanation}</p>
+        </div>
       ) : null}
-      <p className="mt-6 rounded-xl bg-amber-50 p-4 text-sm text-amber-900">
-        Assessment belum tersedia. Node ini akan dapat diselesaikan pada milestone berikutnya.
-      </p>
     </article>
+  );
+}
+
+function AttemptSummary({ result }: { result: AttemptResult }) {
+  const { attempt } = result;
+  if (attempt.evaluationStatus === "evaluating") {
+    return <p className="mt-8 rounded-2xl bg-slate-100 p-5">Jawaban sedang dievaluasi…</p>;
+  }
+  if (attempt.evaluationStatus === "failed") {
+    return (
+      <p className="mt-8 rounded-2xl bg-red-50 p-5 text-red-900">
+        {attempt.failure?.message ?? "Assessment belum dapat dievaluasi."}
+      </p>
+    );
+  }
+  return (
+    <section className="mt-8 rounded-3xl border border-teal-200 bg-white p-7 shadow-sm">
+      <p className="text-sm font-semibold uppercase tracking-wide text-teal-700">
+        Hasil assessment
+      </p>
+      <p className="mt-3 text-3xl font-bold">
+        {attempt.score} / {attempt.maxScore}
+      </p>
+      <p className="mt-1 text-slate-600">
+        Skor {Math.round((attempt.normalizedScore ?? 0) * 100)}% · +{result.xpAwarded} XP
+      </p>
+      {attempt.conceptResults.length ? (
+        <div className="mt-6 space-y-3">
+          <h2 className="font-bold">Penguasaan konsep</h2>
+          {attempt.conceptResults.map((concept) => (
+            <div className="rounded-xl bg-slate-50 p-4" key={concept.conceptKey}>
+              <p className="font-semibold">{concept.conceptKey.replaceAll("_", " ")}</p>
+              <p className="mt-1 text-sm text-slate-600">
+                Performa {Math.round(concept.performanceScore * 100)}% · Mastery{" "}
+                {Math.round(concept.masteryScore * 100)}% · Confidence{" "}
+                {Math.round(concept.confidenceScore * 100)}% · {concept.evidenceCount} evidence
+              </p>
+            </div>
+          ))}
+        </div>
+      ) : null}
+      <p className="mt-5 text-sm text-slate-600">
+        Langkah berikutnya: {result.nextAction.type.replaceAll("_", " ")}
+      </p>
+    </section>
   );
 }
 
 export default function ModuleNodePage() {
   const { moduleId = "", nodeId = "" } = useParams();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const attemptId = searchParams.get("attemptId") ?? undefined;
   const nodeQuery = useNode(moduleId, nodeId);
+  const attemptQuery = useAttempt(attemptId);
   const start = useStartNode(moduleId, nodeId);
   const complete = useCompleteNode(moduleId, nodeId);
+  const submit = useSubmitAttempt(moduleId, nodeId);
   const startedNodeId = useRef<string | null>(null);
+  const submissionId = useRef<string | null>(null);
+  const [answers, setAnswers] = useState<Record<string, DeterministicAnswer>>({});
 
   useEffect(() => {
     if (nodeQuery.data?.node.progress.status !== "available" || startedNodeId.current === nodeId)
@@ -159,7 +260,16 @@ export default function ModuleNodePage() {
     data.activities.every(
       (activity) => activity.type === "lesson" || activity.type === "flashcard",
     );
-  const mutationError = start.error ?? complete.error;
+  const assessmentActivities = data.activities.filter(
+    (activity) => activity.type === "multiple_choice" || activity.type === "true_false",
+  );
+  const hasOnlyDeterministicAssessments =
+    assessmentActivities.length > 0 && assessmentActivities.length === data.activities.length;
+  const allAnswered =
+    hasOnlyDeterministicAssessments &&
+    assessmentActivities.every((activity) => answers[activity.id] !== undefined);
+  const attemptResult = submit.data ?? attemptQuery.data;
+  const mutationError = start.error ?? complete.error ?? submit.error ?? attemptQuery.error;
   const errorMessage =
     mutationError instanceof ApiProblemError
       ? mutationError.problem.detail
@@ -181,6 +291,29 @@ export default function ModuleNodePage() {
     } catch {
       /* Mutation state renders the safe error. */
     }
+  }
+
+  async function handleSubmit() {
+    if (!allAnswered) return;
+    submissionId.current ??= crypto.randomUUID();
+    try {
+      const result = await submit.mutateAsync({
+        submissionId: submissionId.current,
+        responses: assessmentActivities.map((activity) => ({
+          activityId: activity.id,
+          answer: answers[activity.id] as DeterministicAnswer,
+        })),
+      });
+      setSearchParams({ attemptId: result.attempt.id }, { replace: true });
+    } catch {
+      /* Mutation state renders the safe error and keeps submissionId for retry. */
+    }
+  }
+
+  function handleTryAgain() {
+    submissionId.current = crypto.randomUUID();
+    submit.reset();
+    setSearchParams({}, { replace: true });
   }
 
   return (
@@ -207,7 +340,17 @@ export default function ModuleNodePage() {
             ) : activity.type === "flashcard" ? (
               <Flashcards activity={activity} key={activity.id} />
             ) : (
-              <Assessment activity={activity} key={activity.id} />
+              <Assessment
+                activity={activity}
+                answer={answers[activity.id]}
+                key={activity.id}
+                onAnswer={(answer) =>
+                  setAnswers((current) => ({ ...current, [activity.id]: answer }))
+                }
+                result={attemptResult?.attempt.activityResults.find(
+                  (item) => item.activityId === activity.id,
+                )}
+              />
             ),
           )}
         </div>
@@ -230,6 +373,28 @@ export default function ModuleNodePage() {
             <ArrowRight className="ml-2 size-4" />
           </Button>
         ) : null}
+        {hasOnlyDeterministicAssessments ? (
+          <div className="mt-8">
+            {!ASSESSMENT_SUBMISSION_ENABLED ? (
+              <p className="rounded-2xl bg-amber-50 p-4 text-sm text-amber-900">
+                Assessment menunggu adaptive flow M7. Pertanyaan dapat dibaca, tetapi jawaban belum
+                dapat dikirim.
+              </p>
+            ) : (
+              <div className="flex gap-3">
+                <Button disabled={!allAnswered || submit.isPending} onClick={handleSubmit}>
+                  {submit.isPending ? "Menilai…" : "Kirim jawaban"}
+                </Button>
+                {attemptResult?.attempt.evaluationStatus !== "evaluating" ? (
+                  <Button onClick={handleTryAgain} variant="outline">
+                    Coba lagi
+                  </Button>
+                ) : null}
+              </div>
+            )}
+          </div>
+        ) : null}
+        {attemptResult ? <AttemptSummary result={attemptResult} /> : null}
       </div>
     </AppShell>
   );

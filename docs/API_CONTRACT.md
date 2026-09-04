@@ -953,11 +953,7 @@ Completed response:
           "evidenceCount": 2
         }
       ],
-      "feedback": {
-        "summary": "You understand the organ sequence but should review digestive enzymes.",
-        "strengths": ["Digestive organ order"],
-        "areasToImprove": ["Enzyme functions"]
-      },
+      "feedback": null,
       "createdAt": "2026-09-03T09:20:00.000Z",
       "evaluatedAt": "2026-09-03T09:20:03.000Z"
     },
@@ -982,8 +978,11 @@ Completed response:
 }
 ```
 
-Evaluation config is never echoed. A post-evaluation result may reveal safe correctness,
-explanation, and correct-answer information needed for feedback.
+Evaluation config is never echoed. M5 returns only safe correctness, score, and explanation; it
+does not expose raw correct answers, weights, rubrics, or evaluation configuration.
+
+In M5, deterministic evaluation keeps overall feedback `null` and persists only the policy outcome.
+Public submission remains compile-time disabled until M7 can enforce adaptive intervention.
 
 ### 10.2 Evaluation Atomicity
 
