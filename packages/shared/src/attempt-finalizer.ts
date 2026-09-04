@@ -1,15 +1,24 @@
+import { randomUUID } from "node:crypto";
 import type { AssessmentFeedback } from "@ngertiin/contracts/api";
+import { ADAPTIVE_GENERATION_STEPS } from "@ngertiin/contracts/jobs";
 import {
+  adaptive_intervention_concepts,
+  adaptive_interventions,
   type DatabaseClient,
   activities,
   attempt_concept_results,
   attempt_responses,
   attempts,
+  generation_run_steps,
+  generation_runs,
   module_concepts,
+  module_nodes,
   modules,
+  node_progress,
   user_concept_mastery,
+  user_module_progress,
 } from "@ngertiin/database";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, gt } from "drizzle-orm";
 import {
   aggregateConceptContributions,
   type ActivityEvaluation,
@@ -18,7 +27,7 @@ import {
   selectPolicyOutcome,
   updateMastery,
 } from "./assessment.js";
-import { finalizeCoreNodeProgress } from "./progression.js";
+import { finalizeAdaptiveNodeProgress, finalizeCoreNodeProgress } from "./progression.js";
 
 export type PublicAttemptFailure = {
   code: "ATTEMPT_EVALUATION_FAILED";
@@ -78,9 +87,12 @@ export async function finalizeAttemptEvaluation(
         userId: attempts.user_id,
         moduleId: attempts.module_id,
         nodeId: attempts.node_id,
+        nodeOrigin: module_nodes.origin,
+        corePosition: module_nodes.core_position,
         evaluationStatus: attempts.evaluation_status,
       })
       .from(attempts)
+      .innerJoin(module_nodes, eq(module_nodes.id, attempts.node_id))
       .where(eq(attempts.id, input.attemptId))
       .for("update")
       .limit(1);
@@ -203,14 +215,105 @@ export async function finalizeAttemptEvaluation(
     const score = input.activityResults.reduce((total, result) => total + result.score, 0);
     const maxScore = input.activityResults.length;
     if (maxScore === 0) throw new InvalidEvaluationConfigurationError();
-    const policyOutcome = selectPolicyOutcome(masteryResults.map((result) => result.masteryScore));
-    const progression = await finalizeCoreNodeProgress(transaction, {
-      userId: attempt.userId,
-      moduleId: attempt.moduleId,
-      nodeId: attempt.nodeId,
-      normalizedScore: score / maxScore,
-      xp: { amount: 20, reason: "quiz_completed" },
-    });
+    const policyOutcome =
+      attempt.nodeOrigin === "adaptive"
+        ? "continue"
+        : selectPolicyOutcome(masteryResults.map((result) => result.masteryScore));
+    const progression =
+      attempt.nodeOrigin === "adaptive"
+        ? await finalizeAdaptiveNodeProgress(transaction, {
+            userId: attempt.userId,
+            moduleId: attempt.moduleId,
+            nodeId: attempt.nodeId,
+            normalizedScore: score / maxScore,
+          })
+        : await finalizeCoreNodeProgress(transaction, {
+            userId: attempt.userId,
+            moduleId: attempt.moduleId,
+            nodeId: attempt.nodeId,
+            normalizedScore: score / maxScore,
+            xp: { amount: 20, reason: "quiz_completed" },
+          });
+
+    if (attempt.nodeOrigin === "core" && policyOutcome !== "continue") {
+      if (attempt.corePosition === null) throw new InvalidEvaluationConfigurationError();
+      const [resumeNode] = await transaction
+        .select({ id: module_nodes.id })
+        .from(module_nodes)
+        .where(
+          and(
+            eq(module_nodes.module_id, attempt.moduleId),
+            eq(module_nodes.origin, "core"),
+            gt(module_nodes.core_position, attempt.corePosition),
+          ),
+        )
+        .orderBy(asc(module_nodes.core_position))
+        .limit(1);
+      const interventionId = randomUUID();
+      const required = policyOutcome === "required_intervention";
+      await transaction.insert(adaptive_interventions).values({
+        id: interventionId,
+        user_id: attempt.userId,
+        module_id: attempt.moduleId,
+        trigger_node_id: attempt.nodeId,
+        trigger_attempt_id: attempt.id,
+        resume_node_id: resumeNode?.id ?? null,
+        reason_code: required ? "mastery_below_required" : "mastery_below_review",
+        reason_summary: required
+          ? "Mari perkuat beberapa konsep sebelum melanjutkan perjalanan utama."
+          : "Tinjauan singkat tersedia untuk membantu memperkuat konsep yang masih belum mantap.",
+        required,
+        status: required ? "generating" : "offered",
+      });
+      const targets = masteryResults.filter((result) => result.masteryScore < 0.75);
+      await transaction.insert(adaptive_intervention_concepts).values(
+        targets.map((target) => ({
+          adaptive_intervention_id: interventionId,
+          concept_id: target.conceptId,
+          mastery_score: String(target.masteryScore),
+        })),
+      );
+      if (required) {
+        const generationRunId = randomUUID();
+        await transaction.insert(generation_runs).values({
+          id: generationRunId,
+          user_id: attempt.userId,
+          module_id: attempt.moduleId,
+          adaptive_intervention_id: interventionId,
+          type: "adaptive",
+          status: "queued",
+          progress_percentage: 0,
+        });
+        await transaction.insert(generation_run_steps).values(
+          ADAPTIVE_GENERATION_STEPS.map((step, index) => ({
+            generation_run_id: generationRunId,
+            step: step.name,
+            position: index + 1,
+            status: "pending" as const,
+          })),
+        );
+        if (resumeNode) {
+          await transaction
+            .update(node_progress)
+            .set({ status: "locked", updated_at: new Date() })
+            .where(
+              and(
+                eq(node_progress.user_id, attempt.userId),
+                eq(node_progress.node_id, resumeNode.id),
+              ),
+            );
+          await transaction
+            .update(user_module_progress)
+            .set({ current_node_id: null, updated_at: new Date() })
+            .where(
+              and(
+                eq(user_module_progress.user_id, attempt.userId),
+                eq(user_module_progress.module_id, attempt.moduleId),
+              ),
+            );
+        }
+      }
+    }
     await transaction
       .update(attempts)
       .set({

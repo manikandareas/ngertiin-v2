@@ -8,6 +8,7 @@ const NewModulePage = lazy(() => import("../pages/new-module"));
 const ModuleStatusPage = lazy(() => import("../pages/module-status"));
 const ModuleJourneyPage = lazy(() => import("../pages/module-journey"));
 const ModuleNodePage = lazy(() => import("../pages/module-node"));
+const AdaptiveInterventionPage = lazy(() => import("../pages/adaptive-intervention"));
 const ProfilePage = lazy(() => import("../pages/profile"));
 const SignInPage = lazy(() => import("../pages/sign-in"));
 
@@ -21,6 +22,14 @@ export function AppRoutes() {
       }
     >
       <Routes>
+        <Route
+          path="/adaptive-interventions/:interventionId"
+          element={
+            <AuthenticatedRoute>
+              <AdaptiveInterventionPage />
+            </AuthenticatedRoute>
+          }
+        />
         <Route
           path="/dashboard"
           element={

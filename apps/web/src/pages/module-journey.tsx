@@ -35,7 +35,10 @@ export default function ModuleJourneyPage() {
 
   const data = journey.data;
   const selectedNodeId =
-    data.nextAction.type === "start_core_node" || data.nextAction.type === "resume_core_node"
+    data.nextAction.type === "start_core_node" ||
+    data.nextAction.type === "resume_core_node" ||
+    data.nextAction.type === "start_adaptive_node" ||
+    data.nextAction.type === "resume_adaptive_node"
       ? data.nextAction.nodeId
       : null;
 
@@ -67,7 +70,8 @@ export default function ModuleJourneyPage() {
           {selectedNodeId ? (
             <Button asChild className="mt-6 w-full sm:w-auto">
               <Link to={`/modules/${data.module.id}/nodes/${selectedNodeId}`}>
-                {data.nextAction.type === "resume_core_node"
+                {data.nextAction.type === "resume_core_node" ||
+                data.nextAction.type === "resume_adaptive_node"
                   ? "Lanjutkan belajar"
                   : "Mulai belajar"}
                 <ArrowRight aria-hidden="true" className="ml-2 size-4" />
@@ -77,13 +81,23 @@ export default function ModuleJourneyPage() {
             <p className="mt-6 rounded-2xl bg-teal-50 p-4 font-medium text-teal-800">
               Semua Core Node sudah selesai.
             </p>
+          ) : data.nextAction.type === "offer_optional_review" ||
+            data.nextAction.type === "wait_for_adaptive" ? (
+            <Button asChild className="mt-6 w-full sm:w-auto">
+              <Link to={`/adaptive-interventions/${data.nextAction.interventionId}`}>
+                Buka dukungan belajar
+                <ArrowRight className="ml-2 size-4" />
+              </Link>
+            </Button>
           ) : null}
         </section>
 
         <ol className="mt-8 space-y-3">
           {data.nodes.map((node) => {
             const content = (
-              <div className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5">
+              <div
+                className={`flex items-center gap-4 rounded-2xl border bg-white p-5 ${node.origin === "adaptive" ? "ml-6 border-teal-200" : "border-slate-200"}`}
+              >
                 <span className="grid size-10 shrink-0 place-items-center rounded-full bg-slate-100">
                   {node.progress.status === "locked" ? (
                     <LockKeyhole className="size-4" />
@@ -95,7 +109,7 @@ export default function ModuleJourneyPage() {
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    {node.position}. {node.type}
+                    {node.origin === "adaptive" ? "Adaptive" : node.position}. {node.type}
                   </p>
                   <h2 className="mt-1 font-bold">{node.title}</h2>
                   <p className="mt-1 text-sm text-slate-500">{statusLabel[node.progress.status]}</p>

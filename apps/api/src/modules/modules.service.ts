@@ -27,6 +27,7 @@ import {
 import { MODULE_GENERATION_STEPS } from "@ngertiin/contracts/jobs";
 import {
   activities,
+  adaptive_interventions,
   type DatabaseTransaction,
   generation_request_sources,
   generation_requests,
@@ -43,7 +44,11 @@ import { z } from "zod";
 import { ProductError } from "../http/product-error.js";
 import { IdempotencyService } from "../idempotency/idempotency.service.js";
 import { InfrastructureService } from "../infrastructure/infrastructure.service.js";
-import { finalizeCoreNodeProgress } from "@ngertiin/shared";
+import {
+  finalizeAdaptiveNodeProgress,
+  finalizeCoreNodeProgress,
+  selectLearningAction,
+} from "@ngertiin/shared";
 
 const moduleCursorSchema = z
   .object({
@@ -128,14 +133,22 @@ function selectNextAction(input: {
   progressStatus: ModuleRow["progressStatus"];
   currentNodeId: string | null;
   nodes: Array<Pick<ProgressNodeRow, "id" | "status">>;
+  intervention?: {
+    id: string;
+    triggerAttemptId: string;
+    status:
+      | "offered"
+      | "generating"
+      | "available"
+      | "in_progress"
+      | "completed"
+      | "failed"
+      | "skipped";
+    firstNodeId: string | null;
+    activeNodeId: string | null;
+  } | null;
 }): NextLearningAction {
   if (input.moduleStatus === "archived") return { type: "none" };
-  if (input.moduleStatus === "generating") {
-    return { type: "wait_for_module", moduleId: input.moduleId };
-  }
-  if (input.progressStatus === "completed") {
-    return { type: "module_completed", moduleId: input.moduleId };
-  }
   const activeNode =
     input.nodes.find(
       (node) =>
@@ -144,12 +157,14 @@ function selectNextAction(input: {
     ) ??
     input.nodes.find((node) => node.status === "in_progress") ??
     input.nodes.find((node) => node.status === "available");
-  if (!activeNode) return { type: "none" };
-  return {
-    type: activeNode.status === "in_progress" ? "resume_core_node" : "start_core_node",
+  return selectLearningAction({
     moduleId: input.moduleId,
-    nodeId: activeNode.id,
-  };
+    moduleStatus: input.moduleStatus,
+    moduleProgressStatus: input.progressStatus,
+    currentCoreNodeId: activeNode?.id ?? input.currentNodeId,
+    currentCoreNodeStatus: activeNode?.status,
+    intervention: input.intervention,
+  });
 }
 
 function mapModuleProgress(
@@ -534,7 +549,7 @@ export class ModulesService {
         type: module_nodes.type,
         title: module_nodes.title,
         description: module_nodes.description,
-        position: module_nodes.core_position,
+        position: sql<number>`coalesce(${module_nodes.core_position}, ${module_nodes.adaptive_position})`,
         interventionId: module_nodes.adaptive_intervention_id,
         status: node_progress.status,
         bestScore: node_progress.best_score,
@@ -545,8 +560,50 @@ export class ModulesService {
         node_progress,
         and(eq(node_progress.node_id, module_nodes.id), eq(node_progress.user_id, userId)),
       )
-      .where(and(eq(module_nodes.module_id, moduleId), eq(module_nodes.origin, "core")))
-      .orderBy(asc(module_nodes.core_position))) as ProgressNodeRow[];
+      .where(eq(module_nodes.module_id, moduleId))
+      .orderBy(asc(module_nodes.created_at), asc(module_nodes.id))) as ProgressNodeRow[];
+
+    const interventions = await this.infrastructure.database.db
+      .select({
+        id: adaptive_interventions.id,
+        triggerNodeId: adaptive_interventions.trigger_node_id,
+        triggerAttemptId: adaptive_interventions.trigger_attempt_id,
+        status: adaptive_interventions.status,
+        createdAt: adaptive_interventions.created_at,
+      })
+      .from(adaptive_interventions)
+      .where(
+        and(
+          eq(adaptive_interventions.user_id, userId),
+          eq(adaptive_interventions.module_id, moduleId),
+        ),
+      )
+      .orderBy(asc(adaptive_interventions.created_at));
+    const coreRows = rows
+      .filter((node) => node.origin === "core")
+      .sort((a, b) => a.position - b.position);
+    const adaptiveByTrigger = new Map<string, ProgressNodeRow[]>();
+    for (const intervention of interventions) {
+      const existing = adaptiveByTrigger.get(intervention.triggerNodeId) ?? [];
+      adaptiveByTrigger.set(intervention.triggerNodeId, [
+        ...existing,
+        ...rows
+          .filter((node) => node.interventionId === intervention.id)
+          .sort((a, b) => a.position - b.position),
+      ]);
+    }
+    const displayRows = coreRows.flatMap((node) => [
+      node,
+      ...(adaptiveByTrigger.get(node.id) ?? []),
+    ]);
+    const activeIntervention = [...interventions]
+      .reverse()
+      .find((item) =>
+        ["offered", "generating", "available", "in_progress", "failed"].includes(item.status),
+      );
+    const activeNodes = activeIntervention
+      ? rows.filter((node) => node.interventionId === activeIntervention.id)
+      : [];
 
     return {
       module: {
@@ -556,23 +613,36 @@ export class ModulesService {
         difficulty: module.difficulty,
         estimatedMinutes: module.estimatedMinutes,
       },
-      progress: mapModuleProgress(module.progressStatus, module.progressPercentage, rows),
-      nodes: rows.map(mapJourneyNode),
+      progress: mapModuleProgress(module.progressStatus, module.progressPercentage, coreRows),
+      nodes: displayRows.map(mapJourneyNode),
       nextAction: selectNextAction({
         moduleId,
         moduleStatus: module.status,
         progressStatus: module.progressStatus,
         currentNodeId: module.currentNodeId,
-        nodes: rows,
+        nodes: coreRows,
+        intervention: activeIntervention
+          ? {
+              id: activeIntervention.id,
+              triggerAttemptId: activeIntervention.triggerAttemptId,
+              status: activeIntervention.status,
+              firstNodeId:
+                activeNodes.find((node) => node.status === "available")?.id ??
+                activeNodes[0]?.id ??
+                null,
+              activeNodeId:
+                activeNodes.find((node) => node.status === "in_progress")?.id ??
+                activeNodes.find((node) => node.status === "available")?.id ??
+                null,
+            }
+          : null,
       }),
     };
   }
 
   async getNode(userId: string, moduleId: string, nodeId: string): Promise<NodeDetail> {
     const journey = await this.getJourney(userId, moduleId);
-    const node = journey.nodes.find(
-      (candidate) => candidate.id === nodeId && candidate.origin === "core",
-    );
+    const node = journey.nodes.find((candidate) => candidate.id === nodeId);
     if (!node) this.notFound();
     if (node.progress.status === "locked") {
       throw new ProductError(
@@ -624,15 +694,21 @@ export class ModulesService {
           status: node_progress.status,
           bestScore: node_progress.best_score,
           attemptCount: node_progress.attempt_count,
+          origin: module_nodes.origin,
+          interventionId: module_nodes.adaptive_intervention_id,
+          triggerAttemptId: adaptive_interventions.trigger_attempt_id,
         })
         .from(node_progress)
         .innerJoin(module_nodes, eq(module_nodes.id, node_progress.node_id))
+        .leftJoin(
+          adaptive_interventions,
+          eq(adaptive_interventions.id, module_nodes.adaptive_intervention_id),
+        )
         .where(
           and(
             eq(node_progress.user_id, userId),
             eq(node_progress.node_id, nodeId),
             eq(module_nodes.module_id, moduleId),
-            eq(module_nodes.origin, "core"),
           ),
         )
         .for("update", { of: node_progress })
@@ -646,34 +722,57 @@ export class ModulesService {
           .update(node_progress)
           .set({ status: "in_progress", started_at: now, updated_at: now })
           .where(eq(node_progress.id, progress.id));
-        await transaction
-          .update(user_module_progress)
-          .set({
-            status: "in_progress",
-            current_node_id: nodeId,
-            started_at: sql`coalesce(${user_module_progress.started_at}, current_timestamp)`,
-            updated_at: now,
-          })
-          .where(eq(user_module_progress.id, moduleProgress.id));
+        if (progress.origin === "adaptive" && progress.interventionId) {
+          await transaction
+            .update(adaptive_interventions)
+            .set({ status: "in_progress" })
+            .where(eq(adaptive_interventions.id, progress.interventionId));
+        } else {
+          await transaction
+            .update(user_module_progress)
+            .set({
+              status: "in_progress",
+              current_node_id: nodeId,
+              started_at: sql`coalesce(${user_module_progress.started_at}, current_timestamp)`,
+              updated_at: now,
+            })
+            .where(eq(user_module_progress.id, moduleProgress.id));
+        }
       }
 
       const state = await this.readProgressState(transaction, userId, moduleId);
       const current = state.nodes.find((node) => node.id === nodeId);
       if (!current) this.notFound();
+      const coreNodes = state.nodes.filter((node) => node.origin === "core");
       return {
         nodeProgress: mapNodeProgress(current),
         moduleProgress: mapModuleProgress(
           state.progress.status,
           state.progress.percentage,
-          state.nodes,
+          coreNodes,
         ),
-        nextAction: selectNextAction({
-          moduleId,
-          moduleStatus: module.status,
-          progressStatus: state.progress.status,
-          currentNodeId: state.progress.currentNodeId,
-          nodes: state.nodes,
-        }),
+        nextAction:
+          current.origin === "adaptive" && progress.interventionId && progress.triggerAttemptId
+            ? selectLearningAction({
+                moduleId,
+                moduleStatus: module.status,
+                moduleProgressStatus: state.progress.status,
+                currentCoreNodeId: state.progress.currentNodeId,
+                intervention: {
+                  id: progress.interventionId,
+                  triggerAttemptId: progress.triggerAttemptId,
+                  status: "in_progress",
+                  firstNodeId: nodeId,
+                  activeNodeId: nodeId,
+                },
+              })
+            : selectNextAction({
+                moduleId,
+                moduleStatus: module.status,
+                progressStatus: state.progress.status,
+                currentNodeId: state.progress.currentNodeId,
+                nodes: coreNodes,
+              }),
       };
     });
   }
@@ -688,6 +787,7 @@ export class ModulesService {
       const [progress] = await transaction
         .select({
           status: node_progress.status,
+          origin: module_nodes.origin,
         })
         .from(node_progress)
         .innerJoin(module_nodes, eq(module_nodes.id, node_progress.node_id))
@@ -696,7 +796,6 @@ export class ModulesService {
             eq(node_progress.user_id, userId),
             eq(node_progress.node_id, nodeId),
             eq(module_nodes.module_id, moduleId),
-            eq(module_nodes.origin, "core"),
           ),
         )
         .for("update", { of: node_progress })
@@ -721,12 +820,14 @@ export class ModulesService {
           "This node contains assessment activities and must be completed through an Attempt.",
         );
       }
-      return finalizeCoreNodeProgress(transaction, {
-        userId,
-        moduleId,
-        nodeId,
-        xp: { amount: 10, reason: "node_completed" },
-      });
+      return progress.origin === "adaptive"
+        ? finalizeAdaptiveNodeProgress(transaction, { userId, moduleId, nodeId })
+        : finalizeCoreNodeProgress(transaction, {
+            userId,
+            moduleId,
+            nodeId,
+            xp: { amount: 10, reason: "node_completed" },
+          });
     });
   }
 
@@ -929,6 +1030,40 @@ export class ModulesService {
             )
         : Promise.resolve([]),
     ]);
+    const activeInterventions = await this.infrastructure.database.db
+      .select({
+        id: adaptive_interventions.id,
+        moduleId: adaptive_interventions.module_id,
+        triggerAttemptId: adaptive_interventions.trigger_attempt_id,
+        status: adaptive_interventions.status,
+        createdAt: adaptive_interventions.created_at,
+      })
+      .from(adaptive_interventions)
+      .where(
+        and(
+          eq(adaptive_interventions.user_id, userId),
+          inArray(adaptive_interventions.module_id, moduleIds),
+          sql`${adaptive_interventions.status} IN ('offered', 'generating', 'available', 'in_progress', 'failed')`,
+        ),
+      )
+      .orderBy(desc(adaptive_interventions.created_at));
+    const interventionIds = activeInterventions.map((item) => item.id);
+    const adaptiveNodes =
+      interventionIds.length > 0
+        ? await this.infrastructure.database.db
+            .select({
+              interventionId: module_nodes.adaptive_intervention_id,
+              id: module_nodes.id,
+              status: node_progress.status,
+            })
+            .from(module_nodes)
+            .innerJoin(
+              node_progress,
+              and(eq(node_progress.node_id, module_nodes.id), eq(node_progress.user_id, userId)),
+            )
+            .where(inArray(module_nodes.adaptive_intervention_id, interventionIds))
+            .orderBy(asc(module_nodes.adaptive_position))
+        : [];
 
     const nodesByModule = new Map<string, typeof nodes>();
     for (const node of nodes) {
@@ -959,6 +1094,10 @@ export class ModulesService {
           nextAction = { type: "none" };
         }
       } else {
+        const intervention = activeInterventions.find((item) => item.moduleId === row.id);
+        const interventionNodes = intervention
+          ? adaptiveNodes.filter((node) => node.interventionId === intervention.id)
+          : [];
         nextAction = selectNextAction({
           moduleId: row.id,
           moduleStatus: row.status,
@@ -967,6 +1106,21 @@ export class ModulesService {
           nodes: moduleNodes.flatMap((node) =>
             node.status ? [{ id: node.id, status: node.status }] : [],
           ),
+          intervention: intervention
+            ? {
+                id: intervention.id,
+                triggerAttemptId: intervention.triggerAttemptId,
+                status: intervention.status,
+                firstNodeId:
+                  interventionNodes.find((node) => node.status === "available")?.id ??
+                  interventionNodes[0]?.id ??
+                  null,
+                activeNodeId:
+                  interventionNodes.find((node) => node.status === "in_progress")?.id ??
+                  interventionNodes.find((node) => node.status === "available")?.id ??
+                  null,
+              }
+            : null,
         });
       }
 
@@ -1039,7 +1193,7 @@ export class ModulesService {
         type: module_nodes.type,
         title: module_nodes.title,
         description: module_nodes.description,
-        position: module_nodes.core_position,
+        position: sql<number>`coalesce(${module_nodes.core_position}, ${module_nodes.adaptive_position})`,
         interventionId: module_nodes.adaptive_intervention_id,
         status: node_progress.status,
         bestScore: node_progress.best_score,
@@ -1050,8 +1204,8 @@ export class ModulesService {
         node_progress,
         and(eq(node_progress.node_id, module_nodes.id), eq(node_progress.user_id, userId)),
       )
-      .where(and(eq(module_nodes.module_id, moduleId), eq(module_nodes.origin, "core")))
-      .orderBy(asc(module_nodes.core_position))) as ProgressNodeRow[];
+      .where(eq(module_nodes.module_id, moduleId))
+      .orderBy(asc(module_nodes.created_at), asc(module_nodes.id))) as ProgressNodeRow[];
     return { progress, nodes };
   }
 

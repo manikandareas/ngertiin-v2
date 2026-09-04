@@ -4,6 +4,7 @@ import type {
   NodeProgress,
 } from "@ngertiin/contracts/api";
 import {
+  adaptive_interventions,
   type DatabaseTransaction,
   module_nodes,
   node_progress,
@@ -21,8 +22,314 @@ type ProgressNode = {
   attemptCount: number;
 };
 
+export type LearningInterventionState = {
+  id: string;
+  triggerAttemptId: string;
+  status:
+    | "offered"
+    | "generating"
+    | "available"
+    | "in_progress"
+    | "completed"
+    | "failed"
+    | "skipped";
+  firstNodeId: string | null;
+  activeNodeId: string | null;
+};
+
+export function selectLearningAction(input: {
+  moduleId: string;
+  moduleStatus: "generating" | "ready" | "failed" | "archived";
+  moduleProgressStatus: ModuleProgressStatus | null;
+  currentCoreNodeId: string | null;
+  currentCoreNodeStatus?: ProgressNode["status"];
+  intervention?: LearningInterventionState | null;
+}): NextLearningAction {
+  if (input.moduleStatus === "generating")
+    return { type: "wait_for_module", moduleId: input.moduleId };
+  if (input.moduleStatus === "failed") return { type: "retry_module", moduleId: input.moduleId };
+  const intervention = input.intervention;
+  if (intervention?.status === "offered") {
+    return {
+      type: "offer_optional_review",
+      attemptId: intervention.triggerAttemptId,
+      interventionId: intervention.id,
+    };
+  }
+  if (intervention?.status === "generating" || intervention?.status === "failed") {
+    return { type: "wait_for_adaptive", interventionId: intervention.id };
+  }
+  if (intervention?.status === "available" && intervention.firstNodeId) {
+    return {
+      type: "start_adaptive_node",
+      moduleId: input.moduleId,
+      nodeId: intervention.firstNodeId,
+    };
+  }
+  if (intervention?.status === "in_progress" && intervention.activeNodeId) {
+    return {
+      type: "resume_adaptive_node",
+      moduleId: input.moduleId,
+      nodeId: intervention.activeNodeId,
+    };
+  }
+  if (input.moduleProgressStatus === "completed")
+    return { type: "module_completed", moduleId: input.moduleId };
+  if (!input.currentCoreNodeId) return { type: "none" };
+  return {
+    type: input.currentCoreNodeStatus === "in_progress" ? "resume_core_node" : "start_core_node",
+    moduleId: input.moduleId,
+    nodeId: input.currentCoreNodeId,
+  };
+}
+
 function percentage(completed: number, total: number): number {
   return total === 0 ? 0 : Math.round((completed / total) * 10_000) / 100;
+}
+
+export async function finalizeAdaptiveNodeProgress(
+  transaction: DatabaseTransaction,
+  input: { userId: string; moduleId: string; nodeId: string; normalizedScore?: number },
+): Promise<{
+  nodeProgress: NodeProgress;
+  moduleProgress: {
+    status: ModuleProgressStatus;
+    percentage: number;
+    completedCoreNodes: number;
+    totalCoreNodes: number;
+  };
+  xpAwarded: number;
+  nextAction: NextLearningAction;
+}> {
+  const [current] = await transaction
+    .select({
+      progressId: node_progress.id,
+      status: node_progress.status,
+      bestScore: node_progress.best_score,
+      attemptCount: node_progress.attempt_count,
+      completedAt: node_progress.completed_at,
+      interventionId: module_nodes.adaptive_intervention_id,
+      position: module_nodes.adaptive_position,
+    })
+    .from(node_progress)
+    .innerJoin(module_nodes, eq(module_nodes.id, node_progress.node_id))
+    .where(
+      and(
+        eq(node_progress.user_id, input.userId),
+        eq(node_progress.node_id, input.nodeId),
+        eq(module_nodes.module_id, input.moduleId),
+        eq(module_nodes.origin, "adaptive"),
+      ),
+    )
+    .for("update", { of: node_progress })
+    .limit(1);
+  if (!current?.interventionId || current.position === null)
+    throw new Error("Adaptive Node progress is missing.");
+  const [intervention] = await transaction
+    .select({
+      id: adaptive_interventions.id,
+      triggerAttemptId: adaptive_interventions.trigger_attempt_id,
+      resumeNodeId: adaptive_interventions.resume_node_id,
+      status: adaptive_interventions.status,
+    })
+    .from(adaptive_interventions)
+    .where(
+      and(
+        eq(adaptive_interventions.id, current.interventionId),
+        eq(adaptive_interventions.user_id, input.userId),
+      ),
+    )
+    .for("update")
+    .limit(1);
+  if (!intervention || !["available", "in_progress", "completed"].includes(intervention.status))
+    throw new Error("Adaptive Intervention is not learnable.");
+
+  const now = new Date();
+  const wasCompleted = current.status === "completed";
+  const bestScore =
+    input.normalizedScore === undefined
+      ? current.bestScore === null
+        ? null
+        : Number(current.bestScore)
+      : Math.max(current.bestScore === null ? 0 : Number(current.bestScore), input.normalizedScore);
+  await transaction
+    .update(node_progress)
+    .set({
+      status: "completed",
+      best_score: bestScore === null ? null : String(bestScore),
+      started_at: sql`coalesce(${node_progress.started_at}, current_timestamp)`,
+      completed_at: current.completedAt ?? now,
+      updated_at: now,
+    })
+    .where(eq(node_progress.id, current.progressId));
+
+  const adaptiveNodes = await transaction
+    .select({
+      id: module_nodes.id,
+      status: node_progress.status,
+      bestScore: node_progress.best_score,
+      attemptCount: node_progress.attempt_count,
+    })
+    .from(module_nodes)
+    .innerJoin(
+      node_progress,
+      and(eq(node_progress.node_id, module_nodes.id), eq(node_progress.user_id, input.userId)),
+    )
+    .where(eq(module_nodes.adaptive_intervention_id, intervention.id))
+    .orderBy(asc(module_nodes.adaptive_position));
+  const currentIndex = adaptiveNodes.findIndex((node) => node.id === input.nodeId);
+  const next = adaptiveNodes[currentIndex + 1];
+  let xpAwarded = 0;
+  if (!wasCompleted && next) {
+    await transaction
+      .update(node_progress)
+      .set({ status: "available", updated_at: now })
+      .where(
+        and(
+          eq(node_progress.user_id, input.userId),
+          eq(node_progress.node_id, next.id),
+          eq(node_progress.status, "locked"),
+        ),
+      );
+    await transaction
+      .update(adaptive_interventions)
+      .set({ status: "available" })
+      .where(eq(adaptive_interventions.id, intervention.id));
+  } else if (!wasCompleted && !next) {
+    await transaction
+      .update(adaptive_interventions)
+      .set({ status: "completed", completed_at: now })
+      .where(eq(adaptive_interventions.id, intervention.id));
+    if (intervention.resumeNodeId) {
+      await transaction
+        .update(node_progress)
+        .set({ status: "available", updated_at: now })
+        .where(
+          and(
+            eq(node_progress.user_id, input.userId),
+            eq(node_progress.node_id, intervention.resumeNodeId),
+            eq(node_progress.status, "locked"),
+          ),
+        );
+      await transaction
+        .update(user_module_progress)
+        .set({ current_node_id: intervention.resumeNodeId, updated_at: now })
+        .where(
+          and(
+            eq(user_module_progress.user_id, input.userId),
+            eq(user_module_progress.module_id, input.moduleId),
+          ),
+        );
+    }
+    const [stats] = await transaction
+      .select({
+        totalXp: user_stats.total_xp,
+        currentStreak: user_stats.current_streak,
+        longestStreak: user_stats.longest_streak,
+        lastLearningDate: user_stats.last_learning_date,
+        learningDate: sql<string>`(current_timestamp at time zone ${users.timezone})::date`,
+      })
+      .from(user_stats)
+      .innerJoin(users, eq(users.id, user_stats.user_id))
+      .where(eq(user_stats.user_id, input.userId))
+      .for("update", { of: user_stats })
+      .limit(1);
+    if (!stats) throw new Error("User is missing learning statistics.");
+    const [event] = await transaction
+      .insert(xp_events)
+      .values({
+        user_id: input.userId,
+        module_id: input.moduleId,
+        amount: 20,
+        reason: "adaptive_completed",
+        reference_id: intervention.id,
+        created_at: now,
+      })
+      .onConflictDoNothing({
+        target: [xp_events.user_id, xp_events.reason, xp_events.reference_id],
+      })
+      .returning({ id: xp_events.id });
+    if (event) {
+      xpAwarded = 20;
+      const sameDay = stats.lastLearningDate === stats.learningDate;
+      const consecutive =
+        stats.lastLearningDate !== null &&
+        nextCalendarDate(stats.lastLearningDate) === stats.learningDate;
+      const currentStreak = sameDay
+        ? stats.currentStreak
+        : consecutive
+          ? stats.currentStreak + 1
+          : 1;
+      await transaction
+        .update(user_stats)
+        .set({
+          total_xp: stats.totalXp + 20,
+          current_streak: currentStreak,
+          longest_streak: Math.max(stats.longestStreak, currentStreak),
+          last_learning_date: stats.learningDate,
+          updated_at: now,
+        })
+        .where(eq(user_stats.user_id, input.userId));
+    }
+  }
+
+  const coreNodes = await transaction
+    .select({ id: module_nodes.id, status: node_progress.status })
+    .from(module_nodes)
+    .innerJoin(
+      node_progress,
+      and(eq(node_progress.node_id, module_nodes.id), eq(node_progress.user_id, input.userId)),
+    )
+    .where(and(eq(module_nodes.module_id, input.moduleId), eq(module_nodes.origin, "core")))
+    .orderBy(asc(module_nodes.core_position));
+  const [moduleProgress] = await transaction
+    .select({
+      status: user_module_progress.status,
+      percentage: user_module_progress.progress_percentage,
+      currentNodeId: user_module_progress.current_node_id,
+    })
+    .from(user_module_progress)
+    .where(
+      and(
+        eq(user_module_progress.user_id, input.userId),
+        eq(user_module_progress.module_id, input.moduleId),
+      ),
+    )
+    .limit(1);
+  if (!moduleProgress) throw new Error("Module progress is missing.");
+  const completed = coreNodes.filter((node) => node.status === "completed").length;
+  const finalNode = adaptiveNodes.find((node) => node.id === input.nodeId);
+  if (!finalNode) throw new Error("Adaptive Node progress is missing.");
+  const nextAction = selectLearningAction({
+    moduleId: input.moduleId,
+    moduleStatus: "ready",
+    moduleProgressStatus: moduleProgress.status,
+    currentCoreNodeId: intervention.resumeNodeId ?? moduleProgress.currentNodeId,
+    intervention: next
+      ? {
+          id: intervention.id,
+          triggerAttemptId: intervention.triggerAttemptId,
+          status: "available",
+          firstNodeId: next.id,
+          activeNodeId: null,
+        }
+      : null,
+  });
+  return {
+    nodeProgress: mapNode({
+      ...finalNode,
+      status: "completed",
+      bestScore: bestScore === null ? null : String(bestScore),
+    }),
+    moduleProgress: {
+      status: moduleProgress.status,
+      percentage: Number(moduleProgress.percentage),
+      completedCoreNodes: completed,
+      totalCoreNodes: coreNodes.length,
+    },
+    xpAwarded,
+    nextAction,
+  };
 }
 
 function nextCalendarDate(date: string): string {
@@ -232,18 +539,14 @@ export async function finalizeCoreNodeProgress(
 
   const node = nodes.find((candidate) => candidate.id === input.nodeId);
   if (!node) throw new Error("Completed Node progress is missing.");
-  const nextAction: NextLearningAction = isCompleted
-    ? { type: "module_completed", moduleId: input.moduleId }
-    : nextCurrent
-      ? {
-          type:
-            nodes.find((candidate) => candidate.id === nextCurrent)?.status === "in_progress"
-              ? "resume_core_node"
-              : "start_core_node",
-          moduleId: input.moduleId,
-          nodeId: nextCurrent,
-        }
-      : { type: "none" };
+  const nextNode = nodes.find((candidate) => candidate.id === nextCurrent);
+  const nextAction = selectLearningAction({
+    moduleId: input.moduleId,
+    moduleStatus: "ready",
+    moduleProgressStatus: progressStatus,
+    currentCoreNodeId: nextCurrent,
+    currentCoreNodeStatus: nextNode?.status,
+  });
 
   return {
     nodeProgress: mapNode({

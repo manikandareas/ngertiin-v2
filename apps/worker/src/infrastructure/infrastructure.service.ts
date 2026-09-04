@@ -14,6 +14,7 @@ export class InfrastructureService implements OnModuleInit, OnApplicationShutdow
   readonly redis: Redis;
   readonly sourceProcessingQueue: Queue;
   readonly moduleGenerationQueue: Queue;
+  readonly adaptiveGenerationQueue: Queue;
   readonly attemptEvaluationQueue: Queue;
 
   constructor(@Inject(WORKER_ENV) environment: WorkerEnvironment) {
@@ -40,6 +41,10 @@ export class InfrastructureService implements OnModuleInit, OnApplicationShutdow
       connection: this.redis,
     });
     this.moduleGenerationQueue.on("error", () => undefined);
+    this.adaptiveGenerationQueue = new Queue(QUEUE_NAMES.adaptiveGeneration, {
+      connection: this.redis,
+    });
+    this.adaptiveGenerationQueue.on("error", () => undefined);
     this.attemptEvaluationQueue = new Queue(QUEUE_NAMES.attemptEvaluation, {
       connection: this.redis,
     });
@@ -59,6 +64,7 @@ export class InfrastructureService implements OnModuleInit, OnApplicationShutdow
           this.storage.check(),
           this.sourceProcessingQueue.waitUntilReady(),
           this.moduleGenerationQueue.waitUntilReady(),
+          this.adaptiveGenerationQueue.waitUntilReady(),
           this.attemptEvaluationQueue.waitUntilReady(),
         ]),
         startupTimeout,
@@ -77,6 +83,7 @@ export class InfrastructureService implements OnModuleInit, OnApplicationShutdow
   private async close(): Promise<void> {
     await this.sourceProcessingQueue.close();
     await this.moduleGenerationQueue.close();
+    await this.adaptiveGenerationQueue.close();
     await this.attemptEvaluationQueue.close();
     await this.database.close();
     if (this.redis.status === "ready") {

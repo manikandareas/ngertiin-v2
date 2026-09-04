@@ -1,5 +1,6 @@
 import { useAuth } from "@clerk/react";
 import type {
+  AdaptiveDecision,
   CreateModuleBodyInput,
   GenerationStatus,
   SubmitAttemptBody,
@@ -9,12 +10,15 @@ import { useCallback, useEffect, useState } from "react";
 import {
   completeNode,
   createModule,
+  decideAdaptiveIntervention,
+  getAdaptiveIntervention,
   getGeneration,
   getAttempt,
   getJourney,
   getModule,
   getNode,
   retryGeneration,
+  streamAdaptiveGenerationEvents,
   streamGenerationEvents,
   startNode,
   submitAttempt,
@@ -48,6 +52,92 @@ export function nodeQueryKey(
 
 export function attemptQueryKey(userId: string | null | undefined, attemptId: string | undefined) {
   return ["attempt", userId, attemptId] as const;
+}
+
+export function adaptiveQueryKey(
+  userId: string | null | undefined,
+  interventionId: string | undefined,
+) {
+  return ["adaptive-intervention", userId, interventionId] as const;
+}
+
+export function useAdaptiveIntervention(interventionId: string | undefined) {
+  const { getToken, userId } = useAuth();
+  return useQuery({
+    queryKey: adaptiveQueryKey(userId, interventionId),
+    queryFn: () => getAdaptiveIntervention(getToken, interventionId as string),
+    enabled: Boolean(userId && interventionId),
+  });
+}
+
+export function useAdaptiveDecision(interventionId: string, moduleId?: string) {
+  const { getToken, userId } = useAuth();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ decision, key }: { decision: AdaptiveDecision; key: string }) =>
+      decideAdaptiveIntervention(getToken, interventionId, decision, key),
+    onSuccess: async (value) => {
+      queryClient.setQueryData(adaptiveQueryKey(userId, interventionId), value);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["attempt", userId] }),
+        queryClient.invalidateQueries({ queryKey: journeyQueryKey(userId, moduleId) }),
+        queryClient.invalidateQueries({ queryKey: moduleQueryKey(userId, moduleId) }),
+        queryClient.invalidateQueries({ queryKey: currentUserQueryKey(userId) }),
+      ]);
+    },
+  });
+}
+
+export function useAdaptiveGenerationStream(
+  interventionId: string | undefined,
+  enabled: boolean,
+): void {
+  const { getToken, userId } = useAuth();
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    if (!interventionId || !userId || !enabled) return;
+    let stopped = false;
+    let terminal = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let pollingTimer: ReturnType<typeof setInterval> | undefined;
+    let controller: AbortController | undefined;
+    const connect = async (index: number): Promise<void> => {
+      controller = new AbortController();
+      try {
+        await streamAdaptiveGenerationEvents(
+          getToken,
+          interventionId,
+          controller.signal,
+          (event) => {
+            terminal = ["completed", "failed"].includes(event.data.generation.state);
+            void queryClient.invalidateQueries({
+              queryKey: adaptiveQueryKey(userId, interventionId),
+            });
+          },
+        );
+      } catch {
+        if (controller.signal.aborted || stopped) return;
+      }
+      if (stopped || terminal) return;
+      const delay = reconnectDelays[index];
+      if (delay === undefined) {
+        pollingTimer = setInterval(() => {
+          void queryClient.invalidateQueries({
+            queryKey: adaptiveQueryKey(userId, interventionId),
+          });
+        }, 5_000);
+        return;
+      }
+      timer = setTimeout(() => void connect(index + 1), delay);
+    };
+    void connect(0);
+    return () => {
+      stopped = true;
+      controller?.abort();
+      if (timer) clearTimeout(timer);
+      if (pollingTimer) clearInterval(pollingTimer);
+    };
+  }, [enabled, getToken, interventionId, queryClient, userId]);
 }
 
 export function useCreateModule() {
@@ -93,6 +183,8 @@ function useProgressCacheSync(moduleId: string, nodeId: string) {
       queryClient.invalidateQueries({ queryKey: journeyQueryKey(userId, moduleId) }),
       queryClient.invalidateQueries({ queryKey: moduleQueryKey(userId, moduleId) }),
       queryClient.invalidateQueries({ queryKey: nodeQueryKey(userId, moduleId, nodeId) }),
+      queryClient.invalidateQueries({ queryKey: ["adaptive-intervention", userId] }),
+      queryClient.invalidateQueries({ queryKey: ["attempt", userId] }),
       queryClient.invalidateQueries({ queryKey: currentUserQueryKey(userId) }),
     ]);
   }, [moduleId, nodeId, queryClient, userId]);

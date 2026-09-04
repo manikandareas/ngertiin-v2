@@ -19,7 +19,6 @@ import {
   completeNodeResponseSchema,
   createModuleBodySchema,
   createModuleResponseSchema,
-  type GenerationState,
   type GetGenerationResponse,
   type GetJourneyResponse,
   type GetModuleResponse,
@@ -48,24 +47,13 @@ import { ZodValidationPipe } from "../http/zod-validation.pipe.js";
 import { ModulesService } from "./modules.service.js";
 
 type PassthroughResponse = { status(status: number): unknown };
-type StreamRequest = ProductRequest & { on(event: "close", listener: () => void): void };
-type StreamResponse = {
-  status(status: number): StreamResponse;
-  setHeader(name: string, value: string): void;
-  flushHeaders?(): void;
-  write(chunk: string): boolean;
-  end(): void;
-};
+import {
+  streamGeneration,
+  type StreamRequest,
+  type StreamResponse,
+} from "../http/generation-sse.js";
 
 const idempotencyKeyPipe = new IdempotencyKeyPipe();
-
-function generationEventName(
-  state: GenerationState,
-): "generation.completed" | "generation.failed" | "generation.progress" {
-  if (state === "completed") return "generation.completed";
-  if (state === "failed") return "generation.failed";
-  return "generation.progress";
-}
 
 @Controller("modules")
 @UseGuards(ClerkAuthGuard)
@@ -97,61 +85,19 @@ export class ModulesController {
 
   @Get(":moduleId/generation/events")
   async streamGeneration(
-    @Req() request: StreamRequest,
+    @Req() request: ProductRequest & StreamRequest,
     @Res() response: StreamResponse,
     @Param(new ZodValidationPipe(moduleParamsSchema)) params: ModuleParams,
   ): Promise<void> {
     const userId = getLocalUserId(request);
     const initial = await this.modulesService.getGeneration(userId, params.moduleId);
-    response.status(200);
-    response.setHeader("Content-Type", "text/event-stream; charset=utf-8");
-    response.setHeader("Connection", "keep-alive");
-    response.setHeader("X-Accel-Buffering", "no");
-    response.flushHeaders?.();
-    response.write(`event: generation.snapshot\ndata: ${JSON.stringify(initial)}\n\n`);
-
-    if (initial.state === "completed" || initial.state === "failed") {
-      response.end();
-      return;
-    }
-
-    let closed = false;
-    let polling = false;
-    let previous = JSON.stringify(initial);
-    let pollTimer: ReturnType<typeof setInterval> | undefined;
-    let heartbeatTimer: ReturnType<typeof setInterval> | undefined;
-    const close = (): void => {
-      if (closed) return;
-      closed = true;
-      if (pollTimer) clearInterval(pollTimer);
-      if (heartbeatTimer) clearInterval(heartbeatTimer);
-      response.end();
-    };
-    request.on("close", close);
-
-    pollTimer = setInterval(() => {
-      if (closed || polling) return;
-      polling = true;
-      void this.modulesService
-        .getGeneration(userId, params.moduleId)
-        .then((status) => {
-          const serialized = JSON.stringify(status);
-          if (serialized === previous || closed) return;
-          previous = serialized;
-          const event = generationEventName(status.state);
-          response.write(`event: ${event}\ndata: ${serialized}\n\n`);
-          if (status.state === "completed" || status.state === "failed") close();
-        })
-        .catch(close)
-        .finally(() => {
-          polling = false;
-        });
-    }, 1_000);
-    pollTimer.unref();
-    heartbeatTimer = setInterval(() => {
-      if (!closed) response.write(": heartbeat\n\n");
-    }, 15_000);
-    heartbeatTimer.unref();
+    streamGeneration({
+      request,
+      response,
+      initial,
+      state: (value) => value.state,
+      read: () => this.modulesService.getGeneration(userId, params.moduleId),
+    });
   }
 
   @Get(":moduleId/generation")

@@ -2,7 +2,6 @@ import { createHash } from "node:crypto";
 import { Inject, Injectable } from "@nestjs/common";
 import {
   assessmentFeedbackSchema,
-  type AttemptPolicyOutcome,
   type AttemptResult,
   type DeterministicAnswer,
   type NextLearningAction,
@@ -10,6 +9,7 @@ import {
 } from "@ngertiin/contracts/api";
 import {
   activities,
+  adaptive_interventions,
   attempt_concept_results,
   attempt_responses,
   attempts,
@@ -25,12 +25,12 @@ import {
   finalizeAttemptEvaluation,
   InvalidEvaluationConfigurationError,
   SAFE_NON_RETRYABLE_EVALUATION_FAILURE,
+  selectLearningAction,
 } from "@ngertiin/shared";
 import { and, asc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { ProductError } from "../http/product-error.js";
 import { InfrastructureService } from "../infrastructure/infrastructure.service.js";
-import { ASSESSMENT_SUBMISSION_ENABLED } from "./assessment-submission.gate.js";
 
 const REQUEST_WAIT_MILLISECONDS = 5_000;
 const STATUS_POLL_MILLISECONDS = 250;
@@ -89,15 +89,6 @@ export class AttemptsService {
     input: SubmitAttemptBody,
   ): Promise<AttemptResult> {
     await this.assertOwnedNode(userId, moduleId, nodeId);
-    if (!ASSESSMENT_SUBMISSION_ENABLED) {
-      throw new ProductError(
-        409,
-        "MODULE_NOT_LEARNABLE",
-        "Assessment is not yet learnable",
-        "Assessment submission will be available with the adaptive learning flow.",
-      );
-    }
-
     const stored = await this.infrastructure.database.db.transaction(async (transaction) => {
       await transaction.execute(
         sql`select pg_advisory_xact_lock(hashtextextended(${`${userId}:${input.submissionId}`}, 0))`,
@@ -333,7 +324,7 @@ export class AttemptsService {
       nodeProgress: progress.nodeProgress,
       moduleProgress: progress.moduleProgress,
       xpAwarded: attempt.xpAwarded,
-      nextAction: this.nextAction(attempt.policyOutcome, progress),
+      nextAction: await this.nextAction(progress),
     };
   }
 
@@ -356,7 +347,6 @@ export class AttemptsService {
         "Only a ready Module accepts assessment submissions.",
       );
     }
-    if (row.origin !== "core") responseValidationError("M6 only supports Core Node assessments.");
   }
 
   private validateSubmission(
@@ -504,6 +494,7 @@ export class AttemptsService {
     if (!currentModule || !currentNode) throw new Error("Attempt progress is missing.");
     const completed = allNodes.filter((candidate) => candidate.status === "completed").length;
     return {
+      userId,
       moduleId,
       currentNodeId: currentModule.currentNodeId,
       nodes: allNodes,
@@ -521,20 +512,48 @@ export class AttemptsService {
     };
   }
 
-  private nextAction(
-    policyOutcome: AttemptPolicyOutcome,
+  private async nextAction(
     progress: Awaited<ReturnType<AttemptsService["readProgress"]>>,
-  ): NextLearningAction {
-    if (policyOutcome !== "continue") return { type: "none" };
-    if (progress.moduleProgress.status === "completed") {
-      return { type: "module_completed", moduleId: progress.moduleId };
+  ): Promise<NextLearningAction> {
+    const [intervention] = await this.infrastructure.database.db
+      .select({
+        id: adaptive_interventions.id,
+        triggerAttemptId: adaptive_interventions.trigger_attempt_id,
+        status: adaptive_interventions.status,
+      })
+      .from(adaptive_interventions)
+      .where(
+        and(
+          eq(adaptive_interventions.user_id, progress.userId),
+          eq(adaptive_interventions.module_id, progress.moduleId),
+          sql`${adaptive_interventions.status} IN ('offered', 'generating', 'available', 'in_progress', 'failed')`,
+        ),
+      )
+      .orderBy(sql`${adaptive_interventions.created_at} DESC`)
+      .limit(1);
+    let firstNodeId: string | null = null;
+    let activeNodeId: string | null = null;
+    if (intervention) {
+      const adaptiveNodes = await this.infrastructure.database.db
+        .select({ id: module_nodes.id, status: node_progress.status })
+        .from(module_nodes)
+        .innerJoin(node_progress, eq(node_progress.node_id, module_nodes.id))
+        .where(eq(module_nodes.adaptive_intervention_id, intervention.id))
+        .orderBy(asc(module_nodes.adaptive_position));
+      firstNodeId =
+        adaptiveNodes.find((node) => node.status === "available")?.id ??
+        adaptiveNodes[0]?.id ??
+        null;
+      activeNodeId = adaptiveNodes.find((node) => node.status === "in_progress")?.id ?? firstNodeId;
     }
     const current = progress.nodes.find((node) => node.id === progress.currentNodeId);
-    if (!current) return { type: "none" };
-    return {
-      type: current.status === "in_progress" ? "resume_core_node" : "start_core_node",
+    return selectLearningAction({
       moduleId: progress.moduleId,
-      nodeId: current.id,
-    };
+      moduleStatus: "ready",
+      moduleProgressStatus: progress.moduleProgress.status,
+      currentCoreNodeId: progress.currentNodeId,
+      currentCoreNodeStatus: current?.status,
+      intervention: intervention ? { ...intervention, firstNodeId, activeNodeId } : null,
+    });
   }
 }

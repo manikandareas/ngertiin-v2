@@ -1,6 +1,7 @@
 import { relations, sql } from "drizzle-orm";
 import {
   type AnyPgColumn,
+  boolean,
   check,
   date,
   index,
@@ -77,6 +78,7 @@ export const node_progress_status = pgEnum("node_progress_status", [
   "completed",
 ]);
 export const adaptive_status = pgEnum("adaptive_status", [
+  "offered",
   "generating",
   "available",
   "in_progress",
@@ -344,6 +346,9 @@ export const module_nodes = pgTable(
       .on(table.module_id, table.core_position)
       .where(sql`${table.core_position} IS NOT NULL`),
     index("module_nodes_adaptive_intervention_idx").on(table.adaptive_intervention_id),
+    uniqueIndex("module_nodes_adaptive_position_idx")
+      .on(table.adaptive_intervention_id, table.adaptive_position)
+      .where(sql`${table.adaptive_intervention_id} IS NOT NULL`),
     check(
       "module_nodes_origin_integrity_check",
       sql`(${table.origin} = 'core' AND ${table.core_position} IS NOT NULL AND ${table.adaptive_intervention_id} IS NULL AND ${table.adaptive_position} IS NULL) OR (${table.origin} = 'adaptive' AND ${table.core_position} IS NULL AND ${table.adaptive_intervention_id} IS NOT NULL AND ${table.adaptive_position} IS NOT NULL)`,
@@ -412,6 +417,13 @@ export const generation_runs = pgTable(
     uniqueIndex("generation_runs_bullmq_job_idx")
       .on(table.bullmq_job_id)
       .where(sql`${table.bullmq_job_id} IS NOT NULL`),
+    uniqueIndex("generation_runs_adaptive_intervention_idx")
+      .on(table.adaptive_intervention_id)
+      .where(sql`${table.adaptive_intervention_id} IS NOT NULL`),
+    check(
+      "generation_runs_type_integrity_check",
+      sql`(${table.type} = 'module' AND ${table.generation_request_id} IS NOT NULL AND ${table.adaptive_intervention_id} IS NULL) OR (${table.type} = 'adaptive' AND ${table.generation_request_id} IS NULL AND ${table.adaptive_intervention_id} IS NOT NULL)`,
+    ),
     check(
       "generation_runs_progress_percentage_check",
       sql`${table.progress_percentage} >= 0 AND ${table.progress_percentage} <= 100`,
@@ -657,6 +669,7 @@ export const adaptive_interventions = pgTable(
     resume_node_id: uuid().references(() => module_nodes.id),
     reason_code: varchar().notNull(),
     reason_summary: text(),
+    required: boolean().notNull().default(false),
     status: adaptive_status().notNull(),
     created_at: createdAt(),
     completed_at: optionalTimestamp(),
@@ -664,6 +677,29 @@ export const adaptive_interventions = pgTable(
   (table) => [
     index("adaptive_interventions_user_module_idx").on(table.user_id, table.module_id),
     index("adaptive_interventions_status_idx").on(table.status),
+    uniqueIndex("adaptive_interventions_trigger_attempt_idx").on(table.trigger_attempt_id),
+  ],
+);
+
+export const adaptive_intervention_concepts = pgTable(
+  "adaptive_intervention_concepts",
+  {
+    adaptive_intervention_id: uuid()
+      .notNull()
+      .references(() => adaptive_interventions.id),
+    concept_id: uuid()
+      .notNull()
+      .references(() => module_concepts.id),
+    mastery_score: numeric().notNull(),
+    created_at: createdAt(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.adaptive_intervention_id, table.concept_id] }),
+    index("adaptive_intervention_concepts_concept_idx").on(table.concept_id),
+    check(
+      "adaptive_intervention_concepts_mastery_score_check",
+      sql`${table.mastery_score} >= 0 AND ${table.mastery_score} <= 1`,
+    ),
   ],
 );
 
@@ -798,6 +834,7 @@ export const moduleConceptsRelations = relations(module_concepts, ({ many, one }
   node_concepts: many(node_concepts),
   attempt_concept_results: many(attempt_concept_results),
   user_concept_mastery: many(user_concept_mastery),
+  adaptive_intervention_concepts: many(adaptive_intervention_concepts),
 }));
 
 export const moduleNodesRelations = relations(module_nodes, ({ many, one }) => ({
@@ -979,6 +1016,21 @@ export const adaptiveInterventionsRelations = relations(
       relationName: "adaptive_nodes",
     }),
     generation_runs: many(generation_runs),
+    concepts: many(adaptive_intervention_concepts),
+  }),
+);
+
+export const adaptiveInterventionConceptsRelations = relations(
+  adaptive_intervention_concepts,
+  ({ one }) => ({
+    adaptive_intervention: one(adaptive_interventions, {
+      fields: [adaptive_intervention_concepts.adaptive_intervention_id],
+      references: [adaptive_interventions.id],
+    }),
+    concept: one(module_concepts, {
+      fields: [adaptive_intervention_concepts.concept_id],
+      references: [module_concepts.id],
+    }),
   }),
 );
 

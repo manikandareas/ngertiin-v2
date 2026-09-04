@@ -11,7 +11,6 @@ import {
   useStartNode,
   useSubmitAttempt,
 } from "../features/modules/api/use-modules";
-import { ASSESSMENT_SUBMISSION_ENABLED } from "../features/modules/assessment-submission.gate";
 import { ApiProblemError } from "../lib/api";
 
 function Lesson({ activity }: { activity: Extract<PublicActivity, { type: "lesson" }> }) {
@@ -270,6 +269,25 @@ function AttemptSummary({ result }: { result: AttemptResult }) {
       <p className="mt-5 text-sm text-slate-600">
         Langkah berikutnya: {result.nextAction.type.replaceAll("_", " ")}
       </p>
+      {result.nextAction.type === "offer_optional_review" ||
+      result.nextAction.type === "wait_for_adaptive" ? (
+        <Button asChild className="mt-5">
+          <Link to={`/adaptive-interventions/${result.nextAction.interventionId}`}>
+            Buka dukungan belajar
+            <ArrowRight className="ml-2 size-4" />
+          </Link>
+        </Button>
+      ) : result.nextAction.type === "start_core_node" ||
+        result.nextAction.type === "resume_core_node" ||
+        result.nextAction.type === "start_adaptive_node" ||
+        result.nextAction.type === "resume_adaptive_node" ? (
+        <Button asChild className="mt-5">
+          <Link to={`/modules/${result.nextAction.moduleId}/nodes/${result.nextAction.nodeId}`}>
+            Lanjutkan belajar
+            <ArrowRight className="ml-2 size-4" />
+          </Link>
+        </Button>
+      ) : null}
     </section>
   );
 }
@@ -345,7 +363,9 @@ export default function ModuleNodePage() {
       const result = await complete.mutateAsync();
       if (
         result.nextAction.type === "start_core_node" ||
-        result.nextAction.type === "resume_core_node"
+        result.nextAction.type === "resume_core_node" ||
+        result.nextAction.type === "start_adaptive_node" ||
+        result.nextAction.type === "resume_adaptive_node"
       ) {
         navigate(`/modules/${moduleId}/nodes/${result.nextAction.nodeId}`);
       } else {
@@ -368,6 +388,11 @@ export default function ModuleNodePage() {
         })),
       });
       setSearchParams({ attemptId: result.attempt.id }, { replace: true });
+      if (
+        result.nextAction.type === "offer_optional_review" ||
+        result.nextAction.type === "wait_for_adaptive"
+      )
+        navigate(`/adaptive-interventions/${result.nextAction.interventionId}`);
     } catch {
       /* Mutation state renders the safe error and keeps submissionId for retry. */
     }
@@ -442,25 +467,18 @@ export default function ModuleNodePage() {
         ) : null}
         {hasAssessments ? (
           <div className="mt-8">
-            {!ASSESSMENT_SUBMISSION_ENABLED ? (
-              <p className="rounded-2xl bg-amber-50 p-4 text-sm text-amber-900">
-                Assessment menunggu adaptive flow M7. Pertanyaan dapat dibaca, tetapi jawaban belum
-                dapat dikirim.
-              </p>
-            ) : (
-              <div className="flex gap-3">
-                {!attemptResult ? (
-                  <Button disabled={!allAnswered || submit.isPending} onClick={handleSubmit}>
-                    {submit.isPending ? "Menyimpan…" : "Kirim jawaban"}
-                  </Button>
-                ) : null}
-                {attemptResult?.attempt.evaluationStatus === "completed" ? (
-                  <Button onClick={handleTryAgain} variant="outline">
-                    Coba lagi
-                  </Button>
-                ) : null}
-              </div>
-            )}
+            <div className="flex gap-3">
+              {!attemptResult ? (
+                <Button disabled={!allAnswered || submit.isPending} onClick={handleSubmit}>
+                  {submit.isPending ? "Menyimpan…" : "Kirim jawaban"}
+                </Button>
+              ) : null}
+              {attemptResult?.attempt.evaluationStatus === "completed" ? (
+                <Button onClick={handleTryAgain} variant="outline">
+                  Coba lagi
+                </Button>
+              ) : null}
+            </div>
           </div>
         ) : null}
         {attemptResult ? <AttemptSummary result={attemptResult} /> : null}

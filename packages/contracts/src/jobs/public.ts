@@ -1,4 +1,10 @@
 export {
+  ADAPTIVE_GENERATION_STEPS,
+  type AdaptiveGenerationJob,
+  type AdaptiveGenerationStep,
+  adaptiveGenerationJobSchema,
+} from "./adaptive-generation.js";
+export {
   MODULE_GENERATION_PHASES,
   MODULE_GENERATION_STEPS,
   type ModuleGenerationJob,

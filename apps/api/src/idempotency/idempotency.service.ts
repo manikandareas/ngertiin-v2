@@ -13,6 +13,8 @@ type IdempotencyScope = {
   route: string;
   key: string;
   payloadHash: string;
+  payloadConflictError?: ProductError;
+  replayStatus?: number;
 };
 
 export type IdempotentResponse<Value> = {
@@ -87,11 +89,14 @@ export class IdempotencyService {
         throw new Error("Idempotency record disappeared after a unique-key conflict");
       }
       if (existing.payloadHash !== scope.payloadHash) {
-        throw new ProductError(
-          409,
-          "IDEMPOTENCY_CONFLICT",
-          "Idempotency conflict",
-          "This Idempotency-Key was already used with a different request payload.",
+        throw (
+          scope.payloadConflictError ??
+          new ProductError(
+            409,
+            "IDEMPOTENCY_CONFLICT",
+            "Idempotency conflict",
+            "This Idempotency-Key was already used with a different request payload.",
+          )
         );
       }
       if (existing.responseStatus === null || existing.responseBody === null) {
@@ -99,7 +104,7 @@ export class IdempotencyService {
       }
 
       return {
-        status: existing.responseStatus,
+        status: scope.replayStatus ?? existing.responseStatus,
         body: existing.responseBody as Value,
       };
     });

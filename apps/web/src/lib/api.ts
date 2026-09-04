@@ -1,4 +1,10 @@
 import {
+  type AdaptiveDecision,
+  type AdaptiveGenerationEvent,
+  type AdaptiveIntervention,
+  adaptiveGenerationEventSchema,
+  decideAdaptiveInterventionResponseSchema,
+  getAdaptiveInterventionResponseSchema,
   type AttemptResult,
   type CompleteNodeResult,
   type CreateModuleBodyInput,
@@ -351,21 +357,50 @@ export async function getAttempt(
   return response.data;
 }
 
-export async function streamGenerationEvents(
+export async function getAdaptiveIntervention(
   tokenResolver: TokenResolver,
-  moduleId: string,
-  signal: AbortSignal,
-  onEvent: (event: GenerationEvent) => void,
-): Promise<void> {
-  const token = await tokenResolver();
-  if (!token) throw new Error("Clerk session token is unavailable.");
-  const response = await fetch(
-    `${webEnvironment.VITE_API_URL}/api/v1/modules/${encodeURIComponent(moduleId)}/generation/events`,
+  interventionId: string,
+): Promise<AdaptiveIntervention> {
+  const response = await requestApi(
+    `/adaptive-interventions/${encodeURIComponent(interventionId)}`,
+    tokenResolver,
+    getAdaptiveInterventionResponseSchema,
+  );
+  return response.data;
+}
+
+export async function decideAdaptiveIntervention(
+  tokenResolver: TokenResolver,
+  interventionId: string,
+  decision: AdaptiveDecision,
+  idempotencyKey: string,
+): Promise<AdaptiveIntervention> {
+  const response = await requestApi(
+    `/adaptive-interventions/${encodeURIComponent(interventionId)}/decision`,
+    tokenResolver,
+    decideAdaptiveInterventionResponseSchema,
     {
-      headers: { Accept: "text/event-stream", Authorization: `Bearer ${token}` },
-      signal,
+      method: "POST",
+      headers: { "Idempotency-Key": idempotencyKey },
+      body: JSON.stringify({ decision }),
     },
   );
+  return response.data;
+}
+
+async function streamApiEvents<Value>(input: {
+  tokenResolver: TokenResolver;
+  path: string;
+  signal: AbortSignal;
+  schema: ResponseSchema<Value>;
+  onEvent: (event: Value) => void;
+}): Promise<void> {
+  const token = await input.tokenResolver();
+  if (!token) throw new Error("Clerk session token is unavailable.");
+  const response = await fetch(`${webEnvironment.VITE_API_URL}/api/v1${input.path}`, {
+    headers: { Accept: "text/event-stream", Authorization: `Bearer ${token}` },
+    signal: input.signal,
+  });
   if (!response.ok) {
     const body = await readJson(response);
     const problem = problemDetailSchema.safeParse(body);
@@ -373,7 +408,6 @@ export async function streamGenerationEvents(
     throw new Error(`API returned an invalid SSE response (${response.status}).`);
   }
   if (!response.body) throw new Error("Generation event stream has no body.");
-
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
@@ -391,12 +425,40 @@ export async function streamGenerationEvents(
         if (line.startsWith("data:")) dataLines.push(line.slice(5).trimStart());
       }
       if (!eventName || dataLines.length === 0) continue;
-      const event = generationEventSchema.parse({
-        event: eventName,
-        data: JSON.parse(dataLines.join("\n")),
-      });
-      onEvent(event);
+      input.onEvent(
+        input.schema.parse({ event: eventName, data: JSON.parse(dataLines.join("\n")) }),
+      );
     }
     if (done) break;
   }
+}
+
+export function streamAdaptiveGenerationEvents(
+  tokenResolver: TokenResolver,
+  interventionId: string,
+  signal: AbortSignal,
+  onEvent: (event: AdaptiveGenerationEvent) => void,
+): Promise<void> {
+  return streamApiEvents({
+    tokenResolver,
+    path: `/adaptive-interventions/${encodeURIComponent(interventionId)}/generation/events`,
+    signal,
+    schema: adaptiveGenerationEventSchema,
+    onEvent,
+  });
+}
+
+export function streamGenerationEvents(
+  tokenResolver: TokenResolver,
+  moduleId: string,
+  signal: AbortSignal,
+  onEvent: (event: GenerationEvent) => void,
+): Promise<void> {
+  return streamApiEvents({
+    tokenResolver,
+    path: `/modules/${encodeURIComponent(moduleId)}/generation/events`,
+    signal,
+    schema: generationEventSchema,
+    onEvent,
+  });
 }

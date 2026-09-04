@@ -163,3 +163,21 @@ export {
   patchCurrentUserResponseSchema,
   type PatchCurrentUserResponse,
 } from "./users/current-user.js";
+export {
+  type AdaptiveDecision,
+  type AdaptiveDecisionBody,
+  type AdaptiveGenerationEvent,
+  type AdaptiveIntervention,
+  type AdaptiveInterventionParams,
+  type AdaptiveInterventionStatus,
+  type DecideAdaptiveInterventionResponse,
+  type GetAdaptiveInterventionResponse,
+  adaptiveDecisionBodySchema,
+  adaptiveDecisionSchema,
+  adaptiveGenerationEventSchema,
+  adaptiveInterventionParamsSchema,
+  adaptiveInterventionSchema,
+  adaptiveInterventionStatusSchema,
+  decideAdaptiveInterventionResponseSchema,
+  getAdaptiveInterventionResponseSchema,
+} from "./adaptive/adaptive-intervention.js";
