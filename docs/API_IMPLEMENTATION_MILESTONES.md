@@ -197,7 +197,7 @@ Sources and observe progress until the Module is ready or failed.
 - Allow a generating or failed Module title to be null and enforce a title for ready/archived state.
 - Enforce one Module per Generation Request.
 - Add unique Core Node, Activity, and generation-step ordering constraints.
-- Add durable outbox records for queue dispatch.
+- Use queued Generation Runs as durable queue-dispatch records.
 - Add any generation idempotency constraints required by worker replay.
 
 #### M2.2 — Add generation public contracts
@@ -211,14 +211,16 @@ Sources and observe progress until the Module is ready or failed.
 - Implement `POST /api/v1/modules`.
 - Validate ownership and ready state for every referenced Source.
 - Require at least one primary Source and deterministic priorities.
-- Atomically create Generation Request, Module, Generation Run, steps, and outbox record.
+- Atomically create Generation Request, Module, queued Generation Run, and steps.
 
 #### M2.4 — Implement the module-generation worker
 
 - Resolve selected Source content without copying it into the queue payload.
-- Implement material analysis, concept map, curriculum, activity generation, and validation stages.
-- Use provider-neutral model capabilities and structured output schemas.
-- Persist only validated Core Nodes and browser-safe Activity content.
+- Implement material analysis, concept map, curriculum, activity generation, and transactional
+  finalization stages.
+- Use LangChain chat-model capabilities and Zod-backed structured output schemas.
+- Parse each model response once and persist only schema-conformant Core Nodes and browser-safe
+  Activity content.
 - Initialize owner progress in the same transaction that marks the Module ready.
 
 #### M2.5 — Expose status and recovery
@@ -263,7 +265,7 @@ produce a visible terminal state, and can be retried safely when failure is reco
 #### M3.1 — Add Source-processing persistence and contracts
 
 - Persist structured safe Source failure category and retryability.
-- Add Source-processing outbox/job identity and replay safeguards.
+- Add durable Source-processing job identity and replay safeguards.
 - Add PDF multipart, URL creation, and Source retry contracts.
 
 #### M3.2 — Implement PDF ingestion
@@ -611,7 +613,7 @@ failure recovery, and browser integration.
 #### M9.3 — Prove dependency-failure recovery
 
 - Simulate PostgreSQL, Redis, storage, URL, and AI-provider failures at safe boundaries.
-- Verify accepted work remains durable through outbox recovery.
+- Verify accepted work remains durable through queued-record recovery.
 - Verify permanent failures stop retrying and remain visible.
 - Verify retry endpoints reject non-retryable and invalid states.
 

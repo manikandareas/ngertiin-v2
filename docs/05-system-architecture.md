@@ -83,9 +83,11 @@ NestJS Worker Application
 ## AI
 
 ```text
-AI SDK Core
+LangChain Core
+LangChain OpenAI integration
 Zod
-Provider SDKs
+LangGraph open-source library
+LangGraph PostgreSQL checkpointer
 ```
 
 ---
@@ -127,11 +129,10 @@ flowchart TD
     API -->|Verify Session| CLERK
     API --> PG
     API --> STORAGE
-    API --> QUEUE
 
     QUEUE --> REDIS
-    WORKER --> QUEUE
-    WORKER --> PG
+    WORKER -->|Publish and consume| QUEUE
+    WORKER -->|Queued runs, status, checkpoints| PG
     WORKER --> STORAGE
     WORKER --> AI
 
@@ -246,7 +247,7 @@ The NestJS worker application is responsible for:
 - Module generation
 - Adaptive generation
 - AI calls
-- Generation validation
+- Generation finalization
 - Generation retries
 - Long-running processing
 
@@ -301,14 +302,16 @@ GenerationStatusModule
 Recommended worker modules:
 
 ```text
-SourceProcessingModule
-ModuleGenerationModule
-AdaptiveGenerationModule
 AiModule
-StorageModule
-DatabaseModule
-QueueModule
+SourceModule
+ModulesModule
+InfrastructureModule
 ```
+
+`ModulesModule` imports the reusable `AiModule` and `SourceModule`. `SourceModule` imports
+`InfrastructureModule` and exposes source-context loading; `AiModule` remains independent from
+Source, Module, queue-job, and public generation-failure contracts. Future source-processing or
+adaptive-generation capabilities should be added only when their runtime responsibilities exist.
 
 ---
 
@@ -423,15 +426,18 @@ sequenceDiagram
     W->>A: Submit generation request
     A->>P: Create generation request
     A->>P: Create module
-    A->>P: Create generation run
-    A->>Q: Enqueue generation job
-    Q->>R: Persist job
+    A->>P: Create queued generation run
     A-->>W: 202 Accepted
 
+    K->>P: Poll queued generation runs
+    K->>Q: Publish stable generation run ID
+    Q->>R: Persist job
     K->>Q: Consume job
     K->>P: Load context
-    K->>AI: Analyze and generate
+    K->>P: Resume LangGraph checkpoint
+    K->>AI: Run current graph node
     AI-->>K: Structured output
+    K->>P: Persist LangGraph checkpoint
     K->>P: Persist generation results
     K->>P: Mark module ready
 ```
@@ -474,16 +480,18 @@ This reduces Redis payload size and prevents stale duplicated context.
 
 # 18. Job Retry Policy
 
-BullMQ manages infrastructure-level retry.
+BullMQ manages outer worker and infrastructure retry. The LangChain model client performs a small bounded retry for provider timeouts and rate limits. LangGraph sequences and checkpoints the workflow without adding another retry layer.
 
 Recommended retry targets:
 
-- Provider timeout
 - Temporary network failure
 - Temporary storage failure
 - Recoverable extraction failure
+- Worker crash or stalled BullMQ job
 
-Permanent validation failures should not retry indefinitely.
+Transient provider timeout and rate-limit retries stay inside the current model call so completed graph nodes are not repeated.
+
+Permanent structured-output failures should not retry indefinitely.
 
 Retry count and backoff should be configured by queue type.
 
@@ -498,6 +506,8 @@ Worker operations must be idempotent.
 Recommended safeguards:
 
 - Stable `generation_run_id`
+- Use the generation run ID as the LangGraph thread ID
+- Hold a PostgreSQL advisory lock while one run is executing
 - Check current generation status
 - Use unique database constraints
 - Use transactions for finalization
@@ -597,7 +607,8 @@ sequenceDiagram
 
 # 24. AI Layer
 
-The AI layer should remain independent from queue orchestration and other infrastructure concerns, while staying internal to the worker application.
+The AI layer remains independent from queue orchestration and module/source concerns while staying
+internal to the worker application.
 
 Recommended structure:
 
@@ -607,28 +618,50 @@ apps/worker/src/ai
 
 Responsibilities:
 
-- Model registry
-- Prompt construction
-- Structured generation
-- Output schema validation
-- Generation-specific services
-- Assessment and feedback generation
-- Adaptive content generation
+- Construct the configured LangChain chat model
+- Provide generic `AiService.generateObject()` structured generation
+- Parse output once with the supplied Zod schema
+- Log model calls and latency
+- Classify reusable AI errors
 
-The AI layer may be organized into internal modules such as:
+The worker code is organized around plural `modules`, matching the API application's feature name:
 
 ```text
-apps/worker/src/ai/
-├── models/
-├── analysis/
-├── concepts/
-├── curriculum/
-├── activities/
-├── evaluation/
-└── adaptive/
+apps/worker/src/
+├── ai/
+│   ├── ai.error.ts
+│   ├── ai.module.ts
+│   └── ai.service.ts
+├── source/
+│   ├── source.error.ts
+│   ├── source.module.ts
+│   └── source.service.ts
+└── modules/
+    ├── modules.failure.ts
+    ├── modules.module.ts
+    ├── modules.processor.ts
+    ├── modules.requests.ts
+    ├── modules.schemas.ts
+    ├── modules.service.ts
+    └── modules.workflow.ts
 ```
 
-The worker orchestration layer is responsible for deciding when AI operations are executed, managing BullMQ jobs, retries, generation state, and persistence flow.
+`SourceService` owns authoritative source loading, ownership and readiness validation, selector and
+normalized-content validation, deterministic chunking, and stable chunk IDs. `ModulesService` owns
+queued-run polling, BullMQ publication, advisory locking, progress transitions, terminal failure,
+and transactional finalization. Module-specific prompt builders and schemas stay in `modules` and
+call the generic AI interface.
+
+`ModulesWorkflow` remains a separate class because the graph has its own lifecycle: PostgreSQL
+checkpointer setup and shutdown, fan-out chunk analysis, checkpoint resume, per-node activity
+progress, a stable generation-run `thread_id`, and a recursion limit. This follows the durable
+execution model documented by [LangGraph persistence](https://docs.langchain.com/oss/javascript/langgraph/add-memory)
+and keeps graph topology out of the persistence interface exposed by `ModulesService`.
+
+BullMQ owns job delivery and outer infrastructure retries. PostgreSQL application tables own public
+generation state and final persistence. `ModulesService` does not import the workflow or processor,
+so dependencies point from orchestration toward AI, Source, and persistence rather than back into
+the graph.
 
 Business policies such as mastery thresholds, adaptive intervention rules, progress calculation, and XP allocation must remain outside the AI layer.
 
@@ -792,9 +825,10 @@ Used for explicit relational schema and database access.
 
 Used for durable background task execution and worker distribution.
 
-## AI SDK Core
+## LangChain Core and OpenAI Integration
 
-Used for provider abstraction and structured AI operations.
+Used for the chat-model abstraction and Zod-backed structured output through
+`withStructuredOutput()`.
 
 ## Clerk
 
@@ -821,14 +855,14 @@ NestJS microservices
 Kafka
 Kubernetes
 Temporal
-LangGraph
+LangGraph Server, CLI deployment, or managed graph deployment
 LangChain as core orchestration
 Dedicated vector database
 WebSocket for generation progress
 Python AI backend
 ```
 
-These may be introduced only after a concrete requirement justifies them.
+The open-source LangGraph library is used inside the existing worker process and does not add a separate server.
 
 ---
 
@@ -838,7 +872,7 @@ Potential future additions:
 
 - pgvector
 - Dedicated retrieval service
-- LangGraph
+- LangGraph Server or managed graph deployment
 - Search indexing
 - Shared/public modules
 - Teacher assignment layer

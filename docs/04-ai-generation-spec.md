@@ -13,11 +13,11 @@ The AI layer does not control application state, authorization, progress rules, 
 # 2. AI Architecture Principles
 
 1. AI output must be structured.
-2. AI output must be schema validated.
+2. AI output must be schema validated once at the model boundary.
 3. AI calls should be split into meaningful stages.
 4. Long-running generation must execute in background workers.
 5. Generation steps must be retryable.
-6. AI output must be validated before becoming user-visible.
+6. Final persistence must enforce aggregate and database invariants.
 7. The core curriculum must be generated separately from adaptive content.
 8. Adaptive content must be generated on demand.
 9. Provider-specific code should be isolated behind an AI model abstraction.
@@ -30,23 +30,26 @@ The AI layer does not control application state, authorization, progress rules, 
 Baseline:
 
 ```text
-AI SDK Core
+LangChain Core
+LangChain OpenAI integration
 Zod
-Provider SDKs
 NestJS Services
 BullMQ Worker
+LangGraph open-source library
+LangGraph PostgreSQL checkpointer
 ```
 
 Optional future additions:
 
 ```text
-LangGraph
-LangChain document integrations
+Additional LangChain document integrations
 Dedicated retrieval layer
 Embedding pipeline
 ```
 
-LangGraph should only be introduced when generation requires persistent branching, loops, human intervention, or complex stateful orchestration.
+LangGraph is used as an in-process worker library for the module-generation graph and durable intermediate checkpoints. LangGraph Server, LangGraph CLI deployment, and LangSmith deployment are not required.
+
+BullMQ remains the durable job-delivery boundary. PostgreSQL application tables remain authoritative for public status and finalized learning content.
 
 ---
 
@@ -86,10 +89,8 @@ flowchart TD
     E --> F[Generate Concept Map]
     F --> G[Generate Curriculum Plan]
     G --> H[Generate Core Activities]
-    H --> I[Validate Module]
-    I --> J{Valid}
-    J -->|Yes| K[Persist Ready Module]
-    J -->|No| L[Repair or Retry]
+    H --> I[Finalize Module]
+    I --> J[Persist Ready Module]
 ```
 
 ---
@@ -134,7 +135,7 @@ Recommended output:
 ```ts
 type MaterialAnalysis = {
   subject: string;
-  level?: string;
+  level: string | null;
   summary: string;
   estimatedComplexity: "low" | "medium" | "high";
   keyTopics: Array<{
@@ -147,7 +148,7 @@ type MaterialAnalysis = {
 };
 ```
 
-The result must be validated using Zod.
+The result is parsed once through LangChain `withStructuredOutput()` using its Zod schema.
 
 ---
 
@@ -164,7 +165,7 @@ type ConceptMap = {
   concepts: Array<{
     key: string;
     name: string;
-    description?: string;
+    description: string | null;
     importance: number;
     prerequisites: string[];
   }>;
@@ -188,15 +189,15 @@ Recommended output:
 ```ts
 type CurriculumPlan = {
   title: string;
-  description?: string;
+  description: string | null;
   difficulty: "beginner" | "intermediate" | "advanced";
-  estimatedMinutes?: number;
+  estimatedMinutes: number | null;
 
   nodes: Array<{
     key: string;
     type: "lesson" | "flashcard" | "quiz" | "checkpoint";
     title: string;
-    description?: string;
+    description: string | null;
     concepts: Array<{
       conceptKey: string;
       relation: "teach" | "review" | "assess";
@@ -236,11 +237,11 @@ Recommended output:
 type LessonActivity = {
   type: "lesson";
   content: {
-    introduction?: string;
+    introduction: string | null;
     explanation: string;
     keyPoints: string[];
-    examples?: string[];
-    summary?: string;
+    examples: string[] | null;
+    summary: string | null;
   };
 };
 ```
@@ -349,23 +350,18 @@ Short-answer evaluation may use AI-assisted grading, but the result must remain 
 
 ---
 
-# 16. Module Validation
+# 16. Module Finalization
 
-Before a module becomes `ready`, the validation stage should verify:
+Each model response is parsed once by LangChain `withStructuredOutput()` with the Zod schema for
+that generation step. Application code must not parse the same response again.
 
-- Required fields exist.
-- Concept references are valid.
-- Node ordering is valid.
-- Assessment nodes evaluate existing concepts.
-- Activity schemas are valid.
-- No unsupported activity type exists.
-- Core nodes contain no adaptive references.
-- Evaluation configuration is present where required.
-- Generated content is non-empty.
-- Duplicate or near-duplicate nodes are minimized.
-- Instruction constraints are respected.
+Before a Module becomes `ready`, finalization only enforces invariants that span multiple structured
+outputs or belong to persistence, such as complete activity generation and relational constraints.
+The final Module, Concepts, Nodes, Activities, owner progress, and generation status are persisted in
+one database transaction.
 
-Validation should include deterministic checks before optional AI quality review.
+An optional AI quality review may be added later, but must be a deliberate generation step rather
+than a second deterministic parser for an already structured response.
 
 ---
 
@@ -509,20 +505,35 @@ The exact provider and model names must remain configurable.
 
 # 23. Provider Abstraction
 
-Application services should reference model capabilities rather than hard-coded provider names.
+`AiModule` constructs the configured LangChain chat model through `createModel(environment)` and
+exposes only the reusable `AiService`. Callers submit a schema, schema name, operation, and prompt;
+they do not construct provider clients or call `withStructuredOutput()` directly.
 
 Example:
 
 ```ts
-interface AiModelRegistry {
-  analysisModel: LanguageModel;
-  curriculumModel: LanguageModel;
-  activityModel: LanguageModel;
-  evaluationModel: LanguageModel;
+interface AiModel {
+  client: BaseChatModel;
+  provider: string;
+  modelId: string;
 }
+
+interface GenerateObjectRequest<T> {
+  schema: ZodType<T>;
+  schemaName: string;
+  operation: string;
+  prompt: string;
+}
+
+const result = await aiService.generateObject(request);
 ```
 
-This allows providers to change without changing domain logic.
+`AiService.generateObject()` owns strict structured-output parsing, one bounded invalid-output retry,
+model-call logging, latency tracking, and reusable AI error classification. Module-specific schemas
+and pure prompt builders remain in `apps/worker/src/modules`, so the AI module does not depend on
+source types, job contracts, or public generation failures. Provider-facing object properties are
+required; semantically optional values use explicit `null`. This allows providers to change without
+changing module-generation logic.
 
 ---
 
@@ -532,13 +543,17 @@ Recommended retry layers:
 
 ```text
 BullMQ
-Controls job and step retries.
+Retries worker crashes and infrastructure failures.
 
-AI client
-May retry transient provider failures in a limited manner.
+LangChain model client
+Performs a small bounded retry for provider timeouts and rate limits.
 
-Application validation
-May request a targeted repair when structured output is invalid.
+LangGraph
+Sequences and checkpoints generation steps without adding another retry layer.
+
+Structured output
+Retries one invalid model output, then fails the generation step when the second response still does
+not match its Zod schema.
 ```
 
 Retries must not be duplicated excessively across layers.
@@ -547,9 +562,9 @@ Avoid a configuration where:
 
 ```text
 BullMQ retry
-× AI SDK retry
-× provider retry
-× graph retry
+× LangChain retry
+× provider SDK retry
+× LangGraph retry
 ```
 
 causes uncontrolled request multiplication.
@@ -599,70 +614,59 @@ A dedicated LLM observability product such as Langfuse may be added after the in
 
 ---
 
-# 28. Future LangGraph Adoption Criteria
+# 28. LangGraph Boundary
 
-LangGraph should be considered when one or more of the following become necessary:
+Module generation uses the LangGraph Graph API because it already needs:
 
 - Persistent branching workflows
-- Iterative self-correction loops
-- Human approval during generation
-- Long-lived AI state
-- Multiple AI tools with dynamic routing
-- Complex graph execution
 - Resume from AI-level checkpoints
-- Multi-agent orchestration
+- Parallel chunk analysis followed by a reduce barrier
+- Per-node activity checkpoints
 
-Until then, NestJS services plus BullMQ provide sufficient orchestration.
+The graph is compiled and invoked inside the existing NestJS worker. The stable generation run ID is also the LangGraph thread ID. Source text is reloaded from authoritative application tables and supplied as runtime context; structured intermediate output is checkpointed in PostgreSQL.
+
+LangGraph does not own authentication, public generation status, queue delivery, or final content persistence. LangGraph Server remains outside the baseline.
 
 ---
 
 # 29. AI Safety and Quality Boundary
 
-Generated content must be treated as untrusted output until validated.
+Generated content is untrusted until LangChain parses it against the step's Zod schema.
 
-The application must not directly persist arbitrary model output without:
+The application must not directly persist raw model text. The boundary is intentionally simple:
 
-1. Schema validation.
-2. Referential validation.
-3. Domain validation.
-4. Sanitization where required.
-5. Content policy checks where applicable.
+1. `withStructuredOutput()` requests a strict function schema and parses the response against Zod.
+2. Finalization enforces only cross-output and persistence invariants.
+3. The database transaction and constraints protect relational integrity.
+4. Sanitization and content-policy checks are added only where the rendered content requires them.
 
 ---
 
 # 30. AI Module Boundaries
 
-Recommended package structure:
+The current worker keeps generic AI invocation separate from module-generation requests:
 
 ```text
-packages/ai
-├── models
-│   └── model-registry.ts
-│
-├── analysis
-│   ├── material-analysis.service.ts
-│   └── material-analysis.schema.ts
-│
-├── concepts
-│   ├── concept-generator.service.ts
-│   └── concept.schema.ts
-│
-├── curriculum
-│   ├── curriculum.service.ts
-│   └── curriculum.schema.ts
-│
-├── activities
-│   ├── lesson.generator.ts
-│   ├── flashcard.generator.ts
-│   ├── quiz.generator.ts
-│   └── activity.schemas.ts
-│
-├── adaptive
-│   ├── adaptive-planner.service.ts
-│   ├── adaptive-generator.service.ts
-│   └── adaptive.schemas.ts
-│
-└── evaluation
-    ├── feedback.service.ts
-    └── evaluation.schemas.ts
+apps/worker/src/
+├── ai/
+│   ├── ai.error.ts
+│   ├── ai.module.ts
+│   └── ai.service.ts
+├── source/
+│   ├── source.error.ts
+│   ├── source.module.ts
+│   └── source.service.ts
+└── modules/
+    ├── modules.failure.ts
+    ├── modules.module.ts
+    ├── modules.processor.ts
+    ├── modules.requests.ts
+    ├── modules.schemas.ts
+    ├── modules.service.ts
+    └── modules.workflow.ts
 ```
+
+`modules.requests.ts` contains pure builders for chunk analysis, material reduction, concept maps,
+curriculum plans, and per-node activities. `modules.schemas.ts` owns their structured-output schemas
+and inferred types. The workflow passes these requests through the generic AI interface without
+adding module-specific behavior to `AiModule`.

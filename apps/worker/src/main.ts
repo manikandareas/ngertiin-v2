@@ -7,7 +7,7 @@ async function bootstrap(): Promise<void> {
   const logger = new ConsoleLogger({ json: true, colors: false });
   const application = await NestFactory.createApplicationContext(AppModule, { logger });
   application.enableShutdownHooks();
-  logger.log({ event: "worker.ready", queues: 3 }, "Worker");
+  logger.log({ event: "worker.ready", queues: 1 }, "Worker");
 }
 
 bootstrap().catch((error: unknown) => {

@@ -1,16 +1,28 @@
 import {
+  type CreateModuleBodyInput,
+  createModuleResponseSchema,
   type CreateTextSourceBodyInput,
   createTextSourceResponseSchema,
   type CurrentUser,
-  getSourceResponseSchema,
+  type GenerationEvent,
+  generationEventSchema,
+  type GenerationStatus,
+  getGenerationResponseSchema,
   getCurrentUserResponseSchema,
+  getModuleResponseSchema,
+  getSourceResponseSchema,
+  type ListModulesQueryInput,
+  type ListModulesResponse,
+  listModulesResponseSchema,
   type ListSourcesQueryInput,
   type ListSourcesResponse,
   listSourcesResponseSchema,
+  type ModuleSummary,
   type PatchCurrentUserBody,
   type ProblemDetail,
   patchCurrentUserResponseSchema,
   problemDetailSchema,
+  retryGenerationResponseSchema,
   type Source,
 } from "@ngertiin/contracts/api";
 import { webEnvironment } from "../config";
@@ -132,4 +144,118 @@ export async function getSource(tokenResolver: TokenResolver, sourceId: string):
     getSourceResponseSchema,
   );
   return response.data;
+}
+
+export async function createModule(
+  tokenResolver: TokenResolver,
+  input: CreateModuleBodyInput,
+  idempotencyKey: string,
+): Promise<{ module: ModuleSummary; generation: GenerationStatus }> {
+  const response = await requestApi("/modules", tokenResolver, createModuleResponseSchema, {
+    method: "POST",
+    headers: { "Idempotency-Key": idempotencyKey },
+    body: JSON.stringify(input),
+  });
+  return response.data;
+}
+
+export async function listModules(
+  tokenResolver: TokenResolver,
+  query: ListModulesQueryInput = {},
+): Promise<ListModulesResponse> {
+  const search = new URLSearchParams();
+  if (query.status !== undefined) search.set("status", query.status);
+  if (query.progressStatus !== undefined) search.set("progressStatus", query.progressStatus);
+  if (query.limit !== undefined) search.set("limit", String(query.limit));
+  if (query.cursor !== undefined) search.set("cursor", query.cursor);
+  const suffix = search.size > 0 ? `?${search.toString()}` : "";
+  return requestApi(`/modules${suffix}`, tokenResolver, listModulesResponseSchema);
+}
+
+export async function getModule(
+  tokenResolver: TokenResolver,
+  moduleId: string,
+): Promise<ModuleSummary> {
+  const response = await requestApi(
+    `/modules/${encodeURIComponent(moduleId)}`,
+    tokenResolver,
+    getModuleResponseSchema,
+  );
+  return response.data;
+}
+
+export async function getGeneration(
+  tokenResolver: TokenResolver,
+  moduleId: string,
+): Promise<GenerationStatus> {
+  const response = await requestApi(
+    `/modules/${encodeURIComponent(moduleId)}/generation`,
+    tokenResolver,
+    getGenerationResponseSchema,
+  );
+  return response.data;
+}
+
+export async function retryGeneration(
+  tokenResolver: TokenResolver,
+  moduleId: string,
+  idempotencyKey: string,
+): Promise<{ module: ModuleSummary; generation: GenerationStatus }> {
+  const response = await requestApi(
+    `/modules/${encodeURIComponent(moduleId)}/generation/retry`,
+    tokenResolver,
+    retryGenerationResponseSchema,
+    { method: "POST", headers: { "Idempotency-Key": idempotencyKey } },
+  );
+  return response.data;
+}
+
+export async function streamGenerationEvents(
+  tokenResolver: TokenResolver,
+  moduleId: string,
+  signal: AbortSignal,
+  onEvent: (event: GenerationEvent) => void,
+): Promise<void> {
+  const token = await tokenResolver();
+  if (!token) throw new Error("Clerk session token is unavailable.");
+  const response = await fetch(
+    `${webEnvironment.VITE_API_URL}/api/v1/modules/${encodeURIComponent(moduleId)}/generation/events`,
+    {
+      headers: { Accept: "text/event-stream", Authorization: `Bearer ${token}` },
+      signal,
+    },
+  );
+  if (!response.ok) {
+    const body = await readJson(response);
+    const problem = problemDetailSchema.safeParse(body);
+    if (problem.success) throw new ApiProblemError(problem.data);
+    throw new Error(`API returned an invalid SSE response (${response.status}).`);
+  }
+  if (!response.body) throw new Error("Generation event stream has no body.");
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    buffer += decoder.decode(value, { stream: !done });
+    const frames = buffer.split("\n\n");
+    buffer = done ? "" : (frames.pop() ?? "");
+    for (const frame of frames) {
+      if (frame.startsWith(":")) continue;
+      let eventName = "";
+      const dataLines: string[] = [];
+      for (const line of frame.split("\n")) {
+        if (line.startsWith("event:")) eventName = line.slice(6).trim();
+        if (line.startsWith("data:")) dataLines.push(line.slice(5).trimStart());
+      }
+      if (!eventName || dataLines.length === 0) continue;
+      const event = generationEventSchema.parse({
+        event: eventName,
+        data: JSON.parse(dataLines.join("\n")),
+      });
+      onEvent(event);
+    }
+    if (done) break;
+  }
 }

@@ -5,6 +5,7 @@ import { AuthenticatedRoute } from "./authenticated-route";
 
 const DashboardPage = lazy(() => import("../pages/dashboard"));
 const NewModulePage = lazy(() => import("../pages/new-module"));
+const ModuleStatusPage = lazy(() => import("../pages/module-status"));
 const ProfilePage = lazy(() => import("../pages/profile"));
 const SignInPage = lazy(() => import("../pages/sign-in"));
 
@@ -31,6 +32,14 @@ export function AppRoutes() {
           element={
             <AuthenticatedRoute>
               <NewModulePage />
+            </AuthenticatedRoute>
+          }
+        />
+        <Route
+          path="/modules/:moduleId"
+          element={
+            <AuthenticatedRoute>
+              <ModuleStatusPage />
             </AuthenticatedRoute>
           }
         />

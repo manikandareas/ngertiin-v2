@@ -9,10 +9,10 @@ import { WORKER_ENV } from "../config.js";
 
 @Injectable()
 export class InfrastructureService implements OnModuleInit, OnApplicationShutdown {
-  private readonly database: DatabaseClient;
-  private readonly storage: S3StorageService;
-  private readonly redis: Redis;
-  private readonly queues: Queue[];
+  readonly database: DatabaseClient;
+  readonly storage: S3StorageService;
+  readonly redis: Redis;
+  readonly moduleGenerationQueue: Queue;
 
   constructor(@Inject(WORKER_ENV) environment: WorkerEnvironment) {
     this.database = new DatabaseClient(environment.DATABASE_URL);
@@ -30,12 +30,10 @@ export class InfrastructureService implements OnModuleInit, OnApplicationShutdow
       retryStrategy: (attempt) => Math.min(attempt * 200, 2_000),
     });
     this.redis.on("error", () => undefined);
-    this.queues = Object.values(QUEUE_NAMES).map(
-      (name) => new Queue(name, { connection: this.redis }),
-    );
-    for (const queue of this.queues) {
-      queue.on("error", () => undefined);
-    }
+    this.moduleGenerationQueue = new Queue(QUEUE_NAMES.moduleGeneration, {
+      connection: this.redis,
+    });
+    this.moduleGenerationQueue.on("error", () => undefined);
   }
 
   async onModuleInit(): Promise<void> {
@@ -49,7 +47,7 @@ export class InfrastructureService implements OnModuleInit, OnApplicationShutdow
           this.database.check(),
           this.redis.ping(),
           this.storage.check(),
-          ...this.queues.map((queue) => queue.waitUntilReady()),
+          this.moduleGenerationQueue.waitUntilReady(),
         ]),
         startupTimeout,
       ]);
@@ -65,7 +63,7 @@ export class InfrastructureService implements OnModuleInit, OnApplicationShutdow
   }
 
   private async close(): Promise<void> {
-    await Promise.allSettled(this.queues.map((queue) => queue.close()));
+    await this.moduleGenerationQueue.close();
     await this.database.close();
     if (this.redis.status === "ready") {
       await this.redis.quit();

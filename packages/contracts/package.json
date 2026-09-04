@@ -6,12 +6,13 @@
   "exports": {
     "./api": "./src/api/public.ts",
     "./environment": "./src/environment/public.ts",
-    "./health": "./src/health/public.ts"
+    "./health": "./src/health/public.ts",
+    "./jobs": "./src/jobs/public.ts"
   },
   "scripts": {
-    "build": "bun build ./src/api/public.ts ./src/environment/public.ts ./src/health/public.ts --outdir ./dist --root ./src --target bun",
+    "build": "bun build ./src/api/public.ts ./src/environment/public.ts ./src/health/public.ts ./src/jobs/public.ts --outdir ./dist --root ./src --target bun",
     "typecheck": "tsc -p tsconfig.json",
-    "dev": "bun build ./src/api/public.ts ./src/environment/public.ts ./src/health/public.ts --outdir ./dist --root ./src --target bun --watch"
+    "dev": "bun build ./src/api/public.ts ./src/environment/public.ts ./src/health/public.ts ./src/jobs/public.ts --outdir ./dist --root ./src --target bun --watch"
   },
   "dependencies": {
     "zod": "4.5.4"

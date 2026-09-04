@@ -219,6 +219,10 @@ export const generation_request_sources = pgTable(
       columns: [table.generation_request_id, table.source_id],
     }),
     index("generation_request_sources_source_id_idx").on(table.source_id),
+    uniqueIndex("generation_request_sources_request_priority_idx").on(
+      table.generation_request_id,
+      table.priority,
+    ),
   ],
 );
 
@@ -232,7 +236,7 @@ export const modules = pgTable(
     generation_request_id: uuid()
       .notNull()
       .references(() => generation_requests.id),
-    title: varchar().notNull(),
+    title: varchar(),
     description: text(),
     difficulty: module_difficulty(),
     status: module_status().notNull(),
@@ -243,7 +247,11 @@ export const modules = pgTable(
   (table) => [
     index("modules_owner_id_idx").on(table.owner_id),
     index("modules_status_idx").on(table.status),
-    index("modules_generation_request_idx").on(table.generation_request_id),
+    uniqueIndex("modules_generation_request_idx").on(table.generation_request_id),
+    check(
+      "modules_ready_title_check",
+      sql`${table.status} NOT IN ('ready', 'archived') OR ${table.title} IS NOT NULL`,
+    ),
   ],
 );
 
@@ -283,7 +291,9 @@ export const module_nodes = pgTable(
   },
   (table) => [
     index("module_nodes_module_origin_idx").on(table.module_id, table.origin),
-    index("module_nodes_core_position_idx").on(table.module_id, table.core_position),
+    uniqueIndex("module_nodes_core_position_idx")
+      .on(table.module_id, table.core_position)
+      .where(sql`${table.core_position} IS NOT NULL`),
     index("module_nodes_adaptive_intervention_idx").on(table.adaptive_intervention_id),
     check(
       "module_nodes_origin_integrity_check",
@@ -322,7 +332,7 @@ export const activities = pgTable(
     created_at: createdAt(),
     updated_at: updatedAt(),
   },
-  (table) => [index("activities_node_position_idx").on(table.node_id, table.position)],
+  (table) => [uniqueIndex("activities_node_position_idx").on(table.node_id, table.position)],
 );
 
 export const generation_runs = pgTable(
@@ -350,7 +360,9 @@ export const generation_runs = pgTable(
   (table) => [
     index("generation_runs_module_idx").on(table.module_id),
     index("generation_runs_status_idx").on(table.status),
-    index("generation_runs_bullmq_job_idx").on(table.bullmq_job_id),
+    uniqueIndex("generation_runs_bullmq_job_idx")
+      .on(table.bullmq_job_id)
+      .where(sql`${table.bullmq_job_id} IS NOT NULL`),
     check(
       "generation_runs_progress_percentage_check",
       sql`${table.progress_percentage} >= 0 AND ${table.progress_percentage} <= 100`,
@@ -374,7 +386,10 @@ export const generation_run_steps = pgTable(
     finished_at: optionalTimestamp(),
   },
   (table) => [
-    index("generation_run_steps_run_position_idx").on(table.generation_run_id, table.position),
+    uniqueIndex("generation_run_steps_run_position_idx").on(
+      table.generation_run_id,
+      table.position,
+    ),
   ],
 );
 
