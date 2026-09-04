@@ -911,16 +911,65 @@ Validation:
 - every assessment activity in the node must appear exactly once;
 - no foreign or non-assessment activity may appear;
 - option indices and answer shapes must match the referenced activity;
-- short answers are trimmed and bounded by configured length;
+- short answers are trimmed, must remain non-empty, and are limited to 4,000 Unicode code points;
 - required remediation from a prior Attempt must be completed before attempting a locked Core Node.
 
 `submissionId` makes network retries safe. The same ID with the same normalized responses returns
 the original Attempt. A different payload returns `409 SUBMISSION_CONFLICT`.
 
-Deterministic questions are evaluated immediately. If short-answer AI evaluation finishes within
-the request budget, the endpoint returns `201`; otherwise it returns `202` with
-`evaluationStatus = evaluating`. In both cases the learner's responses are durably stored before
-the response is sent.
+Deterministic-only Attempts are evaluated immediately. An Attempt containing any short answer is
+dispatched to the internal `attempt-evaluation` queue and the request waits for at most five
+seconds. The endpoint returns `201` when the Attempt is already `completed` or `failed`, and `202`
+only while `evaluationStatus = evaluating`. In every case the Attempt and its normalized responses
+are durably committed before the response is sent.
+
+The Attempt body is a discriminated union. Fields from another lifecycle state are omitted rather
+than returned as `null`:
+
+```ts
+type Attempt =
+  | {
+      id: string;
+      submissionId: string;
+      attemptNumber: number;
+      evaluationStatus: "evaluating";
+      createdAt: string;
+    }
+  | {
+      id: string;
+      submissionId: string;
+      attemptNumber: number;
+      evaluationStatus: "completed";
+      score: number;
+      maxScore: number;
+      normalizedScore: number;
+      activityResults: ActivityResult[];
+      conceptResults: ConceptResult[];
+      feedback: AssessmentFeedback | null;
+      policyOutcome: "continue" | "optional_review" | "required_intervention";
+      createdAt: string;
+      evaluatedAt: string;
+    }
+  | {
+      id: string;
+      submissionId: string;
+      attemptNumber: number;
+      evaluationStatus: "failed";
+      failure: {
+        code: "ATTEMPT_EVALUATION_FAILED";
+        message: string;
+        retryable: boolean;
+      };
+      createdAt: string;
+      evaluatedAt: string;
+    };
+
+type AssessmentFeedback = {
+  summary: string;
+  strengths: string[];
+  areasToImprove: string[];
+};
+```
 
 Completed response:
 
@@ -953,7 +1002,12 @@ Completed response:
           "evidenceCount": 2
         }
       ],
-      "feedback": null,
+      "feedback": {
+        "summary": "You identified pepsin's role and connected it to protein digestion.",
+        "strengths": ["Correctly described the substrate and product."],
+        "areasToImprove": ["Explain where pepsin is active and why the environment matters."]
+      },
+      "policyOutcome": "optional_review",
       "createdAt": "2026-09-03T09:20:00.000Z",
       "evaluatedAt": "2026-09-03T09:20:03.000Z"
     },
@@ -969,19 +1023,17 @@ Completed response:
       "totalCoreNodes": 7
     },
     "xpAwarded": 20,
-    "nextAction": {
-      "type": "offer_optional_review",
-      "attemptId": "ba828b26-4154-4856-a75b-0d30d19517ea",
-      "interventionId": "7a29dd30-ebd4-40bc-9066-7ac882686bdc"
-    }
+    "nextAction": { "type": "none" }
   }
 }
 ```
 
-Evaluation config is never echoed. M5 returns only safe correctness, score, and explanation; it
-does not expose raw correct answers, weights, rubrics, or evaluation configuration.
+Evaluation config is never echoed. M6 returns only safe correctness, score, explanation, and
+learner-facing feedback; it does not expose raw correct answers, weights, rubrics, expected
+Concepts, prompts sent to the provider, provider metadata, or evaluation configuration.
 
-In M5, deterministic evaluation keeps overall feedback `null` and persists only the policy outcome.
+In M6, deterministic-only evaluation keeps overall feedback `null`. Feedback is not an input to
+the adaptive policy; policy is derived only from updated Concept Mastery.
 Public submission remains compile-time disabled until M7 can enforce adaptive intervention.
 
 ### 10.2 Evaluation Atomicity
@@ -996,9 +1048,11 @@ evaluation succeeds, finalization commits these changes in a second transaction:
 5. adaptive-policy decision;
 6. XP Event and cached user stats.
 
-The adaptive generation job is queued only after the transaction commits. Queue dispatch uses a
-durable outbox or equivalent recovery mechanism so a committed required intervention cannot be
-silently lost.
+For AI evaluation, the `evaluating` Attempt row is the durable dispatch record. The worker polls
+such rows that contain short-answer responses and enqueues `attempt-evaluation` with
+`jobId = attemptId`; no separate evaluation-run table is created. Finalization locks the Attempt
+and becomes a no-op after either terminal state, so duplicate delivery cannot apply Mastery,
+progress, or XP twice.
 
 Submitted responses become immutable immediately. Only evaluation lifecycle and result fields may
 advance from `evaluating` to one terminal state. If asynchronous evaluation fails, the Attempt ends
@@ -1013,7 +1067,7 @@ GET /api/v1/attempts/:attemptId
 ```
 
 Returns `200` for `evaluating`, `completed`, or `failed` attempts. The frontend polls this endpoint
-only when submission returned `202`.
+only while the authoritative response remains `evaluating`.
 
 ## 11. Adaptive Interventions
 

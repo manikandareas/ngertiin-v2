@@ -1,5 +1,9 @@
 export {
   type Attempt,
+  type AssessmentAnswer,
+  assessmentAnswerSchema,
+  type AssessmentFeedback,
+  assessmentFeedbackSchema,
   attemptEvaluationStatusSchema,
   type AttemptEvaluationStatus,
   attemptParamsSchema,
@@ -19,6 +23,7 @@ export {
   submitAttemptResponseSchema,
   type SubmitAttemptResponse,
   trueFalseAnswerSchema,
+  shortAnswerSchema,
 } from "./attempts/attempt.js";
 export {
   apiErrorCodeSchema,

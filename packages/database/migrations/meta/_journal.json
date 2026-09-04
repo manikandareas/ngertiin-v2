@@ -50,6 +50,13 @@
       "when": 1788523235095,
       "tag": "0006_unknown_cerise",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1788525507280,
+      "tag": "0007_daffy_hemingway",
+      "breakpoints": true
     }
   ]
 }

@@ -12,9 +12,25 @@ export const multipleChoiceAnswerSchema = z
   .object({ optionIndex: z.number().int().nonnegative() })
   .strict();
 export const trueFalseAnswerSchema = z.object({ value: z.boolean() }).strict();
+export const shortAnswerSchema = z
+  .object({
+    text: z
+      .string()
+      .transform((value) => value.trim())
+      .refine((value) => value.length > 0, "Short answer must not be empty.")
+      .refine((value) => Array.from(value).length <= 4_000, {
+        message: "Short answer must contain at most 4,000 Unicode code points.",
+      }),
+  })
+  .strict();
 export const deterministicAnswerSchema = z.union([
   multipleChoiceAnswerSchema,
   trueFalseAnswerSchema,
+]);
+export const assessmentAnswerSchema = z.union([
+  multipleChoiceAnswerSchema,
+  trueFalseAnswerSchema,
+  shortAnswerSchema,
 ]);
 
 export const submitAttemptBodySchema = z
@@ -25,7 +41,7 @@ export const submitAttemptBodySchema = z
         z
           .object({
             activityId: uuidSchema,
-            answer: deterministicAnswerSchema,
+            answer: assessmentAnswerSchema,
           })
           .strict(),
       )
@@ -62,22 +78,48 @@ export const attemptConceptResultSchema = z.object({
   evidenceCount: z.number().int().positive(),
 });
 
-export const attemptSchema = z.object({
+export const assessmentFeedbackSchema = z
+  .object({
+    summary: z.string(),
+    strengths: z.array(z.string()),
+    areasToImprove: z.array(z.string()),
+  })
+  .strict();
+
+const attemptIdentitySchema = z.object({
   id: uuidSchema,
   submissionId: uuidSchema,
   attemptNumber: z.number().int().positive(),
-  evaluationStatus: attemptEvaluationStatusSchema,
-  score: z.number().min(0).nullable(),
-  maxScore: z.number().positive().nullable(),
-  normalizedScore: z.number().min(0).max(1).nullable(),
+  createdAt: timestampSchema,
+});
+
+export const evaluatingAttemptSchema = attemptIdentitySchema.extend({
+  evaluationStatus: z.literal("evaluating"),
+});
+
+export const completedAttemptSchema = attemptIdentitySchema.extend({
+  evaluationStatus: z.literal("completed"),
+  score: z.number().min(0),
+  maxScore: z.number().positive(),
+  normalizedScore: z.number().min(0).max(1),
   activityResults: z.array(attemptActivityResultSchema),
   conceptResults: z.array(attemptConceptResultSchema),
-  feedback: z.null(),
-  policyOutcome: attemptPolicyOutcomeSchema.nullable(),
-  failure: attemptFailureSchema.nullable(),
-  createdAt: timestampSchema,
-  evaluatedAt: timestampSchema.nullable(),
+  feedback: assessmentFeedbackSchema.nullable(),
+  policyOutcome: attemptPolicyOutcomeSchema,
+  evaluatedAt: timestampSchema,
 });
+
+export const failedAttemptSchema = attemptIdentitySchema.extend({
+  evaluationStatus: z.literal("failed"),
+  failure: attemptFailureSchema,
+  evaluatedAt: timestampSchema,
+});
+
+export const attemptSchema = z.discriminatedUnion("evaluationStatus", [
+  evaluatingAttemptSchema,
+  completedAttemptSchema,
+  failedAttemptSchema,
+]);
 
 export const attemptResultSchema = z.object({
   attempt: attemptSchema,
@@ -92,6 +134,8 @@ export const getAttemptResponseSchema = successEnvelopeSchema(attemptResultSchem
 
 export type AttemptParams = z.infer<typeof attemptParamsSchema>;
 export type DeterministicAnswer = z.infer<typeof deterministicAnswerSchema>;
+export type AssessmentAnswer = z.infer<typeof assessmentAnswerSchema>;
+export type AssessmentFeedback = z.infer<typeof assessmentFeedbackSchema>;
 export type SubmitAttemptBody = z.infer<typeof submitAttemptBodySchema>;
 export type AttemptEvaluationStatus = z.infer<typeof attemptEvaluationStatusSchema>;
 export type AttemptPolicyOutcome = z.infer<typeof attemptPolicyOutcomeSchema>;

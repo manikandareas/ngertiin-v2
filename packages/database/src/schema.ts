@@ -515,6 +515,7 @@ export const attempts = pgTable(
     score: numeric(),
     max_score: numeric(),
     policy_outcome: attempt_policy_outcome(),
+    feedback: jsonb(),
     xp_awarded: integer().notNull().default(0),
     failure: jsonb(),
     evaluated_at: optionalTimestamp(),
@@ -523,6 +524,9 @@ export const attempts = pgTable(
   (table) => [
     index("attempts_user_module_idx").on(table.user_id, table.module_id),
     index("attempts_node_idx").on(table.node_id),
+    index("attempts_evaluating_idx")
+      .on(table.created_at, table.id)
+      .where(sql`${table.evaluation_status} = 'evaluating'`),
     uniqueIndex("attempts_user_submission_idx").on(table.user_id, table.submission_id),
     uniqueIndex("attempts_user_node_number_idx").on(
       table.user_id,

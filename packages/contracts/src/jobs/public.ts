@@ -9,3 +9,7 @@ export {
   type SourceProcessingJob,
   sourceProcessingJobSchema,
 } from "./source-processing.js";
+export {
+  type AttemptEvaluationJob,
+  attemptEvaluationJobSchema,
+} from "./attempt-evaluation.js";

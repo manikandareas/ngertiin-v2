@@ -1,11 +1,12 @@
 import { createHash } from "node:crypto";
 import { Inject, Injectable } from "@nestjs/common";
-import type {
-  AttemptPolicyOutcome,
-  AttemptResult,
-  DeterministicAnswer,
-  NextLearningAction,
-  SubmitAttemptBody,
+import {
+  assessmentFeedbackSchema,
+  type AttemptPolicyOutcome,
+  type AttemptResult,
+  type DeterministicAnswer,
+  type NextLearningAction,
+  type SubmitAttemptBody,
 } from "@ngertiin/contracts/api";
 import {
   activities,
@@ -16,22 +17,23 @@ import {
   module_nodes,
   modules,
   node_progress,
-  user_concept_mastery,
   user_module_progress,
 } from "@ngertiin/database";
+import {
+  evaluateDeterministicActivities,
+  failAttemptEvaluation,
+  finalizeAttemptEvaluation,
+  InvalidEvaluationConfigurationError,
+  SAFE_NON_RETRYABLE_EVALUATION_FAILURE,
+} from "@ngertiin/shared";
 import { and, asc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { ProductError } from "../http/product-error.js";
 import { InfrastructureService } from "../infrastructure/infrastructure.service.js";
-import { finalizeCoreNodeProgress } from "../progression/finalize-node-progress.js";
 import { ASSESSMENT_SUBMISSION_ENABLED } from "./assessment-submission.gate.js";
-import {
-  evaluateDeterministicActivities,
-  InvalidEvaluationConfigurationError,
-  selectPolicyOutcome,
-  updateMastery,
-} from "./attempts.evaluator.js";
 
+const REQUEST_WAIT_MILLISECONDS = 5_000;
+const STATUS_POLL_MILLISECONDS = 250;
 const safeEvaluationSchema = z.object({ correct: z.boolean(), explanation: z.string() }).strict();
 const safeFailureSchema = z
   .object({
@@ -41,18 +43,18 @@ const safeFailureSchema = z
   })
   .strict();
 
-const SAFE_EVALUATION_FAILURE = {
-  code: "ATTEMPT_EVALUATION_FAILED" as const,
-  message: "This assessment could not be evaluated. Please try again later.",
-  retryable: false,
-};
-
-type AssessmentRow = {
+type ActivityRow = {
   id: string;
   type: "lesson" | "flashcard" | "multiple_choice" | "true_false" | "short_answer";
   content: unknown;
   evaluationConfig: unknown;
 };
+
+function isAssessment(
+  activity: ActivityRow,
+): activity is ActivityRow & { type: "multiple_choice" | "true_false" | "short_answer" } {
+  return ["multiple_choice", "true_false", "short_answer"].includes(activity.type);
+}
 
 function normalizedSubmissionHash(responses: SubmitAttemptBody["responses"]): string {
   const normalized = responses
@@ -96,11 +98,10 @@ export class AttemptsService {
       );
     }
 
-    const attemptId = await this.infrastructure.database.db.transaction(async (transaction) => {
+    const stored = await this.infrastructure.database.db.transaction(async (transaction) => {
       await transaction.execute(
         sql`select pg_advisory_xact_lock(hashtextextended(${`${userId}:${input.submissionId}`}, 0))`,
       );
-
       const [progress] = await transaction
         .select({
           id: node_progress.id,
@@ -129,7 +130,7 @@ export class AttemptsService {
         );
       }
 
-      const assessmentRows = await transaction
+      const activityRows = await transaction
         .select({
           id: activities.id,
           type: activities.type,
@@ -139,8 +140,10 @@ export class AttemptsService {
         .from(activities)
         .where(eq(activities.node_id, nodeId))
         .orderBy(asc(activities.position));
+      const assessmentRows = activityRows.filter(isAssessment);
       this.validateSubmission(assessmentRows, input.responses);
       const submissionHash = normalizedSubmissionHash(input.responses);
+      const hasShortAnswer = assessmentRows.some(({ type }) => type === "short_answer");
 
       const [existing] = await transaction
         .select({
@@ -165,7 +168,7 @@ export class AttemptsService {
             "This submission ID was already used with different responses.",
           );
         }
-        return existing.id;
+        return { attemptId: existing.id, hasShortAnswer };
       }
 
       const [created] = await transaction
@@ -181,7 +184,6 @@ export class AttemptsService {
         })
         .returning({ id: attempts.id });
       if (!created) throw new Error("Attempt insert did not return a row.");
-
       await transaction.insert(attempt_responses).values(
         input.responses.map((response) => ({
           attempt_id: created.id,
@@ -193,11 +195,12 @@ export class AttemptsService {
         .update(node_progress)
         .set({ attempt_count: sql`${node_progress.attempt_count} + 1`, updated_at: new Date() })
         .where(eq(node_progress.id, progress.id));
-      return created.id;
+      return { attemptId: created.id, hasShortAnswer };
     });
 
-    await this.finalizeAttempt(attemptId);
-    return this.getAttempt(userId, attemptId);
+    if (stored.hasShortAnswer) await this.waitForTerminalStatus(stored.attemptId);
+    else await this.finalizeDeterministicAttempt(stored.attemptId);
+    return this.getAttempt(userId, stored.attemptId);
   }
 
   async getAttempt(userId: string, attemptId: string): Promise<AttemptResult> {
@@ -212,6 +215,7 @@ export class AttemptsService {
         score: attempts.score,
         maxScore: attempts.max_score,
         policyOutcome: attempts.policy_outcome,
+        feedback: attempts.feedback,
         xpAwarded: attempts.xp_awarded,
         failure: attempts.failure,
         createdAt: attempts.created_at,
@@ -222,7 +226,42 @@ export class AttemptsService {
       .limit(1);
     if (!attempt) notFound();
 
-    const [responseRows, conceptRows, progress] = await Promise.all([
+    const progress = await this.readProgress(userId, attempt.moduleId, attempt.nodeId);
+    const identity = {
+      id: attempt.id,
+      submissionId: attempt.submissionId,
+      attemptNumber: attempt.attemptNumber,
+      createdAt: attempt.createdAt.toISOString(),
+    };
+    if (attempt.evaluationStatus === "evaluating") {
+      return {
+        attempt: { ...identity, evaluationStatus: "evaluating" },
+        nodeProgress: progress.nodeProgress,
+        moduleProgress: progress.moduleProgress,
+        xpAwarded: 0,
+        nextAction: { type: "none" },
+      };
+    }
+    if (attempt.evaluationStatus === "failed") {
+      const failure = safeFailureSchema.safeParse(attempt.failure);
+      if (attempt.evaluatedAt === null) {
+        throw new Error("Failed Attempt is missing its terminal timestamp.");
+      }
+      return {
+        attempt: {
+          ...identity,
+          evaluationStatus: "failed",
+          failure: failure.success ? failure.data : SAFE_NON_RETRYABLE_EVALUATION_FAILURE,
+          evaluatedAt: attempt.evaluatedAt.toISOString(),
+        },
+        nodeProgress: progress.nodeProgress,
+        moduleProgress: progress.moduleProgress,
+        xpAwarded: 0,
+        nextAction: { type: "none" },
+      };
+    }
+
+    const [responseRows, conceptRows] = await Promise.all([
       this.infrastructure.database.db
         .select({
           activityId: attempt_responses.activity_id,
@@ -247,35 +286,38 @@ export class AttemptsService {
         .innerJoin(module_concepts, eq(module_concepts.id, attempt_concept_results.concept_id))
         .where(eq(attempt_concept_results.attempt_id, attempt.id))
         .orderBy(asc(module_concepts.key)),
-      this.readProgress(userId, attempt.moduleId, attempt.nodeId),
     ]);
-
-    const activityResults = responseRows.flatMap((row) => {
+    const activityResults = responseRows.map((row) => {
       const evaluation = safeEvaluationSchema.safeParse(row.evaluation);
-      if (!evaluation.success || row.score === null || row.maxScore === null) return [];
-      return [
-        {
-          activityId: row.activityId,
-          correct: evaluation.data.correct,
-          score: Number(row.score),
-          maxScore: Number(row.maxScore),
-          explanation: evaluation.data.explanation,
-        },
-      ];
+      if (!evaluation.success || row.score === null || row.maxScore === null) {
+        throw new Error("Completed Attempt has incomplete activity results.");
+      }
+      return {
+        activityId: row.activityId,
+        correct: evaluation.data.correct,
+        score: Number(row.score),
+        maxScore: Number(row.maxScore),
+        explanation: evaluation.data.explanation,
+      };
     });
-    const score = attempt.score === null ? null : Number(attempt.score);
-    const maxScore = attempt.maxScore === null ? null : Number(attempt.maxScore);
-    const failure = safeFailureSchema.safeParse(attempt.failure);
-
+    if (
+      attempt.score === null ||
+      attempt.maxScore === null ||
+      attempt.policyOutcome === null ||
+      attempt.evaluatedAt === null
+    ) {
+      throw new Error("Completed Attempt is missing terminal fields.");
+    }
+    const feedback = assessmentFeedbackSchema.nullable().parse(attempt.feedback);
+    const score = Number(attempt.score);
+    const maxScore = Number(attempt.maxScore);
     return {
       attempt: {
-        id: attempt.id,
-        submissionId: attempt.submissionId,
-        attemptNumber: attempt.attemptNumber,
-        evaluationStatus: attempt.evaluationStatus,
+        ...identity,
+        evaluationStatus: "completed",
         score,
         maxScore,
-        normalizedScore: score === null || maxScore === null ? null : score / maxScore,
+        normalizedScore: score / maxScore,
         activityResults,
         conceptResults: conceptRows.map((row) => ({
           conceptKey: row.conceptKey,
@@ -284,11 +326,9 @@ export class AttemptsService {
           confidenceScore: Number(row.confidenceScore),
           evidenceCount: row.evidenceCount,
         })),
-        feedback: null,
+        feedback,
         policyOutcome: attempt.policyOutcome,
-        failure: failure.success ? failure.data : null,
-        createdAt: attempt.createdAt.toISOString(),
-        evaluatedAt: attempt.evaluatedAt?.toISOString() ?? null,
+        evaluatedAt: attempt.evaluatedAt.toISOString(),
       },
       nodeProgress: progress.nodeProgress,
       moduleProgress: progress.moduleProgress,
@@ -316,25 +356,22 @@ export class AttemptsService {
         "Only a ready Module accepts assessment submissions.",
       );
     }
-    if (row.origin !== "core") responseValidationError("M5 only supports Core Node assessments.");
+    if (row.origin !== "core") responseValidationError("M6 only supports Core Node assessments.");
   }
 
   private validateSubmission(
-    activityRows: AssessmentRow[],
+    assessmentRows: Array<
+      ActivityRow & { type: "multiple_choice" | "true_false" | "short_answer" }
+    >,
     responses: SubmitAttemptBody["responses"],
   ): void {
-    if (
-      activityRows.length === 0 ||
-      activityRows.some(({ type }) => type !== "multiple_choice" && type !== "true_false")
-    ) {
-      responseValidationError(
-        "The node must contain only supported multiple-choice or true/false activities.",
-      );
+    if (assessmentRows.length === 0) {
+      responseValidationError("The node must contain at least one assessment activity.");
     }
-    if (responses.length !== activityRows.length) {
+    if (responses.length !== assessmentRows.length) {
       responseValidationError("Every assessment activity must be answered exactly once.");
     }
-    const byId = new Map(activityRows.map((activity) => [activity.id, activity]));
+    const byId = new Map(assessmentRows.map((activity) => [activity.id, activity]));
     const seen = new Set<string>();
     for (const response of responses) {
       const activity = byId.get(response.activityId);
@@ -355,36 +392,19 @@ export class AttemptsService {
             "A multiple-choice optionIndex is outside the available options.",
           );
         }
-      } else if (!("value" in response.answer)) {
-        responseValidationError("A true/false response requires value.");
+      } else if (activity.type === "true_false") {
+        if (!("value" in response.answer)) {
+          responseValidationError("A true/false response requires value.");
+        }
+      } else if (!("text" in response.answer)) {
+        responseValidationError("A short-answer response requires text.");
       }
     }
   }
 
-  private async finalizeAttempt(attemptId: string): Promise<void> {
-    await this.infrastructure.database.db.transaction(async (transaction) => {
-      const [attempt] = await transaction
-        .select({
-          id: attempts.id,
-          userId: attempts.user_id,
-          moduleId: attempts.module_id,
-          nodeId: attempts.node_id,
-          evaluationStatus: attempts.evaluation_status,
-        })
-        .from(attempts)
-        .where(eq(attempts.id, attemptId))
-        .for("update")
-        .limit(1);
-      if (attempt?.evaluationStatus !== "evaluating") return;
-
-      await transaction
-        .select({ id: modules.id })
-        .from(modules)
-        .where(eq(modules.id, attempt.moduleId))
-        .for("update")
-        .limit(1);
-
-      const rows = await transaction
+  private async finalizeDeterministicAttempt(attemptId: string): Promise<void> {
+    const [rows, concepts] = await Promise.all([
+      this.infrastructure.database.db
         .select({
           activityId: attempt_responses.activity_id,
           answer: attempt_responses.response,
@@ -394,142 +414,54 @@ export class AttemptsService {
         })
         .from(attempt_responses)
         .innerJoin(activities, eq(activities.id, attempt_responses.activity_id))
-        .where(eq(attempt_responses.attempt_id, attempt.id))
-        .orderBy(asc(activities.position));
-      const concepts = await transaction
-        .select({ id: module_concepts.id, key: module_concepts.key })
+        .where(eq(attempt_responses.attempt_id, attemptId))
+        .orderBy(asc(activities.position)),
+      this.infrastructure.database.db
+        .select({ key: module_concepts.key })
         .from(module_concepts)
-        .where(eq(module_concepts.module_id, attempt.moduleId));
-      const conceptByKey = new Map(concepts.map((concept) => [concept.key, concept.id]));
-
-      try {
-        const evaluated = evaluateDeterministicActivities({
-          activities: rows.map((row) => ({
-            id: row.activityId,
-            type: row.type as "multiple_choice" | "true_false",
-            content: row.content,
-            evaluationConfig: row.evaluationConfig,
-          })),
-          answers: new Map(rows.map((row) => [row.activityId, row.answer as DeterministicAnswer])),
-          knownConceptKeys: new Set(conceptByKey.keys()),
-        });
-
-        const masteryResults: Array<{
-          conceptId: string;
-          conceptKey: string;
-          performanceScore: number;
-          masteryScore: number;
-          confidenceScore: number;
-          evidenceCount: number;
-        }> = [];
-        for (const result of evaluated.conceptResults) {
-          const conceptId = conceptByKey.get(result.conceptKey);
-          if (!conceptId) throw new InvalidEvaluationConfigurationError();
-          const [stored] = await transaction
-            .select({
-              masteryScore: user_concept_mastery.mastery_score,
-              evidenceCount: user_concept_mastery.evidence_count,
-            })
-            .from(user_concept_mastery)
-            .where(
-              and(
-                eq(user_concept_mastery.user_id, attempt.userId),
-                eq(user_concept_mastery.module_id, attempt.moduleId),
-                eq(user_concept_mastery.concept_id, conceptId),
-              ),
-            )
-            .for("update")
-            .limit(1);
-          const updated = updateMastery(
-            stored ? Number(stored.masteryScore) : 0,
-            stored?.evidenceCount ?? 0,
-            result.performanceScore,
-          );
-          await transaction
-            .insert(user_concept_mastery)
-            .values({
-              user_id: attempt.userId,
-              module_id: attempt.moduleId,
-              concept_id: conceptId,
-              mastery_score: String(updated.masteryScore),
-              confidence_score: String(updated.confidenceScore),
-              evidence_count: updated.evidenceCount,
-              updated_at: new Date(),
-            })
-            .onConflictDoUpdate({
-              target: [
-                user_concept_mastery.user_id,
-                user_concept_mastery.module_id,
-                user_concept_mastery.concept_id,
-              ],
-              set: {
-                mastery_score: String(updated.masteryScore),
-                confidence_score: String(updated.confidenceScore),
-                evidence_count: updated.evidenceCount,
-                updated_at: new Date(),
-              },
-            });
-          masteryResults.push({ conceptId, ...result, ...updated });
-        }
-
-        for (const result of evaluated.activityResults) {
-          await transaction
-            .update(attempt_responses)
-            .set({
-              score: String(result.score),
-              max_score: String(result.maxScore),
-              evaluation: { correct: result.correct, explanation: result.explanation },
-            })
-            .where(
-              and(
-                eq(attempt_responses.attempt_id, attempt.id),
-                eq(attempt_responses.activity_id, result.activityId),
-              ),
-            );
-        }
-        await transaction.insert(attempt_concept_results).values(
-          masteryResults.map((result) => ({
-            attempt_id: attempt.id,
-            concept_id: result.conceptId,
-            performance_score: String(result.performanceScore),
-            mastery_score: String(result.masteryScore),
-            confidence_score: String(result.confidenceScore),
-            evidence_count: result.evidenceCount,
-          })),
-        );
-        const policyOutcome = selectPolicyOutcome(
-          masteryResults.map((result) => result.masteryScore),
-        );
-        const progression = await finalizeCoreNodeProgress(transaction, {
-          userId: attempt.userId,
-          moduleId: attempt.moduleId,
-          nodeId: attempt.nodeId,
-          normalizedScore: evaluated.normalizedScore,
-          xp: { amount: 20, reason: "quiz_completed" },
-        });
-        await transaction
-          .update(attempts)
-          .set({
-            evaluation_status: "completed",
-            score: String(evaluated.score),
-            max_score: String(evaluated.maxScore),
-            policy_outcome: policyOutcome,
-            xp_awarded: progression.xpAwarded,
-            evaluated_at: new Date(),
-          })
-          .where(eq(attempts.id, attempt.id));
-      } catch (error) {
-        if (!(error instanceof InvalidEvaluationConfigurationError)) throw error;
-        await transaction
-          .update(attempts)
-          .set({
-            evaluation_status: "failed",
-            failure: SAFE_EVALUATION_FAILURE,
-            evaluated_at: new Date(),
-          })
-          .where(eq(attempts.id, attempt.id));
+        .innerJoin(attempts, eq(attempts.module_id, module_concepts.module_id))
+        .where(eq(attempts.id, attemptId)),
+    ]);
+    try {
+      if (rows.some(({ type }) => type !== "multiple_choice" && type !== "true_false")) {
+        throw new InvalidEvaluationConfigurationError();
       }
-    });
+      const evaluated = evaluateDeterministicActivities({
+        activities: rows.map((row) => ({
+          id: row.activityId,
+          type: row.type as "multiple_choice" | "true_false",
+          content: row.content,
+          evaluationConfig: row.evaluationConfig,
+        })),
+        answers: new Map(rows.map((row) => [row.activityId, row.answer as DeterministicAnswer])),
+        knownConceptKeys: new Set(concepts.map(({ key }) => key)),
+      });
+      await finalizeAttemptEvaluation(this.infrastructure.database, {
+        attemptId,
+        ...evaluated,
+        feedback: null,
+      });
+    } catch (error) {
+      if (!(error instanceof InvalidEvaluationConfigurationError)) throw error;
+      await failAttemptEvaluation(
+        this.infrastructure.database,
+        attemptId,
+        SAFE_NON_RETRYABLE_EVALUATION_FAILURE,
+      );
+    }
+  }
+
+  private async waitForTerminalStatus(attemptId: string): Promise<void> {
+    const deadline = Date.now() + REQUEST_WAIT_MILLISECONDS;
+    while (Date.now() < deadline) {
+      const [row] = await this.infrastructure.database.db
+        .select({ status: attempts.evaluation_status })
+        .from(attempts)
+        .where(eq(attempts.id, attemptId))
+        .limit(1);
+      if (row?.status !== "evaluating") return;
+      await new Promise((resolve) => setTimeout(resolve, STATUS_POLL_MILLISECONDS));
+    }
   }
 
   private async readProgress(userId: string, moduleId: string, nodeId: string) {
@@ -590,7 +522,7 @@ export class AttemptsService {
   }
 
   private nextAction(
-    policyOutcome: AttemptPolicyOutcome | null,
+    policyOutcome: AttemptPolicyOutcome,
     progress: Awaited<ReturnType<AttemptsService["readProgress"]>>,
   ): NextLearningAction {
     if (policyOutcome !== "continue") return { type: "none" };

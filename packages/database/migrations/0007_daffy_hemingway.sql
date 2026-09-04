@@ -1,0 +1,2 @@
+ALTER TABLE "attempts" ADD COLUMN "feedback" jsonb;--> statement-breakpoint
+CREATE INDEX "attempts_evaluating_idx" ON "attempts" USING btree ("created_at","id") WHERE "attempts"."evaluation_status" = 'evaluating';

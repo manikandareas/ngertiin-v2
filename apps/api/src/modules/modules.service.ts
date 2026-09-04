@@ -43,7 +43,7 @@ import { z } from "zod";
 import { ProductError } from "../http/product-error.js";
 import { IdempotencyService } from "../idempotency/idempotency.service.js";
 import { InfrastructureService } from "../infrastructure/infrastructure.service.js";
-import { finalizeCoreNodeProgress } from "../progression/finalize-node-progress.js";
+import { finalizeCoreNodeProgress } from "@ngertiin/shared";
 
 const moduleCursorSchema = z
   .object({

@@ -1,4 +1,8 @@
-import type { AttemptPolicyOutcome, DeterministicAnswer } from "@ngertiin/contracts/api";
+import type {
+  AssessmentFeedback,
+  AttemptPolicyOutcome,
+  DeterministicAnswer,
+} from "@ngertiin/contracts/api";
 import { z } from "zod";
 
 const conceptWeightSchema = z
@@ -12,7 +16,17 @@ const multipleChoiceConfigSchema = baseEvaluationConfigSchema.extend({
 });
 const trueFalseConfigSchema = baseEvaluationConfigSchema.extend({ correctAnswer: z.boolean() });
 
-export type AssessmentActivity = {
+export const shortAnswerEvaluationConfigSchema = z
+  .object({
+    expectedConcepts: z.array(z.string().min(1)).min(1).max(20),
+    rubric: z
+      .array(z.object({ criterion: z.string().min(1), weight: z.number().min(0).max(1) }).strict())
+      .min(1)
+      .max(12),
+  })
+  .strict();
+
+export type DeterministicActivity = {
   id: string;
   type: "multiple_choice" | "true_false";
   content: unknown;
@@ -27,7 +41,13 @@ export type ActivityEvaluation = {
   explanation: string;
 };
 
-export type ConceptPerformance = { conceptKey: string; performanceScore: number };
+export type ConceptContribution = { conceptKey: string; score: number; weight: number };
+
+export type AttemptEvaluation = {
+  activityResults: ActivityEvaluation[];
+  conceptContributions: ConceptContribution[];
+  feedback: AssessmentFeedback | null;
+};
 
 export class InvalidEvaluationConfigurationError extends Error {
   constructor() {
@@ -37,17 +57,11 @@ export class InvalidEvaluationConfigurationError extends Error {
 }
 
 export function evaluateDeterministicActivities(input: {
-  activities: AssessmentActivity[];
+  activities: DeterministicActivity[];
   answers: Map<string, DeterministicAnswer>;
   knownConceptKeys: Set<string>;
-}): {
-  activityResults: ActivityEvaluation[];
-  conceptResults: ConceptPerformance[];
-  score: number;
-  maxScore: number;
-  normalizedScore: number;
-} {
-  const conceptTotals = new Map<string, { weightedScore: number; totalWeight: number }>();
+}): Pick<AttemptEvaluation, "activityResults" | "conceptContributions"> {
+  const conceptContributions: ConceptContribution[] = [];
   const activityResults = input.activities.map((activity) => {
     const answer = input.answers.get(activity.id);
     if (!answer) throw new InvalidEvaluationConfigurationError();
@@ -60,7 +74,7 @@ export function evaluateDeterministicActivities(input: {
     const config = parsed.data;
     if (
       config.conceptWeights.every(({ weight }) => weight === 0) ||
-      new Set(config.conceptWeights.map(({ conceptKey }) => conceptKey).values()).size !==
+      new Set(config.conceptWeights.map(({ conceptKey }) => conceptKey)).size !==
         config.conceptWeights.length ||
       config.conceptWeights.some(({ conceptKey }) => !input.knownConceptKeys.has(conceptKey))
     ) {
@@ -90,12 +104,9 @@ export function evaluateDeterministicActivities(input: {
     }
 
     const score = correct ? 1 : 0;
-    for (const { conceptKey, weight } of config.conceptWeights) {
-      const current = conceptTotals.get(conceptKey) ?? { weightedScore: 0, totalWeight: 0 };
-      current.weightedScore += score * weight;
-      current.totalWeight += weight;
-      conceptTotals.set(conceptKey, current);
-    }
+    conceptContributions.push(
+      ...config.conceptWeights.map(({ conceptKey, weight }) => ({ conceptKey, score, weight })),
+    );
     return {
       activityId: activity.id,
       correct,
@@ -105,17 +116,39 @@ export function evaluateDeterministicActivities(input: {
     };
   });
 
-  const conceptResults = [...conceptTotals.entries()]
-    .map(([conceptKey, value]) => {
-      if (value.totalWeight <= 0) throw new InvalidEvaluationConfigurationError();
-      return { conceptKey, performanceScore: value.weightedScore / value.totalWeight };
+  return { activityResults, conceptContributions };
+}
+
+export function aggregateConceptContributions(
+  contributions: ConceptContribution[],
+): Array<{ conceptKey: string; performanceScore: number }> {
+  const totals = new Map<string, { weightedScore: number; totalWeight: number }>();
+  for (const contribution of contributions) {
+    if (
+      !Number.isFinite(contribution.score) ||
+      contribution.score < 0 ||
+      contribution.score > 1 ||
+      !Number.isFinite(contribution.weight) ||
+      contribution.weight < 0
+    ) {
+      throw new InvalidEvaluationConfigurationError();
+    }
+    const current = totals.get(contribution.conceptKey) ?? {
+      weightedScore: 0,
+      totalWeight: 0,
+    };
+    current.weightedScore += contribution.score * contribution.weight;
+    current.totalWeight += contribution.weight;
+    totals.set(contribution.conceptKey, current);
+  }
+  const results = [...totals.entries()]
+    .map(([conceptKey, total]) => {
+      if (total.totalWeight <= 0) throw new InvalidEvaluationConfigurationError();
+      return { conceptKey, performanceScore: total.weightedScore / total.totalWeight };
     })
     .sort((left, right) => left.conceptKey.localeCompare(right.conceptKey));
-  if (conceptResults.length === 0) throw new InvalidEvaluationConfigurationError();
-
-  const score = activityResults.reduce((total, result) => total + result.score, 0);
-  const maxScore = activityResults.length;
-  return { activityResults, conceptResults, score, maxScore, normalizedScore: score / maxScore };
+  if (results.length === 0) throw new InvalidEvaluationConfigurationError();
+  return results;
 }
 
 export function updateMastery(

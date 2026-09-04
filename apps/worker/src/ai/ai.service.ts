@@ -20,6 +20,8 @@ export interface GenerateObjectRequest<OutputValue extends Record<string, unknow
   readonly schemaName: string;
   readonly operation: string;
   readonly prompt: string;
+  readonly retryInvalidOutput?: boolean;
+  readonly logProviderMetadata?: boolean;
 }
 
 type ErrorRecord = Record<string, unknown>;
@@ -101,6 +103,12 @@ export class AiService {
       name: request.schemaName,
       strict: true,
     });
+    const safeModelLog =
+      request.logProviderMetadata === false
+        ? {}
+        : { provider: this.model.provider, model: this.model.modelId };
+    const safeErrorLog = (error: unknown) =>
+      request.logProviderMetadata === false ? {} : errorMetadata(error);
     let attempt = 1;
 
     while (true) {
@@ -111,8 +119,7 @@ export class AiService {
             level: "log",
             event: "ai.model_call",
             operation: request.operation,
-            provider: this.model.provider,
-            model: this.model.modelId,
+            ...safeModelLog,
             attempt,
             latencyMs: Math.round(performance.now() - startedAt),
           }),
@@ -120,18 +127,21 @@ export class AiService {
         return output;
       } catch (error) {
         const category = classifyError(error);
-        if (category === "invalid_output" && attempt === 1) {
+        if (
+          category === "invalid_output" &&
+          attempt === 1 &&
+          request.retryInvalidOutput !== false
+        ) {
           console.warn(
             JSON.stringify({
               level: "warn",
               event: "ai.invalid_output_retry",
               operation: request.operation,
-              provider: this.model.provider,
-              model: this.model.modelId,
+              ...safeModelLog,
               attempt,
               nextAttempt: attempt + 1,
               latencyMs: Math.round(performance.now() - startedAt),
-              ...errorMetadata(error),
+              ...safeErrorLog(error),
             }),
           );
           attempt += 1;
@@ -143,11 +153,10 @@ export class AiService {
             event: "ai.model_call_failed",
             category,
             operation: request.operation,
-            provider: this.model.provider,
-            model: this.model.modelId,
+            ...safeModelLog,
             attempt,
             latencyMs: Math.round(performance.now() - startedAt),
-            ...errorMetadata(error),
+            ...safeErrorLog(error),
           }),
         );
         throw new AiError(category, request.operation, error);

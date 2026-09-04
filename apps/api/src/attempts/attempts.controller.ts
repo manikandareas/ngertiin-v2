@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Inject, Param, Post, Req, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Inject, Param, Post, Req, Res, UseGuards } from "@nestjs/common";
 import {
   type AttemptParams,
   attemptParamsSchema,
@@ -26,6 +26,7 @@ export class AttemptsController {
     @Req() request: ProductRequest,
     @Param(new ZodValidationPipe(moduleNodeParamsSchema)) params: ModuleNodeParams,
     @Body(new ZodValidationPipe(submitAttemptBodySchema)) body: SubmitAttemptBody,
+    @Res({ passthrough: true }) response: { status(code: number): unknown },
   ): Promise<SubmitAttemptResponse> {
     const result = await this.attemptsService.submitAttempt(
       getLocalUserId(request),
@@ -33,6 +34,7 @@ export class AttemptsController {
       params.nodeId,
       body,
     );
+    response.status(result.attempt.evaluationStatus === "evaluating" ? 202 : 201);
     return submitAttemptResponseSchema.parse({ data: result });
   }
 

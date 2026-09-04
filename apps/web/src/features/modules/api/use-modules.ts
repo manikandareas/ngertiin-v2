@@ -5,7 +5,7 @@ import type {
   SubmitAttemptBody,
 } from "@ngertiin/contracts/api";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   completeNode,
   createModule,
@@ -88,14 +88,14 @@ export function useNode(moduleId: string | undefined, nodeId: string | undefined
 function useProgressCacheSync(moduleId: string, nodeId: string) {
   const { userId } = useAuth();
   const queryClient = useQueryClient();
-  return async (): Promise<void> => {
+  return useCallback(async (): Promise<void> => {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: journeyQueryKey(userId, moduleId) }),
       queryClient.invalidateQueries({ queryKey: moduleQueryKey(userId, moduleId) }),
       queryClient.invalidateQueries({ queryKey: nodeQueryKey(userId, moduleId, nodeId) }),
       queryClient.invalidateQueries({ queryKey: currentUserQueryKey(userId) }),
     ]);
-  };
+  }, [moduleId, nodeId, queryClient, userId]);
 }
 
 export function useStartNode(moduleId: string, nodeId: string) {
@@ -116,15 +116,20 @@ export function useCompleteNode(moduleId: string, nodeId: string) {
   });
 }
 
-export function useAttempt(attemptId: string | undefined) {
+export function useAttempt(attemptId: string | undefined, moduleId: string, nodeId: string) {
   const { getToken, userId } = useAuth();
-  return useQuery({
+  const sync = useProgressCacheSync(moduleId, nodeId);
+  const query = useQuery({
     queryKey: attemptQueryKey(userId, attemptId),
     queryFn: () => getAttempt(getToken, attemptId as string),
     enabled: Boolean(userId && attemptId),
     refetchInterval: (query) =>
       query.state.data?.attempt.evaluationStatus === "evaluating" ? 1_000 : false,
   });
+  useEffect(() => {
+    if (query.data && query.data.attempt.evaluationStatus !== "evaluating") void sync();
+  }, [query.data, sync]);
+  return query;
 }
 
 export function useSubmitAttempt(moduleId: string, nodeId: string) {
@@ -135,7 +140,7 @@ export function useSubmitAttempt(moduleId: string, nodeId: string) {
     mutationFn: (input: SubmitAttemptBody) => submitAttempt(getToken, moduleId, nodeId, input),
     onSuccess: async (result) => {
       queryClient.setQueryData(attemptQueryKey(userId, result.attempt.id), result);
-      await sync();
+      if (result.attempt.evaluationStatus !== "evaluating") await sync();
     },
   });
 }

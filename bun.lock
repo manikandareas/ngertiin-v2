@@ -108,6 +108,12 @@
     "packages/shared": {
       "name": "@ngertiin/shared",
       "version": "0.0.0",
+      "dependencies": {
+        "@ngertiin/contracts": "workspace:*",
+        "@ngertiin/database": "workspace:*",
+        "drizzle-orm": "0.45.2",
+        "zod": "4.5.4",
+      },
     },
     "packages/storage": {
       "name": "@ngertiin/storage",
