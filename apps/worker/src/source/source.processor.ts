@@ -42,7 +42,14 @@ export class SourceProcessor implements OnApplicationBootstrap, OnApplicationShu
           level: "log",
           event: "source_processing.job_completed",
           runId: job.data.processingRunId,
+          sourceId: job.data.sourceId,
           jobId: job.id,
+          attemptNumber: job.attemptsMade,
+          latencyMs:
+            job.processedOn && job.finishedOn
+              ? Math.max(0, job.finishedOn - job.processedOn)
+              : null,
+          validationOutcome: "passed",
         }),
       );
     });
@@ -52,9 +59,14 @@ export class SourceProcessor implements OnApplicationBootstrap, OnApplicationShu
           level: "error",
           event: "source_processing.job_attempt_failed",
           runId: job?.data.processingRunId,
+          sourceId: job?.data.sourceId,
           jobId: job?.id,
-          attempt: job?.attemptsMade,
-          errorType: error.name,
+          attemptNumber: job?.attemptsMade,
+          latencyMs:
+            job?.processedOn && job.finishedOn
+              ? Math.max(0, job.finishedOn - job.processedOn)
+              : null,
+          failureCategory: error.name === "UnrecoverableError" ? "terminal" : "retryable",
         }),
       );
     });
@@ -75,6 +87,16 @@ export class SourceProcessor implements OnApplicationBootstrap, OnApplicationShu
 
   private async processJob(job: Job<SourceProcessingJob>): Promise<void> {
     const payload = sourceProcessingJobSchema.parse(job.data);
+    console.log(
+      JSON.stringify({
+        level: "log",
+        event: "source_processing.job_started",
+        runId: payload.processingRunId,
+        sourceId: payload.sourceId,
+        jobId: job.id,
+        attemptNumber: job.attemptsMade + 1,
+      }),
+    );
     await this.processing.withRunLock(payload.processingRunId, async () => {
       try {
         const source = await this.processing.startRun(payload);

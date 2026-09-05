@@ -28,19 +28,55 @@ export class InfrastructureService implements OnApplicationShutdown {
   }
 
   async checkRedis(): Promise<void> {
-    if (!this.redis || this.redis.status === "end") {
-      this.redis = new Redis(this.environment.REDIS_URL, {
-        lazyConnect: true,
-        enableOfflineQueue: false,
-        maxRetriesPerRequest: 1,
-        retryStrategy: () => null,
-      });
-      this.redis.on("error", () => undefined);
+    const redis = this.ensureRedis();
+    if (redis.status === "wait") {
+      await redis.connect();
     }
-    if (this.redis.status === "wait") {
-      await this.redis.connect();
+    await redis.ping();
+  }
+
+  async consumeRateLimit(
+    userId: string,
+    category: "read" | "mutation" | "expensive" | "stream",
+  ): Promise<{ allowed: boolean; retryAfterSeconds: number }> {
+    try {
+      const redis = this.ensureRedis();
+      if (redis.status === "wait") await redis.connect();
+      const windowSeconds = this.environment.RATE_LIMIT_WINDOW_SECONDS;
+      const windowMilliseconds = windowSeconds * 1_000;
+      const window = Math.floor(Date.now() / windowMilliseconds);
+      const limit = {
+        read: this.environment.RATE_LIMIT_READ_MAX,
+        mutation: this.environment.RATE_LIMIT_MUTATION_MAX,
+        expensive: this.environment.RATE_LIMIT_EXPENSIVE_MAX,
+        stream: this.environment.RATE_LIMIT_STREAM_MAX,
+      }[category];
+      const result = await redis.eval(
+        "local count = redis.call('INCR', KEYS[1]); if count == 1 then redis.call('EXPIRE', KEYS[1], ARGV[1]) end; return count",
+        1,
+        `rate-limit:${category}:${userId}:${window}`,
+        windowSeconds + 1,
+      );
+      const count = typeof result === "number" ? result : Number(result);
+      if (!Number.isFinite(count)) throw new Error("Redis returned an invalid rate-limit count");
+      return {
+        allowed: count <= limit,
+        retryAfterSeconds: Math.max(
+          1,
+          Math.ceil((windowMilliseconds - (Date.now() % windowMilliseconds)) / 1_000),
+        ),
+      };
+    } catch (error) {
+      console.warn(
+        JSON.stringify({
+          level: "warn",
+          event: "api.rate_limit_fail_open",
+          category,
+          errorType: error instanceof Error ? error.name : "UnknownError",
+        }),
+      );
+      return { allowed: true, retryAfterSeconds: 0 };
     }
-    await this.redis.ping();
   }
 
   async checkStorage(): Promise<void> {
@@ -58,5 +94,17 @@ export class InfrastructureService implements OnApplicationShutdown {
     }
     this.storage.close();
     console.log(JSON.stringify({ level: "log", event: "api.shutdown_complete" }));
+  }
+
+  private ensureRedis(): Redis {
+    if (this.redis && this.redis.status !== "end") return this.redis;
+    this.redis = new Redis(this.environment.REDIS_URL, {
+      lazyConnect: true,
+      enableOfflineQueue: false,
+      maxRetriesPerRequest: 1,
+      retryStrategy: () => null,
+    });
+    this.redis.on("error", () => undefined);
+    return this.redis;
   }
 }

@@ -22,7 +22,7 @@ import {
   node_progress,
   user_module_progress,
 } from "@ngertiin/database";
-import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, asc, eq, gt, inArray, sql } from "drizzle-orm";
 import { InfrastructureService } from "../infrastructure/infrastructure.service.js";
 import { invalidContext, invalidOutput, type ModuleGenerationFailure } from "./modules.failure.js";
 import type { ConceptMap, CurriculumPlan, NodeActivities } from "./modules.schemas.js";
@@ -44,6 +44,7 @@ type QueuedRun = {
 export class ModulesService implements OnApplicationBootstrap, OnApplicationShutdown {
   private timer?: ReturnType<typeof setInterval>;
   private polling = false;
+  private dispatchCursor?: string;
 
   constructor(
     @Inject(InfrastructureService) private readonly infrastructure: InfrastructureService,
@@ -404,14 +405,15 @@ export class ModulesService implements OnApplicationBootstrap, OnApplicationShut
         .where(
           and(
             eq(generation_runs.type, "module"),
-            eq(generation_runs.status, "queued"),
-            isNull(generation_runs.bullmq_job_id),
+            inArray(generation_runs.status, ["queued", "processing"]),
+            this.dispatchCursor ? gt(generation_runs.id, this.dispatchCursor) : undefined,
           ),
         )
-        .orderBy(asc(generation_runs.created_at), asc(generation_runs.id))
+        .orderBy(asc(generation_runs.id))
         .limit(25);
 
       for (const run of runs) await this.dispatchRun(run);
+      this.dispatchCursor = runs.length === 25 ? runs.at(-1)?.generationRunId : undefined;
     } catch (error) {
       console.error(
         JSON.stringify({
@@ -428,22 +430,24 @@ export class ModulesService implements OnApplicationBootstrap, OnApplicationShut
   private async dispatchRun(run: QueuedRun): Promise<void> {
     const payload: ModuleGenerationJob = run;
     try {
-      await this.infrastructure.moduleGenerationQueue.add("generate-module", payload, {
+      const outcome = await this.infrastructure.ensureJob({
+        queue: this.infrastructure.moduleGenerationQueue,
+        name: "generate-module",
+        data: payload,
         jobId: run.generationRunId,
-        attempts: 3,
-        backoff: { type: "exponential", delay: 5_000 },
+        options: { attempts: 3, backoff: { type: "exponential", delay: 5_000 } },
       });
       await this.infrastructure.database.db
         .update(generation_runs)
         .set({ bullmq_job_id: run.generationRunId })
-        .where(
-          and(eq(generation_runs.id, run.generationRunId), isNull(generation_runs.bullmq_job_id)),
-        );
+        .where(eq(generation_runs.id, run.generationRunId));
       console.log(
         JSON.stringify({
           level: "log",
           event: "generation.dispatched",
           runId: run.generationRunId,
+          moduleId: run.moduleId,
+          outcome,
         }),
       );
     } catch (error) {

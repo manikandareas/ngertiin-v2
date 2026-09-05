@@ -22,7 +22,7 @@ async function bootstrap(): Promise<void> {
   app.useGlobalFilters(new ProductErrorFilter());
   app.enableCors({
     origin: environment.WEB_ORIGIN,
-    exposedHeaders: ["X-Request-Id"],
+    exposedHeaders: ["X-Request-Id", "Retry-After"],
   });
   app.enableShutdownHooks();
   await app.listen(environment.API_PORT);

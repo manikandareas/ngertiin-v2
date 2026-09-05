@@ -1,11 +1,13 @@
 # Ngerti.in
 
-Fondasi runnable untuk Ngerti.in: Bun monorepo berisi React/Vite web app, NestJS API,
+Implementasi v1 Ngerti.in: Bun monorepo berisi React/Vite web app, NestJS API,
 standalone NestJS worker, serta paket bersama untuk kontrak, database, storage, dan utilitas
 infrastruktur.
 
 Schema PostgreSQL awal mengikuti `docs/database-erd.md` dan dikelola sebagai migration SQL
-dengan Drizzle Kit. Fitur domain aplikasi belum diimplementasikan.
+dengan Drizzle Kit. Alur Source, generation, learning, assessment, adaptive intervention, dashboard,
+dan lifecycle Module telah diimplementasikan. M9 sudah lolos static readiness gates; sertifikasi
+runtime/manual/browser/provider masih tertunda dan dicatat di `docs/release/M9_RELEASE_EVIDENCE.md`.
 
 ## Prasyarat
 
@@ -53,6 +55,8 @@ bun infra:config
 bun infra:up
 bun infra:logs
 bun infra:down
+bun release:check     # seluruh static release gates, tanpa menjalankan test
+bun release:integrity # query read-only terhadap database release candidate
 ```
 
 Semua aplikasi berjalan native dengan Bun. Docker Compose hanya menjalankan PostgreSQL, Redis,

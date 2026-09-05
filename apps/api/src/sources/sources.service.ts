@@ -1,5 +1,4 @@
 import { createHash, randomUUID } from "node:crypto";
-import { isIP } from "node:net";
 import { Inject, Injectable } from "@nestjs/common";
 import {
   type CreatePdfSourceFields,
@@ -19,6 +18,7 @@ import {
 } from "@ngertiin/contracts/api";
 import type { ApiEnvironment } from "@ngertiin/contracts/environment";
 import { type DatabaseTransaction, source_processing_runs, sources } from "@ngertiin/database";
+import { assertPublicHttpUrl, PublicUrlError } from "@ngertiin/shared";
 import { and, desc, eq, lt, or, type SQL } from "drizzle-orm";
 import { z } from "zod";
 import { API_ENV } from "../config.js";
@@ -90,72 +90,6 @@ function sourceFromRow(row: SourceRow): Source {
   };
 }
 
-function isPrivateIpv4(hostname: string): boolean {
-  const octets = hostname.split(".").map(Number);
-  if (octets.length !== 4 || octets.some((part) => !Number.isInteger(part))) return false;
-  const [first = -1, second = -1] = octets;
-  return (
-    first === 0 ||
-    first === 10 ||
-    first === 127 ||
-    (first === 100 && second >= 64 && second <= 127) ||
-    (first === 169 && second === 254) ||
-    (first === 172 && second >= 16 && second <= 31) ||
-    (first === 192 && second === 168) ||
-    first >= 224
-  );
-}
-
-function isPrivateIpv6(hostname: string): boolean {
-  const value = hostname.replace(/^\[|\]$/g, "").toLowerCase();
-  if (value === "::" || value === "::1" || value.startsWith("fc") || value.startsWith("fd")) {
-    return true;
-  }
-  if (/^fe[89ab]/.test(value)) return true;
-  if (value.startsWith("::ffff:")) {
-    const mapped = value.slice("::ffff:".length);
-    if (isIP(mapped) === 4) return isPrivateIpv4(mapped);
-    const groups = mapped.split(":");
-    if (groups.length === 2) {
-      const high = Number.parseInt(groups[0] ?? "", 16);
-      const low = Number.parseInt(groups[1] ?? "", 16);
-      if (Number.isInteger(high) && Number.isInteger(low)) {
-        return isPrivateIpv4(`${high >> 8}.${high & 255}.${low >> 8}.${low & 255}`);
-      }
-    }
-  }
-  return false;
-}
-
-function validatePublicUrl(rawUrl: string): string {
-  const url = new URL(rawUrl);
-  const hostname = url.hostname.toLowerCase().replace(/\.$/, "");
-  const literal = hostname.replace(/^\[|\]$/g, "");
-  const unsafe =
-    url.username.length > 0 ||
-    url.password.length > 0 ||
-    hostname === "localhost" ||
-    hostname.endsWith(".localhost") ||
-    (isIP(literal) === 4 && isPrivateIpv4(literal)) ||
-    (isIP(literal) === 6 && isPrivateIpv6(literal));
-  if (unsafe) {
-    throw new ProductError(
-      422,
-      "VALIDATION_ERROR",
-      "Request validation failed",
-      "The URL must identify a public HTTP or HTTPS resource.",
-      [
-        {
-          path: "url",
-          code: "public_url_required",
-          message: "Credentials, localhost, and private IP addresses are not allowed.",
-        },
-      ],
-    );
-  }
-  return url.toString();
-}
-
 @Injectable()
 export class SourcesService {
   constructor(
@@ -225,7 +159,25 @@ export class SourcesService {
     key: string,
     input: CreateUrlSourceBody,
   ): Promise<{ status: number; body: CreateUrlSourceResponse }> {
-    const originalUrl = validatePublicUrl(input.url);
+    let originalUrl: string;
+    try {
+      originalUrl = await assertPublicHttpUrl(input.url);
+    } catch (error) {
+      if (!(error instanceof PublicUrlError)) throw error;
+      throw new ProductError(
+        422,
+        "VALIDATION_ERROR",
+        "Request validation failed",
+        "The URL must identify a public HTTP or HTTPS resource.",
+        [
+          {
+            path: "url",
+            code: "public_url_required",
+            message: "Credentials, localhost, and non-public network addresses are not allowed.",
+          },
+        ],
+      );
+    }
     const payloadHash = createHash("sha256")
       .update(JSON.stringify({ title: input.title, url: originalUrl }))
       .digest("hex");

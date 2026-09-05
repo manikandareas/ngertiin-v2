@@ -8,5 +8,6 @@ export const QUEUE_NAMES = {
 export * from "./assessment.js";
 export * from "./attempt-finalizer.js";
 export * from "./progression.js";
+export * from "./public-url.js";
 
 export type QueueName = (typeof QUEUE_NAMES)[keyof typeof QUEUE_NAMES];

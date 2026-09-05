@@ -6,7 +6,7 @@ import {
 } from "@nestjs/common";
 import type { AttemptEvaluationJob } from "@ngertiin/contracts/jobs";
 import { activities, attempt_responses, attempts } from "@ngertiin/database";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, gt } from "drizzle-orm";
 import { InfrastructureService } from "../infrastructure/infrastructure.service.js";
 
 const DISPATCH_INTERVAL_MILLISECONDS = 1_000;
@@ -15,6 +15,7 @@ const DISPATCH_INTERVAL_MILLISECONDS = 1_000;
 export class AttemptEvaluationService implements OnApplicationBootstrap, OnApplicationShutdown {
   private timer?: ReturnType<typeof setInterval>;
   private polling = false;
+  private dispatchCursor?: string;
 
   constructor(
     @Inject(InfrastructureService) private readonly infrastructure: InfrastructureService,
@@ -52,16 +53,21 @@ export class AttemptEvaluationService implements OnApplicationBootstrap, OnAppli
     this.polling = true;
     try {
       const rows = await this.infrastructure.database.db
-        .selectDistinct({ attemptId: attempts.id, createdAt: attempts.created_at })
+        .selectDistinct({ attemptId: attempts.id })
         .from(attempts)
         .innerJoin(attempt_responses, eq(attempt_responses.attempt_id, attempts.id))
         .innerJoin(activities, eq(activities.id, attempt_responses.activity_id))
         .where(
-          and(eq(attempts.evaluation_status, "evaluating"), eq(activities.type, "short_answer")),
+          and(
+            eq(attempts.evaluation_status, "evaluating"),
+            eq(activities.type, "short_answer"),
+            this.dispatchCursor ? gt(attempts.id, this.dispatchCursor) : undefined,
+          ),
         )
-        .orderBy(asc(attempts.created_at), asc(attempts.id))
+        .orderBy(asc(attempts.id))
         .limit(100);
       await Promise.all(rows.map(({ attemptId }) => this.dispatchAttempt(attemptId)));
+      this.dispatchCursor = rows.length === 100 ? rows.at(-1)?.attemptId : undefined;
     } catch (error) {
       console.error(
         JSON.stringify({
@@ -76,16 +82,21 @@ export class AttemptEvaluationService implements OnApplicationBootstrap, OnAppli
   }
 
   private async dispatchAttempt(attemptId: string): Promise<void> {
-    const existing = await this.infrastructure.attemptEvaluationQueue.getJob(attemptId);
-    if (existing) {
-      const state = await existing.getState();
-      if (state === "failed" || state === "completed") await existing.remove();
-    }
     const payload: AttemptEvaluationJob = { attemptId };
-    await this.infrastructure.attemptEvaluationQueue.add("evaluate-attempt", payload, {
+    const outcome = await this.infrastructure.ensureJob({
+      queue: this.infrastructure.attemptEvaluationQueue,
+      name: "evaluate-attempt",
+      data: payload,
       jobId: attemptId,
-      attempts: 3,
-      backoff: { type: "exponential", delay: 1_000 },
+      options: { attempts: 3, backoff: { type: "exponential", delay: 1_000 } },
     });
+    console.log(
+      JSON.stringify({
+        level: "log",
+        event: "attempt_evaluation.dispatched",
+        attemptId,
+        outcome,
+      }),
+    );
   }
 }

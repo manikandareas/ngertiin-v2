@@ -24,7 +24,9 @@
     "infra:config": "docker compose config --quiet",
     "infra:up": "docker compose up -d --wait postgres redis minio && docker compose run --rm --no-deps minio-init",
     "infra:down": "docker compose down",
-    "infra:logs": "docker compose logs -f"
+    "infra:logs": "docker compose logs -f",
+    "release:check": "bun install --frozen-lockfile && bun infra:config && bun db:check && bun typecheck && bun lint && bun format:check && bun run build && git diff --check",
+    "release:integrity": "psql \"$DATABASE_URL\" -v ON_ERROR_STOP=1 -f docs/release/m9-integrity-check.sql"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.12",

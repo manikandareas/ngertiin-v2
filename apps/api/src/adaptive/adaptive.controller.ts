@@ -12,6 +12,7 @@ import {
 } from "@nestjs/common";
 import {
   adaptiveDecisionBodySchema,
+  adaptiveGenerationEventSchema,
   adaptiveInterventionParamsSchema,
   decideAdaptiveInterventionResponseSchema,
   getAdaptiveInterventionResponseSchema,
@@ -73,6 +74,7 @@ export class AdaptiveController {
       initial,
       state: (value) => value.generation.state,
       read: () => this.adaptive.generationEventData(userId, params.interventionId),
+      schema: adaptiveGenerationEventSchema,
     });
   }
 

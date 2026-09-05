@@ -29,6 +29,7 @@ import {
   getJourneyResponseSchema,
   getModuleResponseSchema,
   getNodeResponseSchema,
+  generationEventSchema,
   type ListModulesQuery,
   type ListModulesResponse,
   listModulesQuerySchema,
@@ -99,6 +100,7 @@ export class ModulesController {
       initial,
       state: (value) => value.state,
       read: () => this.modulesService.getGeneration(userId, params.moduleId),
+      schema: generationEventSchema,
     });
   }
 

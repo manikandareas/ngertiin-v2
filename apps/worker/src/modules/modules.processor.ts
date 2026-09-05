@@ -36,7 +36,14 @@ export class ModulesProcessor implements OnApplicationBootstrap, OnApplicationSh
           level: "log",
           event: "generation.job_completed",
           runId: job.data.generationRunId,
+          moduleId: job.data.moduleId,
           jobId: job.id,
+          attemptNumber: job.attemptsMade,
+          latencyMs:
+            job.processedOn && job.finishedOn
+              ? Math.max(0, job.finishedOn - job.processedOn)
+              : null,
+          validationOutcome: "passed",
         }),
       );
     });
@@ -46,9 +53,14 @@ export class ModulesProcessor implements OnApplicationBootstrap, OnApplicationSh
           level: "error",
           event: "generation.job_attempt_failed",
           runId: job?.data.generationRunId,
+          moduleId: job?.data.moduleId,
           jobId: job?.id,
-          attempt: job?.attemptsMade,
-          errorType: error.name,
+          attemptNumber: job?.attemptsMade,
+          latencyMs:
+            job?.processedOn && job.finishedOn
+              ? Math.max(0, job.finishedOn - job.processedOn)
+              : null,
+          failureCategory: error.name === "UnrecoverableError" ? "terminal" : "retryable",
         }),
       );
     });
@@ -69,6 +81,16 @@ export class ModulesProcessor implements OnApplicationBootstrap, OnApplicationSh
 
   private async processJob(job: Job<ModuleGenerationJob>): Promise<void> {
     const payload = moduleGenerationJobSchema.parse(job.data);
+    console.log(
+      JSON.stringify({
+        level: "log",
+        event: "generation.job_started",
+        runId: payload.generationRunId,
+        moduleId: payload.moduleId,
+        jobId: job.id,
+        attemptNumber: job.attemptsMade + 1,
+      }),
+    );
     await this.modules.withRunLock(payload.generationRunId, async () => {
       try {
         const run = await this.modules.startRun(payload);

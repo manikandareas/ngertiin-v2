@@ -356,7 +356,12 @@ export class AttemptsService {
     responses: SubmitAttemptBody["responses"],
   ): void {
     if (assessmentRows.length === 0) {
-      responseValidationError("The node must contain at least one assessment activity.");
+      throw new ProductError(
+        409,
+        "ACTIVITY_NOT_ASSESSABLE",
+        "Activity is not assessable",
+        "The node does not contain an assessable activity.",
+      );
     }
     if (responses.length !== assessmentRows.length) {
       responseValidationError("Every assessment activity must be answered exactly once.");

@@ -106,6 +106,12 @@ export class AttemptEvaluationProcessor implements OnApplicationBootstrap, OnApp
           event: "attempt_evaluation.job_completed",
           attemptId: job.data.attemptId,
           jobId: job.id,
+          attemptNumber: job.attemptsMade,
+          latencyMs:
+            job.processedOn && job.finishedOn
+              ? Math.max(0, job.finishedOn - job.processedOn)
+              : null,
+          validationOutcome: "passed",
         }),
       );
     });
@@ -116,8 +122,12 @@ export class AttemptEvaluationProcessor implements OnApplicationBootstrap, OnApp
           event: "attempt_evaluation.job_attempt_failed",
           attemptId: job?.data.attemptId,
           jobId: job?.id,
-          attempt: job?.attemptsMade,
-          errorType: error.name,
+          attemptNumber: job?.attemptsMade,
+          latencyMs:
+            job?.processedOn && job.finishedOn
+              ? Math.max(0, job.finishedOn - job.processedOn)
+              : null,
+          failureCategory: error.name === "UnrecoverableError" ? "terminal" : "retryable",
         }),
       );
     });
@@ -138,6 +148,15 @@ export class AttemptEvaluationProcessor implements OnApplicationBootstrap, OnApp
 
   private async processJob(job: Job<AttemptEvaluationJob>): Promise<void> {
     const payload = attemptEvaluationJobSchema.parse(job.data);
+    console.log(
+      JSON.stringify({
+        level: "log",
+        event: "attempt_evaluation.job_started",
+        attemptId: payload.attemptId,
+        jobId: job.id,
+        attemptNumber: job.attemptsMade + 1,
+      }),
+    );
     await this.evaluations.withAttemptLock(payload.attemptId, async () => {
       try {
         const context = await this.loadContext(payload.attemptId);

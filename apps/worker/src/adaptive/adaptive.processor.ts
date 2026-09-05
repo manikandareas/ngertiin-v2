@@ -31,6 +31,42 @@ export class AdaptiveProcessor implements OnApplicationBootstrap, OnApplicationS
         JSON.stringify({ level: "error", event: "adaptive.worker_error", errorType: error.name }),
       ),
     );
+    this.worker.on("completed", (job) => {
+      console.log(
+        JSON.stringify({
+          level: "log",
+          event: "adaptive.job_completed",
+          runId: job.data.generationRunId,
+          moduleId: job.data.moduleId,
+          interventionId: job.data.adaptiveInterventionId,
+          jobId: job.id,
+          attemptNumber: job.attemptsMade,
+          latencyMs:
+            job.processedOn && job.finishedOn
+              ? Math.max(0, job.finishedOn - job.processedOn)
+              : null,
+          validationOutcome: "passed",
+        }),
+      );
+    });
+    this.worker.on("failed", (job, error) => {
+      console.error(
+        JSON.stringify({
+          level: "error",
+          event: "adaptive.job_attempt_failed",
+          runId: job?.data.generationRunId,
+          moduleId: job?.data.moduleId,
+          interventionId: job?.data.adaptiveInterventionId,
+          jobId: job?.id,
+          attemptNumber: job?.attemptsMade,
+          latencyMs:
+            job?.processedOn && job.finishedOn
+              ? Math.max(0, job.finishedOn - job.processedOn)
+              : null,
+          failureCategory: error.name === "UnrecoverableError" ? "terminal" : "retryable",
+        }),
+      );
+    });
   }
   async onApplicationShutdown(): Promise<void> {
     await this.worker?.close();
@@ -38,6 +74,17 @@ export class AdaptiveProcessor implements OnApplicationBootstrap, OnApplicationS
 
   private async process(job: Job<AdaptiveGenerationJob>): Promise<void> {
     const payload = adaptiveGenerationJobSchema.parse(job.data);
+    console.log(
+      JSON.stringify({
+        level: "log",
+        event: "adaptive.job_started",
+        runId: payload.generationRunId,
+        moduleId: payload.moduleId,
+        interventionId: payload.adaptiveInterventionId,
+        jobId: job.id,
+        attemptNumber: job.attemptsMade + 1,
+      }),
+    );
     await this.adaptive.withRunLock(payload.generationRunId, async () => {
       try {
         const context = await this.adaptive.start(payload);

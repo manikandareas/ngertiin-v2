@@ -6,34 +6,57 @@ type HeaderValue = string | string[] | undefined;
 
 export type ProductRequest = {
   headers: Record<string, HeaderValue>;
+  method?: string;
   originalUrl: string;
   path: string;
+  params?: Record<string, string>;
+  route?: { path?: string };
   requestContext?: {
     requestId: string;
     localUserId?: string;
+    route?: string;
+    resourceIds?: Record<string, string>;
   };
 };
 
 type HttpResponse = {
+  statusCode: number;
   setHeader(name: string, value: string): void;
+  on(event: "finish", listener: () => void): void;
 };
-
-function incomingRequestId(value: HeaderValue): string | undefined {
-  return typeof value === "string" && validRequestId.test(value) ? value : undefined;
-}
 
 export function requestContextMiddleware(
   request: ProductRequest,
   response: HttpResponse,
   next: () => void,
 ): void {
-  const requestId = incomingRequestId(request.headers["x-request-id"]) ?? `req_${randomUUID()}`;
+  const startedAt = performance.now();
+  const incomingRequestId = request.headers["x-request-id"];
+  const requestId =
+    typeof incomingRequestId === "string" && validRequestId.test(incomingRequestId)
+      ? incomingRequestId
+      : `req_${randomUUID()}`;
   request.requestContext = { requestId };
   response.setHeader("X-Request-Id", requestId);
 
-  if (request.path.startsWith("/api/v1/")) {
+  if (request.path.toLowerCase().startsWith("/api/v1/")) {
     response.setHeader("Cache-Control", "private, no-store");
   }
+
+  response.on("finish", () => {
+    console.log(
+      JSON.stringify({
+        level: "log",
+        event: "api.request_completed",
+        requestId,
+        userId: request.requestContext?.localUserId,
+        route: request.requestContext?.route ?? request.route?.path ?? "unmatched",
+        ...request.requestContext?.resourceIds,
+        status: response.statusCode,
+        latencyMs: Math.round(performance.now() - startedAt),
+      }),
+    );
+  });
 
   next();
 }
@@ -44,7 +67,7 @@ export function getRequestId(request: ProductRequest): string {
 
 export function setLocalUserId(request: ProductRequest, localUserId: string): void {
   const requestId = getRequestId(request);
-  request.requestContext = { requestId, localUserId };
+  request.requestContext = { ...request.requestContext, requestId, localUserId };
 }
 
 export function getLocalUserId(request: ProductRequest): string {

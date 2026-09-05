@@ -1,5 +1,10 @@
 import { Controller, Get, Inject, ServiceUnavailableException } from "@nestjs/common";
-import type { LiveHealth, ReadyHealth } from "@ngertiin/contracts/health";
+import {
+  type LiveHealth,
+  liveHealthSchema,
+  type ReadyHealth,
+  readyHealthSchema,
+} from "@ngertiin/contracts/health";
 import { InfrastructureService } from "../infrastructure/infrastructure.service.js";
 
 @Controller("health")
@@ -10,7 +15,7 @@ export class HealthController {
 
   @Get("live")
   live(): LiveHealth {
-    return { status: "ok", service: "api" };
+    return liveHealthSchema.parse({ status: "ok", service: "api" });
   }
 
   @Get("ready")
@@ -20,7 +25,7 @@ export class HealthController {
       this.infrastructure.checkRedis(),
       this.infrastructure.checkStorage(),
     ]);
-    const response: ReadyHealth = {
+    const response: ReadyHealth = readyHealthSchema.parse({
       status:
         postgres.status === "fulfilled" &&
         redis.status === "fulfilled" &&
@@ -33,7 +38,7 @@ export class HealthController {
         redis: redis.status === "fulfilled" ? "up" : "down",
         storage: storage.status === "fulfilled" ? "up" : "down",
       },
-    };
+    });
 
     if (response.status === "error") {
       throw new ServiceUnavailableException(response);

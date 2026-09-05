@@ -3,7 +3,7 @@ import type { WorkerEnvironment } from "@ngertiin/contracts/environment";
 import { DatabaseClient } from "@ngertiin/database";
 import { QUEUE_NAMES } from "@ngertiin/shared";
 import { S3StorageService } from "@ngertiin/storage";
-import { Queue } from "bullmq";
+import { type JobsOptions, Queue } from "bullmq";
 import { Redis } from "ioredis";
 import { WORKER_ENV } from "../config.js";
 
@@ -16,6 +16,7 @@ export class InfrastructureService implements OnModuleInit, OnApplicationShutdow
   readonly moduleGenerationQueue: Queue;
   readonly adaptiveGenerationQueue: Queue;
   readonly attemptEvaluationQueue: Queue;
+  private queueSnapshotTimer?: ReturnType<typeof setInterval>;
 
   constructor(@Inject(WORKER_ENV) environment: WorkerEnvironment) {
     this.database = new DatabaseClient(environment.DATABASE_URL);
@@ -69,6 +70,9 @@ export class InfrastructureService implements OnModuleInit, OnApplicationShutdow
         ]),
         startupTimeout,
       ]);
+      void this.logQueueSnapshot();
+      this.queueSnapshotTimer = setInterval(() => void this.logQueueSnapshot(), 60_000);
+      this.queueSnapshotTimer.unref();
     } catch (error) {
       await this.close();
       throw error;
@@ -76,8 +80,56 @@ export class InfrastructureService implements OnModuleInit, OnApplicationShutdow
   }
 
   async onApplicationShutdown(): Promise<void> {
+    if (this.queueSnapshotTimer) clearInterval(this.queueSnapshotTimer);
     await this.close();
     console.log(JSON.stringify({ level: "log", event: "worker.shutdown_complete" }));
+  }
+
+  async ensureJob(input: {
+    queue: Queue;
+    name: string;
+    data: unknown;
+    jobId: string;
+    options: JobsOptions;
+  }): Promise<"preserved" | "created" | "requeued"> {
+    const existing = await input.queue.getJob(input.jobId);
+    let requeued = false;
+    if (existing) {
+      const state = await existing.getState();
+      if (state !== "completed" && state !== "failed") return "preserved";
+      await existing.remove();
+      requeued = true;
+    }
+    await input.queue.add(input.name, input.data, { ...input.options, jobId: input.jobId });
+    return requeued ? "requeued" : "created";
+  }
+
+  private async logQueueSnapshot(): Promise<void> {
+    try {
+      const queues = [
+        this.sourceProcessingQueue,
+        this.moduleGenerationQueue,
+        this.attemptEvaluationQueue,
+        this.adaptiveGenerationQueue,
+      ];
+      const snapshots = await Promise.all(
+        queues.map(async (queue) => ({
+          queue: queue.name,
+          ...(await queue.getJobCounts("waiting", "active", "delayed", "failed")),
+        })),
+      );
+      for (const snapshot of snapshots) {
+        console.log(JSON.stringify({ level: "log", event: "worker.queue_snapshot", ...snapshot }));
+      }
+    } catch (error) {
+      console.warn(
+        JSON.stringify({
+          level: "warn",
+          event: "worker.queue_snapshot_failed",
+          errorType: error instanceof Error ? error.name : "UnknownError",
+        }),
+      );
+    }
   }
 
   private async close(): Promise<void> {

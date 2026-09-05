@@ -1,5 +1,10 @@
 import { type ArgumentsHost, Catch, type ExceptionFilter, HttpException } from "@nestjs/common";
-import type { ApiErrorCode, FieldError, ProblemDetail } from "@ngertiin/contracts/api";
+import {
+  type ApiErrorCode,
+  type FieldError,
+  type ProblemDetail,
+  problemDetailSchema,
+} from "@ngertiin/contracts/api";
 import { ProductError } from "./product-error.js";
 import { getRequestId, type ProductRequest } from "./request-context.js";
 
@@ -31,6 +36,31 @@ function definitionFor(exception: unknown): ProblemDefinition {
       detail: exception.detail,
       errors: exception.errors,
     };
+  }
+
+  if (exception instanceof Error) {
+    const code = "code" in exception ? exception.code : undefined;
+    if (code === "LIMIT_FILE_SIZE") {
+      return {
+        status: 413,
+        code: "SOURCE_TOO_LARGE",
+        type: "source-too-large",
+        title: "Source is too large",
+        detail: "The PDF exceeds the configured upload limit.",
+      };
+    }
+    if (
+      exception.name === "MulterError" ||
+      /multipart|boundary|unexpected end of form/i.test(exception.message)
+    ) {
+      return {
+        status: 400,
+        code: "VALIDATION_ERROR",
+        type: "malformed-request",
+        title: "Malformed request",
+        detail: "The multipart request could not be read.",
+      };
+    }
   }
 
   if (exception instanceof HttpException) {
@@ -110,7 +140,7 @@ export class ProductErrorFilter implements ExceptionFilter {
     const definition = definitionFor(exception);
     const requestId = getRequestId(request);
     const instance = request.originalUrl.split("?", 1)[0] ?? request.path;
-    const problem: ProblemDetail = {
+    const problem: ProblemDetail = problemDetailSchema.parse({
       type: `https://api.ngerti.in/problems/${definition.type}`,
       title: definition.title,
       status: definition.status,
@@ -119,7 +149,7 @@ export class ProductErrorFilter implements ExceptionFilter {
       instance,
       requestId,
       ...(definition.errors ? { errors: definition.errors } : {}),
-    };
+    });
 
     if (definition.status === 500) {
       console.error(

@@ -40,6 +40,9 @@ export function mapSourceProcessingFailure(error: unknown): SourceProcessingFail
     if (error.category === "unsupported_media_type") {
       return new SourceProcessingFailure("SOURCE_UNSUPPORTED_MEDIA_TYPE", false, error);
     }
+    if (error.category === "content_too_large" || error.category === "unsafe_url") {
+      return new SourceProcessingFailure("SOURCE_PROCESSING_FAILED", false, error);
+    }
     return new SourceProcessingFailure(
       "SOURCE_PROCESSING_FAILED",
       error.category === "provider_unavailable",

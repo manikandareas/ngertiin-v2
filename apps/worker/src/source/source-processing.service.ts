@@ -7,7 +7,7 @@ import {
 import type { SourceFailure } from "@ngertiin/contracts/api";
 import type { SourceProcessingJob } from "@ngertiin/contracts/jobs";
 import { source_contents, source_processing_runs, sources } from "@ngertiin/database";
-import { and, asc, eq, isNull, sql } from "drizzle-orm";
+import { and, asc, eq, gt, inArray, sql } from "drizzle-orm";
 import { InfrastructureService } from "../infrastructure/infrastructure.service.js";
 import { SourceProcessingFailure } from "./source-processing.failure.js";
 
@@ -35,6 +35,7 @@ type QueuedRun = {
 export class SourceProcessingService implements OnApplicationBootstrap, OnApplicationShutdown {
   private timer?: ReturnType<typeof setInterval>;
   private polling = false;
+  private dispatchCursor?: string;
 
   constructor(
     @Inject(InfrastructureService) private readonly infrastructure: InfrastructureService,
@@ -207,14 +208,15 @@ export class SourceProcessingService implements OnApplicationBootstrap, OnApplic
         .from(source_processing_runs)
         .where(
           and(
-            eq(source_processing_runs.status, "queued"),
-            isNull(source_processing_runs.bullmq_job_id),
+            inArray(source_processing_runs.status, ["queued", "processing"]),
+            this.dispatchCursor ? gt(source_processing_runs.id, this.dispatchCursor) : undefined,
           ),
         )
-        .orderBy(asc(source_processing_runs.created_at), asc(source_processing_runs.id))
+        .orderBy(asc(source_processing_runs.id))
         .limit(25);
 
       for (const run of runs) await this.dispatchRun(run);
+      this.dispatchCursor = runs.length === 25 ? runs.at(-1)?.processingRunId : undefined;
     } catch (error) {
       console.error(
         JSON.stringify({
@@ -231,25 +233,24 @@ export class SourceProcessingService implements OnApplicationBootstrap, OnApplic
   private async dispatchRun(run: QueuedRun): Promise<void> {
     const payload: SourceProcessingJob = run;
     try {
-      await this.infrastructure.sourceProcessingQueue.add("process-source", payload, {
+      const outcome = await this.infrastructure.ensureJob({
+        queue: this.infrastructure.sourceProcessingQueue,
+        name: "process-source",
+        data: payload,
         jobId: run.processingRunId,
-        attempts: 3,
-        backoff: { type: "exponential", delay: 5_000 },
+        options: { attempts: 3, backoff: { type: "exponential", delay: 5_000 } },
       });
       await this.infrastructure.database.db
         .update(source_processing_runs)
         .set({ bullmq_job_id: run.processingRunId })
-        .where(
-          and(
-            eq(source_processing_runs.id, run.processingRunId),
-            isNull(source_processing_runs.bullmq_job_id),
-          ),
-        );
+        .where(eq(source_processing_runs.id, run.processingRunId));
       console.log(
         JSON.stringify({
           level: "log",
           event: "source_processing.dispatched",
           runId: run.processingRunId,
+          sourceId: run.sourceId,
+          outcome,
         }),
       );
     } catch (error) {

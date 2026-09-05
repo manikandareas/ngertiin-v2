@@ -1,16 +1,23 @@
 import { Inject, Injectable } from "@nestjs/common";
+import type { WorkerEnvironment } from "@ngertiin/contracts/environment";
+import { assertPublicHttpUrl, PublicUrlError } from "@ngertiin/shared";
 import type Firecrawl from "firecrawl";
+import { WORKER_ENV } from "../config.js";
 
 export const SCRAPER_CLIENT = Symbol("SCRAPER_CLIENT");
 
 export type ScraperErrorCategory =
+  | "content_too_large"
   | "unsupported_media_type"
   | "provider_unavailable"
+  | "unsafe_url"
   | "unexpected_scrape_call";
 
 const errorMessages: Record<ScraperErrorCategory, string> = {
+  content_too_large: "The scraped document exceeds the accepted content limit.",
   unsupported_media_type: "The URL or its content type is not supported.",
   provider_unavailable: "The scraper provider is temporarily unavailable.",
+  unsafe_url: "The scraper target is not a public HTTP or HTTPS resource.",
   unexpected_scrape_call: "The scrape call failed unexpectedly.",
 };
 
@@ -70,21 +77,33 @@ function classifyError(error: unknown): ScraperErrorCategory {
 
 @Injectable()
 export class ScraperService {
-  constructor(@Inject(SCRAPER_CLIENT) private readonly client: ScraperClient) {}
+  constructor(
+    @Inject(SCRAPER_CLIENT) private readonly client: ScraperClient,
+    @Inject(WORKER_ENV) private readonly environment: WorkerEnvironment,
+  ) {}
 
   async scrapeMainContent(url: string): Promise<{ markdown: string }> {
     const startedAt = performance.now();
     try {
-      const document = await this.client.scrape(url, {
+      const publicUrl = await assertPublicHttpUrl(url);
+      const document = await this.client.scrape(publicUrl, {
         formats: ["markdown"],
         onlyMainContent: true,
         removeBase64Images: true,
         timeout: 30_000,
         autoResume: false,
+        storeInCache: false,
       });
       const contentType = document.metadata?.contentType?.split(";", 1)[0]?.trim().toLowerCase();
-      if (contentType && contentType !== "text/html" && contentType !== "application/xhtml+xml") {
+      if (contentType !== "text/html" && contentType !== "application/xhtml+xml") {
         throw new ScraperError("unsupported_media_type");
+      }
+      const finalUrl = document.metadata?.url;
+      if (!finalUrl) throw new ScraperError("unsafe_url");
+      await assertPublicHttpUrl(finalUrl);
+      const markdown = document.markdown?.trim() ?? "";
+      if (Array.from(markdown).length > this.environment.SOURCE_URL_MAX_CODE_POINTS) {
+        throw new ScraperError("content_too_large");
       }
       console.log(
         JSON.stringify({
@@ -95,10 +114,12 @@ export class ScraperService {
           latencyMs: Math.round(performance.now() - startedAt),
         }),
       );
-      return { markdown: document.markdown?.trim() ?? "" };
+      return { markdown };
     } catch (error) {
-      const failure =
-        error instanceof ScraperError ? error : new ScraperError(classifyError(error), error);
+      let failure: ScraperError;
+      if (error instanceof ScraperError) failure = error;
+      else if (error instanceof PublicUrlError) failure = new ScraperError("unsafe_url", error);
+      else failure = new ScraperError(classifyError(error), error);
       const errorName = error instanceof Error ? error.name : "UnknownError";
       console.error(
         JSON.stringify({

@@ -546,8 +546,10 @@ Content-Type: application/json
 Returns `202` with a `pending` Source and queues source processing.
 
 Only public `http` and `https` URLs are accepted. The fetcher must reject credentials in URLs,
-loopback/private/link-local targets, unsupported redirects, oversized responses, and unsupported
-content types. Every redirect target must be validated again.
+localhost, and literal or DNS-resolved private, loopback, link-local, multicast, and reserved
+addresses, including the final URL after redirects. URL processing accepts HTML/XHTML only and at
+most 500,000 Unicode code points of normalized Markdown. These limits are accepted v1 defaults;
+violations fail safely without retrying.
 
 ### 7.3 Create PDF Source
 
