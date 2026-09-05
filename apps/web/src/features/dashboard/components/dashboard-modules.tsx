@@ -32,82 +32,15 @@ export function DashboardModules({
       </header>
       {choices.length ? (
         <ul className="space-y-3">
-          {choices.map((module, index) => {
-            const Icon = moduleIcons[index % moduleIcons.length] ?? BookOpen;
-            const progress = module.progress;
-            const destination = nextLearningRoute(module.nextAction) ?? `/modules/${module.id}`;
-            const action =
-              module.status === "generating"
-                ? "Lihat proses"
-                : module.status === "failed"
-                  ? "Lihat kendala"
-                  : module.status === "archived" || progress?.status === "completed"
-                    ? "Lihat modul"
-                    : progress?.status === "in_progress"
-                      ? "Lanjutkan"
-                      : "Mulai";
-            return (
-              <li key={module.id}>
-                <article className="grid grid-cols-[44px_minmax(0,1fr)] items-center gap-x-4 gap-y-3 rounded-button border-2 bg-card p-4 sm:grid-cols-[48px_minmax(0,1fr)_auto]">
-                  <span
-                    aria-hidden="true"
-                    className="grid size-11 place-items-center rounded-lg bg-accent text-primary sm:size-12"
-                  >
-                    <Icon className="size-6" strokeWidth={1.8} />
-                  </span>
-                  <div className="min-w-0">
-                    <h2 className="break-words text-base font-extrabold leading-snug">
-                      {module.title ?? "Modul baru"}
-                    </h2>
-                    <p className="mt-1 text-caption text-muted-foreground">
-                      {module.status === "generating"
-                        ? "Sedang disiapkan…"
-                        : module.status === "failed"
-                          ? "Perlu dicoba lagi"
-                          : module.status === "archived"
-                            ? "Diarsipkan"
-                            : [
-                                module.difficulty ? difficultyLabels[module.difficulty] : null,
-                                module.estimatedMinutes ? `${module.estimatedMinutes} menit` : null,
-                                progress ? `${progress.percentage}% selesai` : null,
-                              ]
-                                .filter(Boolean)
-                                .join(" · ")}
-                    </p>
-                    {module.status === "ready" && progress ? (
-                      <div
-                        role="progressbar"
-                        aria-label={`Progress ${module.title ?? "modul"}`}
-                        aria-valuenow={progress.percentage}
-                        aria-valuemin={0}
-                        aria-valuemax={100}
-                        className="mt-2 h-1.5 max-w-52 overflow-hidden rounded-full bg-muted"
-                      >
-                        <div
-                          className="h-full rounded-full bg-primary"
-                          style={{ width: `${progress.percentage}%` }}
-                        />
-                      </div>
-                    ) : null}
-                  </div>
-                  <Button
-                    asChild
-                    size="sm"
-                    variant={continueLearning?.module.id === module.id ? "default" : "secondary"}
-                    className="col-start-2 justify-self-start normal-case tracking-normal sm:col-start-auto sm:justify-self-end"
-                  >
-                    <Link
-                      aria-label={`${action}: ${module.title ?? "Modul baru"}`}
-                      to={destination}
-                    >
-                      {action}
-                      <ArrowRight aria-hidden="true" />
-                    </Link>
-                  </Button>
-                </article>
-              </li>
-            );
-          })}
+          {choices.map((module, index) => (
+            <li key={module.id}>
+              <DashboardModuleCard
+                module={module}
+                index={index}
+                isContinueLearning={continueLearning?.module.id === module.id}
+              />
+            </li>
+          ))}
         </ul>
       ) : (
         <Card className="items-start gap-4 p-6">
@@ -127,5 +60,91 @@ export function DashboardModules({
         </Card>
       )}
     </section>
+  );
+}
+
+function DashboardModuleCard({
+  module,
+  index,
+  isContinueLearning,
+}: {
+  module: Dashboard["modules"][number];
+  index: number;
+  isContinueLearning: boolean;
+}) {
+  const Icon = moduleIcons[index % moduleIcons.length] ?? BookOpen;
+  const progress = module.progress;
+  const destination = nextLearningRoute(module.nextAction) ?? `/modules/${module.id}`;
+  const action =
+    module.status === "generating"
+      ? "Lihat proses"
+      : module.status === "failed"
+        ? "Lihat kendala"
+        : module.status === "archived" || progress?.status === "completed"
+          ? "Lihat modul"
+          : progress?.status === "in_progress"
+            ? "Lanjutkan"
+            : "Mulai";
+
+  return (
+    <article className="grid grid-cols-[44px_minmax(0,1fr)] items-center gap-x-4 gap-y-3 rounded-button border-2 bg-card p-4 sm:grid-cols-[48px_minmax(0,1fr)_auto]">
+      <span
+        aria-hidden="true"
+        className="grid size-11 place-items-center rounded-lg bg-accent text-primary sm:size-12"
+      >
+        <Icon className="size-6" strokeWidth={1.8} />
+      </span>
+      <div className="min-w-0">
+        <h2 className="break-words text-base font-extrabold leading-snug">
+          <Link
+            to={`/modules/${module.id}/journey`}
+            className="rounded-sm hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          >
+            {module.title ?? "Modul baru"}
+          </Link>
+        </h2>
+        <p className="mt-1 text-caption text-muted-foreground">
+          {module.status === "generating"
+            ? "Sedang disiapkan…"
+            : module.status === "failed"
+              ? "Perlu dicoba lagi"
+              : module.status === "archived"
+                ? "Diarsipkan"
+                : [
+                    module.difficulty ? difficultyLabels[module.difficulty] : null,
+                    module.estimatedMinutes ? `${module.estimatedMinutes} menit` : null,
+                    progress ? `${progress.percentage}% selesai` : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+        </p>
+        {module.status === "ready" && progress ? (
+          <div
+            role="progressbar"
+            aria-label={`Progress ${module.title ?? "modul"}`}
+            aria-valuenow={progress.percentage}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            className="mt-2 h-1.5 max-w-52 overflow-hidden rounded-full bg-muted"
+          >
+            <div
+              className="h-full rounded-full bg-primary"
+              style={{ width: `${progress.percentage}%` }}
+            />
+          </div>
+        ) : null}
+      </div>
+      <Button
+        asChild
+        size="sm"
+        variant={isContinueLearning ? "default" : "secondary"}
+        className="col-start-2 justify-self-start normal-case tracking-normal sm:col-start-auto sm:justify-self-end"
+      >
+        <Link aria-label={`${action}: ${module.title ?? "Modul baru"}`} to={destination}>
+          {action}
+          <ArrowRight aria-hidden="true" />
+        </Link>
+      </Button>
+    </article>
   );
 }

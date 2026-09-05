@@ -9,7 +9,7 @@ export function DashboardContent({ data }: { data: Dashboard }) {
   const { stats, modules, continueLearning } = data;
   return (
     <div className="grid items-start gap-8 lg:grid-cols-[320px_minmax(0,1fr)] lg:gap-14">
-      <aside aria-label="Ringkasan belajar" className="order-2 space-y-5 lg:order-none">
+      <aside aria-label="Ringkasan belajar" className="order-2 space-y-5 lg:order-0">
         <LearningStreakCard stats={stats} />
         <CreateModuleCard />
         <LearningXpCard totalXp={stats.totalXp} />
