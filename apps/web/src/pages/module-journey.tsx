@@ -1,17 +1,9 @@
-import { Archive, ArrowRight, Check, Circle, LockKeyhole } from "lucide-react";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { AppShell } from "../components/app-shell";
-import { Button } from "../components/ui/button";
 import { useArchiveModule, useJourney, useModule } from "../features/modules/api/use-modules";
-import { nextLearningRoute } from "../features/modules/next-learning-route";
+import { JourneySummary } from "../features/modules/components/journey-summary";
+import { JourneyTrack } from "../features/modules/components/journey-track";
 import { ApiProblemError } from "../lib/api";
-
-const statusLabel = {
-  locked: "Terkunci",
-  available: "Siap dimulai",
-  in_progress: "Sedang dipelajari",
-  completed: "Selesai",
-} as const;
 
 export default function ModuleJourneyPage() {
   const { moduleId } = useParams();
@@ -22,24 +14,23 @@ export default function ModuleJourneyPage() {
   if (journey.isPending || moduleQuery.isPending) {
     return (
       <AppShell>
-        <p className="text-sm text-slate-500">Memuat Journey…</p>
+        <p className="text-sm text-muted-foreground">Memuat Journey…</p>
       </AppShell>
     );
   }
   if (journey.isError || moduleQuery.isError || !journey.data || !moduleQuery.data) {
     return (
       <AppShell>
-        <div className="mx-auto max-w-2xl rounded-3xl border border-red-200 bg-white p-8">
+        <div className="mx-auto max-w-2xl rounded-3xl border border-destructive/30 bg-card p-8">
           <h1 className="text-2xl font-bold">Journey belum dapat dimuat</h1>
-          <p className="mt-3 text-slate-600">Periksa akses Module atau coba muat ulang halaman.</p>
+          <p className="mt-3 text-muted-foreground">
+            Periksa akses Module atau coba muat ulang halaman.
+          </p>
         </div>
       </AppShell>
     );
   }
 
-  const data = journey.data;
-  const module = moduleQuery.data;
-  const destination = nextLearningRoute(data.nextAction);
   const archiveError =
     archive.error instanceof ApiProblemError
       ? archive.error.problem.detail
@@ -58,106 +49,15 @@ export default function ModuleJourneyPage() {
 
   return (
     <AppShell>
-      <div className="mx-auto max-w-3xl">
-        <div className="flex flex-wrap items-start justify-between gap-5">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-teal-700">
-              Journey
-            </p>
-            <h1 className="mt-3 text-4xl font-bold tracking-tight">{data.module.title}</h1>
-          </div>
-          {module.status === "ready" ? (
-            <Button disabled={archive.isPending} onClick={handleArchive} variant="outline">
-              <Archive className="mr-2 size-4" />
-              {archive.isPending ? "Mengarsipkan…" : "Archive"}
-            </Button>
-          ) : null}
-        </div>
-        {data.module.description ? (
-          <p className="mt-4 text-lg leading-8 text-slate-600">{data.module.description}</p>
-        ) : null}
-
-        <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex items-end justify-between gap-4">
-            <div>
-              <p className="text-sm text-slate-500">Progress Core</p>
-              <p className="mt-1 text-2xl font-bold">{data.progress.percentage}%</p>
-            </div>
-            <p className="text-sm font-medium text-slate-600">
-              {data.progress.completedCoreNodes} dari {data.progress.totalCoreNodes} node
-            </p>
-          </div>
-          <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100">
-            <div
-              className="h-full rounded-full bg-teal-600"
-              style={{ width: `${data.progress.percentage}%` }}
-            />
-          </div>
-          {module.status === "archived" ? (
-            <p className="mt-6 rounded-2xl bg-slate-100 p-4 font-medium text-slate-700">
-              Module ini diarsipkan. Journey dan riwayat tetap tersedia dalam mode baca saja.
-            </p>
-          ) : destination ? (
-            <Button asChild className="mt-6 w-full sm:w-auto">
-              <Link to={destination}>
-                {data.nextAction.type === "resume_core_node" ||
-                data.nextAction.type === "resume_adaptive_node"
-                  ? "Lanjutkan belajar"
-                  : "Mulai belajar"}
-                <ArrowRight aria-hidden="true" className="ml-2 size-4" />
-              </Link>
-            </Button>
-          ) : data.nextAction.type === "module_completed" ? (
-            <p className="mt-6 rounded-2xl bg-teal-50 p-4 font-medium text-teal-800">
-              Semua Core Node sudah selesai.
-            </p>
-          ) : null}
-        </section>
-
-        {archiveError ? (
-          <p className="mt-4 text-sm text-red-700" role="alert">
-            {archiveError}
-          </p>
-        ) : null}
-
-        <ol className="mt-8 space-y-3">
-          {data.nodes.map((node) => {
-            const content = (
-              <div
-                className={`flex items-center gap-4 rounded-2xl border bg-white p-5 ${node.origin === "adaptive" ? "ml-6 border-teal-200" : "border-slate-200"}`}
-              >
-                <span className="grid size-10 shrink-0 place-items-center rounded-full bg-slate-100">
-                  {node.progress.status === "locked" ? (
-                    <LockKeyhole className="size-4" />
-                  ) : node.progress.status === "completed" ? (
-                    <Check className="size-5 text-teal-700" />
-                  ) : (
-                    <Circle className="size-4 text-teal-700" />
-                  )}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    {node.origin === "adaptive" ? "Adaptive" : node.position}. {node.type}
-                  </p>
-                  <h2 className="mt-1 font-bold">{node.title}</h2>
-                  <p className="mt-1 text-sm text-slate-500">{statusLabel[node.progress.status]}</p>
-                </div>
-                {node.progress.status !== "locked" ? (
-                  <ArrowRight className="size-4 text-slate-400" />
-                ) : null}
-              </div>
-            );
-            return (
-              <li key={node.id}>
-                {node.progress.status === "locked" ? (
-                  content
-                ) : (
-                  <Link to={`/modules/${data.module.id}/nodes/${node.id}`}>{content}</Link>
-                )}
-              </li>
-            );
-          })}
-        </ol>
+      <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] md:gap-12">
+        <JourneySummary
+          data={journey.data}
+          status={moduleQuery.data.status}
+          archiving={archive.isPending}
+          archiveError={archiveError}
+          onArchive={handleArchive}
+        />
+        <JourneyTrack data={journey.data} canLearn={moduleQuery.data.status === "ready"} />
       </div>
     </AppShell>
   );
