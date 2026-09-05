@@ -1,8 +1,7 @@
-import type { AssessmentAnswer, AttemptResult, PublicActivity } from "@ngertiin/contracts/api";
-import { ArrowLeft, ArrowRight, RotateCcw } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import type { AssessmentAnswer } from "@ngertiin/contracts/api";
+import { ArrowLeft, ArrowRight, Check, RotateCcw } from "lucide-react";
+import { type JSX, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { AppShell } from "../components/app-shell";
 import { Button } from "../components/ui/button";
 import {
   useAttempt,
@@ -12,285 +11,28 @@ import {
   useStartNode,
   useSubmitAttempt,
 } from "../features/modules/api/use-modules";
-import { ApiProblemError } from "../lib/api";
+import { AttemptSummary } from "../features/modules/components/attempt-summary";
+import { NodeActivity } from "../features/modules/components/node-activity";
+import { NodePlayerFooter } from "../features/modules/components/node-player-footer";
+import { NodePlayerHeader } from "../features/modules/components/node-player-header";
 import { nextLearningRoute } from "../features/modules/next-learning-route";
+import { ApiProblemError } from "../lib/api";
 
-function Lesson({ activity }: { activity: Extract<PublicActivity, { type: "lesson" }> }) {
-  return (
-    <article className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm">
-      {activity.content.introduction ? (
-        <p className="text-lg leading-8 text-slate-700">{activity.content.introduction}</p>
-      ) : null}
-      <p className="mt-5 whitespace-pre-wrap leading-8 text-slate-700">
-        {activity.content.explanation}
-      </p>
-      <h2 className="mt-7 text-lg font-bold">Poin penting</h2>
-      <ul className="mt-3 list-disc space-y-2 pl-5 text-slate-700">
-        {activity.content.keyPoints.map((point) => (
-          <li key={point}>{point}</li>
-        ))}
-      </ul>
-      {activity.content.examples?.length ? (
-        <>
-          <h2 className="mt-7 text-lg font-bold">Contoh</h2>
-          <div className="mt-3 space-y-3">
-            {activity.content.examples.map((example) => (
-              <p className="rounded-2xl bg-slate-50 p-4 leading-7" key={example}>
-                {example}
-              </p>
-            ))}
-          </div>
-        </>
-      ) : null}
-      {activity.content.summary ? (
-        <div className="mt-7 rounded-2xl bg-teal-50 p-5">
-          <h2 className="font-bold text-teal-900">Ringkasan</h2>
-          <p className="mt-2 leading-7 text-teal-900">{activity.content.summary}</p>
-        </div>
-      ) : null}
-    </article>
-  );
+function isAnswered(answer: AssessmentAnswer | undefined): boolean {
+  return answer !== undefined && (!("text" in answer) || answer.text.trim().length > 0);
 }
 
-function Flashcards({ activity }: { activity: Extract<PublicActivity, { type: "flashcard" }> }) {
-  const [index, setIndex] = useState(0);
-  const [showBack, setShowBack] = useState(false);
-  const card = activity.content.cards[index];
-  if (!card) return null;
-  const move = (next: number) => {
-    setIndex(next);
-    setShowBack(false);
-  };
-  return (
-    <article className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm">
-      <div className="flex items-center justify-between text-sm text-slate-500">
-        <span>Flashcard</span>
-        <span>
-          {index + 1} / {activity.content.cards.length}
-        </span>
-      </div>
-      <button
-        className="mt-5 grid min-h-64 w-full place-items-center rounded-2xl bg-slate-950 p-8 text-center text-xl font-semibold text-white"
-        onClick={() => setShowBack((value) => !value)}
-        type="button"
-      >
-        <span>{showBack ? card.back : card.front}</span>
-      </button>
-      <p className="mt-3 text-center text-xs text-slate-500">Klik kartu untuk membalik</p>
-      <div className="mt-5 flex justify-between gap-3">
-        <Button disabled={index === 0} onClick={() => move(index - 1)} variant="outline">
-          Sebelumnya
-        </Button>
-        {showBack ? (
-          <Button onClick={() => setShowBack(false)} variant="outline">
-            <RotateCcw className="mr-2 size-4" />
-            Balik lagi
-          </Button>
-        ) : null}
-        <Button
-          disabled={index === activity.content.cards.length - 1}
-          onClick={() => move(index + 1)}
-        >
-          Berikutnya
-        </Button>
-      </div>
-    </article>
-  );
-}
-
-function Assessment({
-  activity,
-  answer,
-  onAnswer,
-  result,
-  readOnly,
-}: {
-  activity: Exclude<PublicActivity, { type: "lesson" | "flashcard" }>;
-  answer: AssessmentAnswer | undefined;
-  onAnswer: (answer: AssessmentAnswer) => void;
-  result:
-    | Extract<
-        AttemptResult["attempt"],
-        { evaluationStatus: "completed" }
-      >["activityResults"][number]
-    | undefined;
-  readOnly: boolean;
-}) {
-  const prompt =
-    activity.type === "multiple_choice"
-      ? activity.content.question
-      : activity.type === "true_false"
-        ? activity.content.statement
-        : activity.content.prompt;
-  return (
-    <article className="rounded-3xl border border-amber-200 bg-white p-7 shadow-sm">
-      <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">Assessment</p>
-      <h2 className="mt-3 text-xl font-bold">{prompt}</h2>
-      {activity.type === "multiple_choice" ? (
-        <fieldset className="mt-5 space-y-2">
-          {activity.content.options.map((option, optionIndex) => (
-            <label
-              className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 p-3"
-              key={option}
-            >
-              <input
-                checked={Boolean(
-                  answer && "optionIndex" in answer && answer.optionIndex === optionIndex,
-                )}
-                name={activity.id}
-                onChange={() => onAnswer({ optionIndex })}
-                type="radio"
-                disabled={readOnly}
-              />
-              <span>{option}</span>
-            </label>
-          ))}
-        </fieldset>
-      ) : activity.type === "true_false" ? (
-        <fieldset className="mt-5 grid grid-cols-2 gap-3">
-          {[true, false].map((value) => (
-            <label
-              className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 p-3"
-              key={String(value)}
-            >
-              <input
-                checked={Boolean(answer && "value" in answer && answer.value === value)}
-                name={activity.id}
-                onChange={() => onAnswer({ value })}
-                type="radio"
-                disabled={readOnly}
-              />
-              <span>{value ? "Benar" : "Salah"}</span>
-            </label>
-          ))}
-        </fieldset>
-      ) : (
-        <div className="mt-5">
-          <textarea
-            aria-describedby={`${activity.id}-counter`}
-            className="min-h-40 w-full resize-y rounded-xl border border-slate-300 p-4 leading-7 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-100"
-            onChange={(event) => {
-              if (Array.from(event.target.value).length <= 4_000) {
-                onAnswer({ text: event.target.value });
-              }
-            }}
-            placeholder="Tulis jawabanmu di sini…"
-            value={answer && "text" in answer ? answer.text : ""}
-            disabled={readOnly}
-          />
-          <p className="mt-2 text-right text-xs text-slate-500" id={`${activity.id}-counter`}>
-            {Array.from(answer && "text" in answer ? answer.text : "").length.toLocaleString()} /
-            4.000
-          </p>
-        </div>
-      )}
-      {result ? (
-        <div
-          className={`mt-5 rounded-xl p-4 text-sm ${result.correct ? "bg-teal-50 text-teal-900" : "bg-red-50 text-red-900"}`}
-        >
-          <p className="font-semibold">
-            {result.correct ? "Jawaban benar" : "Jawaban belum tepat"}
-          </p>
-          <p className="mt-1">
-            Skor {Math.round(result.score * 100)} / {Math.round(result.maxScore * 100)}
-          </p>
-          <p className="mt-1">{result.explanation}</p>
-        </div>
-      ) : null}
-    </article>
-  );
-}
-
-function AttemptSummary({ result }: { result: AttemptResult }) {
-  const { attempt } = result;
-  if (attempt.evaluationStatus === "evaluating") {
-    return <p className="mt-8 rounded-2xl bg-slate-100 p-5">Jawaban sedang dievaluasi…</p>;
-  }
-  if (attempt.evaluationStatus === "failed") {
-    return (
-      <div className="mt-8 rounded-2xl bg-red-50 p-5 text-red-900">
-        <p className="font-semibold">Evaluasi belum berhasil</p>
-        <p className="mt-2">{attempt.failure.message}</p>
-        <p className="mt-2 text-sm">
-          {attempt.failure.retryable
-            ? "Jawabanmu sudah tersimpan. Buka kembali halaman ini beberapa saat lagi."
-            : "Jawabanmu tetap tersimpan, tetapi hasil belajar belum diperbarui."}
-        </p>
-      </div>
-    );
-  }
-  const destination = nextLearningRoute(result.nextAction);
-  return (
-    <section className="mt-8 rounded-3xl border border-teal-200 bg-white p-7 shadow-sm">
-      <p className="text-sm font-semibold uppercase tracking-wide text-teal-700">
-        Hasil assessment
-      </p>
-      <p className="mt-3 text-3xl font-bold">
-        {attempt.score} / {attempt.maxScore}
-      </p>
-      <p className="mt-1 text-slate-600">
-        Skor {Math.round((attempt.normalizedScore ?? 0) * 100)}% · +{result.xpAwarded} XP
-      </p>
-      {attempt.feedback ? (
-        <div className="mt-6 space-y-5 rounded-2xl bg-teal-50 p-5 text-teal-950">
-          <div>
-            <h2 className="font-bold">Feedback</h2>
-            <p className="mt-2 leading-7">{attempt.feedback.summary}</p>
-          </div>
-          {attempt.feedback.strengths.length ? (
-            <div>
-              <h3 className="font-semibold">Yang sudah kuat</h3>
-              <ul className="mt-2 list-disc space-y-1 pl-5">
-                {attempt.feedback.strengths.map((strength) => (
-                  <li key={strength}>{strength}</li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-          {attempt.feedback.areasToImprove.length ? (
-            <div>
-              <h3 className="font-semibold">Yang bisa ditingkatkan</h3>
-              <ul className="mt-2 list-disc space-y-1 pl-5">
-                {attempt.feedback.areasToImprove.map((area) => (
-                  <li key={area}>{area}</li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-        </div>
-      ) : null}
-      {attempt.conceptResults.length ? (
-        <div className="mt-6 space-y-3">
-          <h2 className="font-bold">Penguasaan konsep</h2>
-          {attempt.conceptResults.map((concept) => (
-            <div className="rounded-xl bg-slate-50 p-4" key={concept.conceptKey}>
-              <p className="font-semibold">{concept.conceptKey.replaceAll("_", " ")}</p>
-              <p className="mt-1 text-sm text-slate-600">
-                Performa {Math.round(concept.performanceScore * 100)}% · Mastery{" "}
-                {Math.round(concept.masteryScore * 100)}% · Confidence{" "}
-                {Math.round(concept.confidenceScore * 100)}% · {concept.evidenceCount} evidence
-              </p>
-            </div>
-          ))}
-        </div>
-      ) : null}
-      <p className="mt-5 text-sm text-slate-600">
-        Langkah berikutnya: {result.nextAction.type.replaceAll("_", " ")}
-      </p>
-      {destination ? (
-        <Button asChild className="mt-5">
-          <Link to={destination}>
-            Lanjutkan belajar
-            <ArrowRight className="ml-2 size-4" />
-          </Link>
-        </Button>
-      ) : null}
-    </section>
-  );
-}
-
-export default function ModuleNodePage() {
+export default function ModuleNodePage(): JSX.Element {
   const { moduleId = "", nodeId = "" } = useParams();
+  return <NodePlayer key={`${moduleId}:${nodeId}`} moduleId={moduleId} nodeId={nodeId} />;
+}
+
+interface NodePlayerProps {
+  moduleId: string;
+  nodeId: string;
+}
+
+function NodePlayer({ moduleId, nodeId }: NodePlayerProps): JSX.Element {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const attemptId = searchParams.get("attemptId") ?? undefined;
@@ -302,6 +44,10 @@ export default function ModuleNodePage() {
   const submit = useSubmitAttempt(moduleId, nodeId);
   const startedNodeId = useRef<string | null>(null);
   const submissionId = useRef<string | null>(null);
+  const [slide, setSlide] = useState(0);
+  const [reviewing, setReviewing] = useState(false);
+  const [retrying, setRetrying] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
   const [answers, setAnswers] = useState<Record<string, AssessmentAnswer>>({});
 
   useEffect(() => {
@@ -317,23 +63,33 @@ export default function ModuleNodePage() {
 
   if (nodeQuery.isPending || moduleQuery.isPending)
     return (
-      <AppShell>
-        <p className="text-sm text-slate-500">Memuat node…</p>
-      </AppShell>
+      <div
+        className="grid min-h-dvh place-items-center bg-background p-6 text-foreground"
+        role="status"
+      >
+        <div className="w-full max-w-xl space-y-6">
+          <p>Menyiapkan ruang belajarmu…</p>
+          <div className="h-3 rounded-full bg-muted motion-safe:animate-pulse" />
+          <div className="h-64 rounded-3xl border-2 border-border bg-muted motion-safe:animate-pulse" />
+        </div>
+      </div>
     );
   if (nodeQuery.isError || moduleQuery.isError || !nodeQuery.data || !moduleQuery.data)
     return (
-      <AppShell>
-        <div className="mx-auto max-w-2xl rounded-3xl border border-red-200 bg-white p-8">
+      <div className="grid min-h-dvh place-items-center bg-background p-6 text-foreground">
+        <div className="max-w-lg space-y-5">
           <h1 className="text-2xl font-bold">Node belum dapat dibuka</h1>
-          <p className="mt-3 text-slate-600">Node mungkin masih terkunci atau tidak tersedia.</p>
+          <p className="text-muted-foreground">Node mungkin masih terkunci atau tidak tersedia.</p>
+          <Button asChild variant="outline">
+            <Link to={`/modules/${moduleId}/journey`}>Kembali ke Journey</Link>
+          </Button>
         </div>
-      </AppShell>
+      </div>
     );
 
   const data = nodeQuery.data;
   const readOnly = moduleQuery.data.status === "archived";
-  const completed = data.node.progress.status === "completed";
+  const completed = data.node.progress.status === "completed" && !retrying;
   const canComplete =
     !readOnly &&
     data.activities.length > 0 &&
@@ -351,18 +107,18 @@ export default function ModuleNodePage() {
     hasAssessments &&
     assessmentActivities.every((activity) => {
       const answer = answers[activity.id];
-      return answer !== undefined && (!("text" in answer) || answer.text.trim().length > 0);
+      return isAnswered(answer);
     });
   const attemptResult = attemptQuery.data ?? submit.data;
   const mutationError = start.error ?? complete.error ?? submit.error ?? attemptQuery.error;
-  const errorMessage =
-    mutationError instanceof ApiProblemError
-      ? mutationError.problem.detail
-      : mutationError
-        ? "Progress belum dapat disimpan. Coba lagi."
-        : null;
+  let errorMessage: string | null = null;
+  if (mutationError instanceof ApiProblemError) {
+    errorMessage = mutationError.problem.detail;
+  } else if (mutationError) {
+    errorMessage = "Progress belum dapat disimpan. Coba lagi.";
+  }
 
-  async function handleComplete() {
+  async function handleComplete(): Promise<void> {
     try {
       const result = await complete.mutateAsync();
       navigate(nextLearningRoute(result.nextAction) ?? `/modules/${moduleId}/journey`);
@@ -371,7 +127,7 @@ export default function ModuleNodePage() {
     }
   }
 
-  async function handleSubmit() {
+  async function handleSubmit(): Promise<void> {
     if (!allAnswered) return;
     submissionId.current ??= attemptResult?.attempt.submissionId ?? crypto.randomUUID();
     try {
@@ -383,49 +139,137 @@ export default function ModuleNodePage() {
         })),
       });
       setSearchParams({ attemptId: result.attempt.id }, { replace: true });
-      const destination = nextLearningRoute(result.nextAction);
-      if (destination) navigate(destination);
+      setReviewing(false);
     } catch {
       /* Mutation state renders the safe error and keeps submissionId for retry. */
     }
   }
 
-  function handleTryAgain() {
+  function handleTryAgain(): void {
+    setRetrying(true);
     submissionId.current = crypto.randomUUID();
+    setAnswers({});
+    setSlide(0);
+    setReviewing(false);
     submit.reset();
     setSearchParams({}, { replace: true });
   }
 
-  return (
-    <AppShell>
-      <div className="mx-auto max-w-3xl">
-        <Link
-          className="inline-flex items-center text-sm font-semibold text-slate-600"
-          to={`/modules/${moduleId}/journey`}
+  const activity = data.activities[slide];
+  const showResult = Boolean((attemptResult || attemptId) && !reviewing);
+  const locked = readOnly || completed || Boolean(attemptResult || attemptId) || submit.isPending;
+  const answer = activity ? answers[activity.id] : undefined;
+  const answered = isAnswered(answer);
+  const canAdvance =
+    locked || !activity || activity.type === "lesson" || activity.type === "flashcard" || answered;
+  const lastSlide = slide === data.activities.length - 1;
+  function moveTo(index: number): void {
+    setSlide(index);
+    contentRef.current?.scrollTo({ top: 0 });
+    contentRef.current?.focus();
+  }
+
+  function renderPrimaryAction(): JSX.Element | null {
+    if (!activity) {
+      return (
+        <Button asChild>
+          <Link to={`/modules/${moduleId}/journey`}>Kembali ke Journey</Link>
+        </Button>
+      );
+    }
+    if (!lastSlide) {
+      return (
+        <Button
+          className="w-full max-w-sm rounded-full normal-case tracking-normal"
+          disabled={!canAdvance}
+          onClick={() => moveTo(slide + 1)}
         >
-          <ArrowLeft className="mr-2 size-4" />
-          Kembali ke Journey
-        </Link>
-        <p className="mt-8 text-sm font-semibold uppercase tracking-[0.18em] text-teal-700">
-          {completed ? "Mode review" : data.node.type}
-        </p>
-        <h1 className="mt-3 text-4xl font-bold tracking-tight">{data.node.title}</h1>
-        {data.node.description ? (
-          <p className="mt-4 text-lg leading-8 text-slate-600">{data.node.description}</p>
-        ) : null}
-        <div className="mt-8 space-y-6">
-          {data.activities.map((activity) =>
-            activity.type === "lesson" ? (
-              <Lesson activity={activity} key={activity.id} />
-            ) : activity.type === "flashcard" ? (
-              <Flashcards activity={activity} key={activity.id} />
-            ) : (
-              <Assessment
-                activity={activity}
-                answer={answers[activity.id]}
+          Lanjutkan
+          <ArrowRight />
+        </Button>
+      );
+    }
+    if (attemptResult || attemptId) {
+      return (
+        <Button
+          className="w-full max-w-sm rounded-full normal-case tracking-normal"
+          onClick={() => setReviewing(false)}
+        >
+          Lihat hasil
+        </Button>
+      );
+    }
+    if (readOnly || completed) {
+      return (
+        <Button asChild className="w-full max-w-sm rounded-full normal-case tracking-normal">
+          <Link to={`/modules/${moduleId}/journey`}>Kembali ke Journey</Link>
+        </Button>
+      );
+    }
+    if (hasAssessments) {
+      return (
+        <Button
+          className="w-full max-w-sm rounded-full normal-case tracking-normal"
+          disabled={!allAnswered || submit.isPending || start.isPending}
+          onClick={handleSubmit}
+        >
+          {submit.isPending ? "Mengirim…" : "Kirim jawaban"}
+          <Check />
+        </Button>
+      );
+    }
+    if (canComplete) {
+      return (
+        <Button
+          className="w-full max-w-sm rounded-full normal-case tracking-normal"
+          disabled={complete.isPending || start.isPending}
+          onClick={handleComplete}
+        >
+          {complete.isPending ? "Menyimpan…" : "Selesaikan node"}
+          <Check />
+        </Button>
+      );
+    }
+    return null;
+  }
+
+  return (
+    <div className="flex h-dvh min-h-0 flex-col bg-background px-3 pb-3 pt-1 text-foreground sm:px-6 sm:pb-6 sm:pt-2">
+      <NodePlayerHeader
+        moduleId={moduleId}
+        title={data.node.title}
+        activityCount={data.activities.length}
+        slide={slide}
+        showResult={showResult}
+      />
+      <main
+        className={`flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border-2 ${showResult && attemptResult?.attempt.evaluationStatus === "completed" ? "border-primary" : "border-border"}`}
+      >
+        <div
+          ref={contentRef}
+          tabIndex={-1}
+          className="flex-1 overflow-y-auto overscroll-contain px-5 py-8 outline-none sm:px-10 sm:py-12"
+        >
+          <div className="mx-auto flex min-h-full w-full max-w-2xl flex-col justify-center">
+            {showResult ? (
+              <div aria-live="polite">
+                {attemptResult ? (
+                  <AttemptSummary result={attemptResult} />
+                ) : (
+                  <p role="status">Memuat hasil…</p>
+                )}
+              </div>
+            ) : activity ? (
+              <NodeActivity
                 key={activity.id}
-                onAnswer={(answer) =>
-                  setAnswers((current) => ({ ...current, [activity.id]: answer }))
+                activity={activity}
+                title={data.node.title}
+                readOnly={readOnly}
+                completed={completed}
+                locked={locked}
+                answer={answer}
+                onAnswer={(value) =>
+                  setAnswers((current) => ({ ...current, [activity.id]: value }))
                 }
                 result={
                   attemptResult?.attempt.evaluationStatus === "completed"
@@ -434,52 +278,59 @@ export default function ModuleNodePage() {
                       )
                     : undefined
                 }
-                readOnly={readOnly}
               />
-            ),
-          )}
+            ) : (
+              <div className="space-y-3">
+                <h1 className="text-2xl font-bold">Aktivitas belum tersedia</h1>
+                <p className="text-muted-foreground">
+                  Kembali ke Journey untuk melihat status node ini.
+                </p>
+              </div>
+            )}
+          </div>
         </div>
-        {errorMessage ? (
-          <p className="mt-6 text-sm text-red-700" role="alert">
-            {errorMessage}
-          </p>
-        ) : null}
-        {readOnly ? (
-          <p className="mt-8 rounded-2xl bg-slate-100 p-4 font-medium text-slate-700">
-            Module ini diarsipkan. Konten tersedia dalam mode baca saja.
-          </p>
-        ) : completed ? (
-          <p className="mt-8 rounded-2xl bg-teal-50 p-4 font-medium text-teal-900">
-            Node ini sudah selesai. Kamu sedang membukanya kembali untuk review.
-          </p>
-        ) : canComplete ? (
-          <Button
-            className="mt-8"
-            disabled={complete.isPending || start.isPending}
-            onClick={handleComplete}
-          >
-            {complete.isPending ? "Menyimpan…" : "Selesaikan node"}
-            <ArrowRight className="ml-2 size-4" />
-          </Button>
-        ) : null}
-        {hasAssessments && !readOnly ? (
-          <div className="mt-8">
-            <div className="flex gap-3">
-              {!attemptResult ? (
-                <Button disabled={!allAnswered || submit.isPending} onClick={handleSubmit}>
-                  {submit.isPending ? "Menyimpan…" : "Kirim jawaban"}
+        <NodePlayerFooter
+          errorMessage={errorMessage}
+          showResult={showResult}
+          reviewing={readOnly || completed}
+          activityType={activity?.type}
+        >
+          {showResult ? (
+            <>
+              {attemptResult ? (
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setReviewing(true);
+                    moveTo(0);
+                  }}
+                >
+                  Tinjau aktivitas
                 </Button>
               ) : null}
-              {attemptResult?.attempt.evaluationStatus === "completed" ? (
+              {attemptResult?.attempt.evaluationStatus === "completed" && !readOnly ? (
                 <Button onClick={handleTryAgain} variant="outline">
+                  <RotateCcw />
                   Coba lagi
                 </Button>
               ) : null}
-            </div>
-          </div>
-        ) : null}
-        {attemptResult ? <AttemptSummary result={attemptResult} /> : null}
-      </div>
-    </AppShell>
+            </>
+          ) : (
+            <>
+              <Button
+                aria-label="Aktivitas sebelumnya"
+                variant="ghost"
+                size="icon"
+                disabled={slide === 0}
+                onClick={() => moveTo(slide - 1)}
+              >
+                <ArrowLeft />
+              </Button>
+              {renderPrimaryAction()}
+            </>
+          )}
+        </NodePlayerFooter>
+      </main>
+    </div>
   );
 }
