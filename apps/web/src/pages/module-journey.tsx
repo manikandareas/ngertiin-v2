@@ -1,5 +1,7 @@
+import { Archive } from "lucide-react";
 import { useParams } from "react-router-dom";
 import { AppShell } from "../components/app-shell";
+import { Button } from "../components/ui/button";
 import { useArchiveModule, useJourney, useModule } from "../features/modules/api/use-modules";
 import { JourneySummary } from "../features/modules/components/journey-summary";
 import { JourneyTrack } from "../features/modules/components/journey-track";
@@ -49,15 +51,28 @@ export default function ModuleJourneyPage() {
 
   return (
     <AppShell>
-      <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] md:gap-12">
-        <JourneySummary
-          data={journey.data}
-          status={moduleQuery.data.status}
-          archiving={archive.isPending}
-          archiveError={archiveError}
-          onArchive={handleArchive}
-        />
+      <div className="mx-auto flex max-w-2xl flex-col">
+        <JourneySummary data={journey.data} status={moduleQuery.data.status} />
         <JourneyTrack data={journey.data} canLearn={moduleQuery.data.status === "ready"} />
+        {moduleQuery.data.status === "ready" ? (
+          <footer className="mt-8 border-t pt-4">
+            <Button
+              disabled={archive.isPending}
+              onClick={handleArchive}
+              variant="ghost"
+              size="sm"
+              className="h-11 px-2 text-xs normal-case text-muted-foreground"
+            >
+              <Archive aria-hidden="true" />
+              {archive.isPending ? "Mengarsipkan…" : "Arsipkan modul"}
+            </Button>
+            {archiveError ? (
+              <p className="mt-2 text-sm text-destructive" role="alert">
+                {archiveError}
+              </p>
+            ) : null}
+          </footer>
+        ) : null}
       </div>
     </AppShell>
   );
