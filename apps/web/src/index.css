@@ -1,20 +1,190 @@
+@import "@fontsource-variable/nunito/wght.css";
+@import "@fontsource-variable/nunito-sans/wght.css";
 @import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 :root {
-  font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color-scheme: light;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
+  --background: #ffffff;
+  --foreground: #4b4b4b;
+  --card: #ffffff;
+  --card-foreground: #4b4b4b;
+  --popover: #ffffff;
+  --popover-foreground: #4b4b4b;
+  --primary: #1cb0f6;
+  --primary-foreground: #ffffff;
+  --primary-hover: #48bff8;
+  --primary-edge: #008acb;
+  --button-radius: 16px;
+  --card-radius: 20px;
+  --link: #0077ad;
+  --secondary: #e5f5ff;
+  --secondary-foreground: #005d87;
+  --muted: #f7f7f7;
+  --muted-foreground: #707070;
+  --accent: #e5f5ff;
+  --accent-foreground: #005d87;
+  --destructive: #b42318;
+  --destructive-foreground: #ffffff;
+  --success: #58cc02;
+  --success-foreground: #234700;
+  --success-subtle: #d7ffb8;
+  --border: #e5e5e5;
+  --input: #afafaf;
+  --ring: #0077ad;
+  --radius: 0.75rem;
+  --sidebar: var(--background);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--accent);
+  --sidebar-accent-foreground: var(--accent-foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
+  --page-max-width: 1200px;
+  --section-gap: clamp(80px, 8vw, 120px);
+  --card-padding: clamp(16px, 3vw, 24px);
+  --element-gap: 12px;
 }
 
-body {
-  margin: 0;
-  min-width: 320px;
-  min-height: 100vh;
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-edge: var(--primary-edge);
+  --radius-button: var(--button-radius);
+  --radius-card: var(--card-radius);
+  --color-link: var(--link);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-success-subtle: var(--success-subtle);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --radius-sm: var(--radius);
+  --radius-md: var(--radius);
+  --radius-lg: var(--radius);
+  --radius-xl: var(--radius);
 }
 
-button,
-a {
-  -webkit-tap-highlight-color: transparent;
+@theme {
+  --font-sans: "Nunito Sans Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Nunito Variable", ui-sans-serif, system-ui, sans-serif;
+  --color-eager-green: #58cc02;
+  --color-storybook-green: #d7ffb8;
+  --color-spark-blue: #1cb0f6;
+  --color-fresh-leaf: #a5ed6e;
+  --color-night-ink: #000437;
+  --color-paper-white: #ffffff;
+  --color-charcoal: #4b4b4b;
+  --color-pencil-gray: #777777;
+  --color-faded-gray: #afafaf;
+  --text-caption: 13px;
+  --text-caption--line-height: 1.23;
+  --text-nav-label: 14px;
+  --text-nav-label--line-height: 1.33;
+  --text-nav-label--letter-spacing: 0.053em;
+  --text-body: 16px;
+  --text-body--line-height: 1.47;
+  --text-subheading: 18px;
+  --text-subheading--line-height: 1.4;
+  --text-heading-sm: 24px;
+  --text-heading-sm--line-height: 1.2;
+  --text-heading: 36px;
+  --text-heading--line-height: 1.2;
+  --text-heading--letter-spacing: -0.02em;
+  --text-display: 48px;
+  --text-display--line-height: 1.2;
+  --text-display--letter-spacing: -0.02em;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background font-sans text-body font-medium text-foreground;
+    margin: 0;
+    min-width: 320px;
+    min-height: 100vh;
+  }
+  button,
+  a {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --background: #141414;
+  --foreground: #f2f2f2;
+  --card: #202020;
+  --card-foreground: #f2f2f2;
+  --popover: #262626;
+  --popover-foreground: #f2f2f2;
+  --muted: #262626;
+  --muted-foreground: #a3a3a3;
+  --border: #3c3c3c;
+  --input: #595959;
+  --accent: #202a30;
+  --accent-foreground: #83d4ff;
+  --secondary: #202a30;
+  --secondary-foreground: #83d4ff;
+  --link: #83d4ff;
+  --ring: #83d4ff;
+  --destructive: #ffb4aa;
+  --destructive-foreground: #541c16;
+  --success-subtle: #253d21;
+  --success-foreground: #a5ed6e;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not([data-theme="dark"]) {
+    color-scheme: dark;
+    --background: #141414;
+    --foreground: #f2f2f2;
+    --card: #202020;
+    --card-foreground: #f2f2f2;
+    --popover: #262626;
+    --popover-foreground: #f2f2f2;
+    --muted: #262626;
+    --muted-foreground: #a3a3a3;
+    --border: #3c3c3c;
+    --input: #595959;
+    --accent: #202a30;
+    --accent-foreground: #83d4ff;
+    --secondary: #202a30;
+    --secondary-foreground: #83d4ff;
+    --link: #83d4ff;
+    --ring: #83d4ff;
+    --destructive: #ffb4aa;
+    --destructive-foreground: #541c16;
+    --success-subtle: #253d21;
+    --success-foreground: #a5ed6e;
+  }
 }
