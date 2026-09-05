@@ -106,7 +106,6 @@ export class AttemptsService {
             eq(node_progress.user_id, userId),
             eq(node_progress.node_id, nodeId),
             eq(module_nodes.module_id, moduleId),
-            eq(module_nodes.origin, "core"),
           ),
         )
         .for("update", { of: node_progress })
