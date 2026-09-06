@@ -22,9 +22,6 @@ export default function ModulesPage() {
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-teal-700">Library</p>
           <h1 className="mt-3 text-4xl font-bold tracking-tight">Semua Module</h1>
         </div>
-        <Button asChild>
-          <Link to="/modules/new">Buat Module</Link>
-        </Button>
       </div>
 
       <div className="mt-8 grid gap-4 rounded-2xl border border-slate-200 bg-white p-5 sm:grid-cols-2">
@@ -69,7 +66,13 @@ export default function ModulesPage() {
       ) : items.length === 0 ? (
         <div className="mt-8 rounded-2xl border border-dashed border-slate-300 bg-white p-8">
           <h2 className="text-xl font-bold">Tidak ada Module pada filter ini</h2>
-          <p className="mt-2 text-slate-600">Ubah filter atau buat Module baru.</p>
+          <p className="mt-2 text-slate-600">
+            Ubah filter atau{" "}
+            <Link className="text-link underline" to="/dashboard#module-composer">
+              mulai modul baru dari Beranda
+            </Link>
+            .
+          </p>
         </div>
       ) : (
         <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">

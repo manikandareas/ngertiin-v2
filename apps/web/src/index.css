@@ -188,3 +188,33 @@
     --success-foreground: #a5ed6e;
   }
 }
+
+.welcome-wave {
+  display: inline-block;
+  transform-origin: 70% 75%;
+}
+
+@keyframes welcome-wave {
+  0%,
+  32%,
+  100% {
+    transform: rotate(0deg);
+  }
+  6%,
+  18% {
+    transform: rotate(14deg);
+  }
+  12%,
+  24% {
+    transform: rotate(-8deg);
+  }
+  28% {
+    transform: rotate(5deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .welcome-wave {
+    animation: welcome-wave 6s ease-in-out infinite;
+  }
+}

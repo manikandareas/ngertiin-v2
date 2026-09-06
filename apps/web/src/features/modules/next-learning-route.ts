@@ -1,4 +1,4 @@
-import type { NextLearningAction } from "@ngertiin/contracts/api";
+import type { ModuleSummary, NextLearningAction } from "@ngertiin/contracts/api";
 
 export function nextLearningRoute(action: NextLearningAction): string | null {
   switch (action.type) {
@@ -18,4 +18,11 @@ export function nextLearningRoute(action: NextLearningAction): string | null {
     case "none":
       return null;
   }
+}
+
+export function moduleOverviewRoute(module: Pick<ModuleSummary, "id" | "status">): string {
+  if (module.status === "ready" || module.status === "archived") {
+    return `/modules/${module.id}/journey`;
+  }
+  return `/modules/${module.id}`;
 }

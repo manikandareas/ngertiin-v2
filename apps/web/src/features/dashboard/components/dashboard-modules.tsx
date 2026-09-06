@@ -1,150 +1,79 @@
+import { ArrowRightDoubleIcon, BookOpen01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import type { Dashboard } from "@ngertiin/contracts/api";
-import { ArrowRight, Atom, BookOpen, Brain, Lightbulb, Plus, Rocket } from "lucide-react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Button } from "../../../components/ui/button";
-import { Card } from "../../../components/ui/card";
-import { nextLearningRoute } from "../../modules/next-learning-route";
-
-const moduleIcons = [Atom, Brain, Rocket, Lightbulb, BookOpen];
-const difficultyLabels = { beginner: "Pemula", intermediate: "Menengah", advanced: "Lanjutan" };
+import { DashboardModuleRow } from "./dashboard-module-row";
 
 export function DashboardModules({
   modules,
   continueLearning,
 }: Pick<Dashboard, "modules" | "continueLearning">) {
-  const choices =
-    continueLearning && !modules.some((module) => module.id === continueLearning.module.id)
-      ? [continueLearning.module, ...modules]
-      : modules;
+  const [search, setSearch] = useState("");
+  const choices = continueLearning
+    ? [
+        continueLearning.module,
+        ...modules.filter((module) => module.id !== continueLearning.module.id),
+      ]
+    : modules;
+  const visible = choices.filter((module) =>
+    (module.title ?? "Modul baru")
+      .toLocaleLowerCase("id-ID")
+      .includes(search.trim().toLocaleLowerCase("id-ID")),
+  );
   return (
-    <section aria-labelledby="modules-heading" className="min-w-0">
-      <header className="mb-4 flex items-center justify-between gap-4">
-        <h1 id="modules-heading" className="text-xl font-extrabold">
-          Modul belajarmu
-        </h1>
+    <section
+      aria-labelledby="modules-heading"
+      className="min-w-0 rounded-card border bg-card p-5 sm:p-6"
+    >
+      <header className="mb-5 flex flex-wrap items-center gap-3 sm:gap-5">
+        <h2 id="modules-heading" className="flex items-center gap-2 text-base font-semibold">
+          <HugeiconsIcon icon={BookOpen01Icon} size={18} strokeWidth={1.5} aria-hidden="true" />
+          Modul saya
+        </h2>
+        <label className="order-3 w-full sm:order-none sm:w-48">
+          <span className="sr-only">Cari modul di dashboard</span>
+          <input
+            type="search"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Cari nama modul…"
+            className="h-9 w-full rounded-full border bg-background px-4 text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+          />
+        </label>
         <Link
           to="/modules"
-          className="inline-flex min-h-10 items-center gap-1 text-caption font-bold text-link"
+          className="ml-auto inline-flex min-h-9 items-center gap-1 rounded-sm px-1 text-caption font-medium text-link hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
         >
           Semua modul
-          <ArrowRight aria-hidden="true" className="size-4" />
+          <HugeiconsIcon icon={ArrowRightDoubleIcon} size={14} aria-hidden="true" />
         </Link>
       </header>
-      {choices.length ? (
-        <ul className="space-y-3">
-          {choices.map((module, index) => (
+      {visible.length ? (
+        <ul className="space-y-1">
+          {visible.map((module) => (
             <li key={module.id}>
-              <DashboardModuleCard
-                module={module}
-                index={index}
-                isContinueLearning={continueLearning?.module.id === module.id}
-              />
+              <DashboardModuleRow module={module} />
             </li>
           ))}
         </ul>
       ) : (
-        <Card className="items-start gap-4 p-6">
-          <BookOpen aria-hidden="true" className="size-8 text-primary" />
-          <div>
-            <h2 className="text-subheading font-bold">Mulai dari satu modul.</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Tambahkan materi yang ingin kamu pahami.
-            </p>
-          </div>
-          <Button asChild className="normal-case tracking-normal">
-            <Link to="/modules/new">
-              Buat modul pertama
-              <Plus aria-hidden="true" />
+        <div className="py-6 text-sm text-muted-foreground">
+          <p>
+            {search
+              ? "Tidak ada modul yang cocok di dashboard ini."
+              : "Belum ada modul. Mulai dengan materi yang ingin kamu pahami."}
+          </p>
+          {!search && (
+            <Link
+              to="/dashboard#module-composer"
+              className="mt-3 inline-block rounded-sm font-bold text-link hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+            >
+              Buat modul pertama →
             </Link>
-          </Button>
-        </Card>
+          )}
+        </div>
       )}
     </section>
-  );
-}
-
-function DashboardModuleCard({
-  module,
-  index,
-  isContinueLearning,
-}: {
-  module: Dashboard["modules"][number];
-  index: number;
-  isContinueLearning: boolean;
-}) {
-  const Icon = moduleIcons[index % moduleIcons.length] ?? BookOpen;
-  const progress = module.progress;
-  const destination = nextLearningRoute(module.nextAction) ?? `/modules/${module.id}`;
-  const action =
-    module.status === "generating"
-      ? "Lihat proses"
-      : module.status === "failed"
-        ? "Lihat kendala"
-        : module.status === "archived" || progress?.status === "completed"
-          ? "Lihat modul"
-          : progress?.status === "in_progress"
-            ? "Lanjutkan"
-            : "Mulai";
-
-  return (
-    <article className="grid grid-cols-[44px_minmax(0,1fr)] items-center gap-x-4 gap-y-3 rounded-button border-2 bg-card p-4 sm:grid-cols-[48px_minmax(0,1fr)_auto]">
-      <span
-        aria-hidden="true"
-        className="grid size-11 place-items-center rounded-lg bg-accent text-primary sm:size-12"
-      >
-        <Icon className="size-6" strokeWidth={1.8} />
-      </span>
-      <div className="min-w-0">
-        <h2 className="break-words text-base font-extrabold leading-snug">
-          <Link
-            to={`/modules/${module.id}/journey`}
-            className="rounded-sm hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-          >
-            {module.title ?? "Modul baru"}
-          </Link>
-        </h2>
-        <p className="mt-1 text-caption text-muted-foreground">
-          {module.status === "generating"
-            ? "Sedang disiapkan…"
-            : module.status === "failed"
-              ? "Perlu dicoba lagi"
-              : module.status === "archived"
-                ? "Diarsipkan"
-                : [
-                    module.difficulty ? difficultyLabels[module.difficulty] : null,
-                    module.estimatedMinutes ? `${module.estimatedMinutes} menit` : null,
-                    progress ? `${progress.percentage}% selesai` : null,
-                  ]
-                    .filter(Boolean)
-                    .join(" · ")}
-        </p>
-        {module.status === "ready" && progress ? (
-          <div
-            role="progressbar"
-            aria-label={`Progress ${module.title ?? "modul"}`}
-            aria-valuenow={progress.percentage}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            className="mt-2 h-1.5 max-w-52 overflow-hidden rounded-full bg-muted"
-          >
-            <div
-              className="h-full rounded-full bg-primary"
-              style={{ width: `${progress.percentage}%` }}
-            />
-          </div>
-        ) : null}
-      </div>
-      <Button
-        asChild
-        size="sm"
-        variant={isContinueLearning ? "default" : "secondary"}
-        className="col-start-2 justify-self-start normal-case tracking-normal sm:col-start-auto sm:justify-self-end"
-      >
-        <Link aria-label={`${action}: ${module.title ?? "Modul baru"}`} to={destination}>
-          {action}
-          <ArrowRight aria-hidden="true" />
-        </Link>
-      </Button>
-    </article>
   );
 }
