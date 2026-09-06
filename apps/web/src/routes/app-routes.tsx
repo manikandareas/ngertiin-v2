@@ -4,6 +4,7 @@ import { AppShell } from "../components/app-shell";
 import { AuthenticatedRoute } from "./authenticated-route";
 
 const DashboardPage = lazy(() => import("../pages/dashboard"));
+const NewModulePage = lazy(() => import("../pages/new-module"));
 const ModulesPage = lazy(() => import("../pages/modules"));
 const ModuleStatusPage = lazy(() => import("../pages/module-status"));
 const ModuleJourneyPage = lazy(() => import("../pages/module-journey"));
@@ -50,7 +51,7 @@ export function AppRoutes() {
           path="/modules/new"
           element={
             <AuthenticatedRoute>
-              <Navigate to="/dashboard#module-composer" replace />
+              <NewModulePage />
             </AuthenticatedRoute>
           }
         />

@@ -66,7 +66,7 @@ export function DashboardModules({
           </p>
           {!search && (
             <Link
-              to="/dashboard#module-composer"
+              to="/modules/new"
               className="mt-3 inline-block rounded-sm font-bold text-link hover:underline focus-visible:outline-2 focus-visible:outline-ring"
             >
               Buat modul pertama →

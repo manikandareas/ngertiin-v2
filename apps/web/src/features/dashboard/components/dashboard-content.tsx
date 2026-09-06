@@ -6,15 +6,11 @@ import { DashboardSummary } from "./dashboard-summary";
 export function DashboardContent({
   data,
   name,
-  composer,
   fallback,
-  composerVisible = false,
 }: {
   data?: Dashboard;
   name?: string;
-  composer?: ReactNode;
   fallback?: ReactNode;
-  composerVisible?: boolean;
 }) {
   return (
     <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
@@ -35,18 +31,13 @@ export function DashboardContent({
         {data ? (
           <>
             <DashboardSummary data={data} />
-            <div className="mt-8">
+            <div className="mt-5">
               <DashboardModules modules={data.modules} continueLearning={data.continueLearning} />
             </div>
           </>
         ) : (
           fallback
         )}
-        {composer ? (
-          <div hidden={!composerVisible} className="mt-6">
-            {composer}
-          </div>
-        ) : null}
       </div>
     </div>
   );

@@ -12,7 +12,7 @@ export function DashboardSummary({ data }: DashboardSummaryProps) {
     .slice(0, 3);
   const resume = data.continueLearning?.module;
   return (
-    <section aria-label="Ringkasan belajar" className="grid gap-5 sm:grid-cols-2 sm:gap-6">
+    <section aria-label="Ringkasan belajar" className="grid gap-5 sm:grid-cols-2">
       <div className="min-w-0 rounded-card border border-[#e8dfb8] bg-[#fffbe8] p-5 text-[#785515] sm:p-6 dark:border-[#454137] dark:bg-[#2b2923] dark:text-[#d5c9a6]">
         <h2 className="mb-5 flex items-center gap-2 text-sm font-semibold">
           <HugeiconsIcon icon={BookOpen01Icon} size={18} strokeWidth={1.5} aria-hidden="true" />
@@ -67,7 +67,7 @@ export function DashboardSummary({ data }: DashboardSummaryProps) {
             to={
               resume
                 ? (nextLearningRoute(resume.nextAction) ?? moduleOverviewRoute(resume))
-                : "/dashboard#module-composer"
+                : "/modules/new"
             }
             className="inline-flex items-center gap-1 rounded-sm text-sm font-semibold text-link hover:underline focus-visible:outline-2 focus-visible:outline-ring"
           >

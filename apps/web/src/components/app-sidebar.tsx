@@ -17,7 +17,7 @@ import { ThemeSelect } from "./theme-select";
 
 const navigation = [
   { to: "/dashboard", label: "Beranda", icon: Home01Icon },
-  { to: "/dashboard#module-composer", label: "Buat modul", icon: AddCircleHalfDotIcon },
+  { to: "/modules/new", label: "Buat modul", icon: AddCircleHalfDotIcon },
   { to: "/modules", label: "Modul saya", icon: BookOpen01Icon },
 ];
 const focus = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
@@ -58,7 +58,7 @@ export function AppSidebar({
   return (
     <aside
       aria-label="Sidebar"
-      className={`flex shrink-0 flex-col border-b bg-sidebar text-sidebar-foreground lg:min-h-0 lg:border-r lg:border-b-0 ${collapsed ? "lg:w-16" : "lg:w-64"}`}
+      className={`flex shrink-0 flex-col border-b bg-sidebar text-sidebar-foreground lg:min-h-0 border-muted lg:border-b-0 ${collapsed ? "lg:w-16" : "lg:w-64"}`}
     >
       <div
         className={`flex items-center gap-2.5 px-5 py-3 pr-28 lg:py-5 ${collapsed ? "lg:flex-col lg:px-2" : "lg:px-3"}`}
@@ -93,21 +93,16 @@ export function AppSidebar({
         className={`flex gap-1 px-3 pb-3 lg:flex-col lg:gap-1 lg:pb-0 ${collapsed ? "lg:px-2" : "lg:px-3"}`}
       >
         {navigation.map(({ to, label, icon }) => {
-          let active = location.pathname.startsWith(to);
-          if (to.includes("#")) {
-            active = location.pathname === "/dashboard" && location.hash === "#module-composer";
-          } else if (to === "/dashboard") {
-            active = location.pathname === to && !location.hash;
-          }
+          const active =
+            to === "/modules"
+              ? location.pathname.startsWith(to) && location.pathname !== "/modules/new"
+              : location.pathname.startsWith(to);
           return (
             <Link
               key={to}
               to={to}
               aria-current={active ? "page" : undefined}
               title={collapsed ? label : undefined}
-              onClick={() => {
-                if (to.includes("#")) document.getElementById("composer-text")?.focus();
-              }}
               className={`flex min-h-11 min-w-0 flex-1 items-center justify-center gap-2 rounded-full px-3 text-caption sm:text-sm lg:min-h-10 lg:flex-none lg:justify-between lg:px-3 lg:text-sm ${focus} ${active ? "bg-muted text-foreground" : "hover:bg-muted"}`}
             >
               <span className={labelClass}>{label}</span>

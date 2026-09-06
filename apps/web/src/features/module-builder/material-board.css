@@ -1,0 +1,218 @@
+.material-board {
+  background-color: var(--muted);
+  background-image: radial-gradient(var(--border) 0.75px, transparent 0.75px);
+  background-size: 16px 16px;
+}
+.material-board-dropping {
+  border-color: var(--primary);
+}
+.material-menu {
+  z-index: 50;
+  min-width: 220px;
+  max-width: min(300px, calc(100vw - 24px));
+  max-height: var(
+    --radix-context-menu-content-available-height,
+    var(--radix-dropdown-menu-content-available-height, 360px)
+  );
+  overflow-y: auto;
+  padding: 5px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--popover);
+  color: var(--popover-foreground);
+  box-shadow: 0 6px 12px #00000012;
+}
+.material-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 38px;
+  padding: 8px 10px;
+  border-radius: 7px;
+  font-size: 13px;
+  line-height: 1.5;
+  cursor: default;
+  outline: none;
+  user-select: none;
+}
+.material-menu-item[data-highlighted],
+.material-menu-item[data-state="open"] {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+.material-menu-item[data-disabled] {
+  opacity: 0.5;
+  pointer-events: none;
+}
+.material-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: #0006;
+}
+.material-dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 61;
+  width: min(520px, calc(100vw - 32px));
+  max-height: calc(100dvh - 48px);
+  overflow-y: auto;
+  padding: 28px;
+  border-radius: 20px;
+  background: var(--background);
+  color: var(--foreground);
+  box-shadow: 0 20px 80px #0002;
+}
+.material-book {
+  --book-cover: #cfdfec;
+  --book-ink: #304f68;
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  isolation: isolate;
+}
+.material-book[data-tone="1"] {
+  --book-cover: #d6ddca;
+  --book-ink: #45533a;
+}
+.material-book[data-tone="2"] {
+  --book-cover: #e7d5cc;
+  --book-ink: #69473b;
+}
+.material-book[data-tone="3"] {
+  --book-cover: #ddd6e9;
+  --book-ink: #544766;
+}
+.material-book-pages {
+  position: absolute;
+  inset: 5px -4px -3px 8px;
+  border-radius: 2px 5px 5px 2px;
+  background: repeating-linear-gradient(to bottom, #f9f9f6 0 2px, #dcdcd6 2px 3px);
+  border: 1px solid #d0d0c8;
+  box-shadow: 3px 6px 8px #00000014;
+}
+.material-book-cover {
+  position: absolute;
+  inset: 0 0 5px 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 18px 14px 18px 22px;
+  border-radius: 3px 7px 7px 3px;
+  background: var(--book-cover);
+  color: var(--book-ink);
+  box-shadow:
+    inset 1px 0 0 #ffffff50,
+    inset -1px 0 0 #0000000d;
+}
+.material-book-binding {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 12px;
+  background: linear-gradient(90deg, #00000018, #ffffff15 40%, #00000009 78%, #ffffff35);
+  border-right: 1px solid #00000012;
+}
+.material-book-type {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+.material-book-title {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  margin-top: 22px;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+.material-book-rule {
+  display: block;
+  height: 1px;
+  width: 28px;
+  margin-top: auto;
+  background: currentColor;
+  opacity: 0.3;
+}
+.material-book-caption {
+  margin-top: 9px;
+  font-size: 9px;
+  line-height: 1.4;
+}
+.material-book-handle {
+  touch-action: pan-y;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.material-book-lift {
+  transform: rotate(-3deg) scale(1.04);
+}
+.empty-books {
+  position: relative;
+  width: 132px;
+  height: 100px;
+}
+.empty-books span {
+  position: absolute;
+  bottom: 0;
+  left: 34px;
+  width: 64px;
+  height: 88px;
+  border-radius: 3px 6px 6px 3px;
+  background: #cfdfec;
+  box-shadow:
+    inset 6px 0 #0000000d,
+    inset -2px -3px #f9f9f6,
+    2px 4px 5px #00000010;
+  transform: rotate(-5deg);
+}
+.empty-books span:first-child {
+  background: #d6ddca;
+  transform: translateX(-26px) rotate(-17deg);
+}
+.empty-books span:last-child {
+  background: #e7d5cc;
+  transform: translateX(28px) rotate(12deg);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .material-book-cover {
+    transition: transform 180ms ease-out;
+    transform-origin: left center;
+  }
+  .material-book-handle:hover .material-book-cover {
+    transform: perspective(700px) rotateY(-7deg);
+  }
+  .material-dialog {
+    animation: material-dialog-enter 160ms ease-out;
+  }
+}
+@keyframes material-dialog-enter {
+  from {
+    opacity: 0.4;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (max-width: 380px) {
+  .material-book-title {
+    font-size: 14px;
+    margin-top: 14px;
+  }
+  .material-book-cover {
+    padding: 14px 10px 14px 18px;
+  }
+}
+
+/* Select menus must appear above the material dialog. */
+.material-settings-select {
+  z-index: 70;
+}

@@ -1,3 +1,5 @@
+import { Plus } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import type { ModuleProgressStatus, ModuleStatus } from "@ngertiin/contracts/api";
 import { useState } from "react";
 import { Link } from "react-router-dom";
@@ -20,11 +22,18 @@ export default function ModulesPage() {
 
   return (
     <AppShell>
-      <header>
-        <h1 className="text-2xl font-bold tracking-tight">Modul saya</h1>
-        <p className="mt-1.5 text-sm text-muted-foreground">
-          Semua materi dan perjalanan belajarmu, di satu tempat.
-        </p>
+      <header className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Modul saya</h1>
+          <p className="mt-1.5 text-sm text-muted-foreground">
+            Semua materi dan perjalanan belajarmu, di satu tempat.
+          </p>
+        </div>
+        <Button size="sm" variant="ghost" asChild>
+          <Link to="/modules/new">
+            Buat modul <HugeiconsIcon icon={Plus} size={20} strokeWidth={1.5} aria-hidden="true" />
+          </Link>
+        </Button>
       </header>
 
       <ModulesFilters
@@ -68,8 +77,8 @@ export default function ModulesPage() {
           <h2 className="text-lg font-bold">Belum ada modul pada filter ini</h2>
           <p className="mt-2 text-muted-foreground">
             Ubah filter atau{" "}
-            <Link className="text-link underline" to="/dashboard#module-composer">
-              mulai modul baru dari Beranda
+            <Link className="text-link underline" to="/modules/new">
+              buat modul baru
             </Link>
             .
           </p>
