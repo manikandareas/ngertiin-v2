@@ -18,7 +18,7 @@ export function AppShell({
         {workspace ? (
           children
         ) : (
-          <div className="mx-auto max-w-[1120px] px-5 py-8 sm:px-8 lg:py-16">{children}</div>
+          <div className="mx-auto max-w-7xl px-5 py-8 sm:px-8 lg:py-16">{children}</div>
         )}
       </main>
     </div>

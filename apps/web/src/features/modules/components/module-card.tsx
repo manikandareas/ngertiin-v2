@@ -1,70 +1,77 @@
 import type { ModuleSummary } from "@ngertiin/contracts/api";
-import { ArrowRight, BookOpen } from "lucide-react";
+import { BookOpen, ChevronRight, Clock3 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "../../../components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "../../../components/ui/card";
-import { nextLearningRoute } from "../next-learning-route";
+import { Card } from "../../../components/ui/card";
+import { getModuleStatus, moduleDifficulties, moduleDurationTone } from "../module-presentation";
+import { moduleOverviewRoute } from "../next-learning-route";
 
-const statusLabels: Record<ModuleSummary["status"], string> = {
-  generating: "Sedang dibuat",
-  ready: "Siap dipelajari",
-  failed: "Perlu dicoba lagi",
-  archived: "Diarsipkan",
-};
+const badge =
+  "inline-flex max-w-full items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium leading-4";
 
 export function ModuleCard({ module }: { module: ModuleSummary }) {
-  const destination = nextLearningRoute(module.nextAction) ?? `/modules/${module.id}`;
-  const percentage = module.progress?.percentage ?? 0;
-  const action =
-    module.status !== "ready"
-      ? "Lihat status"
-      : percentage >= 100
-        ? "Lihat modul"
-        : percentage > 0
-          ? "Lanjutkan"
-          : "Mulai belajar";
+  const destination = moduleOverviewRoute(module);
+  const progress = module.progress;
+  const status = getModuleStatus(module);
+
   return (
-    <Card className="min-w-0 gap-4">
-      <CardHeader>
-        <div className="mb-2 flex items-center justify-between gap-3">
-          <span className="grid size-12 place-items-center rounded-button bg-accent text-primary">
-            <BookOpen aria-hidden="true" className="size-6" />
+    <Card className="min-w-0 gap-0 p-4 sm:p-5">
+      <h2 className="min-h-12 text-base font-semibold leading-6 tracking-tight">
+        <Link
+          to={destination}
+          title={module.title ?? "Modul baru"}
+          className="line-clamp-2 wrap-anywhere rounded-sm hover:text-link focus-visible:outline-2 focus-visible:outline-ring"
+        >
+          {module.title ?? "Modul baru"}
+        </Link>
+      </h2>
+      <p className="mt-2 line-clamp-2 min-h-10 wrap-anywhere text-sm leading-5 text-muted-foreground">
+        {module.description ??
+          (module.status === "generating"
+            ? "Materi belajarmu sedang dipersiapkan."
+            : "Buka modul untuk melihat detail materi.")}
+      </p>
+
+      <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+        {module.estimatedMinutes ? (
+          <span className={`${badge} ${moduleDurationTone} tabular-nums`}>
+            <Clock3 aria-hidden="true" className="size-3.5 shrink-0" />
+            {module.estimatedMinutes} menit
           </span>
-          <span className="text-caption font-bold text-muted-foreground">
-            {statusLabels[module.status]}
+        ) : null}
+        <span className={`${badge} ${status.tone}`}>{status.label}</span>
+        {module.difficulty ? (
+          <span className={`${badge} border-border bg-muted text-muted-foreground`}>
+            <span
+              aria-hidden="true"
+              className={`size-2 shrink-0 rounded-full ${moduleDifficulties[module.difficulty].color}`}
+            />
+            {moduleDifficulties[module.difficulty].label}
           </span>
-        </div>
-        <CardTitle className="break-words">{module.title ?? "Modul baru"}</CardTitle>
-        <p className="line-clamp-2 text-sm leading-relaxed text-muted-foreground">
-          {module.description ?? "Materi belajarmu sedang dipersiapkan."}
-        </p>
-      </CardHeader>
-      {module.progress ? (
-        <CardContent>
-          <div className="mb-2 flex justify-between text-caption font-bold text-muted-foreground">
-            <span>{percentage >= 100 ? "Selesai" : "Progress belajar"}</span>
-            <span>{percentage}%</span>
-          </div>
-          <div
-            role="progressbar"
-            aria-label={`Progress ${module.title ?? "modul"}`}
-            aria-valuenow={percentage}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            className="h-3 overflow-hidden rounded-full bg-muted"
+        ) : null}
+      </div>
+
+      <div className="mt-auto flex items-center justify-between gap-3 pt-4">
+        {progress ? (
+          <span className="inline-flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground tabular-nums">
+            <BookOpen aria-hidden="true" className="size-3.5 shrink-0" />
+            {progress.completedCoreNodes}/{progress.totalCoreNodes} materi
+          </span>
+        ) : null}
+        <Button asChild size="icon" className="ml-auto size-11 shrink-0">
+          <Link
+            to={destination}
+            aria-label={`${module.status === "ready" || module.status === "archived" ? "Lihat journey" : "Lihat status"}: ${module.title ?? "Modul baru"}`}
+            title={
+              module.status === "ready" || module.status === "archived"
+                ? "Lihat journey"
+                : "Lihat status"
+            }
           >
-            <div className="h-full rounded-full bg-primary" style={{ width: `${percentage}%` }} />
-          </div>
-        </CardContent>
-      ) : null}
-      <CardFooter className="mt-auto">
-        <Button asChild variant="outline" className="w-full">
-          <Link to={destination}>
-            {action}
-            <ArrowRight aria-hidden="true" />
+            <ChevronRight aria-hidden="true" />
           </Link>
         </Button>
-      </CardFooter>
+      </div>
     </Card>
   );
 }
