@@ -83,8 +83,7 @@
   .generation-row:nth-child(even) .generation-node[data-state="waiting"] {
     animation-delay: -1.8s;
   }
-  .generation-check,
-  .generation-finish {
+  .generation-check {
     animation: generation-arrive 380ms ease-out;
   }
   .generation-connector {
