@@ -14,10 +14,14 @@ function getHint({
   reviewing,
   activityType,
 }: Omit<NodePlayerFooterProps, "children" | "errorMessage">): string | null {
-  if (showResult) return "Luangkan waktu untuk memahami hasil belajarmu.";
-  if (reviewing) return "Mode review · Jelajahi kembali setiap aktivitas.";
-  if (!activityType || activityType === "lesson") return null;
-  if (activityType === "flashcard") return "Balik kartu, ingat kembali, lalu lanjutkan.";
+  if (
+    showResult ||
+    reviewing ||
+    !activityType ||
+    activityType === "lesson" ||
+    activityType === "flashcard"
+  )
+    return null;
   return "Jawaban dinilai bersama di akhir node.";
 }
 
@@ -30,19 +34,19 @@ export function NodePlayerFooter({
 }: NodePlayerFooterProps): JSX.Element {
   const hint = getHint({ showResult, reviewing, activityType });
   return (
-    <footer className="shrink-0 px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-5 sm:px-10">
-      <div className="mx-auto max-w-2xl">
+    <footer className="shrink-0 px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-5 md:pb-10">
+      <div className="mx-auto max-w-xl">
         {errorMessage ? (
           <p className="mb-4 text-sm text-destructive" role="alert">
             {errorMessage}
           </p>
         ) : null}
         {hint ? (
-          <div className="mb-4 text-center text-xs text-muted-foreground" aria-live="polite">
+          <div className="mb-4 text-xs text-muted-foreground" aria-live="polite">
             {hint}
           </div>
         ) : null}
-        <div className="flex flex-wrap items-center justify-center gap-3">{children}</div>
+        <div className="flex flex-wrap items-center justify-between gap-3">{children}</div>
       </div>
     </footer>
   );

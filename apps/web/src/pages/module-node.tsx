@@ -14,9 +14,11 @@ import {
 import { AttemptSummary } from "../features/modules/components/attempt-summary";
 import { NodeActivity } from "../features/modules/components/node-activity";
 import { NodePlayerFooter } from "../features/modules/components/node-player-footer";
-import { NodePlayerHeader } from "../features/modules/components/node-player-header";
+import { NodePlayerLayout } from "../features/modules/components/node-player-layout";
 import { nextLearningRoute } from "../features/modules/next-learning-route";
 import { ApiProblemError } from "../lib/api";
+
+const primaryActionClassName = "max-w-full rounded-full px-6 normal-case tracking-normal";
 
 function isAnswered(answer: AssessmentAnswer | undefined): boolean {
   return answer !== undefined && (!("text" in answer) || answer.text.trim().length > 0);
@@ -118,6 +120,11 @@ function NodePlayer({ moduleId, nodeId }: NodePlayerProps): JSX.Element {
     errorMessage = "Progress belum dapat disimpan. Coba lagi.";
   }
 
+  function resetContentPosition(): void {
+    window.scrollTo({ top: 0 });
+    requestAnimationFrame(() => contentRef.current?.focus({ preventScroll: true }));
+  }
+
   async function handleComplete(): Promise<void> {
     try {
       const result = await complete.mutateAsync();
@@ -140,6 +147,7 @@ function NodePlayer({ moduleId, nodeId }: NodePlayerProps): JSX.Element {
       });
       setSearchParams({ attemptId: result.attempt.id }, { replace: true });
       setReviewing(false);
+      resetContentPosition();
     } catch {
       /* Mutation state renders the safe error and keeps submissionId for retry. */
     }
@@ -153,6 +161,7 @@ function NodePlayer({ moduleId, nodeId }: NodePlayerProps): JSX.Element {
     setReviewing(false);
     submit.reset();
     setSearchParams({}, { replace: true });
+    resetContentPosition();
   }
 
   const activity = data.activities[slide];
@@ -165,8 +174,7 @@ function NodePlayer({ moduleId, nodeId }: NodePlayerProps): JSX.Element {
   const lastSlide = slide === data.activities.length - 1;
   function moveTo(index: number): void {
     setSlide(index);
-    contentRef.current?.scrollTo({ top: 0 });
-    contentRef.current?.focus();
+    resetContentPosition();
   }
 
   function renderPrimaryAction(): JSX.Element | null {
@@ -180,7 +188,7 @@ function NodePlayer({ moduleId, nodeId }: NodePlayerProps): JSX.Element {
     if (!lastSlide) {
       return (
         <Button
-          className="w-full max-w-sm rounded-full normal-case tracking-normal"
+          className={primaryActionClassName}
           disabled={!canAdvance}
           onClick={() => moveTo(slide + 1)}
         >
@@ -192,8 +200,11 @@ function NodePlayer({ moduleId, nodeId }: NodePlayerProps): JSX.Element {
     if (attemptResult || attemptId) {
       return (
         <Button
-          className="w-full max-w-sm rounded-full normal-case tracking-normal"
-          onClick={() => setReviewing(false)}
+          className={primaryActionClassName}
+          onClick={() => {
+            setReviewing(false);
+            resetContentPosition();
+          }}
         >
           Lihat hasil
         </Button>
@@ -201,7 +212,7 @@ function NodePlayer({ moduleId, nodeId }: NodePlayerProps): JSX.Element {
     }
     if (readOnly || completed) {
       return (
-        <Button asChild className="w-full max-w-sm rounded-full normal-case tracking-normal">
+        <Button asChild className={primaryActionClassName}>
           <Link to={`/modules/${moduleId}/journey`}>Kembali ke Journey</Link>
         </Button>
       );
@@ -209,7 +220,7 @@ function NodePlayer({ moduleId, nodeId }: NodePlayerProps): JSX.Element {
     if (hasAssessments) {
       return (
         <Button
-          className="w-full max-w-sm rounded-full normal-case tracking-normal"
+          className={primaryActionClassName}
           disabled={!allAnswered || submit.isPending || start.isPending}
           onClick={handleSubmit}
         >
@@ -221,7 +232,7 @@ function NodePlayer({ moduleId, nodeId }: NodePlayerProps): JSX.Element {
     if (canComplete) {
       return (
         <Button
-          className="w-full max-w-sm rounded-full normal-case tracking-normal"
+          className={primaryActionClassName}
           disabled={complete.isPending || start.isPending}
           onClick={handleComplete}
         >
@@ -234,61 +245,14 @@ function NodePlayer({ moduleId, nodeId }: NodePlayerProps): JSX.Element {
   }
 
   return (
-    <div className="flex h-dvh min-h-0 flex-col bg-background px-3 pb-3 pt-1 text-foreground sm:px-6 sm:pb-6 sm:pt-2">
-      <NodePlayerHeader
-        moduleId={moduleId}
-        title={data.node.title}
-        activityCount={data.activities.length}
-        slide={slide}
-        showResult={showResult}
-      />
-      <main
-        className={`flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border-2 ${showResult && attemptResult?.attempt.evaluationStatus === "completed" ? "border-primary" : "border-border"}`}
-      >
-        <div
-          ref={contentRef}
-          tabIndex={-1}
-          className="flex-1 overflow-y-auto overscroll-contain px-5 py-8 outline-none sm:px-10 sm:py-12"
-        >
-          <div className="mx-auto flex min-h-full w-full max-w-2xl flex-col justify-center">
-            {showResult ? (
-              <div aria-live="polite">
-                {attemptResult ? (
-                  <AttemptSummary result={attemptResult} />
-                ) : (
-                  <p role="status">Memuat hasil…</p>
-                )}
-              </div>
-            ) : activity ? (
-              <NodeActivity
-                key={activity.id}
-                activity={activity}
-                title={data.node.title}
-                readOnly={readOnly}
-                completed={completed}
-                locked={locked}
-                answer={answer}
-                onAnswer={(value) =>
-                  setAnswers((current) => ({ ...current, [activity.id]: value }))
-                }
-                result={
-                  attemptResult?.attempt.evaluationStatus === "completed"
-                    ? attemptResult.attempt.activityResults.find(
-                        (item) => item.activityId === activity.id,
-                      )
-                    : undefined
-                }
-              />
-            ) : (
-              <div className="space-y-3">
-                <h1 className="text-2xl font-bold">Aktivitas belum tersedia</h1>
-                <p className="text-muted-foreground">
-                  Kembali ke Journey untuk melihat status node ini.
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
+    <NodePlayerLayout
+      moduleId={moduleId}
+      title={data.node.title}
+      activities={data.activities}
+      slide={slide}
+      showResult={showResult}
+      contentRef={contentRef}
+      footer={
         <NodePlayerFooter
           errorMessage={errorMessage}
           showResult={showResult}
@@ -330,7 +294,39 @@ function NodePlayer({ moduleId, nodeId }: NodePlayerProps): JSX.Element {
             </>
           )}
         </NodePlayerFooter>
-      </main>
-    </div>
+      }
+    >
+      {showResult ? (
+        <div aria-live="polite">
+          {attemptResult ? (
+            <AttemptSummary result={attemptResult} />
+          ) : (
+            <p role="status">Memuat hasil…</p>
+          )}
+        </div>
+      ) : activity ? (
+        <NodeActivity
+          key={activity.id}
+          activity={activity}
+          readOnly={readOnly}
+          completed={completed}
+          locked={locked}
+          answer={answer}
+          onAnswer={(value) => setAnswers((current) => ({ ...current, [activity.id]: value }))}
+          result={
+            attemptResult?.attempt.evaluationStatus === "completed"
+              ? attemptResult.attempt.activityResults.find(
+                  (item) => item.activityId === activity.id,
+                )
+              : undefined
+          }
+        />
+      ) : (
+        <div className="space-y-3">
+          <h2 className="text-2xl font-bold">Aktivitas belum tersedia</h2>
+          <p className="text-muted-foreground">Kembali ke Journey untuk melihat status node ini.</p>
+        </div>
+      )}
+    </NodePlayerLayout>
   );
 }
