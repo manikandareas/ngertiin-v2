@@ -1,5 +1,8 @@
 import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { Info } from "lucide-react";
+import { Tooltip } from "radix-ui";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { formatUsageReset } from "./usage-presentation";
 import { useUsage } from "./use-usage";
@@ -14,7 +17,10 @@ export function UsageBanner() {
       className="overflow-hidden rounded-xl bg-primary text-primary-foreground dark:bg-[color-mix(in_srgb,var(--primary)_85%,black)]"
     >
       <div className="px-4 pb-4 pt-3.5">
-        <h2 className="text-xs font-semibold">Usage minggu ini</h2>
+        <h2 className="flex items-center text-xs font-semibold gap-0.5">
+          Usage minggu ini
+          <UsageInfoTooltip />
+        </h2>
         {usage ? (
           <>
             <dl className="mt-4 grid grid-cols-2 gap-4">
@@ -88,5 +94,51 @@ export function UsageBanner() {
         ) : null}
       </div>
     </section>
+  );
+}
+
+function UsageInfoTooltip() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Tooltip.Provider delayDuration={200}>
+      <Tooltip.Root open={open} onOpenChange={setOpen}>
+        <Tooltip.Trigger asChild>
+          <button
+            type="button"
+            aria-label="Tentang usage minggu ini"
+            onClick={() => setOpen(!open)}
+            className="-my-1 inline-grid size-6 shrink-0 place-items-center rounded-full hover:bg-primary-foreground/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-foreground"
+          >
+            <Info className="size-3" aria-hidden="true" />
+          </button>
+        </Tooltip.Trigger>
+        <Tooltip.Portal>
+          <Tooltip.Content
+            side="top"
+            sideOffset={8}
+            collisionPadding={16}
+            className="z-50 max-w-[min(16rem,calc(100vw-2rem))] rounded-xl border border-border bg-popover px-3 py-2 text-xs leading-relaxed text-popover-foreground shadow-md"
+          >
+            <div className="space-y-2">
+              <p>
+                <strong className="font-semibold text-primary">Modul tersisa</strong>: jumlah
+                modul baru yang masih bisa kamu buat minggu ini.
+              </p>
+              <p>
+                <strong className="font-semibold text-primary">Bahan tersisa</strong>: jumlah
+                bahan belajar yang masih bisa kamu tambahkan minggu ini.
+              </p>
+              <p>
+                Kuota diisi ulang <strong className="font-semibold">setiap minggu</strong>.
+                Modul yang sudah ada <strong className="font-semibold">tetap bisa dipelajari</strong>,
+                meski kuota habis.
+              </p>
+            </div>
+            <Tooltip.Arrow className="fill-popover" />
+          </Tooltip.Content>
+        </Tooltip.Portal>
+      </Tooltip.Root>
+    </Tooltip.Provider>
   );
 }
