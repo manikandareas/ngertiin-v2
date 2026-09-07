@@ -68,7 +68,6 @@ export class AdaptiveService {
           .select({
             id: adaptive_interventions.id,
             status: adaptive_interventions.status,
-            required: adaptive_interventions.required,
             moduleId: adaptive_interventions.module_id,
             moduleStatus: modules.status,
           })
@@ -92,7 +91,19 @@ export class AdaptiveService {
             "Only a ready Module accepts adaptive decisions.",
           );
         }
-        if (intervention.required || intervention.status !== "offered") {
+        if (intervention.status !== "offered") {
+          const sameDecision =
+            input.decision === "accept"
+              ? ["generating", "available", "in_progress", "completed", "failed"].includes(
+                  intervention.status,
+                )
+              : intervention.status === "skipped";
+          if (sameDecision) {
+            return {
+              status: 200,
+              body: { data: await this.read(userId, intervention.id, transaction) },
+            };
+          }
           throw new ProductError(
             409,
             "ADAPTIVE_DECISION_ALREADY_MADE",
@@ -161,7 +172,6 @@ export class AdaptiveService {
         id: adaptive_interventions.id,
         moduleId: adaptive_interventions.module_id,
         status: adaptive_interventions.status,
-        required: adaptive_interventions.required,
         reasonSummary: adaptive_interventions.reason_summary,
         triggerNodeId: adaptive_interventions.trigger_node_id,
         triggerAttemptId: adaptive_interventions.trigger_attempt_id,
@@ -219,8 +229,16 @@ export class AdaptiveService {
         .select({
           status: user_module_progress.status,
           currentNodeId: user_module_progress.current_node_id,
+          currentNodeStatus: node_progress.status,
         })
         .from(user_module_progress)
+        .leftJoin(
+          node_progress,
+          and(
+            eq(node_progress.node_id, user_module_progress.current_node_id),
+            eq(node_progress.user_id, userId),
+          ),
+        )
         .where(
           and(
             eq(user_module_progress.user_id, userId),
@@ -266,7 +284,8 @@ export class AdaptiveService {
       moduleId: row.moduleId,
       moduleStatus: row.moduleStatus,
       moduleProgressStatus: moduleProgress?.status ?? null,
-      currentCoreNodeId: moduleProgress?.currentNodeId ?? row.resumeNodeId,
+      currentCoreNodeId: moduleProgress?.currentNodeId ?? null,
+      currentCoreNodeStatus: moduleProgress?.currentNodeStatus ?? undefined,
       intervention: {
         id: row.id,
         triggerAttemptId: row.triggerAttemptId,
@@ -279,7 +298,7 @@ export class AdaptiveService {
       id: row.id,
       moduleId: row.moduleId,
       status: row.status,
-      required: row.required,
+      required: false,
       reasonSummary: row.reasonSummary,
       triggerNodeId: row.triggerNodeId,
       resumeNodeId: row.resumeNodeId,
@@ -290,6 +309,13 @@ export class AdaptiveService {
       nodes,
       generation,
       nextAction,
+      coreNextAction: selectLearningAction({
+        moduleId: row.moduleId,
+        moduleStatus: row.moduleStatus,
+        moduleProgressStatus: moduleProgress?.status ?? null,
+        currentCoreNodeId: moduleProgress?.currentNodeId ?? null,
+        currentCoreNodeStatus: moduleProgress?.currentNodeStatus ?? undefined,
+      }),
       createdAt: row.createdAt.toISOString(),
       completedAt: row.completedAt?.toISOString() ?? null,
     };

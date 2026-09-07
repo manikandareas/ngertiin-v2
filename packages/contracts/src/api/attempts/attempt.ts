@@ -128,6 +128,7 @@ export const attemptResultSchema = z.object({
   moduleProgress: moduleProgressSchema,
   xpAwarded: z.number().int().nonnegative(),
   nextAction: nextLearningActionSchema,
+  adaptiveInterventionId: uuidSchema.nullable(),
 });
 
 export const submitAttemptResponseSchema = successEnvelopeSchema(attemptResultSchema);

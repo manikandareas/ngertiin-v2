@@ -27,9 +27,9 @@ export function AdaptiveInfoTooltip() {
             collisionPadding={16}
             className="z-50 max-w-[min(18rem,calc(100vw-2rem))] rounded-xl border border-border bg-popover px-4 py-3 text-sm leading-6 text-popover-foreground shadow-md"
           >
-            Penguatan adaptif adalah materi tambahan yang disesuaikan dengan hasil assessment untuk
-            melatih konsep yang belum mantap. Node ini tidak menambah persentase progres perjalanan
-            utama.
+            Penguatan adaptif adalah materi tambahan opsional yang disesuaikan dengan hasil
+            assessment untuk melatih konsep yang belum mantap. Node ini tidak menambah persentase
+            progres perjalanan utama.
             <Tooltip.Arrow className="fill-popover" />
           </Tooltip.Content>
         </Tooltip.Portal>

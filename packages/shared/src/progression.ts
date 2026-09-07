@@ -130,7 +130,6 @@ export async function finalizeAdaptiveNodeProgress(
     .select({
       id: adaptive_interventions.id,
       triggerAttemptId: adaptive_interventions.trigger_attempt_id,
-      resumeNodeId: adaptive_interventions.resume_node_id,
       status: adaptive_interventions.status,
     })
     .from(adaptive_interventions)
@@ -196,32 +195,12 @@ export async function finalizeAdaptiveNodeProgress(
       .update(adaptive_interventions)
       .set({ status: "available" })
       .where(eq(adaptive_interventions.id, intervention.id));
+    if (next.status === "locked") next.status = "available";
   } else if (!wasCompleted && !next) {
     await transaction
       .update(adaptive_interventions)
       .set({ status: "completed", completed_at: now })
       .where(eq(adaptive_interventions.id, intervention.id));
-    if (intervention.resumeNodeId) {
-      await transaction
-        .update(node_progress)
-        .set({ status: "available", updated_at: now })
-        .where(
-          and(
-            eq(node_progress.user_id, input.userId),
-            eq(node_progress.node_id, intervention.resumeNodeId),
-            eq(node_progress.status, "locked"),
-          ),
-        );
-      await transaction
-        .update(user_module_progress)
-        .set({ current_node_id: intervention.resumeNodeId, updated_at: now })
-        .where(
-          and(
-            eq(user_module_progress.user_id, input.userId),
-            eq(user_module_progress.module_id, input.moduleId),
-          ),
-        );
-    }
     const [stats] = await transaction
       .select({
         totalXp: user_stats.total_xp,
@@ -301,18 +280,24 @@ export async function finalizeAdaptiveNodeProgress(
   const completed = coreNodes.filter((node) => node.status === "completed").length;
   const finalNode = adaptiveNodes.find((node) => node.id === input.nodeId);
   if (!finalNode) throw new Error("Adaptive Node progress is missing.");
+  const nextLearningNode = adaptiveNodes.find(
+    (node) =>
+      node.id !== input.nodeId && (node.status === "available" || node.status === "in_progress"),
+  );
   const nextAction = selectLearningAction({
     moduleId: input.moduleId,
     moduleStatus: "ready",
     moduleProgressStatus: moduleProgress.status,
-    currentCoreNodeId: intervention.resumeNodeId ?? moduleProgress.currentNodeId,
-    intervention: next
+    currentCoreNodeId: moduleProgress.currentNodeId,
+    currentCoreNodeStatus: coreNodes.find((node) => node.id === moduleProgress.currentNodeId)
+      ?.status,
+    intervention: nextLearningNode
       ? {
           id: intervention.id,
           triggerAttemptId: intervention.triggerAttemptId,
-          status: "available",
-          firstNodeId: next.id,
-          activeNodeId: null,
+          status: nextLearningNode.status === "in_progress" ? "in_progress" : "available",
+          firstNodeId: nextLearningNode.id,
+          activeNodeId: nextLearningNode.id,
         }
       : null,
   });

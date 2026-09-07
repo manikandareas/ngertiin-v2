@@ -34,8 +34,8 @@ The recommended delivery order is defined in
    mastery evidence, or XP.
 6. One assessment submission creates one immutable Attempt for the whole assessment node.
 7. Core progress is calculated only from Core Nodes.
-8. Adaptive Nodes can block the next Core Node when remediation is required, but cannot reorder or
-   mutate the core journey.
+8. Adaptive Nodes are always optional, never block Core Nodes, and cannot reorder or mutate the
+   core journey. Generation starts only after accepting an offer.
 9. Machine-readable state and error codes are stable; human-readable messages may change or be
    localized.
 
@@ -497,11 +497,10 @@ GET /api/v1/dashboard
 
 `continueLearning` is `null` when no active module exists. Selection priority is:
 
-1. required or in-progress Adaptive Intervention;
-2. most recently updated in-progress ready Module;
-3. most recently created ready, not-started Module;
-4. most recent generating Module;
-5. `null`.
+1. most recently updated in-progress ready Module;
+2. most recently created ready, not-started Module;
+3. most recent generating Module;
+4. `null`.
 
 Archived modules and failed modules are omitted from `continueLearning`. `modules` is a bounded
 preview ordered by `updatedAt DESC, id DESC`; the full collection comes from `GET /modules`.
@@ -790,7 +789,7 @@ Rules:
 - `nodes` is already ordered for this user and may include Adaptive Nodes at their insertion point;
 - only Core Nodes contribute to `percentage`, `completedCoreNodes`, and `totalCoreNodes`;
 - locked nodes expose metadata but not activity content;
-- a required active intervention keeps its Resume Node locked;
+- Adaptive Interventions never lock Core Nodes; `nextAction` follows the current Core Journey;
 - archived journeys are read-only and return `nextAction.type = none`.
 
 ### 9.2 Get Node
@@ -920,7 +919,7 @@ Validation:
 - no foreign or non-assessment activity may appear;
 - option indices and answer shapes must match the referenced activity;
 - short answers are trimmed, must remain non-empty, and are limited to 4,000 Unicode code points;
-- required remediation from a prior Attempt must be completed before attempting a locked Core Node.
+- Core Node availability depends only on the Core Journey; adaptive work never blocks it.
 
 `submissionId` makes network retries safe. The same ID with the same normalized responses returns
 the original Attempt. A different payload returns `409 SUBMISSION_CONFLICT`.
@@ -963,7 +962,7 @@ type Attempt =
       activityResults: ActivityResult[];
       conceptResults: ConceptResult[];
       feedback: AssessmentFeedback | null;
-      policyOutcome: "continue" | "optional_review" | "required_intervention";
+      policyOutcome: "continue" | "optional_review" | "required_intervention"; // last value is historical only
       createdAt: string;
       evaluatedAt: string;
     }
@@ -1041,7 +1040,12 @@ Completed response:
       "totalCoreNodes": 7
     },
     "xpAwarded": 20,
-    "nextAction": { "type": "none" }
+    "adaptiveInterventionId": "53aecbb3-530b-459e-aac6-7fcbb0c566aa",
+    "nextAction": {
+      "type": "start_core_node",
+      "moduleId": "927a801b-691a-4fdb-9fe1-9328ad6d4381",
+      "nodeId": "0a3db70d-3798-4109-b93e-b53664593f29"
+    }
   }
 }
 ```
@@ -1052,7 +1056,7 @@ Concepts, prompts sent to the provider, provider metadata, or evaluation configu
 
 In M6, deterministic-only evaluation keeps overall feedback `null`. Feedback is not an input to
 the adaptive policy; policy is derived only from updated Concept Mastery.
-Public submission remains compile-time disabled until M7 can enforce adaptive intervention.
+Public submission is enabled; adaptive recommendations follow the optional policy in section 11.
 
 ### 10.2 Evaluation Atomicity
 
@@ -1091,20 +1095,24 @@ only while the authoritative response remains `evaluating`.
 
 ### 11.1 Policy Result
 
-After mastery is updated, the server applies configured thresholds:
+After mastery is updated on a Core Node, any assessed Concept below `0.75` produces
+`optional_review`; otherwise the result is `continue`. All interventions use `required = false`.
+Adaptive assessments always produce `continue` and never create further interventions.
 
-| Mastery | Result |
-|---|---|
-| `>= 0.75` | Continue the Core Journey |
-| `>= 0.50` and `< 0.75` | Create an optional-review offer |
-| `< 0.50` | Create and queue a required Adaptive Intervention |
+A core node gets at most one intervention per user, including retakes. The module transaction lock
+serializes this check. Existing offers/content are reused; completed or skipped interventions are
+not regenerated. Pre-migration duplicates remain readable but no new duplicates are added.
 
-When multiple assessed Concepts have different outcomes, the strictest outcome wins. The
-intervention targets only Concepts below `0.75`.
+An offer starts in `offered`, with a snapshot of Concepts below `0.75`. No generation run is created
+until the user accepts. Core availability and completion are unaffected, including on the final
+Core Node. A user may continue core work while an offer, generation, or adaptive node remains open.
 
-An optional offer is represented by an Adaptive Intervention with `status = offered`. Its Resume
-Node remains available because the review is optional. A required intervention begins in
-`generating`, and its Resume Node remains locked until the intervention completes.
+`AttemptResult.nextAction` always describes current core continuation (or module completion), even
+for adaptive assessments. `adaptiveInterventionId: string | null` independently identifies the
+open recommendation for that core node, or the current adaptive node's own intervention. It is
+`null` during evaluation/failure and when no open intervention exists. It is not the latest
+unrelated intervention in the module. The UI places this optional recommendation near feedback
+and always retains the core action at the end of the result.
 
 ### 11.2 Decide Optional Review
 
@@ -1120,9 +1128,12 @@ Content-Type: application/json
 `nextAction.type = wait_for_adaptive`. `decline` transitions `offered -> skipped` and returns `200`
 with the Core Journey `nextAction`.
 
-Only an optional `offered` intervention accepts this command. A repeated identical idempotent
-decision replays the original result; a contradictory later decision returns
-`409 ADAPTIVE_DECISION_ALREADY_MADE`.
+Only an `offered` intervention can transition. A repeated identical idempotent decision replays
+the original result. An identical decision with a new key returns the current state without
+creating another generation; a contradictory later decision returns
+`409 ADAPTIVE_DECISION_ALREADY_MADE`. Accepting from the attempt result navigates to the adaptive
+page after the durable command succeeds. Continuing core does not accept or decline the offer,
+so it can still be opened later from that assessment result.
 
 ### 11.3 Read Adaptive Intervention
 
@@ -1144,7 +1155,7 @@ type AdaptiveIntervention = {
     | "completed"
     | "failed"
     | "skipped";
-  required: boolean;
+  required: false; // compatibility field
   reasonSummary: string | null;
   triggerNodeId: string;
   resumeNodeId: string | null;
@@ -1155,7 +1166,8 @@ type AdaptiveIntervention = {
   }>;
   nodes: JourneyNode[];
   generation: GenerationStatus | null;
-  nextAction: NextLearningAction;
+  nextAction: NextLearningAction; // adaptive continuation while open
+  coreNextAction: NextLearningAction; // independent current core continuation
   createdAt: string;
   completedAt: string | null;
 };
@@ -1178,16 +1190,22 @@ event includes `nextAction` pointing to the first available Adaptive Node.
 ### 11.5 Adaptive Completion
 
 Adaptive Nodes use the same start, non-assessment completion, and Attempt endpoints under their
-parent Module. When the final required Adaptive Node completes, the API atomically:
+parent Module. When the final Adaptive Node completes, the API atomically marks the intervention
+completed and awards intervention XP exactly once. It returns the current Core Journey action.
+It never writes the historical Resume Node back into module progress or changes Core progress.
 
-- marks the intervention completed;
-- awards any intervention XP exactly once;
-- unlocks and selects the Resume Node;
-- returns that Core Node in `nextAction`.
+An accepted intervention remains available to finish later, but users can continue core work at
+any time, including during generation or after generation failure. Module completion depends only
+on Core Nodes. Explicit cancellation of an accepted generation is not provided.
 
-Optional interventions may be abandoned only through an explicit future product rule. Accepting an
-optional intervention in v1 commits the learner to completing it before it is considered finished,
-but it does not reduce Core Journey progress.
+### 11.6 Existing mandatory interventions
+
+Migration `0010_optional_adaptive` changes existing `required` flags to false, unlocks the earliest
+unfinished Core Node for affected users, and repairs missing/invalid core pointers without
+replacing an available/in-progress core pointer. Existing jobs and generated content are retained.
+Stop old API/worker processes before applying the migration, then start the updated version;
+otherwise an old finalizer could recreate a mandatory gate. Historical Attempt policy values
+remain readable and do not govern availability.
 
 ## 12. State and Authorization Matrix
 
@@ -1319,8 +1337,8 @@ The v1 API contract is sufficient when these scenarios pass at the public HTTP b
 11. Pre-submission activity payloads never reveal evaluation configuration.
 12. A completed Attempt updates Concept Results, Mastery, progress, XP, and next action atomically.
 13. Medium mastery produces an optional review that can be accepted or declined exactly once.
-14. Low mastery generates required adaptive content and keeps the Resume Node locked until the
-    intervention completes.
+14. Low mastery offers optional adaptive content; only acceptance starts generation, and Core
+    Nodes remain available throughout generation, failure, and adaptive learning.
 15. Adaptive completion resumes the stable Core Journey without changing Core progress totals.
 16. Returning later produces the same authoritative next action on the Dashboard and Journey.
 17. Cross-user IDs consistently return `404` and disclose no resource data.
@@ -1344,5 +1362,5 @@ The following defaults are accepted for the v1 contract baseline:
 | PDF extraction | text-layer PDFs; OCR deferred |
 | Module list page size | default `20`, maximum `100` |
 
-Source deletion/retention and accepted optional-intervention abandonment are deliberately deferred;
-they require product rules before safe endpoints can be added.
+Source deletion/retention and explicit cancellation of accepted adaptive generation remain deferred.
+Continuing core work while leaving adaptive work unfinished is supported.

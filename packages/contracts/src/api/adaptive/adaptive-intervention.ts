@@ -38,6 +38,7 @@ export const adaptiveInterventionSchema = z.object({
   nodes: z.array(journeyNodeSchema),
   generation: generationStatusSchema.nullable(),
   nextAction: nextLearningActionSchema,
+  coreNextAction: nextLearningActionSchema,
   createdAt: timestampSchema,
   completedAt: timestampSchema.nullable(),
 });

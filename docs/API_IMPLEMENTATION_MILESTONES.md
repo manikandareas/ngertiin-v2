@@ -1,3 +1,7 @@
+> Adaptive policy update (2026-09-07): the original M7 mandatory-gating plan below is
+> superseded by API_CONTRACT.md section 11. All interventions are optional, generation is
+> acceptance-driven, and core progression remains independent. M7 items below are historical.
+
 # Ngerti.in API Implementation Milestones
 
 Status: **proposed implementation sequence**

@@ -134,20 +134,6 @@ function selectNextAction(input: {
   progressStatus: ModuleRow["progressStatus"];
   currentNodeId: string | null;
   nodes: Array<Pick<ProgressNodeRow, "id" | "status">>;
-  intervention?: {
-    id: string;
-    triggerAttemptId: string;
-    status:
-      | "offered"
-      | "generating"
-      | "available"
-      | "in_progress"
-      | "completed"
-      | "failed"
-      | "skipped";
-    firstNodeId: string | null;
-    activeNodeId: string | null;
-  } | null;
 }): NextLearningAction {
   if (input.moduleStatus === "archived") return { type: "none" };
   const activeNode =
@@ -164,7 +150,6 @@ function selectNextAction(input: {
     moduleProgressStatus: input.progressStatus,
     currentCoreNodeId: activeNode?.id ?? input.currentNodeId,
     currentCoreNodeStatus: activeNode?.status,
-    intervention: input.intervention,
   });
 }
 
@@ -461,27 +446,11 @@ export class ModulesService {
     continueLearning: { module: ModuleSummary } | null;
     modules: ModuleSummary[];
   }> {
-    const activeRequiredIntervention = sql<boolean>`exists (
-      select 1 from ${adaptive_interventions} intervention
-      where intervention.user_id = ${userId}
-        and intervention.module_id = ${modules.id}
-        and intervention.required = true
-        and intervention.status in ('offered', 'generating', 'available', 'in_progress', 'failed')
-    )`;
-    const acceptedOptionalIntervention = sql<boolean>`exists (
-      select 1 from ${adaptive_interventions} intervention
-      where intervention.user_id = ${userId}
-        and intervention.module_id = ${modules.id}
-        and intervention.required = false
-        and intervention.status in ('generating', 'available', 'in_progress', 'failed')
-    )`;
     const priority = sql<number>`case
-      when ${activeRequiredIntervention} then 1
-      when ${acceptedOptionalIntervention} then 2
-      when ${modules.status} = 'ready' and ${user_module_progress.status} = 'in_progress' then 3
-      when ${modules.status} = 'ready' and ${user_module_progress.status} = 'not_started' then 4
-      when ${modules.status} = 'generating' then 5
-      else 6
+      when ${modules.status} = 'ready' and ${user_module_progress.status} = 'in_progress' then 1
+      when ${modules.status} = 'ready' and ${user_module_progress.status} = 'not_started' then 2
+      when ${modules.status} = 'generating' then 3
+      else 4
     end`;
     const selectFields = {
       id: modules.id,
@@ -510,13 +479,13 @@ export class ModulesService {
           and(
             eq(modules.owner_id, userId),
             sql`${modules.status} <> 'archived'`,
-            sql`${priority} < 6`,
+            sql`${priority} < 4`,
           ),
         )
         .orderBy(
           priority,
-          sql`case when ${priority} = 3 then ${user_module_progress.updated_at} end desc`,
-          sql`case when ${priority} in (4, 5) then ${modules.created_at} end desc`,
+          sql`case when ${priority} = 1 then ${user_module_progress.updated_at} end desc`,
+          sql`case when ${priority} in (2, 3) then ${modules.created_at} end desc`,
           desc(modules.updated_at),
           desc(modules.id),
         )
@@ -714,14 +683,6 @@ export class ModulesService {
       node,
       ...(adaptiveByTrigger.get(node.id) ?? []),
     ]);
-    const activeIntervention = [...interventions]
-      .reverse()
-      .find((item) =>
-        ["offered", "generating", "available", "in_progress", "failed"].includes(item.status),
-      );
-    const activeNodes = activeIntervention
-      ? rows.filter((node) => node.interventionId === activeIntervention.id)
-      : [];
 
     return {
       module: {
@@ -739,21 +700,6 @@ export class ModulesService {
         progressStatus: module.progressStatus,
         currentNodeId: module.currentNodeId,
         nodes: coreRows,
-        intervention: activeIntervention
-          ? {
-              id: activeIntervention.id,
-              triggerAttemptId: activeIntervention.triggerAttemptId,
-              status: activeIntervention.status,
-              firstNodeId:
-                activeNodes.find((node) => node.status === "available")?.id ??
-                activeNodes[0]?.id ??
-                null,
-              activeNodeId:
-                activeNodes.find((node) => node.status === "in_progress")?.id ??
-                activeNodes.find((node) => node.status === "available")?.id ??
-                null,
-            }
-          : null,
       }),
     };
   }
@@ -1164,41 +1110,6 @@ export class ModulesService {
             )
         : Promise.resolve([]),
     ]);
-    const activeInterventions = await this.infrastructure.database.db
-      .select({
-        id: adaptive_interventions.id,
-        moduleId: adaptive_interventions.module_id,
-        triggerAttemptId: adaptive_interventions.trigger_attempt_id,
-        status: adaptive_interventions.status,
-        createdAt: adaptive_interventions.created_at,
-      })
-      .from(adaptive_interventions)
-      .where(
-        and(
-          eq(adaptive_interventions.user_id, userId),
-          inArray(adaptive_interventions.module_id, moduleIds),
-          sql`${adaptive_interventions.status} IN ('offered', 'generating', 'available', 'in_progress', 'failed')`,
-        ),
-      )
-      .orderBy(desc(adaptive_interventions.created_at));
-    const interventionIds = activeInterventions.map((item) => item.id);
-    const adaptiveNodes =
-      interventionIds.length > 0
-        ? await this.infrastructure.database.db
-            .select({
-              interventionId: module_nodes.adaptive_intervention_id,
-              id: module_nodes.id,
-              status: node_progress.status,
-            })
-            .from(module_nodes)
-            .innerJoin(
-              node_progress,
-              and(eq(node_progress.node_id, module_nodes.id), eq(node_progress.user_id, userId)),
-            )
-            .where(inArray(module_nodes.adaptive_intervention_id, interventionIds))
-            .orderBy(asc(module_nodes.adaptive_position))
-        : [];
-
     const nodesByModule = new Map<string, typeof nodes>();
     for (const node of nodes) {
       const grouped = nodesByModule.get(node.moduleId) ?? [];
@@ -1228,10 +1139,6 @@ export class ModulesService {
           nextAction = { type: "none" };
         }
       } else {
-        const intervention = activeInterventions.find((item) => item.moduleId === row.id);
-        const interventionNodes = intervention
-          ? adaptiveNodes.filter((node) => node.interventionId === intervention.id)
-          : [];
         nextAction = selectNextAction({
           moduleId: row.id,
           moduleStatus: row.status,
@@ -1240,21 +1147,6 @@ export class ModulesService {
           nodes: moduleNodes.flatMap((node) =>
             node.status ? [{ id: node.id, status: node.status }] : [],
           ),
-          intervention: intervention
-            ? {
-                id: intervention.id,
-                triggerAttemptId: intervention.triggerAttemptId,
-                status: intervention.status,
-                firstNodeId:
-                  interventionNodes.find((node) => node.status === "available")?.id ??
-                  interventionNodes[0]?.id ??
-                  null,
-                activeNodeId:
-                  interventionNodes.find((node) => node.status === "in_progress")?.id ??
-                  interventionNodes.find((node) => node.status === "available")?.id ??
-                  null,
-              }
-            : null,
         });
       }
 

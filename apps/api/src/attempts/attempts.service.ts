@@ -231,6 +231,7 @@ export class AttemptsService {
         moduleProgress: progress.moduleProgress,
         xpAwarded: 0,
         nextAction: { type: "none" },
+        adaptiveInterventionId: null,
       };
     }
     if (attempt.evaluationStatus === "failed") {
@@ -249,6 +250,7 @@ export class AttemptsService {
         moduleProgress: progress.moduleProgress,
         xpAwarded: 0,
         nextAction: { type: "none" },
+        adaptiveInterventionId: null,
       };
     }
 
@@ -326,7 +328,12 @@ export class AttemptsService {
       nodeProgress: progress.nodeProgress,
       moduleProgress: progress.moduleProgress,
       xpAwarded: attempt.xpAwarded,
-      nextAction: await this.nextAction(progress),
+      nextAction: this.nextAction(progress),
+      adaptiveInterventionId: await this.adaptiveInterventionId(
+        userId,
+        attempt.moduleId,
+        attempt.nodeId,
+      ),
     };
   }
 
@@ -519,40 +526,40 @@ export class AttemptsService {
     };
   }
 
-  private async nextAction(
-    progress: Awaited<ReturnType<AttemptsService["readProgress"]>>,
-  ): Promise<NextLearningAction> {
+  private async adaptiveInterventionId(
+    userId: string,
+    moduleId: string,
+    nodeId: string,
+  ): Promise<string | null> {
+    const [node] = await this.infrastructure.database.db
+      .select({ interventionId: module_nodes.adaptive_intervention_id })
+      .from(module_nodes)
+      .where(and(eq(module_nodes.id, nodeId), eq(module_nodes.module_id, moduleId)))
+      .limit(1);
     const [intervention] = await this.infrastructure.database.db
-      .select({
-        id: adaptive_interventions.id,
-        triggerAttemptId: adaptive_interventions.trigger_attempt_id,
-        status: adaptive_interventions.status,
-      })
+      .select({ id: adaptive_interventions.id })
       .from(adaptive_interventions)
       .where(
         and(
-          eq(adaptive_interventions.user_id, progress.userId),
-          eq(adaptive_interventions.module_id, progress.moduleId),
+          eq(adaptive_interventions.user_id, userId),
+          eq(adaptive_interventions.module_id, moduleId),
+          node?.interventionId
+            ? eq(adaptive_interventions.id, node.interventionId)
+            : eq(adaptive_interventions.trigger_node_id, nodeId),
           sql`${adaptive_interventions.status} IN ('offered', 'generating', 'available', 'in_progress', 'failed')`,
         ),
       )
-      .orderBy(sql`${adaptive_interventions.created_at} DESC`)
+      .orderBy(
+        sql`${adaptive_interventions.created_at} DESC`,
+        sql`${adaptive_interventions.id} DESC`,
+      )
       .limit(1);
-    let firstNodeId: string | null = null;
-    let activeNodeId: string | null = null;
-    if (intervention) {
-      const adaptiveNodes = await this.infrastructure.database.db
-        .select({ id: module_nodes.id, status: node_progress.status })
-        .from(module_nodes)
-        .innerJoin(node_progress, eq(node_progress.node_id, module_nodes.id))
-        .where(eq(module_nodes.adaptive_intervention_id, intervention.id))
-        .orderBy(asc(module_nodes.adaptive_position));
-      firstNodeId =
-        adaptiveNodes.find((node) => node.status === "available")?.id ??
-        adaptiveNodes[0]?.id ??
-        null;
-      activeNodeId = adaptiveNodes.find((node) => node.status === "in_progress")?.id ?? firstNodeId;
-    }
+    return intervention?.id ?? null;
+  }
+
+  private nextAction(
+    progress: Awaited<ReturnType<AttemptsService["readProgress"]>>,
+  ): NextLearningAction {
     const current = progress.nodes.find((node) => node.id === progress.currentNodeId);
     return selectLearningAction({
       moduleId: progress.moduleId,
@@ -560,7 +567,6 @@ export class AttemptsService {
       moduleProgressStatus: progress.moduleProgress.status,
       currentCoreNodeId: progress.currentNodeId,
       currentCoreNodeStatus: current?.status,
-      intervention: intervention ? { ...intervention, firstNodeId, activeNodeId } : null,
     });
   }
 }

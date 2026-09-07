@@ -27,7 +27,7 @@ const nextActionLabels = {
   resume_adaptive_node: null,
   offer_optional_review: null,
   wait_for_adaptive: null,
-  module_completed: "Lihat perjalanan belajar",
+  module_completed: "Lihat ringkasan modul",
   none: null,
 } satisfies Record<AttemptResult["nextAction"]["type"], string | null>;
 
@@ -167,6 +167,13 @@ export function AttemptSummary({ result }: AttemptSummaryProps): JSX.Element {
         </section>
       ) : null}
 
+      {result.adaptiveInterventionId ? (
+        <AttemptAdaptiveAction
+          key={result.adaptiveInterventionId}
+          interventionId={result.adaptiveInterventionId}
+        />
+      ) : null}
+
       <AttemptAnswerReview activities={attempt.activityResults} />
 
       {attempt.conceptResults.length ? (
@@ -186,14 +193,7 @@ export function AttemptSummary({ result }: AttemptSummaryProps): JSX.Element {
         </section>
       ) : null}
 
-      {[
-        "offer_optional_review",
-        "wait_for_adaptive",
-        "start_adaptive_node",
-        "resume_adaptive_node",
-      ].includes(result.nextAction.type) ? (
-        <AttemptAdaptiveAction action={result.nextAction} />
-      ) : destination && nextAction ? (
+      {destination && nextAction ? (
         <footer className="border-t border-border pt-6">
           <Button
             asChild

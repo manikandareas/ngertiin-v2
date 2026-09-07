@@ -1,6 +1,5 @@
 import { randomUUID } from "node:crypto";
 import type { AssessmentFeedback } from "@ngertiin/contracts/api";
-import { ADAPTIVE_GENERATION_STEPS } from "@ngertiin/contracts/jobs";
 import {
   adaptive_intervention_concepts,
   adaptive_interventions,
@@ -9,14 +8,10 @@ import {
   attempt_concept_results,
   attempt_responses,
   attempts,
-  generation_run_steps,
-  generation_runs,
   module_concepts,
   module_nodes,
   modules,
-  node_progress,
   user_concept_mastery,
-  user_module_progress,
 } from "@ngertiin/database";
 import { and, asc, eq, gt } from "drizzle-orm";
 import {
@@ -235,7 +230,21 @@ export async function finalizeAttemptEvaluation(
             xp: { amount: 20, reason: "quiz_completed" },
           });
 
-    if (attempt.nodeOrigin === "core" && policyOutcome !== "continue") {
+    // The module lock above serializes retakes: a core node gets at most one offer.
+    const [existingIntervention] =
+      attempt.nodeOrigin === "core" && policyOutcome !== "continue"
+        ? await transaction
+            .select({ id: adaptive_interventions.id })
+            .from(adaptive_interventions)
+            .where(
+              and(
+                eq(adaptive_interventions.user_id, attempt.userId),
+                eq(adaptive_interventions.trigger_node_id, attempt.nodeId),
+              ),
+            )
+            .limit(1)
+        : [];
+    if (attempt.nodeOrigin === "core" && policyOutcome !== "continue" && !existingIntervention) {
       if (attempt.corePosition === null) throw new InvalidEvaluationConfigurationError();
       const [resumeNode] = await transaction
         .select({ id: module_nodes.id })
@@ -250,7 +259,6 @@ export async function finalizeAttemptEvaluation(
         .orderBy(asc(module_nodes.core_position))
         .limit(1);
       const interventionId = randomUUID();
-      const required = policyOutcome === "required_intervention";
       await transaction.insert(adaptive_interventions).values({
         id: interventionId,
         user_id: attempt.userId,
@@ -258,12 +266,11 @@ export async function finalizeAttemptEvaluation(
         trigger_node_id: attempt.nodeId,
         trigger_attempt_id: attempt.id,
         resume_node_id: resumeNode?.id ?? null,
-        reason_code: required ? "mastery_below_required" : "mastery_below_review",
-        reason_summary: required
-          ? "Mari perkuat beberapa konsep sebelum melanjutkan perjalanan utama."
-          : "Tinjauan singkat tersedia untuk membantu memperkuat konsep yang masih belum mantap.",
-        required,
-        status: required ? "generating" : "offered",
+        reason_code: "mastery_below_review",
+        reason_summary:
+          "Penguatan singkat tersedia untuk membantu memantapkan konsep yang masih perlu dilatih.",
+        required: false,
+        status: "offered",
       });
       const targets = masteryResults.filter((result) => result.masteryScore < 0.75);
       await transaction.insert(adaptive_intervention_concepts).values(
@@ -273,47 +280,8 @@ export async function finalizeAttemptEvaluation(
           mastery_score: String(target.masteryScore),
         })),
       );
-      if (required) {
-        const generationRunId = randomUUID();
-        await transaction.insert(generation_runs).values({
-          id: generationRunId,
-          user_id: attempt.userId,
-          module_id: attempt.moduleId,
-          adaptive_intervention_id: interventionId,
-          type: "adaptive",
-          status: "queued",
-          progress_percentage: 0,
-        });
-        await transaction.insert(generation_run_steps).values(
-          ADAPTIVE_GENERATION_STEPS.map((step, index) => ({
-            generation_run_id: generationRunId,
-            step: step.name,
-            position: index + 1,
-            status: "pending" as const,
-          })),
-        );
-        if (resumeNode) {
-          await transaction
-            .update(node_progress)
-            .set({ status: "locked", updated_at: new Date() })
-            .where(
-              and(
-                eq(node_progress.user_id, attempt.userId),
-                eq(node_progress.node_id, resumeNode.id),
-              ),
-            );
-          await transaction
-            .update(user_module_progress)
-            .set({ current_node_id: null, updated_at: new Date() })
-            .where(
-              and(
-                eq(user_module_progress.user_id, attempt.userId),
-                eq(user_module_progress.module_id, attempt.moduleId),
-              ),
-            );
-        }
-      }
     }
+
     await transaction
       .update(attempts)
       .set({

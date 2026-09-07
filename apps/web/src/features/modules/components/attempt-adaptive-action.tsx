@@ -1,122 +1,84 @@
-import type { AdaptiveIntervention, NextLearningAction } from "@ngertiin/contracts/api";
-import { Link, useNavigate } from "react-router-dom";
+import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import type { JSX } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "../../../components/ui/button";
-import { ApiProblemError } from "../../../lib/api";
-import {
-  useAdaptiveDecision,
-  useAdaptiveGenerationStream,
-  useAdaptiveIntervention,
-  useNode,
-} from "../api/use-modules";
+import { useAdaptiveGenerationStream, useAdaptiveIntervention } from "../api/use-modules";
 import { nextLearningRoute } from "../next-learning-route";
-import { AdaptiveGuidance } from "./adaptive-guidance";
+import { useAcceptAdaptiveIntervention } from "../use-accept-adaptive-intervention";
 
-const actionLabels = {
-  offered: "Lihat pilihan penguatan",
-  generating: "Lihat progres pembuatan",
-  failed: "Lihat status penguatan",
-  available: "Mulai penguatan",
-  in_progress: "Lanjutkan penguatan",
-  completed: "Lanjutkan belajar",
-  skipped: "Lanjutkan belajar",
-} satisfies Record<AdaptiveIntervention["status"], string>;
+interface AttemptAdaptiveActionProps {
+  interventionId: string;
+}
 
-export function AttemptAdaptiveAction({ action }: { action: NextLearningAction }) {
-  const navigate = useNavigate();
-  const nodeAction =
-    action.type === "start_adaptive_node" || action.type === "resume_adaptive_node"
-      ? action
-      : undefined;
-  const node = useNode(nodeAction?.moduleId, nodeAction?.nodeId);
-  const interventionId =
-    "interventionId" in action ? action.interventionId : node.data?.node.interventionId;
+export function AttemptAdaptiveAction({
+  interventionId,
+}: AttemptAdaptiveActionProps): JSX.Element | null {
   const intervention = useAdaptiveIntervention(interventionId);
   const data = intervention.data;
   useAdaptiveGenerationStream(interventionId, data?.status === "generating");
-  const decision = useAdaptiveDecision(interventionId ?? "", data?.moduleId);
-  const destination = nextLearningRoute(data?.nextAction ?? action);
-  const offered = data?.status === "offered";
-  const finished = data?.status === "completed" || data?.status === "skipped";
-  let detailMessage = "Memuat detail penguatan…";
-  if (node.isError || intervention.isError) {
-    detailMessage = "Detail penguatan belum dapat dimuat. Buka penguatan untuk melihat statusnya.";
-  } else if (finished) {
-    detailMessage =
-      "Penguatan ini sudah selesai atau dilewati. Kamu bisa melanjutkan perjalanan belajar.";
-  }
-  const error =
-    decision.error instanceof ApiProblemError
-      ? decision.error.problem.detail
-      : decision.error
-        ? "Pilihanmu belum tersimpan. Coba lagi."
-        : null;
+  const acceptance = useAcceptAdaptiveIntervention(interventionId, data?.moduleId);
+  const page = `/adaptive-interventions/${interventionId}`;
 
-  async function decide(value: "accept" | "decline") {
-    try {
-      const updated = await decision.mutateAsync({ decision: value, key: crypto.randomUUID() });
-      const route = nextLearningRoute(updated.nextAction);
-      if (route) navigate(route);
-    } catch {
-      // The mutation error is shown below; keep the choice available for retry.
-    }
-  }
-
+  if (data?.status === "completed" || data?.status === "skipped") return null;
+  const title = data?.targetConcepts.length
+    ? `Mantapkan ${data.targetConcepts.map((concept) => concept.name).join(", ")}`
+    : "Mantapkan konsep yang masih perlu dilatih";
+  const destination =
+    data && (data.status === "available" || data.status === "in_progress")
+      ? (nextLearningRoute(data.nextAction) ?? page)
+      : page;
+  let description =
+    "Kamu bisa mengambil penguatan singkat untuk konsep ini. Perjalanan utama tetap bisa dilanjutkan.";
+  if (intervention.isError)
+    description = "Detail penguatan belum dapat dimuat. Kamu tetap bisa melanjutkan belajar.";
+  else if (!data) description = "Memuat rekomendasi penguatan…";
+  else if (data.status === "generating")
+    description =
+      "Materi penguatan sedang disiapkan. Kamu tetap bisa melanjutkan perjalanan utama.";
+  else if (data.status === "failed")
+    description =
+      "Materi belum berhasil dibuat. Progresmu tetap tersimpan dan perjalanan utama bisa dilanjutkan.";
+  let actionLabel = "Lihat status penguatan";
+  if (data?.status === "available") actionLabel = "Mulai penguatan";
+  else if (data?.status === "in_progress") actionLabel = "Lanjutkan penguatan";
   return (
-    <section
-      className="space-y-4 rounded-card bg-adaptive-subtle p-5 text-adaptive-foreground"
-      aria-label="Langkah penguatan"
+    <aside
+      className="space-y-3 rounded-xl bg-adaptive-subtle p-5 text-adaptive-foreground sm:p-6"
+      aria-label="Rekomendasi penguatan"
     >
-      <div className="space-y-2" aria-live="polite">
-        {data && !finished ? (
-          <AdaptiveGuidance intervention={data} />
-        ) : (
-          <>
-            <h3 className="font-bold">Latihan penguatan</h3>
-            <p className="text-sm leading-6">{detailMessage}</p>
-          </>
-        )}
-        {data?.status === "generating" ? (
-          <p className="text-sm leading-6">
-            Materi sedang dibuat. Halaman berikutnya menampilkan progres pembuatannya.
-          </p>
-        ) : null}
-        {data?.status === "failed" ? (
-          <p className="text-sm leading-6">
-            Materi belum berhasil dibuat. Buka status penguatan untuk melihat kondisinya.
-          </p>
-        ) : null}
-      </div>
-      {offered ? (
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <Button
-            className="normal-case tracking-normal"
-            disabled={decision.isPending}
-            onClick={() => void decide("accept")}
-          >
-            {decision.isPending ? "Menyimpan pilihan…" : "Ambil penguatan"}
-          </Button>
-          <Button
-            variant="outline"
-            className="normal-case tracking-normal"
-            disabled={decision.isPending}
-            onClick={() => void decide("decline")}
-          >
-            Lewati dan lanjut
-          </Button>
-        </div>
-      ) : destination ? (
+      <span className="inline-flex rounded-full bg-background px-2.5 py-1 text-xs font-semibold text-adaptive-foreground">
+        Opsional
+      </span>
+      <h3 className="break-words font-display text-base font-bold">{title}</h3>
+      <p className="text-sm leading-6">{description}</p>
+      {data?.status === "offered" ? (
+        <Button
+          variant="link"
+          className="h-auto min-h-10 max-w-full whitespace-normal px-0 text-left text-adaptive-foreground"
+          disabled={acceptance.isPending}
+          onClick={() => void acceptance.accept()}
+        >
+          {acceptance.isPending ? "Menyiapkan penguatan…" : "Ambil penguatan"}
+          <HugeiconsIcon icon={ArrowRight01Icon} size={16} aria-hidden="true" />
+        </Button>
+      ) : data || intervention.isError ? (
         <Button
           asChild
-          className="h-auto min-h-12 w-full whitespace-normal py-3 normal-case tracking-normal"
+          variant="link"
+          className="h-auto min-h-10 max-w-full whitespace-normal px-0 text-adaptive-foreground"
         >
-          <Link to={destination}>{data ? actionLabels[data.status] : "Lihat penguatan"}</Link>
+          <Link to={destination}>
+            {actionLabel}
+            <HugeiconsIcon icon={ArrowRight01Icon} size={16} aria-hidden="true" />
+          </Link>
         </Button>
       ) : null}
-      {error ? (
+      {acceptance.error ? (
         <p role="alert" className="text-sm text-destructive">
-          {error}
+          {acceptance.error}
         </p>
       ) : null}
-    </section>
+    </aside>
   );
 }

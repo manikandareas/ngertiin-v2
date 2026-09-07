@@ -169,7 +169,6 @@ export function updateMastery(
 }
 
 export function selectPolicyOutcome(masteryScores: number[]): AttemptPolicyOutcome {
-  if (masteryScores.some((score) => score < 0.5)) return "required_intervention";
   if (masteryScores.some((score) => score < 0.75)) return "optional_review";
   return "continue";
 }
