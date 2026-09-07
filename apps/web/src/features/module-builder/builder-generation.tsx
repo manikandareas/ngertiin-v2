@@ -1,51 +1,20 @@
-import { useAuth } from "@clerk/react";
-import { useQueryClient } from "@tanstack/react-query";
-import { useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { useState } from "react";
 import { Button } from "../../components/ui/button";
-import { ApiProblemError } from "../../lib/api";
-import {
-  generationQueryKey,
-  moduleQueryKey,
-  useGeneration,
-  useGenerationStream,
-  useModule,
-  useRetryGeneration,
-} from "../modules/api/use-modules";
+import { useGeneration, useGenerationStream, useModule } from "../modules/api/use-modules";
 import { BuilderLayout } from "./builder-layout";
 import { BuilderResult } from "./builder-result";
+import { GenerationFailure } from "./generation-failure";
 import { GenerationTrack } from "./generation-track";
 
 export function BuilderGeneration({ moduleId }: { moduleId: string }) {
-  const { userId } = useAuth();
-  const client = useQueryClient();
   const moduleQuery = useModule(moduleId);
   const module = moduleQuery.data;
   const enabled = module?.status === "generating" || module?.status === "failed";
   const [restart, setRestart] = useState(0);
   const polling = useGenerationStream(moduleId, restart, enabled);
   const generationQuery = useGeneration(moduleId, polling, enabled);
-  const retry = useRetryGeneration(moduleId);
-  const retryKey = useRef<string | null>(null);
-  const retryLock = useRef(false);
   const generation = generationQuery.data;
   const ready = module?.status === "ready" || module?.status === "archived";
-  async function retryGeneration() {
-    if (retryLock.current) return;
-    retryLock.current = true;
-    retryKey.current ??= crypto.randomUUID();
-    try {
-      const result = await retry.mutateAsync(retryKey.current);
-      client.setQueryData(moduleQueryKey(userId, moduleId), result.module);
-      client.setQueryData(generationQueryKey(userId, moduleId), result.generation);
-      retryKey.current = null;
-      setRestart((value) => value + 1);
-    } catch {
-      // Keep the command key for a safe retry after an ambiguous network failure.
-    } finally {
-      retryLock.current = false;
-    }
-  }
   return (
     <BuilderLayout step={ready ? 4 : 3}>
       {moduleQuery.isError ? (
@@ -85,30 +54,11 @@ export function BuilderGeneration({ moduleId }: { moduleId: string }) {
             </div>
           ) : null}
           {generation?.state === "failed" ? (
-            <div
-              role="alert"
-              className="mt-5 space-y-4 rounded-xl border border-destructive/30 p-4"
-            >
-              <p className="text-sm text-destructive">
-                {generation.failure?.message ?? "Pembuatan modul belum berhasil."}
-              </p>
-              {generation.failure?.retryable ? (
-                <Button disabled={retry.isPending} onClick={() => void retryGeneration()}>
-                  {retry.isPending ? "Menyiapkan ulang…" : "Coba buat lagi"}
-                </Button>
-              ) : (
-                <Button asChild variant="outline">
-                  <Link to="/modules/new">Buat modul baru</Link>
-                </Button>
-              )}
-              {retry.isError ? (
-                <p className="text-sm text-destructive">
-                  {retry.error instanceof ApiProblemError
-                    ? retry.error.problem.detail
-                    : "Belum dapat dicoba ulang. Periksa koneksi, lalu coba lagi."}
-                </p>
-              ) : null}
-            </div>
+            <GenerationFailure
+              moduleId={moduleId}
+              generation={generation}
+              onRestart={() => setRestart((value) => value + 1)}
+            />
           ) : (
             <p className="mt-5 text-center text-xs leading-relaxed text-muted-foreground">
               Kamu boleh kembali ke Beranda. Proses tetap berjalan dan dapat dibuka lagi dari daftar

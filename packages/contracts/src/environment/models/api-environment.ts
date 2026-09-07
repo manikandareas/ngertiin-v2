@@ -2,6 +2,8 @@ import { z } from "zod";
 import { infrastructureEnvSchema } from "./infrastructure-environment.js";
 
 export const apiEnvSchema = infrastructureEnvSchema.extend({
+  USAGE_MODULES_WEEKLY_LIMIT: z.coerce.number().int().positive().default(10),
+  USAGE_SOURCES_WEEKLY_LIMIT: z.coerce.number().int().positive().default(40),
   API_PORT: z.coerce.number().int().min(1).max(65_535).default(3000),
   WEB_ORIGIN: z.string().url(),
   CLERK_SECRET_KEY: z.string().min(1),

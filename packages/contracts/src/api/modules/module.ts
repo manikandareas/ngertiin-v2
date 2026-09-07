@@ -72,6 +72,7 @@ export const generationFailureSchema = z.object({
 });
 
 export const generationStatusSchema = z.object({
+  retriesRemaining: z.number().int().min(0).max(2).default(0),
   state: generationStateSchema,
   progressPercentage: z.number().int().min(0).max(100),
   currentPhase: generationPhaseSchema.nullable(),

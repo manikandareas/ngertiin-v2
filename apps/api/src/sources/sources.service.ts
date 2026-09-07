@@ -25,6 +25,8 @@ import { API_ENV } from "../config.js";
 import { ProductError } from "../http/product-error.js";
 import { IdempotencyService } from "../idempotency/idempotency.service.js";
 import { InfrastructureService } from "../infrastructure/infrastructure.service.js";
+import { UsageService } from "../usage/usage.service.js";
+import { retriesRemaining, sourceRunCount } from "../usage/usage-policy.js";
 
 const sourceCursorSchema = z
   .object({
@@ -49,6 +51,7 @@ type SourceRow = {
   originalUrl: string | null;
   metadata: unknown;
   failure: unknown;
+  runCount?: number;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -76,6 +79,7 @@ function sourceFromRow(row: SourceRow): Source {
   const sizeBytes = metadata.success ? metadata.data.size_bytes : undefined;
   const pageCount = metadata.success ? metadata.data.page_count : undefined;
   return {
+    retriesRemaining: row.type === "text" ? 0 : retriesRemaining(row.runCount ?? 1),
     id: row.id,
     type: row.type,
     title: row.title,
@@ -93,6 +97,7 @@ function sourceFromRow(row: SourceRow): Source {
 @Injectable()
 export class SourcesService {
   constructor(
+    @Inject(UsageService) private readonly usage: UsageService,
     @Inject(InfrastructureService) private readonly infrastructure: InfrastructureService,
     @Inject(IdempotencyService) private readonly idempotency: IdempotencyService,
     @Inject(API_ENV) private readonly environment: ApiEnvironment,
@@ -114,7 +119,8 @@ export class SourcesService {
           .digest("hex"),
       },
       async (transaction) => {
-        const now = new Date();
+        await this.usage.lock(transaction, userId);
+        const now = await this.usage.assertQuota(transaction, userId, "sources");
         const [row] = await transaction
           .insert(sources)
           .values({
@@ -184,7 +190,8 @@ export class SourcesService {
     return this.idempotency.execute(
       { userId, method: "POST", route: "/api/v1/sources/url", key, payloadHash },
       async (transaction) => {
-        const now = new Date();
+        await this.usage.lock(transaction, userId);
+        const now = await this.usage.assertQuota(transaction, userId, "sources");
         const sourceId = randomUUID();
         await transaction.insert(sources).values({
           id: sourceId,
@@ -202,6 +209,7 @@ export class SourcesService {
           status: 202,
           body: {
             data: {
+              retriesRemaining: 2,
               id: sourceId,
               type: "url",
               title: input.title,
@@ -273,6 +281,8 @@ export class SourcesService {
     return this.idempotency.execute(
       { userId, method: "POST", route: "/api/v1/sources/pdf", key, payloadHash },
       async (transaction) => {
+        await this.usage.lock(transaction, userId);
+        const now = await this.usage.assertQuota(transaction, userId, "sources");
         const sourceId = randomUUID();
         const storageKey = `sources/${userId}/${sourceId}.pdf`;
         try {
@@ -290,7 +300,6 @@ export class SourcesService {
           );
         }
 
-        const now = new Date();
         await transaction.insert(sources).values({
           id: sourceId,
           user_id: userId,
@@ -310,6 +319,7 @@ export class SourcesService {
           status: 202,
           body: {
             data: {
+              retriesRemaining: 2,
               id: sourceId,
               type: "pdf",
               title: fields.title,
@@ -371,6 +381,7 @@ export class SourcesService {
         originalUrl: sources.original_url,
         metadata: sources.metadata,
         failure: sources.failure,
+        runCount: sourceRunCount,
         createdAt: sources.created_at,
         updatedAt: sources.updated_at,
       })
@@ -407,6 +418,7 @@ export class SourcesService {
         originalUrl: sources.original_url,
         metadata: sources.metadata,
         failure: sources.failure,
+        runCount: sourceRunCount,
         createdAt: sources.created_at,
         updatedAt: sources.updated_at,
       })
@@ -436,6 +448,7 @@ export class SourcesService {
     return this.idempotency.execute(
       { userId, method: "POST", route, key, payloadHash },
       async (transaction) => {
+        await this.usage.lock(transaction, userId);
         const [row] = await transaction
           .select({
             id: sources.id,
@@ -446,6 +459,7 @@ export class SourcesService {
             originalUrl: sources.original_url,
             metadata: sources.metadata,
             failure: sources.failure,
+            runCount: sourceRunCount,
             createdAt: sources.created_at,
             updatedAt: sources.updated_at,
           })
@@ -471,6 +485,7 @@ export class SourcesService {
           );
         }
 
+        const remaining = await this.usage.assertRetry(transaction, "sources", sourceId);
         const now = new Date();
         await this.queueProcessingRun(transaction, sourceId, now);
         await transaction
@@ -480,7 +495,10 @@ export class SourcesService {
         return {
           status: 202,
           body: {
-            data: sourceFromRow({ ...row, status: "pending", failure: null, updatedAt: now }),
+            data: {
+              ...sourceFromRow({ ...row, status: "pending", failure: null, updatedAt: now }),
+              retriesRemaining: remaining,
+            },
           },
         };
       },

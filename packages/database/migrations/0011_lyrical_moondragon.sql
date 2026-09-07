@@ -1,0 +1,2 @@
+CREATE INDEX "generation_runs_user_active_idx" ON "generation_runs" USING btree ("user_id") WHERE "generation_runs"."type" = 'module' and "generation_runs"."status" in ('queued', 'processing');--> statement-breakpoint
+CREATE INDEX "modules_owner_created_idx" ON "modules" USING btree ("owner_id","created_at");

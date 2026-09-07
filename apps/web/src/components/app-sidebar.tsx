@@ -12,6 +12,8 @@ import { Menu, X } from "lucide-react";
 import { Dialog } from "radix-ui";
 import { type ReactNode, useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { UsageBanner } from "../features/usage/usage-banner";
+import { useUsageSync } from "../features/usage/use-usage-sync";
 import { ThemeToggle } from "./theme-toggle";
 
 const navigation = [
@@ -22,11 +24,13 @@ const navigation = [
 const focus = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
 
 export function ConnectedAppSidebar() {
+  useUsageSync();
   const { user } = useUser();
   return (
     <AppSidebar
       name={user?.fullName || user?.firstName || "Akun belajar"}
       account={<UserButton />}
+      usageBanner={<UsageBanner />}
     />
   );
 }
@@ -34,13 +38,18 @@ export function ConnectedAppSidebar() {
 export function AppSidebar({
   name = "Akun belajar",
   account,
+  usageBanner,
 }: {
   name?: string;
   account?: ReactNode;
+  usageBanner?: ReactNode;
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+  useEffect(() => {
+    if (location.key) setMenuOpen(false);
+  }, [location.key]);
   useEffect(() => {
     const desktop = matchMedia("(min-width: 1280px)");
     const closeOnDesktop = () => {
@@ -114,37 +123,40 @@ export function AppSidebar({
             );
           })}
         </nav>
-        <div
-          className={`mt-auto flex items-center border-t py-2 ${collapsed ? "mx-2 flex-col gap-1" : "mx-4 justify-between gap-2"}`}
-        >
+        <div className="mt-auto">
+          {!collapsed && usageBanner ? <div className="px-3 pb-4 pt-8">{usageBanner}</div> : null}
           <div
-            className={`flex min-w-0 items-center gap-2 ${collapsed ? "justify-center" : "flex-1"}`}
+            className={`flex items-center border-t py-2 ${collapsed ? "mx-2 flex-col gap-1" : "mx-4 justify-between gap-2"}`}
           >
-            <div className="shrink-0">
-              {account ?? (
-                <Link
-                  to="/profile"
-                  aria-label="Profil"
-                  className={`grid size-8 place-items-center rounded-full bg-secondary text-secondary-foreground ${focus}`}
-                >
-                  <HugeiconsIcon
-                    icon={UserCircleIcon}
-                    size={24}
-                    strokeWidth={1.5}
-                    aria-hidden="true"
-                  />
-                </Link>
-              )}
-            </div>
-            <Link
-              to="/profile"
-              title={name}
-              className={`min-w-0 truncate rounded-sm text-sm ${focus} ${labelClass}`}
+            <div
+              className={`flex min-w-0 items-center gap-2 ${collapsed ? "justify-center" : "flex-1"}`}
             >
-              {name}
-            </Link>
+              <div className="shrink-0">
+                {account ?? (
+                  <Link
+                    to="/profile"
+                    aria-label="Profil"
+                    className={`grid size-8 place-items-center rounded-full bg-secondary text-secondary-foreground ${focus}`}
+                  >
+                    <HugeiconsIcon
+                      icon={UserCircleIcon}
+                      size={24}
+                      strokeWidth={1.5}
+                      aria-hidden="true"
+                    />
+                  </Link>
+                )}
+              </div>
+              <Link
+                to="/profile"
+                title={name}
+                className={`min-w-0 truncate rounded-sm text-sm ${focus} ${labelClass}`}
+              >
+                {name}
+              </Link>
+            </div>
+            <ThemeToggle />
           </div>
-          <ThemeToggle />
         </div>
       </aside>
       <header className="flex shrink-0 items-center justify-between border-b bg-background px-5 py-3 xl:hidden">
@@ -202,16 +214,19 @@ export function AppSidebar({
                   );
                 })}
               </nav>
-              <div className="mt-auto flex items-center gap-2 border-t pt-3">
-                {account}
-                <Link
-                  to="/profile"
-                  onClick={() => setMenuOpen(false)}
-                  className={`min-w-0 flex-1 truncate rounded-sm text-sm ${focus}`}
-                >
-                  {name}
-                </Link>
-                <ThemeToggle />
+              <div className="mt-auto">
+                {usageBanner ? <div className="pb-4 pt-8">{usageBanner}</div> : null}
+                <div className="flex items-center gap-2 border-t pt-3">
+                  {account}
+                  <Link
+                    to="/profile"
+                    onClick={() => setMenuOpen(false)}
+                    className={`min-w-0 flex-1 truncate rounded-sm text-sm ${focus}`}
+                  >
+                    {name}
+                  </Link>
+                  <ThemeToggle />
+                </div>
               </div>
             </Dialog.Content>
           </Dialog.Portal>

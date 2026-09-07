@@ -26,6 +26,7 @@ export const sourceFailureSchema = z.object({
 });
 
 export const sourceSchema = z.object({
+  retriesRemaining: z.number().int().min(0).max(2).default(0),
   id: uuidSchema,
   type: sourceTypeSchema,
   title: z.string().nullable(),

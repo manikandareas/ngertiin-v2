@@ -9,6 +9,16 @@ import {
 } from "@ngertiin/contracts/api";
 import { useEffect, useRef, useState } from "react";
 
+import { ApiProblemError } from "../../lib/api";
+import { formatUsageReset } from "../usage/usage-presentation";
+
+function problemMessage(error: ApiProblemError) {
+  return (
+    error.problem.detail +
+    (error.problem.resetAt ? ` Tersedia lagi ${formatUsageReset(error.problem.resetAt)}.` : "")
+  );
+}
+
 class BuilderValidationError extends Error {}
 
 export type Selection = {
@@ -165,9 +175,11 @@ export function useModuleBuilder(api: ModuleBuilderApi) {
       return true;
     } catch (error) {
       setSourceError(
-        error instanceof BuilderValidationError
-          ? error.message
-          : "Materi belum dapat ditambahkan. Periksa input dan koneksi, lalu coba lagi.",
+        error instanceof ApiProblemError
+          ? problemMessage(error)
+          : error instanceof BuilderValidationError
+            ? error.message
+            : "Materi belum dapat ditambahkan. Periksa input dan koneksi, lalu coba lagi.",
       );
     } finally {
       lock.current = false;
@@ -197,9 +209,11 @@ export function useModuleBuilder(api: ModuleBuilderApi) {
       await api.create(moduleCommand.current.input, moduleCommand.current.key);
     } catch (error) {
       setError(
-        error instanceof BuilderValidationError
-          ? error.message
-          : "Modul belum dapat dibuat. Draft tetap utuh; periksa koneksi, lalu coba lagi.",
+        error instanceof ApiProblemError
+          ? problemMessage(error)
+          : error instanceof BuilderValidationError
+            ? error.message
+            : "Modul belum dapat dibuat. Draft tetap utuh; periksa koneksi, lalu coba lagi.",
       );
     } finally {
       lock.current = false;

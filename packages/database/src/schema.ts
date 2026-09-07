@@ -296,6 +296,7 @@ export const modules = pgTable(
     updated_at: updatedAt(),
   },
   (table) => [
+    index("modules_owner_created_idx").on(table.owner_id, table.created_at),
     index("modules_owner_id_idx").on(table.owner_id),
     index("modules_owner_updated_id_idx").on(
       table.owner_id,
@@ -417,6 +418,9 @@ export const generation_runs = pgTable(
     created_at: createdAt(),
   },
   (table) => [
+    index("generation_runs_user_active_idx")
+      .on(table.user_id)
+      .where(sql`${table.type} = 'module' and ${table.status} in ('queued', 'processing')`),
     index("generation_runs_module_idx").on(table.module_id),
     index("generation_runs_status_idx").on(table.status),
     uniqueIndex("generation_runs_bullmq_job_idx")

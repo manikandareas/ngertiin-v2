@@ -28,6 +28,9 @@ export const stableErrorCodes = [
   "ADAPTIVE_DECISION_ALREADY_MADE",
   "RATE_LIMITED",
   "DEPENDENCY_UNAVAILABLE",
+  "USAGE_LIMIT_EXCEEDED",
+  "GENERATION_IN_PROGRESS",
+  "RETRY_LIMIT_EXCEEDED",
   "INTERNAL_ERROR",
 ] as const;
 
@@ -47,6 +50,9 @@ export const problemDetailSchema = z.object({
   detail: z.string(),
   instance: z.string(),
   requestId: z.string().min(1).max(128),
+  category: z.enum(["modules", "sources"]).optional(),
+  resetAt: z.iso.datetime().optional(),
+  activeModuleId: z.uuid().optional(),
   errors: z.array(fieldErrorSchema).optional(),
 });
 

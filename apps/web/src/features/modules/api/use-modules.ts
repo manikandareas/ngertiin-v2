@@ -20,20 +20,21 @@ import {
   createModule,
   decideAdaptiveIntervention,
   getAdaptiveIntervention,
-  getGeneration,
   getAttempt,
+  getGeneration,
+  getJourney,
   getModule,
   getNode,
-  getJourney,
   listModules,
   retryGeneration,
+  startNode,
   streamAdaptiveGenerationEvents,
   streamGenerationEvents,
-  startNode,
   submitAttempt,
 } from "../../../lib/api";
 import { currentUserQueryKey } from "../../current-user/api/use-current-user";
 import { dashboardQueryKey } from "../../dashboard/api/use-dashboard";
+import { usageQueryKey, useRefreshUsage } from "../../usage/use-usage";
 
 const reconnectDelays = [1_000, 2_000, 4_000, 8_000] as const;
 
@@ -194,9 +195,11 @@ export function useAdaptiveGenerationStream(
 }
 
 export function useCreateModule() {
+  const refreshUsage = useRefreshUsage();
   const { getToken, userId } = useAuth();
   const queryClient = useQueryClient();
   return useMutation({
+    onSettled: refreshUsage,
     mutationFn: ({ input, key }: { input: CreateModuleBodyInput; key: string }) =>
       createModule(getToken, input, key),
     onSuccess: () => invalidateModuleCollections(queryClient, userId),
@@ -314,6 +317,7 @@ export function useGeneration(
     if (!moduleId || !state || !["completed", "failed"].includes(state)) return;
     void Promise.all([
       queryClient.invalidateQueries({ queryKey: moduleQueryKey(userId, moduleId) }),
+      queryClient.invalidateQueries({ queryKey: usageQueryKey(userId) }),
       invalidateModuleCollections(queryClient, userId),
     ]);
   }, [moduleId, queryClient, state, userId]);
@@ -349,6 +353,7 @@ export function useGenerationStream(
           if (terminal) {
             void Promise.all([
               queryClient.invalidateQueries({ queryKey: moduleQueryKey(userId, moduleId) }),
+              queryClient.invalidateQueries({ queryKey: usageQueryKey(userId) }),
               invalidateModuleCollections(queryClient, userId),
             ]);
           }
@@ -377,16 +382,18 @@ export function useGenerationStream(
 }
 
 export function useRetryGeneration(moduleId: string) {
+  const refreshUsage = useRefreshUsage();
   const { getToken, userId } = useAuth();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (key: string) => retryGeneration(getToken, moduleId, key),
-    onSuccess: async () => {
-      await Promise.all([
+    onSettled: () =>
+      Promise.all([
+        refreshUsage(),
+        queryClient.invalidateQueries({ queryKey: generationQueryKey(userId, moduleId) }),
         queryClient.invalidateQueries({ queryKey: moduleQueryKey(userId, moduleId) }),
-        invalidateModuleCollections(queryClient, userId),
-      ]);
-    },
+      ]),
+    mutationFn: (key: string) => retryGeneration(getToken, moduleId, key),
+    onSuccess: () => invalidateModuleCollections(queryClient, userId),
   });
 }
 

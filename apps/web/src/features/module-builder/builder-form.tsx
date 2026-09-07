@@ -2,6 +2,8 @@ import { ArrowLeft01Icon, ArrowRight01Icon, SparklesIcon } from "@hugeicons/core
 import { HugeiconsIcon } from "@hugeicons/react";
 import { type ReactNode, useState } from "react";
 import { Button } from "../../components/ui/button";
+import { UsageNotice } from "../usage/usage-notice";
+import { useUsage } from "../usage/use-usage";
 import { BuilderFocus } from "./builder-focus";
 import { BuilderLayout } from "./builder-layout";
 import { BuilderReview } from "./builder-review";
@@ -17,6 +19,9 @@ export function BuilderForm({
   library: MaterialLibrary;
   statuses: ReactNode;
 }) {
+  const usage = useUsage();
+  const quotaBlocked =
+    !usage.data || usage.data.modules.remaining === 0 || !!usage.data.activeModuleId;
   const [step, setStep] = useState(0);
   const [validation, setValidation] = useState<string | null>(null);
   function go(next: number) {
@@ -47,7 +52,7 @@ export function BuilderForm({
       step={step}
       onStep={state.busy ? undefined : go}
       footer={
-        <>
+        <div className="flex w-full flex-wrap items-center justify-between gap-4">
           {step > 0 ? (
             <Button variant="ghost" disabled={state.busy} onClick={() => go(step - 1)}>
               <HugeiconsIcon
@@ -59,9 +64,14 @@ export function BuilderForm({
               Kembali
             </Button>
           ) : null}
+          {step === 2 ? (
+            <div className="order-first w-full min-w-0 sm:order-none sm:w-auto sm:flex-1">
+              <UsageNotice category="modules" />
+            </div>
+          ) : null}
           <Button
             className="ml-auto"
-            disabled={state.busy || (step === 2 && !!state.blocked)}
+            disabled={state.busy || (step === 2 && (!!state.blocked || quotaBlocked))}
             onClick={() => (step === 2 ? void state.submit() : advance())}
           >
             {state.busy ? "Menyiapkan…" : step === 2 ? "Buat modul" : "Lanjut"}
@@ -76,7 +86,7 @@ export function BuilderForm({
               />
             )}
           </Button>
-        </>
+        </div>
       }
     >
       <fieldset disabled={state.busy} className="min-w-0 space-y-8">

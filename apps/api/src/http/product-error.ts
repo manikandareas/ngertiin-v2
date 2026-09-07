@@ -7,6 +7,11 @@ export class ProductError extends Error {
     readonly title: string,
     readonly detail: string,
     readonly errors?: FieldError[],
+    readonly context?: {
+      category?: "modules" | "sources";
+      resetAt?: string;
+      activeModuleId?: string;
+    },
   ) {
     super(detail);
     this.name = "ProductError";

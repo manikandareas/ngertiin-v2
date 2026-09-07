@@ -217,6 +217,7 @@ type SourceType = "pdf" | "url" | "text";
 type SourceStatus = "pending" | "processing" | "ready" | "failed";
 
 type Source = {
+  retriesRemaining: number; // 0..2; text sources always 0
   id: string;
   type: SourceType;
   title: string | null;
@@ -295,6 +296,7 @@ type GenerationPhase =
   | "validating_content";
 
 type GenerationStatus = {
+  retriesRemaining: number; // 0..2 for module generation; 0 for adaptive
   state: GenerationState;
   progressPercentage: number;
   currentPhase: GenerationPhase | null;
@@ -399,6 +401,7 @@ concept weights used for grading.
 | `GET` | `/health/live` | Process liveness |
 | `GET` | `/health/ready` | API dependency readiness |
 | `GET` | `/api/v1/me` | Current profile and stats |
+| `GET` | `/api/v1/me/usage` | Current weekly quotas and active module generation |
 | `PATCH` | `/api/v1/me` | Update local profile preferences |
 | `GET` | `/api/v1/dashboard` | Continue-learning card and module preview |
 | `POST` | `/api/v1/sources/text` | Create a ready pasted-text source |
@@ -589,7 +592,9 @@ Idempotency-Key: 018f0df2-f35a-7c12-9dd2-ff7f5d3ef9ad
 ```
 
 Allowed only when `status = failed` and `failure.retryable = true`. Returns `202` with the Source in
-`pending`. Otherwise returns `409 SOURCE_RETRY_NOT_ALLOWED`.
+`pending`. Otherwise returns `409 SOURCE_RETRY_NOT_ALLOWED`. A PDF/URL Source has at most two
+lifetime manual retries; exhaustion returns `409 RETRY_LIMIT_EXCEEDED`. Worker retries do not
+create processing runs and do not consume manual retries.
 
 ## 8. Module Creation and Generation
 
@@ -731,7 +736,10 @@ Idempotency-Key: 018f0df2-f35a-7c12-9dd2-ff7f5d3ef9af
 
 Allowed only for an owned Module with `status = failed` and a retryable latest failure. It reuses the
 same Module and Generation Request, creates a new Generation Run, transitions the Module back to
-`generating`, and returns `202` with Module and Generation Status.
+`generating`, and returns `202` with Module and Generation Status. At most two lifetime manual
+retries are allowed (`409 RETRY_LIMIT_EXCEEDED`). An existing queued/processing module run for
+the account blocks retry with `409 GENERATION_IN_PROGRESS` and `activeModuleId`. Retry remains
+available after weekly quota exhaustion. Only `type = module` runs count toward this limit.
 
 Completed steps and extracted sources may be reused, but partial output from a failed run must not
 become user-visible or duplicate stable content.
@@ -1364,3 +1372,53 @@ The following defaults are accepted for the v1 contract baseline:
 
 Source deletion/retention and explicit cancellation of accepted adaptive generation remain deferred.
 Continuing core work while leaving adaptive work unfinished is supported.
+
+## MVP account usage policy
+
+All accounts share the same limits, with no tiers, billing, credits, or rollover:
+10 Modules and 40 combined text/PDF/URL Sources per week. API environment overrides are
+`USAGE_MODULES_WEEKLY_LIMIT` and `USAGE_SOURCES_WEEKLY_LIMIT`. Weeks start Monday 00:00
+`Asia/Jakarta`, independently of the profile timezone. No counter table or reset cron is used.
+
+`GET /api/v1/me/usage` requires authentication and returns:
+
+```json
+{
+  "data": {
+    "periodStart": "2026-09-06T17:00:00.000Z",
+    "resetAt": "2026-09-13T17:00:00.000Z",
+    "timezone": "Asia/Jakarta",
+    "modules": { "limit": 10, "used": 3, "remaining": 7 },
+    "sources": { "limit": 40, "used": 8, "remaining": 32 },
+    "activeModuleId": null
+  }
+}
+```
+
+Usage counts owned records by `created_at` within `[periodStart, resetAt)`, including records
+created before this policy shipped and all statuses. Creation consumes quota only if its
+idempotency transaction commits. Validation errors, rollbacks and idempotency replays do not
+consume another unit. Later processing failure and archival do not refund usage. Reusing an
+existing Source, learning, answer evaluation, adaptive generation, and manual/worker retries
+consume no weekly units.
+
+A user-scoped transaction advisory lock serializes create/retry before resource locks. Checks
+run after validation and before inserts/storage upload. The quota check timestamp is also the
+record's creation timestamp, including uploads crossing the reset boundary. At most one
+`type = module` run in `queued`/`processing` is allowed per account, across all weeks. Terminal
+runs release the slot. Existing excess active runs are allowed to finish; no new run is admitted
+while any is active.
+
+Quota rejection is `429 USAGE_LIMIT_EXCEEDED`, with top-level `category` (`modules` or `sources`),
+`resetAt` and a `Retry-After` header in seconds. Slot rejection is `409 GENERATION_IN_PROGRESS`
+with top-level `activeModuleId`. Manual retry exhaustion is `409 RETRY_LIMIT_EXCEEDED`. Provider
+failure details are preserved; `failure.retryable`, `retriesRemaining`, and the active slot jointly
+determine retry eligibility. Older cached idempotency responses without `retriesRemaining` decode
+conservatively as zero; a fresh resource read returns the current lifetime allowance.
+
+Per-minute rate limiting remains independent. Redis failure does not bypass PostgreSQL usage
+checks, and database failures never admit a creation. Rejections emit `usage.rejected` structured
+logs with user/request IDs, code, and applicable quota/active-module context.
+
+Deploy migration `0011_lyrical_moondragon.sql` before the API and web bundles. See
+[usage rollout verification](release/usage-mvp.md) for evidence and remaining runtime checks.

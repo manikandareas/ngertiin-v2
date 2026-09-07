@@ -14,6 +14,7 @@ import {
   listSources,
   retrySource,
 } from "../../../lib/api";
+import { useRefreshUsage } from "../../usage/use-usage";
 
 type SourceFilters = Pick<ListSourcesQueryInput, "type" | "status" | "limit">;
 
@@ -60,24 +61,30 @@ export function useSource(sourceId: string | undefined) {
 }
 
 export function useCreateTextSource() {
+  const refreshUsage = useRefreshUsage();
   const { getToken } = useAuth();
   return useMutation({
+    onSettled: refreshUsage,
     mutationFn: ({ input, key }: { input: CreateTextSourceBodyInput; key: string }) =>
       createTextSource(getToken, input, key),
   });
 }
 
 export function useCreateUrlSource() {
+  const refreshUsage = useRefreshUsage();
   const { getToken } = useAuth();
   return useMutation({
+    onSettled: refreshUsage,
     mutationFn: ({ input, key }: { input: CreateUrlSourceBodyInput; key: string }) =>
       createUrlSource(getToken, input, key),
   });
 }
 
 export function useCreatePdfSource() {
+  const refreshUsage = useRefreshUsage();
   const { getToken } = useAuth();
   return useMutation({
+    onSettled: refreshUsage,
     mutationFn: ({
       fields,
       file,
@@ -91,8 +98,10 @@ export function useCreatePdfSource() {
 }
 
 export function useRetrySource() {
+  const refreshUsage = useRefreshUsage();
   const { getToken } = useAuth();
   return useMutation({
+    onSettled: refreshUsage,
     mutationFn: ({ sourceId, key }: { sourceId: string; key: string }) =>
       retrySource(getToken, sourceId, key),
   });

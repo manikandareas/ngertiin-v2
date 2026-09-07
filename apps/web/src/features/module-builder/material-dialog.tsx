@@ -6,6 +6,8 @@ import { useDropzone } from "react-dropzone";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Textarea } from "../../components/ui/textarea";
+import { UsageNotice } from "../usage/usage-notice";
+import { useUsage } from "../usage/use-usage";
 import { MaterialSettings } from "./material-settings";
 import type { ModuleBuilderState } from "./use-module-builder";
 
@@ -36,6 +38,8 @@ export function MaterialDialog({
   onClose: () => void;
   returnFocus: () => void;
 }) {
+  const usage = useUsage();
+  const quotaBlocked = !usage.data || usage.data.sources.remaining === 0;
   const drop = useDropzone({
     accept: { "application/pdf": [".pdf"] },
     multiple: false,
@@ -134,6 +138,7 @@ export function MaterialDialog({
                   noValidate
                   onSubmit={async (event) => {
                     event.preventDefault();
+                    if (quotaBlocked) return;
                     if (await state.add(action.kind)) onClose();
                   }}
                 >
@@ -198,6 +203,7 @@ export function MaterialDialog({
                         {state.sourceError}
                       </p>
                     ) : null}
+                    <UsageNotice category="sources" />
                     <div className="flex flex-wrap items-center justify-between gap-3 border-t border-muted pt-5">
                       <Button type="button" variant="ghost" onClick={discard}>
                         Buang isian
@@ -205,6 +211,7 @@ export function MaterialDialog({
                       <Button
                         type="submit"
                         disabled={
+                          quotaBlocked ||
                           state.count >= 10 ||
                           (action.kind === "pdf"
                             ? !state.file

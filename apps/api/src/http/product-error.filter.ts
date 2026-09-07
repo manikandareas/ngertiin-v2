@@ -9,6 +9,7 @@ import { ProductError } from "./product-error.js";
 import { getRequestId, type ProductRequest } from "./request-context.js";
 
 type HttpResponse = {
+  setHeader(name: string, value: string): void;
   status(status: number): HttpResponse;
   json(body: unknown): void;
 };
@@ -146,6 +147,7 @@ export class ProductErrorFilter implements ExceptionFilter {
       status: definition.status,
       code: definition.code,
       detail: definition.detail,
+      ...(exception instanceof ProductError ? exception.context : {}),
       instance,
       requestId,
       ...(definition.errors ? { errors: definition.errors } : {}),
@@ -162,6 +164,27 @@ export class ProductErrorFilter implements ExceptionFilter {
       );
     }
 
+    if (
+      ["USAGE_LIMIT_EXCEEDED", "GENERATION_IN_PROGRESS", "RETRY_LIMIT_EXCEEDED"].includes(
+        definition.code,
+      )
+    ) {
+      console.info(
+        JSON.stringify({
+          level: "info",
+          event: "usage.rejected",
+          userId: request.requestContext?.localUserId,
+          requestId,
+          code: definition.code,
+          ...(exception instanceof ProductError ? exception.context : {}),
+        }),
+      );
+    }
+    if (problem.resetAt && definition.status === 429)
+      response.setHeader(
+        "Retry-After",
+        String(Math.max(1, Math.ceil((Date.parse(problem.resetAt) - Date.now()) / 1000))),
+      );
     response.status(definition.status).json(problem);
   }
 }

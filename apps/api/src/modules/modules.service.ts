@@ -50,6 +50,8 @@ import { z } from "zod";
 import { ProductError } from "../http/product-error.js";
 import { IdempotencyService } from "../idempotency/idempotency.service.js";
 import { InfrastructureService } from "../infrastructure/infrastructure.service.js";
+import { UsageService } from "../usage/usage.service.js";
+import { moduleRunCount, retriesRemaining } from "../usage/usage-policy.js";
 
 const moduleCursorSchema = z
   .object({
@@ -183,6 +185,7 @@ function findCurrentStep(
 @Injectable()
 export class ModulesService {
   constructor(
+    @Inject(UsageService) private readonly usage: UsageService,
     @Inject(InfrastructureService) private readonly infrastructure: InfrastructureService,
     @Inject(IdempotencyService) private readonly idempotency: IdempotencyService,
   ) {}
@@ -210,6 +213,7 @@ export class ModulesService {
     return this.idempotency.execute(
       { userId, method: "POST", route: "/api/v1/modules", key, payloadHash },
       async (transaction) => {
+        await this.usage.lock(transaction, userId);
         const requestedSourceIds = input.sources.map((source) => source.sourceId);
         const ownedSources = await transaction
           .select({
@@ -295,7 +299,8 @@ export class ModulesService {
           }
         }
 
-        const now = new Date();
+        const now = await this.usage.assertQuota(transaction, userId, "modules");
+        await this.usage.assertSlot(transaction, userId);
         const generationRequestId = randomUUID();
         const moduleId = randomUUID();
         await transaction.insert(generation_requests).values({
@@ -346,6 +351,7 @@ export class ModulesService {
                 updatedAt: now.toISOString(),
               },
               generation: {
+                retriesRemaining: 2,
                 state: "queued",
                 progressPercentage: 0,
                 currentPhase: null,
@@ -933,6 +939,7 @@ export class ModulesService {
         error: generation_runs.error,
         startedAt: generation_runs.started_at,
         finishedAt: generation_runs.finished_at,
+        runCount: moduleRunCount,
       })
       .from(generation_runs)
       .where(and(eq(generation_runs.module_id, moduleId), eq(generation_runs.type, "module")))
@@ -958,6 +965,7 @@ export class ModulesService {
     const currentStep = findCurrentStep(run.status, steps);
 
     return {
+      retriesRemaining: retriesRemaining(run.runCount),
       state: run.status,
       progressPercentage: run.progressPercentage,
       currentPhase: currentStep ? (phaseByStep.get(currentStep.step) ?? null) : null,
@@ -981,6 +989,7 @@ export class ModulesService {
     return this.idempotency.execute(
       { userId, method: "POST", route, key, payloadHash },
       async (transaction) => {
+        await this.usage.lock(transaction, userId);
         const [module] = await transaction
           .select({
             id: modules.id,
@@ -1027,6 +1036,8 @@ export class ModulesService {
           );
         }
 
+        const remaining = await this.usage.assertRetry(transaction, "modules", moduleId);
+        await this.usage.assertSlot(transaction, userId);
         const now = new Date();
         await this.queueGenerationRun(transaction, {
           userId,
@@ -1056,6 +1067,7 @@ export class ModulesService {
                 updatedAt: now.toISOString(),
               },
               generation: {
+                retriesRemaining: remaining,
                 state: "queued",
                 progressPercentage: 0,
                 currentPhase: null,
@@ -1095,6 +1107,7 @@ export class ModulesService {
             .selectDistinctOn([generation_runs.module_id], {
               moduleId: generation_runs.module_id,
               error: generation_runs.error,
+              runCount: moduleRunCount,
             })
             .from(generation_runs)
             .where(
@@ -1116,6 +1129,10 @@ export class ModulesService {
       grouped.push(node);
       nodesByModule.set(node.moduleId, grouped);
     }
+    const remainingByModule = new Map(
+      latestFailures.map((run) => [run.moduleId, retriesRemaining(run.runCount)]),
+    );
+    const active = failedModuleIds.length ? (await this.usage.read(userId)).activeModuleId : null;
     const failureByModule = new Map(
       latestFailures.map((run) => [run.moduleId, readGenerationFailure(run.error)]),
     );
@@ -1133,7 +1150,11 @@ export class ModulesService {
 
       let nextAction: ModuleSummary["nextAction"];
       if (row.status === "failed") {
-        if (failureByModule.get(row.id)?.retryable === true) {
+        if (
+          failureByModule.get(row.id)?.retryable === true &&
+          (remainingByModule.get(row.id) ?? 0) > 0 &&
+          !active
+        ) {
           nextAction = { type: "retry_module", moduleId: row.id };
         } else {
           nextAction = { type: "none" };

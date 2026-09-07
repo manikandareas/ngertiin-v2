@@ -21,8 +21,8 @@ import {
 import { selectLearningAction } from "@ngertiin/shared";
 import { and, asc, desc, eq } from "drizzle-orm";
 import { z } from "zod";
-import { IdempotencyService } from "../idempotency/idempotency.service.js";
 import { ProductError } from "../http/product-error.js";
+import { IdempotencyService } from "../idempotency/idempotency.service.js";
 import { InfrastructureService } from "../infrastructure/infrastructure.service.js";
 
 const failureSchema = z
@@ -347,6 +347,7 @@ export class AdaptiveService {
           steps.find((step) => step.status === "pending"));
     const failure = failureSchema.safeParse(run.error);
     return {
+      retriesRemaining: 0,
       state: run.status,
       progressPercentage: run.progressPercentage,
       currentPhase: current ? (phaseByStep.get(current.step) ?? null) : null,

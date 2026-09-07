@@ -2,29 +2,29 @@ import {
   type AdaptiveDecision,
   type AdaptiveGenerationEvent,
   type AdaptiveIntervention,
-  adaptiveGenerationEventSchema,
-  decideAdaptiveInterventionResponseSchema,
-  getAdaptiveInterventionResponseSchema,
   type AttemptResult,
+  adaptiveGenerationEventSchema,
+  archiveModuleResponseSchema,
   type CompleteNodeResult,
   type CreateModuleBodyInput,
   type CreatePdfSourceFieldsInput,
   type CreateTextSourceBodyInput,
   type CreateUrlSourceBodyInput,
   type CurrentUser,
-  type Dashboard,
-  archiveModuleResponseSchema,
   completeNodeResponseSchema,
   createModuleResponseSchema,
   createPdfSourceResponseSchema,
   createTextSourceResponseSchema,
   createUrlSourceResponseSchema,
+  type Dashboard,
+  decideAdaptiveInterventionResponseSchema,
   type GenerationEvent,
   type GenerationStatus,
   generationEventSchema,
+  getAdaptiveInterventionResponseSchema,
+  getAttemptResponseSchema,
   getCurrentUserResponseSchema,
   getDashboardResponseSchema,
-  getAttemptResponseSchema,
   getGenerationResponseSchema,
   getJourneyResponseSchema,
   getModuleResponseSchema,
@@ -47,9 +47,10 @@ import {
   retryGenerationResponseSchema,
   retrySourceResponseSchema,
   type Source,
-  startNodeResponseSchema,
   type SubmitAttemptBody,
+  startNodeResponseSchema,
   submitAttemptResponseSchema,
+  usageResponseSchema,
 } from "@ngertiin/contracts/api";
 import { webEnvironment } from "../config";
 
@@ -482,4 +483,8 @@ export function streamGenerationEvents(
     schema: generationEventSchema,
     onEvent,
   });
+}
+
+export async function getUsage(tokenResolver: TokenResolver) {
+  return (await requestApi("/me/usage", tokenResolver, usageResponseSchema)).data;
 }
