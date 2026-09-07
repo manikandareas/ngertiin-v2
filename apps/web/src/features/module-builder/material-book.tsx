@@ -65,7 +65,7 @@ export function MaterialBook({
         {...listeners}
         aria-label={`Urutkan materi ${index + 1}: ${item.source.title ?? "Materi tanpa judul"}`}
         disabled={disabled}
-        className="material-book-handle block w-full cursor-grab rounded-sm text-left focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring active:cursor-grabbing"
+        className="group/book block touch-pan-y select-none [-webkit-user-select:none] w-full cursor-grab rounded-sm text-left focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring active:cursor-grabbing"
       >
         <BookCover item={item} />
       </button>
@@ -80,23 +80,40 @@ export function MaterialBook({
   );
 }
 
+const bookTones = [
+  "bg-book-blue text-book-blue-ink",
+  "bg-book-sage text-book-sage-ink",
+  "bg-book-clay text-book-clay-ink",
+  "bg-book-lilac text-book-lilac-ink",
+];
+
 export function BookCover({ item }: { item: Selection }) {
   const tone = [...item.source.id].reduce((value, letter) => value + letter.charCodeAt(0), 0) % 4;
   return (
-    <span className="material-book" data-tone={tone}>
-      <span className="material-book-pages" aria-hidden="true" />
-      <span className="material-book-cover">
-        <span className="material-book-binding" aria-hidden="true" />
-        <span className="material-book-type">
+    <span className="relative isolate block aspect-3/4 w-full">
+      <span
+        className="absolute top-[5px] -right-1 -bottom-[3px] left-2 rounded-[2px_5px_5px_2px] border border-book-page-edge bg-book-pages shadow-book-pages"
+        aria-hidden="true"
+      />
+      <span
+        className={`absolute inset-x-0 top-0 bottom-[5px] flex origin-left flex-col overflow-hidden rounded-[3px_7px_7px_3px] py-4.5 pr-3.5 pl-5.5 shadow-book-cover motion-safe:transition-transform motion-safe:duration-180 motion-safe:ease-out motion-safe:group-hover/book:[transform:perspective(700px)_rotateY(-7deg)] max-[380px]:py-3.5 max-[380px]:pr-2.5 max-[380px]:pl-4.5 ${bookTones[tone]}`}
+      >
+        <span
+          className="absolute inset-y-0 left-0 w-3 border-r border-black/7 bg-book-binding"
+          aria-hidden="true"
+        />
+        <span className="text-[9px] font-semibold tracking-[0.04em]">
           {item.source.type === "text"
             ? "Catatan"
             : item.source.type === "url"
               ? "Tautan"
               : "Dokumen PDF"}
         </span>
-        <span className="material-book-title">{item.source.title ?? "Materi tanpa judul"}</span>
-        <span className="material-book-rule" aria-hidden="true" />
-        <span className="material-book-caption">
+        <span className="mt-5.5 line-clamp-4 font-display text-base font-extrabold leading-[1.35] [overflow-wrap:anywhere] max-[380px]:mt-3.5 max-[380px]:text-sm">
+          {item.source.title ?? "Materi tanpa judul"}
+        </span>
+        <span className="mt-auto block h-px w-7 bg-current opacity-30" aria-hidden="true" />
+        <span className="mt-2.25 text-[9px] leading-[1.4]">
           {item.selector
             ? `Halaman ${item.selector.pages.from}–${item.selector.pages.to}`
             : item.role === "primary"

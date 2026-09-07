@@ -14,7 +14,7 @@ const modules = [
 ] satisfies [string, string, number][];
 
 const previewModules: ModuleSummary[] = modules.map(([title, description, percentage], index) => ({
-  id: `preview-${index}`,
+  id: `00000000-0000-4000-8000-${String(index).padStart(12, "0")}`,
   title: title,
   description: description,
   status: "ready",
@@ -26,14 +26,53 @@ const previewModules: ModuleSummary[] = modules.map(([title, description, percen
     completedCoreNodes: percentage / 5,
     totalCoreNodes: 20,
   },
-  nextAction: { type: "none" },
+  nextAction:
+    percentage === 100
+      ? {
+          type: "module_completed",
+          moduleId: `00000000-0000-4000-8000-${String(index).padStart(12, "0")}`,
+        }
+      : {
+          type: percentage > 0 ? "resume_core_node" : "start_core_node",
+          moduleId: `00000000-0000-4000-8000-${String(index).padStart(12, "0")}`,
+          nodeId: `00000000-0000-4000-9000-${String(index).padStart(12, "0")}`,
+        },
   createdAt: "2026-09-05T00:00:00Z",
   updatedAt: "2026-09-05T00:00:00Z",
 }));
-const empty = new URLSearchParams(location.search).has("empty");
+const params = new URLSearchParams(location.search);
+const empty = params.has("empty");
+if (params.has("mixed")) {
+  previewModules.push(
+    ...(["generating", "failed", "archived"] as const).map(
+      (status, index): ModuleSummary => ({
+        id: `00000000-0000-4000-8000-${String(index + 10).padStart(12, "0")}`,
+        title:
+          status === "generating"
+            ? null
+            : `Modul ${status}: ${"Materi dengan judul panjang ".repeat(5)}`,
+        description: null,
+        status,
+        difficulty: null,
+        estimatedMinutes: null,
+        progress: null,
+        nextAction:
+          status === "archived"
+            ? { type: "none" }
+            : {
+                type: status === "failed" ? "retry_module" : "wait_for_module",
+                moduleId: `00000000-0000-4000-8000-${String(index + 10).padStart(12, "0")}`,
+              },
+        createdAt: "2026-09-05T00:00:00Z",
+        updatedAt: "2026-09-06T00:00:00Z",
+      }),
+    ),
+  );
+}
 const data: Dashboard = {
   modules: empty ? [] : previewModules,
-  continueLearning: empty || !previewModules[0] ? null : { module: previewModules[0] },
+  continueLearning:
+    empty || params.has("no-resume") || !previewModules[0] ? null : { module: previewModules[0] },
   stats: {
     totalXp: empty ? 0 : 710,
     currentStreak: empty ? 0 : 4,

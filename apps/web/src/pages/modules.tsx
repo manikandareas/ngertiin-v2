@@ -29,7 +29,7 @@ export default function ModulesPage() {
             Semua materi dan perjalanan belajarmu, di satu tempat.
           </p>
         </div>
-        <Button size="sm" variant="ghost" asChild>
+        <Button size="sm" variant="outline" asChild>
           <Link to="/modules/new">
             Buat modul <HugeiconsIcon icon={Plus} size={20} strokeWidth={1.5} aria-hidden="true" />
           </Link>

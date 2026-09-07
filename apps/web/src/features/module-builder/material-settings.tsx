@@ -63,7 +63,7 @@ export function MaterialSettings({
           >
             <SelectValue />
           </SelectTrigger>
-          <SelectContent position="popper" className="material-settings-select rounded-xl">
+          <SelectContent position="popper" className="z-70 rounded-xl">
             <SelectItem value="primary">Utama</SelectItem>
             <SelectItem value="reference">Referensi</SelectItem>
             <SelectItem value="supplementary">Pelengkap</SelectItem>
@@ -105,7 +105,7 @@ export function MaterialSettings({
               >
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent position="popper" className="material-settings-select rounded-xl">
+              <SelectContent position="popper" className="z-70 rounded-xl">
                 <SelectItem value="all">Semua halaman</SelectItem>
                 <SelectItem value="custom">Rentang tertentu</SelectItem>
               </SelectContent>

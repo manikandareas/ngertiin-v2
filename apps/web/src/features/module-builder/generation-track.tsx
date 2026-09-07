@@ -13,6 +13,14 @@ import type { GenerationStatus } from "@ngertiin/contracts/api";
 import { useState } from "react";
 
 const nodeSpacing = 180;
+const nodeStyles = {
+  waiting:
+    "border-border bg-muted text-muted-foreground shadow-[0_5px_0_var(--border)] motion-safe:animate-generation-idle",
+  active:
+    "border-primary bg-primary text-primary-foreground shadow-[0_5px_0_var(--primary-edge)] before:absolute before:-inset-2.25 before:rounded-full before:border-2 before:border-primary before:opacity-25 before:content-[''] motion-safe:animate-generation-float motion-safe:before:animate-generation-pulse",
+  done: "border-success bg-success-subtle text-success-foreground shadow-[0_5px_0_var(--success)]",
+  failed: "border-destructive bg-muted text-destructive shadow-[0_5px_0_var(--border)]",
+};
 
 const phases = {
   preparing_sources: {
@@ -59,7 +67,7 @@ export function GenerationTrack({ generation }: { generation: GenerationStatus }
   const detailPhase = generation.phases.find((phase) => phase.phase === selected)?.phase ?? active;
   return (
     <div>
-      <div className="generation-track relative mx-auto max-w-[440px]">
+      <div className="relative mx-auto max-w-[440px]">
         <svg
           className="pointer-events-none absolute inset-0 h-full w-full overflow-visible"
           viewBox={`0 0 440 ${generation.phases.length * nodeSpacing}`}
@@ -82,7 +90,7 @@ export function GenerationTrack({ generation }: { generation: GenerationStatus }
                   strokeDasharray="6 7"
                 />
                 <path
-                  className="generation-connector"
+                  className="[stroke-dasharray:1] [stroke-dashoffset:1] data-[complete=true]:[stroke-dashoffset:0] motion-safe:transition-[stroke-dashoffset] motion-safe:duration-650 motion-safe:ease-out"
                   data-complete={phase.status === "completed"}
                   d={path}
                   fill="none"
@@ -103,11 +111,12 @@ export function GenerationTrack({ generation }: { generation: GenerationStatus }
             const current = !failed && phase.phase === active && generation.state === "processing";
             const done = phase.status === "completed";
             const icon = failed ? Alert02Icon : done ? Tick02Icon : info.icon;
+            const state = failed ? "failed" : done ? "done" : current ? "active" : "waiting";
             return (
               <li
                 key={phase.phase}
                 style={{ height: nodeSpacing }}
-                className={`generation-row flex items-start gap-8 ${index % 2 ? "flex-row-reverse text-right" : ""}`}
+                className={`group/row px-[calc(14.545%-32px)] flex items-start gap-8 ${index % 2 ? "flex-row-reverse text-right" : ""}`}
               >
                 <button
                   type="button"
@@ -115,15 +124,15 @@ export function GenerationTrack({ generation }: { generation: GenerationStatus }
                   aria-current={current ? "step" : undefined}
                   aria-pressed={selected === phase.phase}
                   onClick={() => setSelected(phase.phase)}
-                  data-state={failed ? "failed" : done ? "done" : current ? "active" : "waiting"}
-                  className="generation-node relative z-1 mt-2 grid size-16 shrink-0 place-items-center rounded-full border-2 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+                  data-state={state}
+                  className={`relative z-1 mt-2 grid size-16 shrink-0 place-items-center rounded-full border-2 aria-pressed:outline-2 aria-pressed:outline-offset-5 aria-pressed:outline-ring focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring motion-safe:transition-colors motion-safe:duration-250 ${nodeStyles[state]} ${state === "waiting" ? "motion-safe:group-even/row:[animation-delay:-1.8s]" : ""}`}
                 >
                   <HugeiconsIcon
                     icon={icon}
                     size={28}
                     strokeWidth={1.5}
                     key={done ? "done" : "pending"}
-                    className={`relative size-7 ${done ? "generation-check" : ""}`}
+                    className={`relative size-7 ${done ? "motion-safe:animate-generation-arrive" : ""}`}
                     aria-hidden="true"
                   />
                 </button>

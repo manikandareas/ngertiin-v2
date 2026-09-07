@@ -3,7 +3,6 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { type ReactNode, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "../../components/ui/button";
-import "./builder.css";
 
 const steps = ["Materi", "Fokus belajar", "Tinjau modul", "Pembuatan", "Siap belajar"];
 const headings = [
@@ -37,7 +36,7 @@ export function BuilderLayout({
     if (step >= 0) heading.current?.focus({ preventScroll: true });
   }, [step]);
   return (
-    <main className="builder-page min-h-dvh w-full bg-background text-foreground">
+    <main className="builder-controls min-h-dvh w-full bg-background text-foreground">
       <div className="min-h-dvh w-full">
         <header className="flex h-12 items-center border-b border-muted px-4 sm:px-8">
           <Button
@@ -66,7 +65,7 @@ export function BuilderLayout({
               {steps.map((label, index) => (
                 <li
                   key={label}
-                  className="builder-step relative flex-1 pb-0 lg:pb-6"
+                  className="relative flex-1 pb-0 after:absolute after:top-[13px] after:right-0 after:left-7 after:h-0.5 after:bg-border after:content-[''] last:after:hidden data-[complete=true]:after:bg-primary lg:pb-6 lg:after:top-7 lg:after:right-auto lg:after:left-[13px] lg:after:h-[calc(100%-28px)] lg:after:w-0.5"
                   data-complete={index < step}
                 >
                   <button
@@ -116,7 +115,7 @@ export function BuilderLayout({
                 {descriptions[step]}
               </p>
             </header>
-            <div key={step} className="builder-content">
+            <div key={step} className="motion-safe:animate-builder-enter">
               {children}
             </div>
             {footer ? (

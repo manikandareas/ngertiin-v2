@@ -64,9 +64,9 @@ export function MaterialDialog({
       }}
     >
       <Dialog.Portal>
-        <Dialog.Overlay className="material-dialog-overlay" />
+        <Dialog.Overlay className="fixed inset-0 z-60 bg-black/40" />
         <Dialog.Content
-          className="material-dialog builder-page"
+          className="builder-controls fixed top-1/2 left-1/2 z-61 max-h-[calc(100dvh-48px)] w-[min(520px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-card bg-background p-7 text-foreground shadow-[0_20px_80px_#0002] motion-safe:animate-material-dialog-enter"
           onCloseAutoFocus={(event) => {
             event.preventDefault();
             returnFocus();

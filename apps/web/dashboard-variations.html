@@ -1,0 +1,1864 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ngerti.in — Eksplorasi dashboard</title>
+    <style>
+    :root {
+      font-family: "Nunito", "Avenir Next", Avenir, system-ui, sans-serif;
+      color: #293730;
+      background: #fafbf8;
+      font-synthesis: none;
+      --accent: #28634b;
+      --line: #dfe4db;
+      --muted: #738074;
+      --soft: #edf3e9;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+    }
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+    button {
+      cursor: pointer;
+      color: inherit;
+      border: 0;
+      background: none;
+    }
+    button:hover {
+      color: var(--accent);
+    }
+    button:active {
+      transform: translateY(2px);
+    }
+    button:focus-visible,
+    input:focus-visible,
+    select:focus-visible {
+      outline: 3px solid #2185b3;
+      outline-offset: 5px;
+    }
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+    }
+    svg {
+      width: 21px;
+      height: 21px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.6;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      flex-shrink: 0;
+    }
+    small,
+    .muted {
+      color: var(--muted);
+    }
+    small {
+      font-size: 12px;
+    }
+    .lab {
+      display: flex;
+      align-items: center;
+      gap: 26px;
+      padding: 12px 25px;
+      background: #24372e;
+      color: #fff;
+      position: relative;
+      z-index: 1;
+    }
+    .lab-title {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+    .switch {
+      display: flex;
+      gap: 4px;
+      padding: 4px;
+      background: #192a21;
+      border-radius: 30px;
+    }
+    .switch button {
+      color: #c6d5c9;
+      font-size: 12px;
+      padding: 9px 17px;
+      border-radius: 25px;
+      white-space: nowrap;
+    }
+    .switch button[aria-pressed="true"] {
+      background: #eff6e9;
+      color: #293d2c;
+      font-weight: 750;
+    }
+    .lab label {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      font-size: 11px;
+    }
+    .lab select {
+      padding: 8px;
+      border-radius: 7px;
+      border: 1px solid #526a59;
+      color: #fff;
+      background: #31473a;
+      font-size: 11px;
+    }
+    .direction {
+      background: white;
+      border-bottom: 1px solid var(--line);
+      padding: 10px 25px;
+      color: #748074;
+      font-size: 11px;
+      line-height: 1.7;
+    }
+    .direction b {
+      color: #334c3c;
+      margin-right: 16px;
+    }
+    .shell {
+      display: grid;
+      grid-template-columns: 210px minmax(0, 1fr);
+      min-height: calc(100dvh - 112px);
+    }
+    .sidebar {
+      background: #fff;
+      border-right: 1px solid var(--line);
+      padding: 35px 18px 25px;
+      display: flex;
+      flex-direction: column;
+      gap: 40px;
+    }
+    .brand {
+      font-size: 25px;
+      font-weight: 800;
+      letter-spacing: -1.5px;
+    }
+    .brand span {
+      color: #41a669;
+    }
+    .sidebar .brand {
+      padding: 0 15px;
+    }
+    .nav {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+    .nav button {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-align: left;
+      padding: 13px 14px;
+      font-size: 13px;
+      border-radius: 11px;
+      color: #768175;
+    }
+    .nav .selected {
+      background: #eef5e9;
+      color: #357146;
+      font-weight: 750;
+    }
+    .nav button:hover {
+      background: #f4f7f0;
+    }
+    .account {
+      margin-top: auto;
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      padding: 20px 12px 0;
+      font-size: 12px;
+    }
+    .account small {
+      display: block;
+      margin-top: 3px;
+    }
+    .avatar {
+      background: #ede7d6;
+      display: grid;
+      place-items: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      color: #776843;
+      font-weight: 750;
+    }
+    .main {
+      width: 100%;
+      max-width: 1370px;
+      margin: 0 auto;
+      padding: 30px 52px 50px;
+      min-width: 0;
+    }
+    .topline {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 35px;
+    }
+    .topline span:first-child {
+      color: #344735;
+      font-weight: 600;
+    }
+    .eyebrow {
+      font-size: 10px;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+      font-weight: 750;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 13px 21px;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 9px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .btn:hover {
+      color: #fff;
+      filter: brightness(1.1);
+    }
+    .btn.secondary {
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--accent);
+    }
+    .textbtn {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent);
+      padding: 8px 0;
+    }
+    .greeting {
+      margin-bottom: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 25px;
+    }
+    .greeting h1 {
+      font-size: 36px;
+      line-height: 1.15;
+      letter-spacing: -1.3px;
+      font-weight: 750;
+    }
+    .greeting p {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 12px;
+    }
+    .bar {
+      height: 5px;
+      background: #dbe3d9;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .bar i {
+      height: 100%;
+      display: block;
+      background: var(--accent);
+      border-radius: 10px;
+    }
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      gap: 15px;
+      font-size: 11px;
+      margin: 20px 0 9px;
+    }
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+    .section-head h2 {
+      font-size: 19px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+    .section-head small {
+      font-size: 11px;
+    }
+    .tools {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    .filters {
+      display: flex;
+      gap: 15px;
+    }
+    .filters button {
+      font-size: 11px;
+      color: var(--muted);
+      padding: 8px 0;
+    }
+    .filters button[aria-pressed="true"] {
+      color: var(--accent);
+      box-shadow: 0 2px var(--accent);
+      font-weight: 750;
+    }
+    .search {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 11px;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: #ffffff8a;
+    }
+    .search svg {
+      width: 15px;
+      height: 15px;
+      color: var(--muted);
+    }
+    .search input {
+      font-size: 11px;
+      width: 135px;
+      min-width: 0;
+      border: 0;
+      background: none;
+      outline: none;
+      color: inherit;
+    }
+    .footnote {
+      margin-top: 35px;
+      font-size: 10px;
+      color: var(--muted);
+    }
+    .empty {
+      padding: 40px 25px;
+      border: 1px dashed var(--line);
+      border-radius: 18px;
+      text-align: center;
+      grid-column: 1 / -1;
+    }
+    .empty h3 {
+      font-size: 20px;
+    }
+    .empty p {
+      font-size: 13px;
+      color: var(--muted);
+      margin: 12px 0 22px;
+    }
+    .status {
+      padding: 70px 20px;
+      text-align: center;
+    }
+    .status p {
+      margin: 14px 0 24px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .skeleton {
+      height: 22px;
+      background: var(--line);
+      border-radius: 9px;
+      margin: 20px 0;
+      animation: pulse 1s alternate infinite;
+    }
+    .skeleton:first-child {
+      width: 40%;
+    }
+    .skeleton:last-child {
+      height: 270px;
+    }
+    @keyframes pulse {
+      to {
+        opacity: 0.4;
+      }
+    }
+    /* 01: a personal desk with a clipped study sheet and collectible stamps. */
+    .focus {
+      background: #f7f7ef;
+      --accent: #315d43;
+      --line: #dedfd2;
+      --muted: #7a8070;
+    }
+    .focus .main {
+      background-image: radial-gradient(#9b9f8724 0.8px, transparent 0.8px);
+      background-size: 19px 19px;
+    }
+    .focus .greeting h1 em {
+      font-style: normal;
+      background: #e5edb9;
+      padding: 0 8px;
+      border-radius: 40% 20% 35% 15%;
+    }
+    .desk {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 218px;
+      gap: 42px;
+      align-items: center;
+      margin: 15px 0 47px;
+    }
+    .study-sheet {
+      position: relative;
+      background: #fffef9;
+      border: 1px solid #e2e2d2;
+      border-radius: 4px;
+      padding: 31px 34px 25px;
+      transform: rotate(-1.2deg);
+      box-shadow:
+        7px 8px 0 -1px #edeee2,
+        7px 8px 0 0 #dfe2d3;
+    }
+    .study-sheet:before {
+      content: "";
+      position: absolute;
+      width: 95px;
+      height: 25px;
+      background: #cdd8b8ad;
+      top: -12px;
+      left: 42%;
+      transform: rotate(3deg);
+    }
+    .sheet-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      color: #7a826b;
+    }
+    .sheet-top .eyebrow {
+      font-size: 9px;
+    }
+    .sheet-number {
+      font-size: 11px;
+      font-family: monospace;
+    }
+    .study-sheet h2 {
+      font-size: 29px;
+      line-height: 1.2;
+      letter-spacing: -0.8px;
+      max-width: 340px;
+      margin: 23px 0 14px;
+    }
+    .study-sheet p {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .sheet-bottom {
+      display: flex;
+      gap: 30px;
+      align-items: flex-end;
+      margin-top: 10px;
+    }
+    .sheet-bottom > div {
+      flex: 1;
+    }
+    .sheet-bottom .btn {
+      border-radius: 30px;
+      transform: rotate(1.2deg);
+    }
+    .desk-aside {
+      display: grid;
+      gap: 24px;
+      justify-items: center;
+    }
+    .sticky-note {
+      position: relative;
+      background: #f1e7a6;
+      width: 100%;
+      padding: 23px 22px 26px;
+      transform: rotate(4deg);
+      box-shadow: 3px 5px 0 #ddd7b740;
+      color: #78662e;
+    }
+    .sticky-note:after {
+      content: "";
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      border-style: solid;
+      border-width: 0 0 20px 20px;
+      border-color: transparent transparent #f7f7ef #d7cd86;
+    }
+    .sticky-note strong {
+      font-size: 49px;
+      letter-spacing: -2px;
+      line-height: 1.1;
+      display: block;
+      margin: 10px 0 3px;
+      font-weight: 650;
+    }
+    .sticky-note strong span {
+      font-size: 19px;
+      letter-spacing: -0.5px;
+    }
+    .sticky-note p {
+      font-size: 11px;
+    }
+    .xp-stamp {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 13px;
+      border: 1px dashed #889b7e;
+      border-radius: 50%;
+      width: 158px;
+      height: 94px;
+      transform: rotate(-7deg);
+      color: #67805b;
+    }
+    .xp-stamp strong {
+      font-size: 24px;
+      display: block;
+      letter-spacing: -0.5px;
+    }
+    .xp-stamp small {
+      font-size: 9px;
+      color: inherit;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+    .folder-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 24px 23px;
+      padding-top: 12px;
+    }
+    .folder {
+      position: relative;
+      text-align: left;
+      border: 1px solid #d9ddcd;
+      background: #f0f2e7;
+      border-radius: 0 12px 12px 12px;
+      padding: 20px 22px;
+      transition: transform 0.2s;
+      min-width: 0;
+    }
+    .folder:before {
+      content: "";
+      position: absolute;
+      top: -9px;
+      left: -1px;
+      width: 88px;
+      height: 9px;
+      border: 1px solid #d9ddcd;
+      border-bottom: 0;
+      background: #f0f2e7;
+      border-radius: 7px 12px 0 0;
+    }
+    .folder:nth-child(2n) {
+      background: #edf0e7;
+    }
+    .folder:hover {
+      transform: translateY(-4px) rotate(0.5deg);
+    }
+    .folder .folder-top {
+      display: flex;
+      justify-content: space-between;
+      color: #7d8a70;
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+    .folder h3 {
+      font-size: 15px;
+      margin: 12px 0 8px;
+      line-height: 1.4;
+      font-weight: 650;
+    }
+    .folder p {
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .folder .folder-bottom {
+      display: flex;
+      gap: 18px;
+      align-items: center;
+      margin-top: 18px;
+      font-size: 10px;
+      color: var(--muted);
+    }
+    .folder .bar {
+      flex: 1;
+      height: 3px;
+    }
+    .folder-top svg {
+      width: 15px;
+      height: 15px;
+    }
+    /* 02: module islands on a loose, navigable atlas. */
+    .shelf {
+      --accent: #3e715b;
+      --line: #dce6df;
+      --muted: #758679;
+      background: #f4f8f5;
+    }
+    .shelf .main {
+      max-width: 1400px;
+      padding: 30px 40px 45px;
+    }
+    .shelf .greeting h1 {
+      font-size: 33px;
+    }
+    .atlas-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 22px;
+      align-items: center;
+      margin-bottom: 5px;
+    }
+    .shelf .atlas-header h1 {
+      font-size: 35px;
+      line-height: 1.15;
+      letter-spacing: -1.2px;
+    }
+    .atlas-header p {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 12px;
+    }
+    .atlas-stats {
+      display: flex;
+      gap: 22px;
+    }
+    .atlas-stats strong {
+      display: block;
+      font-size: 23px;
+      font-weight: 650;
+    }
+    .atlas-stats small {
+      font-size: 10px;
+    }
+    .atlas {
+      position: relative;
+      min-height: 575px;
+      margin: 15px -10px 0;
+      isolation: isolate;
+    }
+    .contour {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      stroke: #dde8df;
+      stroke-width: 1;
+      pointer-events: none;
+      z-index: -1;
+    }
+    .atlas-route {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      stroke: #a4bda8;
+      stroke-width: 2;
+      stroke-dasharray: 5 8;
+      z-index: -1;
+      pointer-events: none;
+    }
+    .map-caption {
+      position: absolute;
+      left: 38%;
+      top: 41%;
+      transform: rotate(-12deg);
+      color: #b0bbae;
+      font-size: 17px;
+      letter-spacing: 0.13em;
+    }
+    .island {
+      position: absolute;
+      text-align: left;
+      max-width: 245px;
+      padding: 18px 21px 19px;
+      border-radius: 24px;
+      background: #e3ecd5;
+      border: 1px solid #d3dfc9;
+      transition: transform 0.2s;
+    }
+    .island:hover {
+      transform: translateY(-6px);
+    }
+    .island.active {
+      left: 5%;
+      top: 32%;
+      width: 260px;
+      max-width: 260px;
+      background: #fffef5;
+      border-color: #d9dfc8;
+      box-shadow: 0 10px 30px #547f4610;
+      border-radius: 25px 25px 25px 5px;
+      padding: 23px;
+    }
+    .island.north {
+      left: 39%;
+      top: 5%;
+      background: #dfece6;
+    }
+    .island.east {
+      right: 1%;
+      top: 40%;
+      background: #e9edce;
+    }
+    .island.south {
+      left: 43%;
+      bottom: 2%;
+      background: #dce9ed;
+    }
+    .island .eyebrow {
+      font-size: 8px;
+      color: #65866a;
+    }
+    .island .map-icon {
+      display: grid;
+      place-items: center;
+      background: #ffffff80;
+      width: 43px;
+      height: 43px;
+      border-radius: 50%;
+      margin: 12px 0;
+    }
+    .island h3 {
+      font-size: 17px;
+      line-height: 1.3;
+      letter-spacing: -0.3px;
+      margin: 10px 0;
+    }
+    .island p {
+      font-size: 10px;
+      color: #6d8472;
+    }
+    .island .map-action {
+      font-size: 11px;
+      color: var(--accent);
+      font-weight: 750;
+      display: block;
+      margin-top: 15px;
+    }
+    .you-are-here {
+      position: absolute;
+      left: 7%;
+      top: 22%;
+      color: #6c855b;
+      font-size: 12px;
+      transform: rotate(-7deg);
+    }
+    .atlas .you-are-here span {
+      font-size: 24px;
+      margin-left: 8px;
+    }
+    .map-create {
+      position: absolute;
+      right: 4%;
+      top: 5%;
+      width: 111px;
+      height: 111px;
+      border: 1px dashed #a5b69d;
+      border-radius: 50%;
+      font-size: 11px;
+      color: #688261;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 9px;
+      background: #f5f8ef;
+    }
+    .map-create:hover {
+      background: #e5efdf;
+    }
+    .map-legend {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      font-size: 10px;
+      color: var(--muted);
+      padding: 14px 0 20px;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 28px;
+    }
+    .map-legend span:first-child:before {
+      content: "";
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      background: #6c956c;
+      border-radius: 50%;
+      margin-right: 7px;
+    }
+    .atlas-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0 32px;
+    }
+    .atlas-item {
+      display: flex;
+      text-align: left;
+      align-items: center;
+      gap: 14px;
+      padding: 15px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .atlas-item .index {
+      font-size: 11px;
+      color: #8ea08e;
+    }
+    .atlas-item h3 {
+      font-size: 12px;
+      font-weight: 650;
+      line-height: 1.4;
+    }
+    .atlas-item p {
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+    .atlas-item .percent {
+      margin-left: auto;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    .shelf .tools {
+      margin-top: 5px;
+    }
+    /* 03: a bold editorial split, oversized progress, and a numbered reading index. */
+    .workspace {
+      --accent: #cf522f;
+      --soft: #f9ece5;
+      --line: #e4ddd3;
+      --muted: #857d72;
+      background: #fffdf8;
+      color: #38382e;
+    }
+    .workspace .main {
+      padding: 30px 48px 48px;
+      max-width: 1400px;
+    }
+    .issue-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 15px;
+      border-bottom: 1px solid #393e30;
+      padding-bottom: 13px;
+      font-size: 9px;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+    }
+    .editorial {
+      display: grid;
+      grid-template-columns: 0.9fr 1.1fr;
+      gap: 45px;
+      padding: 38px 0 30px;
+      align-items: start;
+    }
+    .editorial-heading {
+      position: relative;
+    }
+    .editorial .editorial-heading h1 {
+      font-size: 70px;
+      line-height: 0.96;
+      letter-spacing: -4px;
+      font-weight: 750;
+    }
+    .editorial .editorial-heading h1 span {
+      display: block;
+      color: #cc5839;
+    }
+    .editorial-heading p {
+      font-size: 13px;
+      color: var(--muted);
+      max-width: 235px;
+      line-height: 1.7;
+      margin: 24px 0 28px;
+    }
+    .round-create {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 12px;
+      font-weight: 650;
+      padding: 0;
+    }
+    .editorial .editorial-heading .round-create span {
+      display: grid;
+      place-items: center;
+      width: 41px;
+      height: 41px;
+      border-radius: 50%;
+      border: 1px solid #9e9d8a;
+    }
+    .feature-story {
+      position: relative;
+      padding-top: 7px;
+    }
+    .feature-story .eyebrow {
+      font-size: 9px;
+    }
+    .feature-story h2 {
+      font-size: 27px;
+      line-height: 1.2;
+      letter-spacing: -0.7px;
+      max-width: 370px;
+      margin: 18px 0;
+    }
+    .feature-story p {
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .big-progress {
+      position: relative;
+      font-size: 140px;
+      line-height: 1.15;
+      letter-spacing: -10px;
+      font-weight: 500;
+      color: #cacd80;
+      margin: 0 0 4px;
+    }
+    .big-progress sup {
+      font-size: 37px;
+      letter-spacing: -2px;
+      vertical-align: super;
+    }
+    .big-progress small {
+      position: absolute;
+      bottom: 24px;
+      right: 4px;
+      font-size: 10px;
+      letter-spacing: 0;
+      color: var(--muted);
+    }
+    .feature-story .btn {
+      border-radius: 2px;
+      width: 100%;
+      justify-content: space-between;
+      font-size: 12px;
+    }
+    .editorial-stats {
+      display: flex;
+      align-items: center;
+      gap: 35px;
+      border-top: 1px solid #dcdccb;
+      border-bottom: 1px solid #dcdccb;
+      padding: 19px 0;
+      margin: 0 0 30px;
+    }
+    .editorial-stats .eyebrow {
+      font-size: 8px;
+      max-width: 75px;
+      line-height: 1.7;
+      color: var(--muted);
+    }
+    .editorial-stats strong {
+      font-size: 24px;
+      font-weight: 600;
+      letter-spacing: -0.7px;
+    }
+    .editorial-stats small {
+      margin-left: 7px;
+      font-size: 10px;
+    }
+    .editorial-stats .record {
+      margin-left: auto;
+      font-size: 10px;
+      color: var(--muted);
+    }
+    .editorial-list {
+      display: grid;
+    }
+    .editorial-row {
+      display: grid;
+      grid-template-columns: 43px minmax(0, 1fr) 100px 40px;
+      gap: 18px;
+      align-items: center;
+      text-align: left;
+      padding: 19px 0;
+      border-top: 1px solid var(--line);
+    }
+    .editorial-row .index {
+      font-size: 26px;
+      color: #b7b4a3;
+      font-weight: 500;
+      letter-spacing: -1px;
+    }
+    .editorial-row h3 {
+      font-size: 15px;
+      font-weight: 650;
+    }
+    .editorial-row p {
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 5px;
+    }
+    .editorial-row .percent {
+      font-size: 11px;
+    }
+    .editorial-row .bar {
+      height: 3px;
+      margin-top: 7px;
+      background: #e7e4d7;
+    }
+    .editorial-row .go {
+      display: grid;
+      place-items: center;
+      border: 1px solid #deded0;
+      border-radius: 50%;
+      height: 31px;
+      width: 31px;
+      font-size: 17px;
+    }
+    .editorial-row:hover .go {
+      background: #cf522f;
+      color: white;
+      border-color: #cf522f;
+    }
+    .workspace .section-head h2 {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+    .workspace .search {
+      border-radius: 2px;
+    }
+    .workspace .filters button[aria-pressed="true"] {
+      box-shadow: none;
+      color: #cc5839;
+    }
+    .workspace .filters button[aria-pressed="true"]:before {
+      content: "• ";
+      font-size: 12px;
+    }
+    .mobile-header,
+    .mobile-close {
+      display: none;
+    }
+    .sidebar-backdrop {
+      position: fixed;
+      inset: 0;
+      background: #24352e55;
+      z-index: 2;
+    }
+    #modal {
+      width: min(460px, calc(100% - 32px));
+      border: 1px solid #dce1d5;
+      padding: 30px;
+      border-radius: 20px;
+      color: #263b30;
+      box-shadow: 0 24px 80px #172b3033;
+    }
+    #modal::backdrop {
+      background: #172b3066;
+    }
+    #modal h2 {
+      font-size: 24px;
+    }
+    #modal p {
+      margin: 14px 0 24px;
+      line-height: 1.7;
+      color: #69776e;
+      font-size: 14px;
+    }
+    #modal .close {
+      float: right;
+      font-size: 24px;
+      padding: 0 5px;
+    }
+    #modal label {
+      display: block;
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+    #modal input {
+      width: 100%;
+      border: 1px solid #d9e1da;
+      border-radius: 9px;
+      padding: 12px;
+      margin-bottom: 18px;
+    }
+    #modal .eyebrow {
+      margin-bottom: 15px;
+    }
+    #modal .btn {
+      width: 100%;
+    }
+    [hidden] {
+      display: none;
+    }
+    @media (min-width: 1500px) {
+      .main {
+        padding-top: 40px;
+      }
+      .desk {
+        margin-bottom: 65px;
+      }
+      .study-sheet {
+        padding: 39px;
+      }
+      .editorial {
+        padding-top: 48px;
+      }
+      .editorial .editorial-heading h1 {
+        font-size: 85px;
+      }
+      .atlas {
+        min-height: 620px;
+      }
+    }
+    @media (max-width: 1150px) {
+      .shell {
+        grid-template-columns: 180px minmax(0, 1fr);
+      }
+      .main,
+      .shelf .main,
+      .workspace .main {
+        padding: 28px 30px 45px;
+      }
+      .desk {
+        grid-template-columns: minmax(0, 1fr) 170px;
+        gap: 25px;
+      }
+      .study-sheet {
+        padding: 28px 24px;
+      }
+      .study-sheet h2 {
+        font-size: 25px;
+      }
+      .sheet-bottom {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 18px;
+      }
+      .sticky-note {
+        padding: 22px 18px;
+      }
+      .editorial {
+        gap: 30px;
+      }
+      .editorial .editorial-heading h1 {
+        font-size: 59px;
+      }
+      .feature-story h2 {
+        font-size: 23px;
+      }
+      .big-progress {
+        font-size: 118px;
+      }
+      .big-progress small {
+        bottom: 15px;
+      }
+      .island {
+        max-width: 195px;
+      }
+      .island.active {
+        max-width: 225px;
+      }
+      .island.north {
+        left: 34%;
+      }
+      .island.east {
+        right: 0;
+      }
+      .island.south {
+        left: 39%;
+      }
+      .atlas-stats {
+        gap: 17px;
+      }
+      .shelf .atlas-header h1 {
+        font-size: 28px;
+      }
+      .editorial-stats {
+        gap: 20px;
+      }
+      .editorial-stats .record {
+        display: none;
+      }
+    }
+    @media (min-width: 761px) and (max-width: 950px) {
+      .atlas {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 24px;
+        min-height: 0;
+        margin: 30px 0;
+      }
+      .island,
+      .island.active,
+      .island.north,
+      .island.east,
+      .island.south {
+        position: relative;
+        inset: auto;
+        max-width: none;
+        width: 100%;
+        padding: 20px;
+      }
+      .island:nth-of-type(even) {
+        transform: translateY(15px);
+      }
+      .atlas-route,
+      .you-are-here {
+        display: none;
+      }
+      .map-create {
+        position: static;
+        grid-column: 1 / -1;
+        width: auto;
+        height: 48px;
+        border-radius: 25px;
+        flex-direction: row;
+        justify-self: start;
+        padding: 0 20px;
+        margin-top: 15px;
+      }
+      .atlas-header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+      .greeting h1 {
+        font-size: 30px;
+      }
+      .editorial .editorial-heading h1 {
+        font-size: 49px;
+      }
+      .editorial {
+        gap: 24px;
+      }
+      .big-progress {
+        font-size: 98px;
+      }
+      .big-progress small {
+        position: static;
+        display: block;
+        font-size: 10px;
+        margin-bottom: 15px;
+      }
+      .desk {
+        grid-template-columns: 1fr;
+      }
+      .desk-aside {
+        grid-template-columns: 1fr 1fr;
+        align-items: center;
+        gap: 30px;
+      }
+      .sticky-note {
+        max-width: 220px;
+      }
+    }
+    @media (max-width: 760px) {
+      .lab {
+        padding: 12px 15px;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .lab-title {
+        width: 100%;
+      }
+      .switch {
+        width: 100%;
+      }
+      .switch button {
+        flex: 1;
+        padding: 8px 6px;
+        font-size: 11px;
+      }
+      .lab label {
+        margin-left: 0;
+      }
+      .direction {
+        padding: 10px 18px;
+      }
+      .direction b {
+        display: block;
+      }
+      .shell {
+        display: block;
+      }
+      .sidebar {
+        display: none;
+      }
+      .mobile-header {
+        display: flex;
+        align-items: center;
+        gap: 13px;
+        background: #fff;
+        border-bottom: 1px solid var(--line);
+        padding: 16px 19px;
+      }
+      .mobile-header .brand {
+        font-size: 22px;
+      }
+      .mobile-header button {
+        display: grid;
+        place-items: center;
+        width: 30px;
+        height: 30px;
+      }
+      .menu-open .sidebar {
+        display: flex;
+        position: fixed;
+        inset: 0 auto 0 0;
+        width: 250px;
+        z-index: 3;
+        gap: 25px;
+      }
+      .mobile-close {
+        display: block;
+        align-self: flex-end;
+        font-size: 26px;
+      }
+      .main,
+      .shelf .main,
+      .workspace .main {
+        padding: 25px 22px 40px;
+      }
+      .topline {
+        margin-bottom: 27px;
+        font-size: 10px;
+      }
+      .greeting {
+        margin-bottom: 30px;
+        align-items: flex-start;
+      }
+      .greeting h1 {
+        font-size: 29px;
+      }
+      .greeting p {
+        font-size: 12px;
+        line-height: 1.7;
+      }
+      .greeting > .btn {
+        font-size: 0;
+        padding: 11px;
+      }
+      .greeting > .btn svg {
+        width: 18px;
+      }
+      .desk {
+        grid-template-columns: 1fr;
+        gap: 28px;
+        margin: 15px 0 38px;
+      }
+      .study-sheet {
+        padding: 28px 23px;
+      }
+      .study-sheet h2 {
+        font-size: 26px;
+      }
+      .sheet-bottom {
+        flex-direction: row;
+        align-items: flex-end;
+        gap: 18px;
+      }
+      .sheet-bottom .btn {
+        padding: 12px 15px;
+        font-size: 11px;
+      }
+      .desk-aside {
+        grid-template-columns: 1fr 1fr;
+        gap: 25px;
+        align-items: center;
+      }
+      .sticky-note {
+        transform: rotate(2deg);
+        padding: 18px;
+      }
+      .sticky-note strong {
+        font-size: 35px;
+      }
+      .sticky-note strong span {
+        font-size: 15px;
+      }
+      .sticky-note p {
+        font-size: 9px;
+      }
+      .sticky-note .eyebrow {
+        font-size: 8px;
+      }
+      .xp-stamp {
+        width: 134px;
+        height: 86px;
+      }
+      .xp-stamp strong {
+        font-size: 23px;
+      }
+      .folder-grid {
+        grid-template-columns: 1fr;
+        gap: 23px;
+      }
+      .folder {
+        padding: 19px 21px;
+      }
+      .tools {
+        flex-wrap: wrap;
+        gap: 13px;
+      }
+      .search {
+        width: 100%;
+      }
+      .search input {
+        width: 100%;
+      }
+      .filters {
+        gap: 20px;
+      }
+      .atlas-header {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 23px;
+      }
+      .shelf .atlas-header h1 {
+        font-size: 30px;
+      }
+      .atlas-stats {
+        gap: 30px;
+      }
+      .atlas-stats strong {
+        font-size: 20px;
+      }
+      .atlas {
+        min-height: 0;
+        margin: 28px 0 0;
+        padding: 0 0 0 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 23px;
+        border-left: 2px dashed #b9cbb5;
+      }
+      .island,
+      .island.active,
+      .island.north,
+      .island.east,
+      .island.south {
+        position: relative;
+        inset: auto;
+        width: 100%;
+        max-width: none;
+        padding: 22px;
+        border-radius: 20px;
+      }
+      .island:before {
+        content: "";
+        position: absolute;
+        left: -32px;
+        top: 28px;
+        width: 12px;
+        height: 12px;
+        border: 3px solid #f4f8f5;
+        border-radius: 50%;
+        background: #7da77d;
+      }
+      .island .map-icon {
+        float: right;
+        margin: 0 0 10px 15px;
+      }
+      .island h3 {
+        font-size: 18px;
+        max-width: 215px;
+      }
+      .contour,
+      .atlas-route,
+      .map-caption,
+      .you-are-here {
+        display: none;
+      }
+      .map-create {
+        position: static;
+        align-self: flex-start;
+        border-radius: 25px;
+        width: auto;
+        height: auto;
+        padding: 13px 20px;
+        flex-direction: row;
+      }
+      .map-legend {
+        line-height: 1.6;
+        font-size: 9px;
+      }
+      .atlas-list {
+        grid-template-columns: 1fr;
+      }
+      .issue-line {
+        font-size: 8px;
+        line-height: 1.7;
+      }
+      .editorial {
+        grid-template-columns: 1fr;
+        gap: 36px;
+        padding: 28px 0;
+      }
+      .editorial .editorial-heading h1 {
+        font-size: 68px;
+        max-width: 300px;
+      }
+      .editorial-heading p {
+        max-width: 270px;
+        margin: 20px 0;
+      }
+      .feature-story {
+        border-top: 1px solid var(--line);
+        padding-top: 25px;
+      }
+      .feature-story h2 {
+        font-size: 27px;
+        max-width: 300px;
+      }
+      .big-progress {
+        font-size: 140px;
+        max-width: 320px;
+      }
+      .big-progress small {
+        bottom: 24px;
+        right: 0;
+      }
+      .editorial-stats {
+        flex-wrap: wrap;
+        gap: 20px 25px;
+      }
+      .editorial-stats .eyebrow {
+        display: none;
+      }
+      .editorial-stats strong {
+        font-size: 23px;
+      }
+      .editorial-stats small {
+        font-size: 10px;
+      }
+      .editorial-row {
+        grid-template-columns: 30px minmax(0, 1fr) 53px;
+        gap: 11px;
+      }
+      .editorial-row h3 {
+        font-size: 13px;
+      }
+      .editorial-row .index {
+        font-size: 22px;
+      }
+      .editorial-row .go {
+        display: none;
+      }
+      .editorial-row .percent {
+        font-size: 10px;
+      }
+      .footnote {
+        line-height: 1.7;
+        font-size: 9px;
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .skeleton,
+      .folder,
+      .island,
+      .cover {
+        animation: none;
+        transition: none;
+      }
+    }
+    </style>
+  </head>
+  <body>
+    <header class="lab">
+      <div class="lab-title">Design study / ngerti.in</div>
+      <nav class="switch" aria-label="Pilih variasi desain">
+        <button type="button" data-view="focus" aria-pressed="true">01 Meja Belajar</button
+        ><button type="button" data-view="shelf" aria-pressed="false">02 Atlas</button
+        ><button type="button" data-view="workspace" aria-pressed="false">03 Jurnal</button>
+      </nav>
+      <label
+        >Kondisi
+        <select id="state">
+          <option value="filled">Ada modul</option>
+          <option value="empty">Pengguna baru</option>
+          <option value="loading">Memuat</option>
+          <option value="error">Gagal memuat</option>
+        </select></label
+      >
+    </header>
+    <div class="direction" id="direction"></div>
+    <div id="app"></div>
+    <dialog id="modal" aria-labelledby="dialog-title">
+      <button type="button" class="close" aria-label="Tutup dialog">×</button>
+      <div id="dialog-content"></div>
+    </dialog>
+    <script>
+    const paths = {
+      home: "M3 10 12 3l9 7v10H3Z M9 20v-7h6v7",
+      book: "M12 5C9 3 5 3 2 4v15c3-1 7-1 10 1 3-2 7-2 10-1V4c-3-1-7-1-10 1Z M12 5v15",
+      plus: "M12 5v14M5 12h14",
+      search: "M10 17a7 7 0 1 0 0-14 7 7 0 0 0 0 14Zm5-2 6 6",
+      bolt: "m13 2-8 12h6l-1 8 9-13h-7Z",
+      fire: "M12 2c2 6 7 7 7 13a7 7 0 1 1-14 0c0-3 2-6 4-8 0 4 3 4 3-5Z",
+      leaf: "M20 3C7 2 2 7 5 15s15 7 15-12ZM4 21 16 8",
+      chart: "M4 20V11m8 9V4m8 16V8",
+      atom: "M12 3v18M3 12h18M5 5l14 14M5 19 19 5M8 8h8v8H8",
+      check: "m5 12 4 4L19 6",
+    };
+    const icon = (n) =>
+      `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${paths[n] || paths.book}"/></svg>`;
+    const modules = [
+      {
+        title: "Ekosistem & interaksi makhluk hidup",
+        category: "Biologi",
+        difficulty: "Menengah",
+        minutes: 32,
+        progress: 42,
+        color: "#dce8cd",
+        ink: "#456039",
+        icon: "leaf",
+        updated: "Terakhir dipelajari",
+      },
+      {
+        title: "Memahami hukum Newton",
+        category: "Fisika",
+        difficulty: "Menengah",
+        minutes: 25,
+        progress: 18,
+        color: "#d9e8ed",
+        ink: "#365d6b",
+        icon: "atom",
+        updated: "Diperbarui kemarin",
+      },
+      {
+        title: "Dasar-dasar statistika",
+        category: "Matematika",
+        difficulty: "Dasar",
+        minutes: 28,
+        progress: 0,
+        color: "#efdfbb",
+        ink: "#796033",
+        icon: "chart",
+        updated: "Diperbarui 2 hari lalu",
+      },
+      {
+        title: "Sel & struktur kehidupan",
+        category: "Biologi",
+        difficulty: "Dasar",
+        minutes: 20,
+        progress: 100,
+        color: "#e7dbe2",
+        ink: "#765368",
+        icon: "leaf",
+        updated: "Diperbarui 3 hari lalu",
+      },
+    ];
+    let view = ["focus", "shelf", "workspace"].includes(location.hash.slice(1))
+        ? location.hash.slice(1)
+        : "focus",
+      state = "filled",
+      filter = "all",
+      query = "";
+    const descriptions = {
+      focus:
+        "<b>01 / Meja Belajar</b> Lembar belajar miring, catatan streak, stempel XP, dan folder materi. Personal dan santai.",
+      shelf:
+        "<b>02 / Atlas Pengetahuan</b> Modul menjadi pulau yang bisa dijelajahi. Peta bebas untuk memilih materi, bukan urutan wajib.",
+      workspace:
+        "<b>03 / Jurnal Belajar</b> Komposisi editorial: judul besar, progres sebagai angka utama, dan indeks materi bernomor.",
+    };
+    const brand = '<div class="brand">ngerti.in<span>.</span></div>';
+    const nav = () =>
+      `<nav class="nav" aria-label="Navigasi dashboard"><button type="button" class="selected" data-home aria-current="page">${icon("home")}Beranda</button><button type="button" data-create>${icon("plus")}Buat modul</button><button type="button" data-library>${icon("book")}Modul saya</button></nav>`;
+    const bar = (p) =>
+      `<div class="bar" role="progressbar" aria-label="Kemajuan modul" aria-valuenow="${p}" aria-valuemin="0" aria-valuemax="100"><i style="width:${p}%"></i></div>`;
+    function library() {
+      return `<section id="library" aria-labelledby="library-title"><div class="section-head"><h2 id="library-title">${view === "focus" ? "Folder pengetahuan" : view === "shelf" ? "Semua destinasi" : "Indeks pengetahuan"}</h2><small>${state === "empty" ? 0 : modules.length} modul</small></div><div class="tools"><div class="filters" aria-label="Filter modul">${[
+        ["all", "Semua"],
+        ["active", "Dipelajari"],
+        ["done", "Selesai"],
+      ]
+        .map(
+          ([id, label]) =>
+            `<button type="button" data-filter="${id}" aria-pressed="${filter === id}">${label}</button>`,
+        )
+        .join(
+          "",
+        )}</div><label class="search">${icon("search")}<input id="search" type="search" aria-label="Cari modul" placeholder="Cari modul…"></label></div><div id="results" aria-live="polite"></div></section>`;
+    }
+    function results() {
+      const list =
+        state === "empty"
+          ? []
+          : modules
+              .map((m, i) => ({ ...m, i }))
+              .filter(
+                (m) =>
+                  m.title.toLocaleLowerCase("id-ID").includes(query.toLocaleLowerCase("id-ID")) &&
+                  (filter === "all" || (filter === "done" ? m.progress === 100 : m.progress < 100)),
+              );
+      const el = document.getElementById("results");
+      if (!el) return;
+      el.className =
+        view === "focus" ? "folder-grid" : view === "shelf" ? "atlas-list" : "editorial-list";
+      if (!list.length) {
+        el.innerHTML = `<div class="empty"><h3>${state === "empty" ? "Rasa penasaranmu mulai di sini." : "Belum ada modul yang cocok."}</h3><p>${state === "empty" ? "Bawa satu materi. Jadikan pengetahuan baru." : "Coba kata kunci lain atau tampilkan semua modul."}</p><button type="button" class="btn secondary" ${state === "empty" ? "data-create" : "data-reset"}>${state === "empty" ? "Buat modul pertama" : "Reset pencarian"}</button></div>`;
+        return;
+      }
+      el.innerHTML = list
+        .map((m) =>
+          view === "focus"
+            ? `<button type="button" class="folder" data-open="${m.i}"><span class="folder-top"><span>${m.category} / 0${m.i + 1}</span>${icon(m.progress === 100 ? "check" : "book")}</span><h3>${m.title}</h3><p>${m.difficulty} · ${m.minutes} menit</p><span class="folder-bottom"><span>${m.progress === 100 ? "Selesai" : m.progress === 0 ? "Belum dimulai" : `${m.progress}% selesai`}</span>${bar(m.progress)}</span></button>`
+            : view === "shelf"
+              ? `<button type="button" class="atlas-item" data-open="${m.i}"><span class="index">0${m.i + 1}</span><span><h3>${m.title}</h3><p>${m.difficulty} · ${m.minutes} menit</p></span><span class="percent">${m.progress}% ↗</span></button>`
+              : `<button type="button" class="editorial-row" data-open="${m.i}"><span class="index">0${m.i + 1}</span><span><h3>${m.title}</h3><p>${m.difficulty} · ${m.minutes} menit</p></span><span class="percent">${m.progress}% selesai${bar(m.progress)}</span><span class="go" aria-hidden="true">↗</span></button>`,
+        )
+        .join("");
+    }
+    function desk() {
+      return `<header class="greeting"><div><h1>Ruang kecil untuk<br><em>rasa penasaranmu.</em></h1><p>Halo, Vito. Ada yang belum selesai kita pelajari.</p></div><button type="button" class="btn secondary" data-create aria-label="Buat modul">${icon("plus")}Buat modul</button></header><div class="desk"><section class="study-sheet"><div class="sheet-top"><span class="eyebrow">Masih terbuka di mejamu</span><span class="sheet-number">01 / BIOLOGI</span></div><h2>${modules[0].title}</h2><p>Menengah · Estimasi modul 32 menit</p><div class="sheet-bottom"><div><div class="progress-label"><span>Sudah kamu pahami</span><b>42%</b></div>${bar(42)}</div><button type="button" class="btn" data-open="0">Lanjut belajar ↗</button></div></section><aside class="desk-aside" aria-label="Statistik belajar"><div class="sticky-note"><div class="eyebrow">Jaga ritmenya</div><strong>5 <span>hari beruntun</span></strong><p>Rekor terbaikmu: 12 hari.</p></div><div class="xp-stamp">${icon("bolt")}<div><strong>1.240</strong><small>XP terkumpul</small></div></div></aside></div>${library()}`;
+    }
+    function atlas() {
+      return `<header class="atlas-header"><div><h1>Dunia yang makin<br>kamu ngerti.</h1><p>Halo, Vito. Pilih tempat untuk melanjutkan penasaranmu.</p></div><div class="atlas-stats"><div><strong>5 hari</strong><small>Beruntun · rekor 12</small></div><div><strong>1.240</strong><small>Total XP</small></div></div></header><section class="atlas" aria-label="Peta koleksi modul"><svg class="contour" viewBox="0 0 1000 575" preserveAspectRatio="none" aria-hidden="true"><path d="M-80 140C80-70 340 220 620 50S1000 40 1090 180M-90 180C100-40 340 265 650 95S1010 100 1110 220M-50 390C150 240 240 560 540 405S860 190 1080 370M-50 430C170 260 230 620 570 450S900 260 1080 410M-90 470C180 300 280 640 610 490S930 310 1100 460"/></svg><svg class="atlas-route" viewBox="0 0 1000 575" preserveAspectRatio="none" aria-hidden="true"><path d="M170 300C180 95 480 65 530 130S900 120 880 300 520 360 520 460 240 530 170 300"/></svg><span class="you-are-here" aria-hidden="true">Terakhir kamu di sini <span>↙</span></span>${[
+        0, 1, 2, 3,
+      ]
+        .map((i) => {
+          const m = modules[i];
+          return `<button type="button" class="island ${["active", "north", "east", "south"][i]}" data-open="${i}"><span class="eyebrow">${i === 0 ? "Lanjutkan eksplorasi" : m.progress === 100 ? "Sudah dijelajahi" : m.progress === 0 ? "Destinasi baru" : "Sedang dijelajahi"}</span><span class="map-icon">${icon(m.icon)}</span><h3>${m.title}</h3><p>${m.minutes} menit · ${m.progress}% selesai</p>${i === 0 ? bar(42) : ""}<span class="map-action">${m.progress === 100 ? "Kunjungi lagi" : m.progress === 0 ? "Mulai jelajahi" : "Lanjut belajar"} ↗</span></button>`;
+        })
+        .join(
+          "",
+        )}<button type="button" class="map-create" data-create>${icon("plus")}Destinasi baru</button></section><div class="map-legend"><span>4 pulau pengetahuan · 1 selesai</span><span>Bebas memilih arah belajarmu</span></div>${library()}`;
+    }
+    function journal() {
+      return `<div class="issue-line"><span>Jurnal personal / Vito Andarea</span><span>Edisi 007 · September 2026</span></div><div class="editorial"><header class="editorial-heading"><h1>Belum<br>ngerti?<br><span>Sebentar<br>lagi.</span></h1><p>Satu halaman, satu pemahaman baru. Lanjutkan ceritamu hari ini.</p><button type="button" class="round-create" data-create><span>${icon("plus")}</span>Mulai topik baru</button></header><section class="feature-story"><div class="eyebrow">Sedang kamu pelajari / 01</div><h2>${modules[0].title}</h2><p>Menengah · Estimasi modul 32 menit</p><div class="big-progress" aria-label="42 persen selesai">42<sup>%</sup><small>perjalanan selesai</small></div><button type="button" class="btn" data-open="0">Lanjutkan halamanmu <span aria-hidden="true">↗</span></button></section></div><aside class="editorial-stats" aria-label="Statistik belajar"><span class="eyebrow">Catatan pertumbuhan</span><div><strong>05</strong><small>hari beruntun</small></div><div><strong>1.240</strong><small>total XP</small></div><span class="record">Rekor streak / 12 hari</span></aside>${library()}`;
+    }
+    function render() {
+      document.querySelectorAll("[data-view]").forEach((b) => {
+        b.setAttribute("aria-pressed", b.dataset.view === view);
+      });
+      document.getElementById("direction").innerHTML = descriptions[view];
+      let content;
+      if (state === "loading")
+        content =
+          '<div role="status" aria-label="Memuat dashboard"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>';
+      else if (state === "error")
+        content =
+          '<section class="status" role="alert"><h2>Ringkasan belum bisa dimuat.</h2><p>Coba muat ulang untuk melanjutkan belajar.</p><button type="button" class="btn" data-retry>Coba lagi</button></section>';
+      else if (state === "empty")
+        content = `<header class="greeting"><div><h1>${view === "focus" ? "Meja baru. Cerita baru." : view === "shelf" ? "Petualanganmu dimulai di sini." : "Halaman pertamamu."}</h1><p>Halo, Vito. Mau ngerti apa hari ini?</p></div></header>${library()}`;
+      else content = view === "focus" ? desk() : view === "shelf" ? atlas() : journal();
+      document.getElementById("app").className = view;
+      document.getElementById("app").innerHTML =
+        `<div class="mobile-header"><button type="button" data-menu aria-label="Buka sidebar" aria-expanded="false">${icon("book")}</button>${brand}</div><div class="shell"><aside class="sidebar" id="sidebar" aria-label="Sidebar"><button type="button" class="mobile-close" data-menu aria-label="Tutup sidebar">×</button>${brand}${nav()}<div class="account"><span class="avatar">VA</span><div>Vito Andarea<small>Ruang belajarmu</small></div></div></aside><button type="button" class="sidebar-backdrop" data-menu aria-label="Tutup sidebar" hidden></button><main class="main"><div class="topline"><span>Beranda</span><span>Senin, 7 September</span></div>${content}<p class="footnote">Prototype interaktif · Data contoh · Aksi belajar dan pembuatan modul disimulasikan.</p></main></div>`;
+      results();
+      const input = document.getElementById("search");
+      if (input) {
+        input.value = query;
+        input.addEventListener("input", (e) => {
+          query = e.target.value;
+          results();
+        });
+      }
+    }
+    const modal = document.getElementById("modal");
+    function closeSidebar() {
+      document.getElementById("app").classList.remove("menu-open");
+      document.querySelector(".sidebar-backdrop").hidden = true;
+      document.querySelector(".mobile-header [data-menu]").setAttribute("aria-expanded", "false");
+    }
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && document.getElementById("app").classList.contains("menu-open")) {
+        closeSidebar();
+        document.querySelector(".mobile-header [data-menu]").focus();
+      }
+    });
+    function openModal(html) {
+      closeSidebar();
+      document.getElementById("dialog-content").innerHTML = html;
+      modal.showModal();
+    }
+    document.addEventListener("click", (e) => {
+      const b = e.target.closest("button");
+      if (!b) return;
+      if (b.hasAttribute("data-menu")) {
+        const opened = document.getElementById("app").classList.toggle("menu-open");
+        document.querySelector(".sidebar-backdrop").hidden = !opened;
+        document.querySelector(".mobile-header [data-menu]").setAttribute("aria-expanded", opened);
+        document.querySelector(opened ? ".mobile-close" : ".mobile-header [data-menu]").focus();
+        return;
+      }
+      if (b.dataset.view) {
+        view = b.dataset.view;
+        history.replaceState(null, "", `#${view}`);
+        render();
+      } else if (b.hasAttribute("data-filter")) {
+        filter = b.dataset.filter;
+        document.querySelectorAll("[data-filter]").forEach((x) => {
+          x.setAttribute("aria-pressed", x === b);
+        });
+        results();
+      } else if (b.hasAttribute("data-reset")) {
+        query = "";
+        filter = "all";
+        render();
+      } else if (b.hasAttribute("data-create")) {
+        openModal(
+          '<div class="eyebrow">Simulasi / Modul baru</div><h2 id="dialog-title">Mau ngerti apa?</h2><p>Mulai dari topik yang ingin kamu pelajari.</p><form id="create-form"><label for="topic">Topik modul</label><input id="topic" placeholder="Contoh: Sistem tata surya" required maxlength="120"><button class="btn" type="submit">Buat modul contoh →</button></form>',
+        );
+      } else if (b.hasAttribute("data-open")) {
+        const m = modules[Number(b.dataset.open)];
+        openModal(
+          `<div class="eyebrow">Simulasi / ${m.progress === 100 ? "Ulangi materi" : "Lanjut belajar"}</div><h2 id="dialog-title">${m.title}</h2><p>${m.progress}% selesai · ${m.minutes} menit estimasi modul.<br>Di aplikasi, aksi ini membuka langkah belajar berikutnya.</p>${bar(m.progress)}<p>Kamu sedang meninjau prototype dashboard.</p><button type="button" class="btn" data-close>Kembali ke dashboard</button>`,
+        );
+      } else if (b.hasAttribute("data-library")) {
+        closeSidebar();
+        document.getElementById("library")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        document.getElementById("search")?.focus({ preventScroll: true });
+      } else if (b.hasAttribute("data-home")) {
+        closeSidebar();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } else if (b.hasAttribute("data-retry")) {
+        state = "filled";
+        document.getElementById("state").value = state;
+        render();
+      } else if (b.hasAttribute("data-close") || b.classList.contains("close")) modal.close();
+    });
+    document.addEventListener("submit", (e) => {
+      if (e.target.id !== "create-form") return;
+      e.preventDefault();
+      const topic = document.getElementById("topic").value.trim();
+      if (!topic) {
+        document.getElementById("topic").setCustomValidity("Tulis topik modul terlebih dahulu.");
+        document.getElementById("topic").reportValidity();
+        return;
+      }
+      document.getElementById("dialog-content").innerHTML =
+        '<div class="eyebrow">Simulasi selesai</div><h2 id="dialog-title">Ide belajarmu sudah siap.</h2><p id="created-message"></p><button type="button" class="btn" data-close>Kembali ke dashboard</button>';
+      document.getElementById("created-message").textContent =
+        `“${topic}” akan menjadi topik modul barumu. Prototype ini tidak menyimpan atau mengirim data.`;
+      document.querySelector("[data-close]").focus();
+    });
+    document.addEventListener("input", (e) => {
+      if (e.target.id === "topic") e.target.setCustomValidity("");
+    });
+    document.getElementById("state").addEventListener("change", (e) => {
+      state = e.target.value;
+      query = "";
+      filter = "all";
+      render();
+    });
+    window.addEventListener("hashchange", () => {
+      if (["focus", "shelf", "workspace"].includes(location.hash.slice(1))) {
+        view = location.hash.slice(1);
+        render();
+      }
+    });
+    render();
+    </script>
+  </body>
+</html>
