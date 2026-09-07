@@ -11,6 +11,7 @@ import { Link } from "react-router-dom";
 import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";
 import { nextLearningRoute } from "../next-learning-route";
+import { AttemptAdaptiveAction } from "./attempt-adaptive-action";
 import { AttemptAnswerReview } from "./attempt-answer-review";
 
 interface AttemptSummaryProps {
@@ -22,10 +23,10 @@ const nextActionLabels = {
   retry_module: "Lihat modul",
   start_core_node: "Lanjutkan belajar",
   resume_core_node: "Lanjutkan belajar",
-  start_adaptive_node: "Mulai latihan penguatan",
-  resume_adaptive_node: "Lanjutkan latihan penguatan",
-  offer_optional_review: "Lihat pilihan penguatan",
-  wait_for_adaptive: "Lihat status",
+  start_adaptive_node: null,
+  resume_adaptive_node: null,
+  offer_optional_review: null,
+  wait_for_adaptive: null,
   module_completed: "Lihat perjalanan belajar",
   none: null,
 } satisfies Record<AttemptResult["nextAction"]["type"], string | null>;
@@ -185,7 +186,14 @@ export function AttemptSummary({ result }: AttemptSummaryProps): JSX.Element {
         </section>
       ) : null}
 
-      {destination && nextAction ? (
+      {[
+        "offer_optional_review",
+        "wait_for_adaptive",
+        "start_adaptive_node",
+        "resume_adaptive_node",
+      ].includes(result.nextAction.type) ? (
+        <AttemptAdaptiveAction action={result.nextAction} />
+      ) : destination && nextAction ? (
         <footer className="border-t border-border pt-6">
           <Button
             asChild

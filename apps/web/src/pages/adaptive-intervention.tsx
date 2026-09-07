@@ -8,6 +8,7 @@ import {
   useAdaptiveIntervention,
 } from "../features/modules/api/use-modules";
 import { ApiProblemError } from "../lib/api";
+import { AdaptiveGuidance } from "../features/modules/components/adaptive-guidance";
 import { nextLearningRoute } from "../features/modules/next-learning-route";
 
 export default function AdaptiveInterventionPage() {
@@ -63,6 +64,11 @@ export default function AdaptiveInterventionPage() {
         <p className="mt-4 text-lg leading-8 text-slate-600">
           {data.reasonSummary ?? "Kami menyiapkan penguatan singkat berdasarkan hasil belajarmu."}
         </p>
+        {data.status !== "completed" && data.status !== "skipped" ? (
+          <div className="mt-4 text-foreground">
+            <AdaptiveGuidance intervention={data} />
+          </div>
+        ) : null}
         {data.targetConcepts.length ? (
           <section className="mt-7 rounded-3xl border border-slate-200 bg-white p-6">
             <h2 className="font-bold">Konsep yang diperkuat</h2>
@@ -83,13 +89,13 @@ export default function AdaptiveInterventionPage() {
         ) : null}
         {data.status === "offered" ? (
           <section className="mt-7 rounded-3xl border border-amber-200 bg-amber-50 p-6">
-            <h2 className="text-xl font-bold">Mau review singkat dulu?</h2>
+            <h2 className="text-xl font-bold">Mau penguatan singkat dulu?</h2>
             <p className="mt-2 text-slate-700">
-              Review ini opsional dan tidak mengubah progress Core Journey.
+              Penguatan ini opsional dan tidak menambah persentase progres perjalanan utama.
             </p>
             <div className="mt-5 flex flex-wrap gap-3">
               <Button disabled={decision.isPending} onClick={() => void decide("accept")}>
-                Terima review
+                Ambil penguatan
               </Button>
               <Button
                 disabled={decision.isPending}

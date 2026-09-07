@@ -3,6 +3,7 @@ import { BookOpen, Check, Flag, Layers, LockKeyhole, Play, Sparkles } from "luci
 import type { Ref } from "react";
 import { Link } from "react-router-dom";
 import { cn } from "../../../lib/utils";
+import { AdaptiveInfoTooltip } from "./adaptive-info-tooltip";
 
 const statusLabel = {
   locked: "Terkunci",
@@ -45,53 +46,6 @@ export function JourneyNodeItem({
   if (completed) Icon = Check;
   if (locked) Icon = LockKeyhole;
 
-  const contentClassName = cn(
-    "group flex min-h-[110px] items-center gap-5 rounded-[20px] px-2 py-3 [overflow-wrap:anywhere] md:gap-6",
-    locked && "text-muted-foreground",
-  );
-  const content = (
-    <>
-      <span
-        aria-hidden="true"
-        className={cn(
-          "relative grid h-[58px] w-20 shrink-0 place-items-center md:h-[66px] md:w-24",
-          evaluation ? "rounded-[24%]" : "rounded-[50%]",
-          !locked &&
-            "motion-safe:transition-transform motion-safe:duration-160 motion-safe:group-hover:-translate-y-1",
-          current
-            ? "bg-primary text-primary-foreground shadow-[0_10px_0_var(--primary-edge),0_0_0_7px_var(--background),0_0_0_11px_var(--primary),0_20px_35px_color-mix(in_srgb,var(--primary)_25%,transparent)]"
-            : completed
-              ? "bg-success-subtle text-success-foreground shadow-[0_10px_0_var(--success)]"
-              : "bg-border text-muted-foreground shadow-[0_10px_0_var(--input)]",
-        )}
-      >
-        {current ? (
-          <span className="absolute -top-[45px] z-1 grid h-[54px] w-12 -rotate-45 place-items-center rounded-[20px_20px_20px_4px] bg-success text-[#234700] shadow-[-8px_8px_22px_color-mix(in_srgb,var(--success)_20%,transparent)]">
-            <Play className="size-5 rotate-45 fill-current" />
-          </span>
-        ) : null}
-        <span
-          className={cn(
-            "grid h-11 w-16 place-items-center rounded-[inherit] border-5 border-background md:h-[50px] md:w-[76px]",
-            adaptive && "border-dashed",
-          )}
-        >
-          <Icon className="size-6" />
-        </span>
-      </span>
-      <span className="min-w-0">
-        <span className="mb-1 block text-xs font-bold text-muted-foreground">
-          {adaptive ? "Pengayaan · " : ""}
-          {nodeTypes[node.type].label}
-        </span>
-        <span className="block text-lg font-bold leading-snug">{node.title}</span>
-        <span className="mt-2 block text-sm text-muted-foreground">
-          {statusLabel[node.progress.status]}
-        </span>
-      </span>
-    </>
-  );
-
   return (
     <li
       ref={ref}
@@ -100,22 +54,84 @@ export function JourneyNodeItem({
         nodeOffsets[index % nodeOffsets.length],
       )}
     >
-      {locked ? (
-        <div className={contentClassName} aria-disabled="true">
-          {content}
-        </div>
-      ) : (
-        <Link
-          aria-current={current ? "step" : undefined}
+      <div
+        className={cn(
+          "group flex min-h-[110px] items-center gap-5 rounded-[20px] px-2 py-3 [overflow-wrap:anywhere] md:gap-6",
+          locked && "text-muted-foreground",
+        )}
+      >
+        <span
+          aria-hidden="true"
           className={cn(
-            contentClassName,
-            "focus-visible:outline-3 focus-visible:outline-offset-6 focus-visible:outline-ring",
+            "relative grid h-[58px] w-20 shrink-0 place-items-center md:h-[66px] md:w-24",
+            evaluation ? "rounded-[24%]" : "rounded-[50%]",
+            !locked &&
+              "motion-safe:transition-transform motion-safe:duration-160 motion-safe:group-hover:-translate-y-1",
+            adaptive
+              ? cn(
+                  "bg-adaptive-subtle text-adaptive-foreground shadow-[0_10px_0_var(--adaptive-edge)]",
+                  current &&
+                    "bg-adaptive text-adaptive-ink shadow-[0_10px_0_var(--adaptive-edge),0_0_0_7px_var(--background),0_0_0_11px_var(--adaptive)]",
+                )
+              : current
+                ? "bg-primary text-primary-foreground shadow-[0_10px_0_var(--primary-edge),0_0_0_7px_var(--background),0_0_0_11px_var(--primary),0_20px_35px_color-mix(in_srgb,var(--primary)_25%,transparent)]"
+                : completed
+                  ? "bg-success-subtle text-success-foreground shadow-[0_10px_0_var(--success)]"
+                  : "bg-border text-muted-foreground shadow-[0_10px_0_var(--input)]",
           )}
-          to={`/modules/${moduleId}/nodes/${node.id}`}
         >
-          {content}
-        </Link>
-      )}
+          {current ? (
+            <span
+              className={cn(
+                "absolute -top-[45px] z-1 grid h-[54px] w-12 -rotate-45 place-items-center rounded-[20px_20px_20px_4px]",
+                adaptive
+                  ? "bg-adaptive text-adaptive-ink"
+                  : "bg-success text-[#234700] shadow-[-8px_8px_22px_color-mix(in_srgb,var(--success)_20%,transparent)]",
+              )}
+            >
+              <Play className="size-5 rotate-45 fill-current" />
+            </span>
+          ) : null}
+          <span
+            className={cn(
+              "grid h-11 w-16 place-items-center rounded-[inherit] border-5 border-background md:h-[50px] md:w-[76px]",
+              adaptive && "border-dashed",
+            )}
+          >
+            <Icon className="size-6" />
+          </span>
+        </span>
+        <span className="min-w-0">
+          <span
+            className={cn(
+              "mb-1 flex items-center gap-1 text-xs font-bold",
+              adaptive ? "text-adaptive-foreground" : "text-muted-foreground",
+            )}
+          >
+            <span>
+              {adaptive ? "Penguatan · " : ""}
+              {nodeTypes[node.type].label}
+            </span>
+            {adaptive ? <AdaptiveInfoTooltip /> : null}
+          </span>
+          <span className="block text-lg font-bold leading-snug">
+            {locked ? (
+              node.title
+            ) : (
+              <Link
+                aria-current={current ? "step" : undefined}
+                className="after:absolute after:inset-0 after:rounded-[20px] focus-visible:outline-none focus-visible:after:outline-3 focus-visible:after:outline-offset-6 focus-visible:after:outline-ring"
+                to={`/modules/${moduleId}/nodes/${node.id}`}
+              >
+                {node.title}
+              </Link>
+            )}
+          </span>
+          <span className="mt-2 block text-sm text-muted-foreground">
+            {statusLabel[node.progress.status]}
+          </span>
+        </span>
+      </div>
     </li>
   );
 }

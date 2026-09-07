@@ -30,6 +30,11 @@
   --accent-foreground: #005d87;
   --destructive: #b42318;
   --destructive-foreground: #ffffff;
+  --adaptive: #f5c542;
+  --adaptive-edge: #b88712;
+  --adaptive-ink: #513800;
+  --adaptive-subtle: #fff4ce;
+  --adaptive-foreground: #705000;
   --success: #58cc02;
   --success-foreground: #234700;
   --success-subtle: #d7ffb8;
@@ -73,6 +78,11 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-adaptive: var(--adaptive);
+  --color-adaptive-edge: var(--adaptive-edge);
+  --color-adaptive-ink: var(--adaptive-ink);
+  --color-adaptive-subtle: var(--adaptive-subtle);
+  --color-adaptive-foreground: var(--adaptive-foreground);
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
   --color-success-subtle: var(--success-subtle);
@@ -160,6 +170,8 @@
   --ring: #83d4ff;
   --destructive: #ffb4aa;
   --destructive-foreground: #541c16;
+  --adaptive-subtle: #382d16;
+  --adaptive-foreground: #f5d578;
   --success-subtle: #253d21;
   --success-foreground: #a5ed6e;
 }
@@ -184,6 +196,8 @@
     --ring: #83d4ff;
     --destructive: #ffb4aa;
     --destructive-foreground: #541c16;
+    --adaptive-subtle: #382d16;
+    --adaptive-foreground: #f5d578;
     --success-subtle: #253d21;
     --success-foreground: #a5ed6e;
   }
