@@ -1,5 +1,6 @@
+import { ArrowLeft01Icon, ArrowRight01Icon, Tick02Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import type { AssessmentAnswer } from "@ngertiin/contracts/api";
-import { ArrowLeft, ArrowRight, Check, RotateCcw } from "lucide-react";
 import { type JSX, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Button } from "../components/ui/button";
@@ -11,6 +12,7 @@ import {
   useStartNode,
   useSubmitAttempt,
 } from "../features/modules/api/use-modules";
+import { AttemptResultActions } from "../features/modules/components/attempt-result-actions";
 import { AttemptSummary } from "../features/modules/components/attempt-summary";
 import { NodeActivity } from "../features/modules/components/node-activity";
 import { NodePlayerFooter } from "../features/modules/components/node-player-footer";
@@ -193,7 +195,7 @@ function NodePlayer({ moduleId, nodeId }: NodePlayerProps): JSX.Element {
           onClick={() => moveTo(slide + 1)}
         >
           Lanjutkan
-          <ArrowRight />
+          <HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={1.5} aria-hidden="true" />
         </Button>
       );
     }
@@ -225,7 +227,7 @@ function NodePlayer({ moduleId, nodeId }: NodePlayerProps): JSX.Element {
           onClick={handleSubmit}
         >
           {submit.isPending ? "Mengirim…" : "Kirim jawaban"}
-          <Check />
+          <HugeiconsIcon icon={Tick02Icon} strokeWidth={1.5} aria-hidden="true" />
         </Button>
       );
     }
@@ -237,7 +239,7 @@ function NodePlayer({ moduleId, nodeId }: NodePlayerProps): JSX.Element {
           onClick={handleComplete}
         >
           {complete.isPending ? "Menyimpan…" : "Selesaikan node"}
-          <Check />
+          <HugeiconsIcon icon={Tick02Icon} strokeWidth={1.5} aria-hidden="true" />
         </Button>
       );
     }
@@ -253,53 +255,45 @@ function NodePlayer({ moduleId, nodeId }: NodePlayerProps): JSX.Element {
       showResult={showResult}
       contentRef={contentRef}
       footer={
-        <NodePlayerFooter
-          errorMessage={errorMessage}
-          showResult={showResult}
-          reviewing={readOnly || completed}
-          activityType={activity?.type}
-        >
-          {showResult ? (
-            <>
-              {attemptResult ? (
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setReviewing(true);
-                    moveTo(0);
-                  }}
-                >
-                  Tinjau aktivitas
-                </Button>
-              ) : null}
-              {attemptResult?.attempt.evaluationStatus === "completed" && !readOnly ? (
-                <Button onClick={handleTryAgain} variant="outline">
-                  <RotateCcw />
-                  Coba lagi
-                </Button>
-              ) : null}
-            </>
-          ) : (
-            <>
-              <Button
-                aria-label="Aktivitas sebelumnya"
-                variant="ghost"
-                size="icon"
-                disabled={slide === 0}
-                onClick={() => moveTo(slide - 1)}
-              >
-                <ArrowLeft />
-              </Button>
-              {renderPrimaryAction()}
-            </>
-          )}
-        </NodePlayerFooter>
+        showResult ? null : (
+          <NodePlayerFooter
+            errorMessage={errorMessage}
+            reviewing={readOnly || completed}
+            activityType={activity?.type}
+          >
+            <Button
+              aria-label="Aktivitas sebelumnya"
+              variant="ghost"
+              size="icon"
+              disabled={slide === 0}
+              onClick={() => moveTo(slide - 1)}
+            >
+              <HugeiconsIcon icon={ArrowLeft01Icon} strokeWidth={1.5} aria-hidden="true" />
+            </Button>
+            {renderPrimaryAction()}
+          </NodePlayerFooter>
+        )
       }
     >
       {showResult ? (
         <div aria-live="polite">
+          {errorMessage ? (
+            <p className="mb-4 text-sm text-destructive" role="alert">
+              {errorMessage}
+            </p>
+          ) : null}
           {attemptResult ? (
-            <AttemptSummary result={attemptResult} />
+            <div className="space-y-5">
+              <AttemptSummary result={attemptResult} />
+              <AttemptResultActions
+                canRetry={attemptResult.attempt.evaluationStatus === "completed" && !readOnly}
+                onReview={() => {
+                  setReviewing(true);
+                  moveTo(0);
+                }}
+                onRetry={handleTryAgain}
+              />
+            </div>
           ) : (
             <p role="status">Memuat hasil…</p>
           )}
