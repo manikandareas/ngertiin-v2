@@ -12,7 +12,7 @@ const rays = [
   "m3.7 3.7 2.5 2.5",
 ];
 
-export function ThemeSelect() {
+export function ThemeToggle() {
   const clipId = `theme-classic-${useId()}`;
   const [theme, setTheme] = useState<Theme>(() => {
     try {
@@ -26,6 +26,14 @@ export function ThemeSelect() {
     () => matchMedia("(prefers-color-scheme: dark)").matches,
   );
   const dark = theme === "system" ? systemDark : theme === "dark";
+
+  useEffect(() => {
+    const syncTheme = (event: Event) => {
+      setTheme((event as CustomEvent<Theme>).detail);
+    };
+    window.addEventListener("ngertiin-theme-change", syncTheme);
+    return () => window.removeEventListener("ngertiin-theme-change", syncTheme);
+  }, []);
 
   useEffect(() => {
     const system = matchMedia("(prefers-color-scheme: dark)");
@@ -50,7 +58,13 @@ export function ThemeSelect() {
       type="button"
       aria-label={label}
       title={label}
-      onClick={() => setTheme(dark ? "light" : "dark")}
+      onClick={() => {
+        const nextTheme = dark ? "light" : "dark";
+        setTheme(nextTheme);
+        window.dispatchEvent(
+          new CustomEvent<Theme>("ngertiin-theme-change", { detail: nextTheme }),
+        );
+      }}
       className="grid size-11 shrink-0 place-items-center rounded-full text-foreground hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
     >
       <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">

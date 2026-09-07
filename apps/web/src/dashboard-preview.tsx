@@ -45,7 +45,7 @@ const root = document.getElementById("root");
 if (root)
   createRoot(root).render(
     <MemoryRouter initialEntries={["/dashboard"]}>
-      <AppShell sidebar={<AppSidebar name="Vito" modules={data.modules} />} workspace>
+      <AppShell sidebar={<AppSidebar name="Vito" />} workspace>
         <p className="sr-only">Preview desain · data contoh</p>
         <DashboardContent data={data} name="Vito" />
       </AppShell>

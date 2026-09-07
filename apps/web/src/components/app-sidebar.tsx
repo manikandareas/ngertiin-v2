@@ -8,12 +8,11 @@ import {
   UserCircleIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import type { ModuleSummary } from "@ngertiin/contracts/api";
-import { type ReactNode, useState } from "react";
+import { Menu, X } from "lucide-react";
+import { Dialog } from "radix-ui";
+import { type ReactNode, useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { useDashboard } from "../features/dashboard/api/use-dashboard";
-import { SidebarModules } from "./sidebar-modules";
-import { ThemeSelect } from "./theme-select";
+import { ThemeToggle } from "./theme-toggle";
 
 const navigation = [
   { to: "/dashboard", label: "Beranda", icon: Home01Icon },
@@ -24,15 +23,10 @@ const focus = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visi
 
 export function ConnectedAppSidebar() {
   const { user } = useUser();
-  const dashboard = useDashboard();
   return (
     <AppSidebar
       name={user?.fullName || user?.firstName || "Akun belajar"}
       account={<UserButton />}
-      modules={dashboard.data?.modules}
-      pending={dashboard.isPending}
-      error={dashboard.isError && !dashboard.data}
-      retry={() => void dashboard.refetch()}
     />
   );
 }
@@ -40,125 +34,189 @@ export function ConnectedAppSidebar() {
 export function AppSidebar({
   name = "Akun belajar",
   account,
-  modules,
-  pending = false,
-  error = false,
-  retry,
 }: {
   name?: string;
   account?: ReactNode;
-  modules?: ModuleSummary[];
-  pending?: boolean;
-  error?: boolean;
-  retry?: () => void;
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
-  const labelClass = collapsed ? "lg:sr-only" : "";
+  const [menuOpen, setMenuOpen] = useState(false);
+  useEffect(() => {
+    const desktop = matchMedia("(min-width: 1280px)");
+    const closeOnDesktop = () => {
+      if (desktop.matches) setMenuOpen(false);
+    };
+    desktop.addEventListener("change", closeOnDesktop);
+    return () => desktop.removeEventListener("change", closeOnDesktop);
+  }, []);
+  const activeRoute = navigation.find(({ to }) =>
+    to === "/modules"
+      ? (location.pathname === to || location.pathname.startsWith(`${to}/`)) &&
+        !location.pathname.startsWith("/modules/new")
+      : location.pathname === to || location.pathname.startsWith(`${to}/`),
+  )?.to;
+  const labelClass = collapsed ? "sr-only" : "";
   return (
-    <aside
-      aria-label="Sidebar"
-      className={`flex shrink-0 flex-col border-b bg-sidebar text-sidebar-foreground lg:min-h-0 border-muted lg:border-b-0 ${collapsed ? "lg:w-16" : "lg:w-64"}`}
-    >
-      <div
-        className={`flex items-center gap-2.5 px-5 py-3 pr-28 lg:py-5 ${collapsed ? "lg:flex-col lg:px-2" : "lg:px-3"}`}
+    <>
+      <aside
+        aria-label="Sidebar"
+        className={`sticky top-0 hidden h-dvh shrink-0 flex-col overflow-y-auto border-r border-border bg-sidebar text-sidebar-foreground xl:flex ${collapsed ? "xl:w-16" : "xl:w-64"}`}
       >
+        <div className={`flex items-center gap-2.5 py-5 ${collapsed ? "flex-col px-2" : "px-3"}`}>
+          <Link
+            to="/dashboard"
+            aria-label="ngerti.in — Beranda"
+            title="ngerti.in"
+            className={`flex min-h-8 min-w-0 flex-1 items-center rounded-sm px-1 font-display text-lg font-black tracking-tight ${focus}`}
+          >
+            <span className={collapsed ? "hidden" : ""}>ngerti.in</span>
+            {collapsed ? <span className="inline">n</span> : null}
+            <span className="text-primary">.</span>
+          </Link>
+          <button
+            type="button"
+            aria-label={collapsed ? "Perluas sidebar" : "Kecilkan sidebar"}
+            aria-expanded={!collapsed}
+            onClick={() => setCollapsed(!collapsed)}
+            className={`flex size-8 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted ${focus}`}
+          >
+            <HugeiconsIcon
+              icon={collapsed ? ArrowRightDoubleIcon : ArrowLeftDoubleIcon}
+              size={20}
+              strokeWidth={1.5}
+              aria-hidden="true"
+            />
+          </button>
+        </div>
+        <nav
+          aria-label="Navigasi utama"
+          className={`flex flex-col gap-1 ${collapsed ? "px-2" : "px-3"}`}
+        >
+          {navigation.map(({ to, label, icon }) => {
+            const active = activeRoute === to;
+            return (
+              <Link
+                key={to}
+                to={to}
+                aria-current={active ? "page" : undefined}
+                title={collapsed ? label : undefined}
+                className={`flex min-h-10 min-w-0 items-center justify-between gap-2 rounded-full px-3 text-sm ${focus} ${active ? "bg-muted text-foreground" : "hover:bg-muted"}`}
+              >
+                <span className={labelClass}>{label}</span>
+                <HugeiconsIcon
+                  icon={icon}
+                  size={20}
+                  strokeWidth={1.5}
+                  aria-hidden="true"
+                  className={`shrink-0 ${active ? "text-foreground" : "text-muted-foreground"} ${collapsed ? "mx-auto" : ""}`}
+                />
+              </Link>
+            );
+          })}
+        </nav>
+        <div
+          className={`mt-auto flex items-center border-t py-2 ${collapsed ? "mx-2 flex-col gap-1" : "mx-4 justify-between gap-2"}`}
+        >
+          <div
+            className={`flex min-w-0 items-center gap-2 ${collapsed ? "justify-center" : "flex-1"}`}
+          >
+            <div className="shrink-0">
+              {account ?? (
+                <Link
+                  to="/profile"
+                  aria-label="Profil"
+                  className={`grid size-8 place-items-center rounded-full bg-secondary text-secondary-foreground ${focus}`}
+                >
+                  <HugeiconsIcon
+                    icon={UserCircleIcon}
+                    size={24}
+                    strokeWidth={1.5}
+                    aria-hidden="true"
+                  />
+                </Link>
+              )}
+            </div>
+            <Link
+              to="/profile"
+              title={name}
+              className={`min-w-0 truncate rounded-sm text-sm ${focus} ${labelClass}`}
+            >
+              {name}
+            </Link>
+          </div>
+          <ThemeToggle />
+        </div>
+      </aside>
+      <header className="flex shrink-0 items-center justify-between border-b bg-background px-5 py-3 xl:hidden">
         <Link
           to="/dashboard"
           aria-label="ngerti.in — Beranda"
-          title="ngerti.in"
-          className={`flex min-h-8 min-w-0 flex-1 items-center rounded-sm px-1 font-display text-lg font-black tracking-tight ${focus}`}
+          className={`rounded-sm font-display text-xl font-black tracking-tight ${focus}`}
         >
-          <span className={collapsed ? "lg:hidden" : ""}>ngerti.in</span>
-          {collapsed ? <span className="hidden lg:inline">n</span> : null}
-          <span className="text-primary">.</span>
+          ngerti.in<span className="text-primary">.</span>
         </Link>
-        <button
-          type="button"
-          aria-label={collapsed ? "Perluas sidebar" : "Kecilkan sidebar"}
-          aria-expanded={!collapsed}
-          onClick={() => setCollapsed(!collapsed)}
-          className={`hidden size-8 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted ${focus} lg:flex`}
-        >
-          <HugeiconsIcon
-            icon={collapsed ? ArrowRightDoubleIcon : ArrowLeftDoubleIcon}
-            size={20}
-            strokeWidth={1.5}
-            aria-hidden="true"
-          />
-        </button>
-      </div>
-      <nav
-        aria-label="Navigasi utama"
-        className={`flex gap-1 px-3 pb-3 lg:flex-col lg:gap-1 lg:pb-0 ${collapsed ? "lg:px-2" : "lg:px-3"}`}
-      >
-        {navigation.map(({ to, label, icon }) => {
-          const active =
-            to === "/modules"
-              ? location.pathname.startsWith(to) && location.pathname !== "/modules/new"
-              : location.pathname.startsWith(to);
-          return (
-            <Link
-              key={to}
-              to={to}
-              aria-current={active ? "page" : undefined}
-              title={collapsed ? label : undefined}
-              className={`flex min-h-11 min-w-0 flex-1 items-center justify-center gap-2 rounded-full px-3 text-caption sm:text-sm lg:min-h-10 lg:flex-none lg:justify-between lg:px-3 lg:text-sm ${focus} ${active ? "bg-muted text-foreground" : "hover:bg-muted"}`}
+        <Dialog.Root open={menuOpen} onOpenChange={setMenuOpen}>
+          <Dialog.Trigger asChild>
+            <button
+              type="button"
+              aria-label="Buka menu navigasi"
+              className={`grid size-11 place-items-center rounded-full hover:bg-muted ${focus}`}
             >
-              <span className={labelClass}>{label}</span>
-              <HugeiconsIcon
-                icon={icon}
-                size={20}
-                strokeWidth={1.5}
-                aria-hidden="true"
-                className={`hidden shrink-0 sm:block ${active ? "text-foreground" : "text-muted-foreground"} ${collapsed ? "lg:mx-auto" : ""}`}
-              />
-            </Link>
-          );
-        })}
-      </nav>
-      <div
-        className={`mt-4 min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 ${collapsed ? "hidden" : "hidden lg:block"}`}
-      >
-        <SidebarModules
-          modules={modules}
-          pending={pending && !modules}
-          error={error}
-          retry={retry}
-        />
-      </div>
-      <div
-        className={`absolute right-4 top-2 flex items-center gap-2 lg:static lg:mt-auto lg:border-t lg:py-2 ${collapsed ? "lg:mx-2 lg:flex-col lg:gap-1" : "lg:mx-4 lg:justify-between lg:gap-2"}`}
-      >
-        <div
-          className={`flex min-w-0 items-center gap-2 ${collapsed ? "lg:justify-center" : "lg:flex-1"}`}
-        >
-          <div className="shrink-0">
-            {account ?? (
-              <Link
-                to="/profile"
-                aria-label="Profil"
-                className={`grid size-8 place-items-center rounded-full bg-secondary text-secondary-foreground ${focus}`}
-              >
-                <HugeiconsIcon
-                  icon={UserCircleIcon}
-                  size={24}
-                  strokeWidth={1.5}
-                  aria-hidden="true"
-                />
-              </Link>
-            )}
-          </div>
-          <Link
-            to="/profile"
-            title={name}
-            className={`hidden min-w-0 truncate rounded-sm text-sm lg:block ${focus} ${labelClass}`}
-          >
-            {name}
-          </Link>
-        </div>
-        <ThemeSelect />
-      </div>
-    </aside>
+              <Menu size={22} aria-hidden="true" />
+            </button>
+          </Dialog.Trigger>
+          <Dialog.Portal>
+            <Dialog.Overlay className="fixed inset-0 z-50 bg-black/40" />
+            <Dialog.Content
+              aria-describedby={undefined}
+              className="fixed inset-y-0 left-0 z-50 flex w-80 max-w-[calc(100%-2rem)] flex-col overflow-y-auto border-r bg-background p-5 shadow-xl data-[state=open]:animate-in data-[state=open]:slide-in-from-left duration-200 motion-reduce:animate-none"
+            >
+              <div className="mb-6 flex items-center justify-between">
+                <Dialog.Title className="font-display text-xl font-black">
+                  ngerti.in<span className="text-primary">.</span>
+                </Dialog.Title>
+                <Dialog.Close asChild>
+                  <button
+                    type="button"
+                    aria-label="Tutup menu"
+                    className={`grid size-11 place-items-center rounded-full hover:bg-muted ${focus}`}
+                  >
+                    <X size={22} aria-hidden="true" />
+                  </button>
+                </Dialog.Close>
+              </div>
+              <nav aria-label="Navigasi utama" className="flex flex-col gap-1">
+                {navigation.map(({ to, label, icon }) => {
+                  const active = activeRoute === to;
+                  return (
+                    <Link
+                      key={to}
+                      to={to}
+                      onClick={() => setMenuOpen(false)}
+                      aria-current={active ? "page" : undefined}
+                      className={`flex min-h-11 items-center justify-between gap-2 rounded-full px-3 text-sm ${focus} ${active ? "bg-muted text-foreground" : "hover:bg-muted"}`}
+                    >
+                      {label}
+                      <HugeiconsIcon icon={icon} size={20} strokeWidth={1.5} aria-hidden="true" />
+                    </Link>
+                  );
+                })}
+              </nav>
+              <div className="mt-auto flex items-center gap-2 border-t pt-3">
+                {account}
+                <Link
+                  to="/profile"
+                  onClick={() => setMenuOpen(false)}
+                  className={`min-w-0 flex-1 truncate rounded-sm text-sm ${focus}`}
+                >
+                  {name}
+                </Link>
+                <ThemeToggle />
+              </div>
+            </Dialog.Content>
+          </Dialog.Portal>
+        </Dialog.Root>
+      </header>
+    </>
   );
 }

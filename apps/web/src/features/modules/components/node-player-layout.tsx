@@ -2,7 +2,7 @@ import type { PublicActivity } from "@ngertiin/contracts/api";
 import { X } from "lucide-react";
 import type { JSX, ReactNode, Ref } from "react";
 import { Link } from "react-router-dom";
-import { ThemeSelect } from "../../../components/theme-select";
+import { ThemeToggle } from "../../../components/theme-toggle";
 import { Button } from "../../../components/ui/button";
 import { NodePlayerSidebar } from "./node-player-sidebar";
 
@@ -31,7 +31,7 @@ export function NodePlayerLayout({
     <div className="flex min-h-dvh flex-col bg-background px-6 text-foreground sm:px-10 lg:px-12">
       <header className="sticky top-0 z-20 -mx-6 bg-background px-6 sm:-mx-10 sm:px-10 lg:-mx-12 lg:px-12">
         <div className="mx-auto flex w-full max-w-7xl items-center justify-between py-1 sm:py-2">
-          <ThemeSelect />
+          <ThemeToggle />
           <Button asChild variant="ghost" size="icon" className="rounded-full">
             <Link
               aria-label="Keluar dari node dan kembali ke Journey"
