@@ -1,8 +1,9 @@
 import { createHash } from "node:crypto";
 import { Inject, Injectable } from "@nestjs/common";
 import {
-  assessmentFeedbackSchema,
   type AttemptResult,
+  assessmentAnswerSchema,
+  assessmentFeedbackSchema,
   type DeterministicAnswer,
   type NextLearningAction,
   type SubmitAttemptBody,
@@ -255,6 +256,7 @@ export class AttemptsService {
       this.infrastructure.database.db
         .select({
           activityId: attempt_responses.activity_id,
+          answer: attempt_responses.response,
           score: attempt_responses.score,
           maxScore: attempt_responses.max_score,
           evaluation: attempt_responses.evaluation,
@@ -284,6 +286,7 @@ export class AttemptsService {
       }
       return {
         activityId: row.activityId,
+        answer: assessmentAnswerSchema.parse(row.answer),
         correct: evaluation.data.correct,
         score: Number(row.score),
         maxScore: Number(row.maxScore),

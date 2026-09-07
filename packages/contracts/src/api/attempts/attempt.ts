@@ -64,6 +64,7 @@ export const attemptFailureSchema = z.object({
 
 export const attemptActivityResultSchema = z.object({
   activityId: uuidSchema,
+  answer: assessmentAnswerSchema,
   correct: z.boolean(),
   score: z.number().min(0),
   maxScore: z.number().positive(),

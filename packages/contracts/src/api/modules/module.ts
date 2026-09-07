@@ -290,6 +290,7 @@ export const journeySummarySchema = z.object({
 });
 
 export const nodeDetailSchema = z.object({
+  latestCompletedAttemptId: uuidSchema.nullable(),
   node: journeyNodeSchema,
   activities: z.array(publicActivitySchema),
   moduleProgress: moduleProgressSchema,

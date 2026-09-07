@@ -28,6 +28,7 @@ import { MODULE_GENERATION_STEPS } from "@ngertiin/contracts/jobs";
 import {
   activities,
   adaptive_interventions,
+  attempts,
   type DatabaseTransaction,
   generation_request_sources,
   generation_requests,
@@ -39,16 +40,16 @@ import {
   sources,
   user_module_progress,
 } from "@ngertiin/database";
-import { and, asc, desc, eq, inArray, lt, or, type SQL, sql } from "drizzle-orm";
-import { z } from "zod";
-import { ProductError } from "../http/product-error.js";
-import { IdempotencyService } from "../idempotency/idempotency.service.js";
-import { InfrastructureService } from "../infrastructure/infrastructure.service.js";
 import {
   finalizeAdaptiveNodeProgress,
   finalizeCoreNodeProgress,
   selectLearningAction,
 } from "@ngertiin/shared";
+import { and, asc, desc, eq, inArray, lt, or, type SQL, sql } from "drizzle-orm";
+import { z } from "zod";
+import { ProductError } from "../http/product-error.js";
+import { IdempotencyService } from "../idempotency/idempotency.service.js";
+import { InfrastructureService } from "../infrastructure/infrastructure.service.js";
 
 const moduleCursorSchema = z
   .object({
@@ -770,18 +771,34 @@ export class ModulesService {
       );
     }
 
-    const rows = await this.infrastructure.database.db
-      .select({
-        id: activities.id,
-        type: activities.type,
-        position: activities.position,
-        content: activities.content,
-      })
-      .from(activities)
-      .where(eq(activities.node_id, nodeId))
-      .orderBy(asc(activities.position));
+    const [rows, [latestCompletedAttempt]] = await Promise.all([
+      this.infrastructure.database.db
+        .select({
+          id: activities.id,
+          type: activities.type,
+          position: activities.position,
+          content: activities.content,
+        })
+        .from(activities)
+        .where(eq(activities.node_id, nodeId))
+        .orderBy(asc(activities.position)),
+      this.infrastructure.database.db
+        .select({ id: attempts.id })
+        .from(attempts)
+        .where(
+          and(
+            eq(attempts.user_id, userId),
+            eq(attempts.module_id, moduleId),
+            eq(attempts.node_id, nodeId),
+            eq(attempts.evaluation_status, "completed"),
+          ),
+        )
+        .orderBy(desc(attempts.attempt_number))
+        .limit(1),
+    ]);
 
     return {
+      latestCompletedAttemptId: latestCompletedAttempt?.id ?? null,
       node,
       activities: rows.map((row) => this.mapPublicActivity(row)),
       moduleProgress: journey.progress,

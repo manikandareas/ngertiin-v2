@@ -12,9 +12,8 @@ import {
   useStartNode,
   useSubmitAttempt,
 } from "../features/modules/api/use-modules";
-import { AttemptResultActions } from "../features/modules/components/attempt-result-actions";
-import { AttemptSummary } from "../features/modules/components/attempt-summary";
 import { NodeActivity } from "../features/modules/components/node-activity";
+import { NodeAttemptResult } from "../features/modules/components/node-attempt-result";
 import { NodePlayerFooter } from "../features/modules/components/node-player-footer";
 import { NodePlayerLayout } from "../features/modules/components/node-player-layout";
 import { nextLearningRoute } from "../features/modules/next-learning-route";
@@ -39,9 +38,13 @@ interface NodePlayerProps {
 function NodePlayer({ moduleId, nodeId }: NodePlayerProps): JSX.Element {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const attemptId = searchParams.get("attemptId") ?? undefined;
+  const [retrying, setRetrying] = useState(false);
   const moduleQuery = useModule(moduleId);
   const nodeQuery = useNode(moduleId, nodeId);
+  const attemptId =
+    searchParams.get("attemptId") ??
+    (!retrying ? nodeQuery.data?.latestCompletedAttemptId : undefined) ??
+    undefined;
   const attemptQuery = useAttempt(attemptId, moduleId, nodeId);
   const start = useStartNode(moduleId, nodeId);
   const complete = useCompleteNode(moduleId, nodeId);
@@ -50,7 +53,6 @@ function NodePlayer({ moduleId, nodeId }: NodePlayerProps): JSX.Element {
   const submissionId = useRef<string | null>(null);
   const [slide, setSlide] = useState(0);
   const [reviewing, setReviewing] = useState(false);
-  const [retrying, setRetrying] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const [answers, setAnswers] = useState<Record<string, AssessmentAnswer>>({});
 
@@ -114,7 +116,7 @@ function NodePlayer({ moduleId, nodeId }: NodePlayerProps): JSX.Element {
       return isAnswered(answer);
     });
   const attemptResult = attemptQuery.data ?? submit.data;
-  const mutationError = start.error ?? complete.error ?? submit.error ?? attemptQuery.error;
+  const mutationError = start.error ?? complete.error ?? submit.error;
   let errorMessage: string | null = null;
   if (mutationError instanceof ApiProblemError) {
     errorMessage = mutationError.problem.detail;
@@ -149,6 +151,7 @@ function NodePlayer({ moduleId, nodeId }: NodePlayerProps): JSX.Element {
       });
       setSearchParams({ attemptId: result.attempt.id }, { replace: true });
       setReviewing(false);
+      setRetrying(false);
       resetContentPosition();
     } catch {
       /* Mutation state renders the safe error and keeps submissionId for retry. */
@@ -169,7 +172,11 @@ function NodePlayer({ moduleId, nodeId }: NodePlayerProps): JSX.Element {
   const activity = data.activities[slide];
   const showResult = Boolean((attemptResult || attemptId) && !reviewing);
   const locked = readOnly || completed || Boolean(attemptResult || attemptId) || submit.isPending;
-  const answer = activity ? answers[activity.id] : undefined;
+  const activityResult =
+    activity && attemptResult?.attempt.evaluationStatus === "completed"
+      ? attemptResult.attempt.activityResults.find((item) => item.activityId === activity.id)
+      : undefined;
+  const answer = activityResult?.answer ?? (activity ? answers[activity.id] : undefined);
   const answered = isAnswered(answer);
   const canAdvance =
     locked || !activity || activity.type === "lesson" || activity.type === "flashcard" || answered;
@@ -276,28 +283,18 @@ function NodePlayer({ moduleId, nodeId }: NodePlayerProps): JSX.Element {
       }
     >
       {showResult ? (
-        <div aria-live="polite">
-          {errorMessage ? (
-            <p className="mb-4 text-sm text-destructive" role="alert">
-              {errorMessage}
-            </p>
-          ) : null}
-          {attemptResult ? (
-            <div className="space-y-5">
-              <AttemptSummary result={attemptResult} />
-              <AttemptResultActions
-                canRetry={attemptResult.attempt.evaluationStatus === "completed" && !readOnly}
-                onReview={() => {
-                  setReviewing(true);
-                  moveTo(0);
-                }}
-                onRetry={handleTryAgain}
-              />
-            </div>
-          ) : (
-            <p role="status">Memuat hasil…</p>
-          )}
-        </div>
+        <NodeAttemptResult
+          result={attemptResult}
+          error={attemptQuery.error}
+          loading={attemptQuery.isFetching}
+          readOnly={readOnly}
+          onReload={() => void attemptQuery.refetch()}
+          onReview={() => {
+            setReviewing(true);
+            moveTo(0);
+          }}
+          onRetry={handleTryAgain}
+        />
       ) : activity ? (
         <NodeActivity
           key={activity.id}
@@ -307,13 +304,7 @@ function NodePlayer({ moduleId, nodeId }: NodePlayerProps): JSX.Element {
           locked={locked}
           answer={answer}
           onAnswer={(value) => setAnswers((current) => ({ ...current, [activity.id]: value }))}
-          result={
-            attemptResult?.attempt.evaluationStatus === "completed"
-              ? attemptResult.attempt.activityResults.find(
-                  (item) => item.activityId === activity.id,
-                )
-              : undefined
-          }
+          result={activityResult}
         />
       ) : (
         <div className="space-y-3">

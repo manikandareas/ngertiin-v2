@@ -804,6 +804,7 @@ Returns:
 ```json
 {
   "data": {
+    "latestCompletedAttemptId": null,
     "node": {},
     "activities": [],
     "moduleProgress": {},
@@ -817,6 +818,11 @@ return `409 NODE_LOCKED`; generation-incomplete modules return `409 MODULE_NOT_R
 
 `activities` contains only the browser-safe union from section 4.7. Activity order is ascending by
 position and IDs remain stable across reads.
+
+`latestCompletedAttemptId` is the current user's completed Attempt with the highest
+`attemptNumber` for this node, or `null` when none exists. It is independent of `bestScore`
+and allows reopened nodes to restore their assessment summary through the Attempt read endpoint.
+Opening a node does not create an Attempt or change its progress.
 
 ### 9.3 Start Node
 
@@ -929,6 +935,15 @@ The Attempt body is a discriminated union. Fields from another lifecycle state a
 than returned as `null`:
 
 ```ts
+type ActivityResult = {
+  activityId: string;
+  answer: { optionIndex: number } | { value: boolean } | { text: string };
+  correct: boolean;
+  score: number;
+  maxScore: number;
+  explanation: string;
+};
+
 type Attempt =
   | {
       id: string;
@@ -989,6 +1004,7 @@ Completed response:
       "activityResults": [
         {
           "activityId": "20d61a35-2e36-4c96-b7ca-2237eb168f37",
+          "answer": { "optionIndex": 0 },
           "correct": true,
           "score": 1,
           "maxScore": 1,
