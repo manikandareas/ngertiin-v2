@@ -16,7 +16,8 @@ import {
 } from "@dnd-kit/sortable";
 import { useReducedMotion } from "motion/react";
 import { useState } from "react";
-import { BookCover, MaterialBook } from "./material-book";
+import { SourcePaper } from "../sources/source-paper";
+import { SortableMaterial } from "./sortable-material";
 import type { ModuleBuilderState } from "./use-module-builder";
 
 export function SortableMaterials({
@@ -52,7 +53,7 @@ export function SortableMaterials({
       accessibility={{
         screenReaderInstructions: {
           draggable:
-            "Tekan spasi untuk mengangkat buku, tombol panah untuk memindahkan, spasi untuk meletakkan, dan Escape untuk membatalkan.",
+            "Tekan spasi untuk mengangkat materi, tombol panah untuk memindahkan, spasi untuk meletakkan, dan Escape untuk membatalkan.",
         },
         announcements: {
           onDragStart: ({ active }) =>
@@ -73,9 +74,9 @@ export function SortableMaterials({
         items={state.selected.map((item) => item.source.id)}
         strategy={rectSortingStrategy}
       >
-        <ol className="grid grid-cols-2 gap-x-6 gap-y-8 sm:grid-cols-3 sm:gap-x-8">
+        <ol className="grid grid-cols-1 gap-x-4 gap-y-8 min-[480px]:grid-cols-2 lg:grid-cols-3">
           {state.selected.map((item, index) => (
-            <MaterialBook
+            <SortableMaterial
               key={item.source.id}
               item={item}
               index={index}
@@ -87,8 +88,8 @@ export function SortableMaterials({
       </SortableContext>
       <DragOverlay dropAnimation={reducedMotion ? null : { duration: 180, easing: "ease-out" }}>
         {active ? (
-          <div className="-rotate-3 scale-104">
-            <BookCover item={active} />
+          <div className="pointer-events-none -rotate-3 scale-104 px-1 pt-4" aria-hidden="true">
+            <SourcePaper compact source={active.source} onPreview={() => {}} disabled />
           </div>
         ) : null}
       </DragOverlay>

@@ -209,18 +209,9 @@
 /* Decorative book materials stay consistent across light and dark workspaces. */
 @theme {
   --color-book-blue: #cfdfec;
-  --color-book-blue-ink: #304f68;
   --color-book-sage: #d6ddca;
-  --color-book-sage-ink: #45533a;
   --color-book-clay: #e7d5cc;
-  --color-book-clay-ink: #69473b;
-  --color-book-lilac: #ddd6e9;
-  --color-book-lilac-ink: #544766;
   --color-book-page: #f9f9f6;
-  --color-book-page-line: #dcdcd6;
-  --color-book-page-edge: #d0d0c8;
-  --shadow-book-pages: 3px 6px 8px #00000014;
-  --shadow-book-cover: inset 1px 0 0 #ffffff50, inset -1px 0 0 #0000000d;
   --shadow-empty-book:
     inset 6px 0 #0000000d, inset -2px -3px var(--color-book-page), 2px 4px 5px #00000010;
   --animate-builder-enter: builder-enter 220ms ease-out;
@@ -269,18 +260,6 @@
 
 @utility bg-dot-grid {
   background-image: radial-gradient(var(--border) 0.75px, transparent 0.75px);
-}
-
-@utility bg-book-pages {
-  background-image: repeating-linear-gradient(
-    to bottom,
-    var(--color-book-page) 0 2px,
-    var(--color-book-page-line) 2px 3px
-  );
-}
-
-@utility bg-book-binding {
-  background-image: linear-gradient(90deg, #00000018, #ffffff15 40%, #00000009 78%, #ffffff35);
 }
 
 /* Native progress needs separate browser pseudo-elements. */

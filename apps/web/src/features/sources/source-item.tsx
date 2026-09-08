@@ -4,17 +4,8 @@ import { useRef } from "react";
 import { Button } from "../../components/ui/button";
 import { menuContentClassName } from "../../components/ui/menu-styles";
 import { type SourceAction, SourceActionItems } from "./source-actions";
-import { SourcePaper } from "./source-paper";
-import { sourceTitle, statusLabels } from "./source-presentation";
-import { SourceRetry } from "./source-retry";
-
-const dateFormat = new Intl.DateTimeFormat("id-ID", { dateStyle: "medium" });
-const statusDotClass = {
-  ready: "bg-success",
-  pending: "bg-adaptive-edge",
-  processing: "bg-adaptive-edge",
-  failed: "bg-destructive",
-};
+import { SourceItemContent } from "./source-item-content";
+import { sourceTitle } from "./source-presentation";
 
 type SourceItemProps = {
   source: Source;
@@ -43,53 +34,39 @@ export function SourceItem({ source, onPreview, onAction }: SourceItemProps) {
             trigger.current = event.currentTarget.querySelector("button");
           }}
         >
-          <SourcePaper source={source} onPreview={onPreview} />
-          <div className="mt-4 flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
-            <span
-              className={`inline-flex items-center gap-1.5 text-[11px] ${source.status === "failed" ? "text-destructive" : ""}`}
-            >
-              <span
-                aria-hidden="true"
-                className={`size-1.5 shrink-0 rounded-full ${statusDotClass[source.status]}`}
-              />
-              {statusLabels[source.status]}
-            </span>
-            <time className="ml-auto shrink-0 text-[10px]" dateTime={source.createdAt}>
-              {dateFormat.format(new Date(source.createdAt))}
-            </time>
-            <DropdownMenu.Root>
-              <DropdownMenu.Trigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="size-8 shrink-0 rounded-lg text-muted-foreground"
-                  aria-label={`Tindakan untuk ${title}`}
-                  onPointerDown={(event) => {
-                    trigger.current = event.currentTarget;
-                  }}
-                  onKeyDown={(event) => {
-                    trigger.current = event.currentTarget;
-                  }}
-                >
-                  •••
-                </Button>
-              </DropdownMenu.Trigger>
-              <DropdownMenu.Portal>
-                <DropdownMenu.Content
-                  className={menuContentClassName}
-                  align="end"
-                  onCloseAutoFocus={closeMenu}
-                >
-                  <SourceActionItems menu="dropdown" source={source} onAction={openAction} />
-                </DropdownMenu.Content>
-              </DropdownMenu.Portal>
-            </DropdownMenu.Root>
-          </div>
-          {source.status === "failed" && !source.archivedAt ? (
-            <div className="mt-3">
-              <SourceRetry source={source} />
-            </div>
-          ) : null}
+          <SourceItemContent
+            source={source}
+            onPreview={onPreview}
+            actions={
+              <DropdownMenu.Root>
+                <DropdownMenu.Trigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-8 shrink-0 rounded-lg text-muted-foreground"
+                    aria-label={`Tindakan untuk ${title}`}
+                    onPointerDown={(event) => {
+                      trigger.current = event.currentTarget;
+                    }}
+                    onKeyDown={(event) => {
+                      trigger.current = event.currentTarget;
+                    }}
+                  >
+                    •••
+                  </Button>
+                </DropdownMenu.Trigger>
+                <DropdownMenu.Portal>
+                  <DropdownMenu.Content
+                    className={menuContentClassName}
+                    align="end"
+                    onCloseAutoFocus={closeMenu}
+                  >
+                    <SourceActionItems menu="dropdown" source={source} onAction={openAction} />
+                  </DropdownMenu.Content>
+                </DropdownMenu.Portal>
+              </DropdownMenu.Root>
+            }
+          />
         </article>
       </ContextMenu.Trigger>
       <ContextMenu.Portal>

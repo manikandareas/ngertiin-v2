@@ -144,7 +144,7 @@ export function MaterialBoard({
       </ContextMenu.Root>
       <p className="mt-3 text-xs leading-5 text-muted-foreground">
         {state.count
-          ? "Geser buku untuk mengatur urutan. Nomor buku menjadi prioritas materi."
+          ? "Geser pegangan di samping nomor untuk mengatur urutan prioritas materi."
           : "PDF hingga 25 MiB per file · Maksimal 10 materi"}
       </p>
       {dropError || (!action && state.sourceError) ? (
