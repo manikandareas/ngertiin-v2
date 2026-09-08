@@ -1,14 +1,13 @@
 import { ArrowRight01Icon, ArrowRightDoubleIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import type { Dashboard } from "@ngertiin/contracts/api";
 import { Link } from "react-router-dom";
 import { Button } from "../../../components/ui/button";
-import { DashboardModuleFolder } from "./dashboard-module-folder";
+import { useModules } from "../../modules/api/use-modules";
+import { ModuleCard } from "../../modules/components/module-card";
 
-export function DashboardModules({ modules }: Pick<Dashboard, "modules">) {
-  const recent = [...modules]
-    .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt))
-    .slice(0, 4);
+export function DashboardModules() {
+  const modules = useModules();
+  const recent = modules.data?.pages[0]?.data.slice(0, 2) ?? [];
 
   return (
     <section aria-labelledby="modules-heading" className="min-w-0">
@@ -28,11 +27,24 @@ export function DashboardModules({ modules }: Pick<Dashboard, "modules">) {
           </Link>
         </Button>
       </header>
-      {recent.length ? (
+      {modules.isPending ? (
+        <p role="status" className="py-9 text-center text-sm text-muted-foreground">
+          Memuat modul…
+        </p>
+      ) : modules.isError && recent.length === 0 ? (
+        <div className="rounded-card border-2 bg-card px-6 py-9 text-center">
+          <p role="alert" className="font-semibold">
+            Modul belum dapat dimuat.
+          </p>
+          <Button className="mt-4" variant="outline" onClick={() => modules.refetch()}>
+            Coba lagi
+          </Button>
+        </div>
+      ) : recent.length ? (
         <ul className="grid gap-x-6 gap-y-8 sm:grid-cols-2">
           {recent.map((module) => (
-            <li key={module.id} className="min-w-0">
-              <DashboardModuleFolder module={module} />
+            <li key={module.id} className="grid min-w-0">
+              <ModuleCard module={module} />
             </li>
           ))}
         </ul>

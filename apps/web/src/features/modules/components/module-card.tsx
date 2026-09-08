@@ -15,7 +15,7 @@ export function ModuleCard({ module }: { module: ModuleSummary }) {
   const status = getModuleStatus(module);
 
   return (
-    <Card className="min-w-0 gap-0 p-4 sm:p-5">
+    <Card className="before:absolute before:-top-[11px] before:-left-0.5 before:h-[11px] before:w-21 before:rounded-t-[10px_14px] before:border-2 before:border-border before:border-b-0 before:bg-card before:content-[''] motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-out motion-safe:hover:-translate-y-[3px] motion-safe:hover:rotate-[0.4deg] relative mt-3 min-w-0 gap-0 rounded-tl-none px-5 py-5 sm:px-6">
       <h2 className="min-h-12 text-base font-semibold leading-6 tracking-tight">
         <Link
           to={destination}

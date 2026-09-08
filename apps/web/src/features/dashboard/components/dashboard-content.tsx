@@ -47,7 +47,7 @@ export function DashboardContent({
           <>
             <DashboardSummary data={data} />
             <div className="mt-12 sm:mt-14">
-              <DashboardModules modules={data.modules} />
+              <DashboardModules />
             </div>
           </>
         ) : (
