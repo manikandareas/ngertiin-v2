@@ -5,8 +5,9 @@ import { ContextMenu, DropdownMenu } from "radix-ui";
 import { type ReactNode, useRef, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { Button } from "../../components/ui/button";
+import { menuContentClassName } from "../../components/ui/menu-styles";
+import { SourceMenu } from "../sources/source-menu";
 import { type MaterialAction, MaterialDialog } from "./material-dialog";
-import { MaterialMenu } from "./material-menu";
 import { SortableMaterials } from "./sortable-materials";
 import type { ModuleBuilderState } from "./use-module-builder";
 
@@ -81,13 +82,15 @@ export function MaterialBoard({
                     </Button>
                   </DropdownMenu.Trigger>
                   <DropdownMenu.Portal>
-                    <DropdownMenu.Content className="material-menu" align="end" sideOffset={8}>
-                      <MaterialMenu
-                        menu="dropdown"
-                        library={library}
-                        open={open}
-                        disabled={locked}
-                      />
+                    <DropdownMenu.Content
+                      className={menuContentClassName}
+                      align="end"
+                      sideOffset={8}
+                      onCloseAutoFocus={(event) => {
+                        if (action) event.preventDefault();
+                      }}
+                    >
+                      <SourceMenu menu="dropdown" library={library} open={open} disabled={locked} />
                     </DropdownMenu.Content>
                   </DropdownMenu.Portal>
                 </DropdownMenu.Root>
@@ -134,8 +137,8 @@ export function MaterialBoard({
           </section>
         </ContextMenu.Trigger>
         <ContextMenu.Portal>
-          <ContextMenu.Content className="material-menu">
-            <MaterialMenu menu="context" library={library} open={open} disabled={locked} />
+          <ContextMenu.Content className={menuContentClassName}>
+            <SourceMenu menu="context" library={library} open={open} disabled={locked} />
           </ContextMenu.Content>
         </ContextMenu.Portal>
       </ContextMenu.Root>

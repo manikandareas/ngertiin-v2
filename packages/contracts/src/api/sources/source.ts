@@ -26,6 +26,7 @@ export const sourceFailureSchema = z.object({
 });
 
 export const sourceSchema = z.object({
+  archivedAt: timestampSchema.nullable().default(null),
   retriesRemaining: z.number().int().min(0).max(2).default(0),
   id: uuidSchema,
   type: sourceTypeSchema,
@@ -124,6 +125,8 @@ export const createPdfSourceFieldsSchema = z
 
 export const listSourcesQuerySchema = z
   .object({
+    q: z.string().trim().max(500).optional(),
+    archived: z.enum(["true", "false"]).default("false"),
     type: sourceTypeSchema.optional(),
     status: sourceStatusSchema.optional(),
     limit: z.coerce.number().int().min(1).max(100).default(20),
@@ -164,3 +167,42 @@ export type CreatePdfSourceResponse = z.infer<typeof createPdfSourceResponseSche
 export type ListSourcesResponse = z.infer<typeof listSourcesResponseSchema>;
 export type GetSourceResponse = z.infer<typeof getSourceResponseSchema>;
 export type RetrySourceResponse = z.infer<typeof retrySourceResponseSchema>;
+
+export const patchSourceBodySchema = z
+  .object({
+    title: z
+      .string()
+      .trim()
+      .min(1)
+      .refine(
+        (value) => codePointLength(value) <= MAX_TITLE_CODE_POINTS,
+        "Judul maksimal 200 karakter Unicode.",
+      )
+      .optional(),
+    archived: z.boolean().optional(),
+  })
+  .strict()
+  .refine(
+    (value) => value.title !== undefined || value.archived !== undefined,
+    "Perubahan wajib diisi.",
+  );
+export type PatchSourceBody = z.infer<typeof patchSourceBodySchema>;
+export const sourcePreviewResponseSchema = successEnvelopeSchema(
+  z.object({
+    text: z.string().nullable(),
+    sections: z.array(
+      z.object({
+        position: z.number().int().positive(),
+        pageNumber: z.number().int().positive().nullable(),
+        heading: z.string().nullable(),
+        content: z.string(),
+      }),
+    ),
+  }),
+);
+export const sourceFileResponseSchema = successEnvelopeSchema(
+  z.object({ url: z.string().url(), expiresAt: timestampSchema }),
+);
+
+export type SourcePreviewResponse = z.infer<typeof sourcePreviewResponseSchema>;
+export type SourceFileResponse = z.infer<typeof sourceFileResponseSchema>;

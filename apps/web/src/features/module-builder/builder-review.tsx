@@ -2,8 +2,8 @@ import { File01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { GENERATION_LANGUAGES } from "@ngertiin/contracts/api";
 import { Button } from "../../components/ui/button";
+import { statusLabels } from "../sources/source-presentation";
 import { activityLabels, generationLengthLabel } from "./generation-settings-presentation";
-import { statusLabels } from "./source-presentation";
 import type { ModuleBuilderState } from "./use-module-builder";
 
 type ReviewState = Pick<

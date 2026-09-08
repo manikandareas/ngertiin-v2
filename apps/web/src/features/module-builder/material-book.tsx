@@ -4,7 +4,7 @@ import { Settings04Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useReducedMotion } from "motion/react";
 import { Button } from "../../components/ui/button";
-import { statusLabels } from "./source-presentation";
+import { statusLabels } from "../sources/source-presentation";
 import type { Selection } from "./use-module-builder";
 
 export function MaterialBook({

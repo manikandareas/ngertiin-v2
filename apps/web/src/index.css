@@ -228,7 +228,6 @@
   --animate-generation-idle: generation-idle 3.6s ease-in-out infinite;
   --animate-generation-pulse: generation-pulse 2.6s ease-out infinite;
   --animate-generation-arrive: generation-arrive 380ms ease-out;
-  --animate-material-dialog-enter: material-dialog-enter 160ms ease-out;
 
   @keyframes builder-enter {
     from {
@@ -264,14 +263,6 @@
     }
     to {
       transform: scale(1);
-    }
-  }
-  @keyframes material-dialog-enter {
-    from {
-      opacity: 0.4;
-    }
-    to {
-      opacity: 1;
     }
   }
 }
@@ -321,19 +312,6 @@
   & [data-slot="textarea"] {
     @apply sm:text-sm;
   }
-}
-
-/* Shared by Radix context menus, dropdown menus, and their portalled submenus. */
-@utility material-menu {
-  @apply z-50 min-w-55 max-w-[min(300px,calc(100vw-24px))] overflow-y-auto rounded-xl border bg-popover p-[5px] text-popover-foreground shadow-[0_6px_12px_#00000012];
-  max-height: var(
-    --radix-context-menu-content-available-height,
-    var(--radix-dropdown-menu-content-available-height, 360px)
-  );
-}
-
-@utility material-menu-item {
-  @apply flex min-h-9.5 cursor-default select-none items-center gap-2.5 rounded-[7px] px-2.5 py-2 text-caption leading-normal outline-none data-highlighted:bg-accent data-highlighted:text-accent-foreground data-[state=open]:bg-accent data-[state=open]:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50;
 }
 
 .lesson-markdown [data-streamdown="table-wrapper"],

@@ -2,7 +2,7 @@ import type { Source } from "@ngertiin/contracts/api";
 import { useEffect } from "react";
 import { Button } from "../../components/ui/button";
 import { useSource } from "../sources/api/use-sources";
-import { SourceRetry } from "./source-retry";
+import { SourceRetry } from "../sources/source-retry";
 import type { ModuleBuilderState } from "./use-module-builder";
 
 export function SelectedStatus({
@@ -27,6 +27,12 @@ export function SelectedStatus({
           Periksa lagi
         </Button>
       </div>
+    );
+  if (query.data?.archivedAt)
+    return (
+      <p role="alert" className="text-sm text-destructive">
+        {query.data.title ?? "Materi"} diarsipkan. Lepaskan dari board atau pulihkan di Materi saya.
+      </p>
     );
   return query.data?.status === "failed" ? <SourceRetry source={query.data} /> : null;
 }

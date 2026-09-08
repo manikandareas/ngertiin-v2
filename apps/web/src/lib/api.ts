@@ -41,6 +41,7 @@ import {
   type NodeActionResult,
   type NodeDetail,
   type PatchCurrentUserBody,
+  type PatchSourceBody,
   type ProblemDetail,
   patchCurrentUserResponseSchema,
   problemDetailSchema,
@@ -48,6 +49,8 @@ import {
   retrySourceResponseSchema,
   type Source,
   type SubmitAttemptBody,
+  sourceFileResponseSchema,
+  sourcePreviewResponseSchema,
   startNodeResponseSchema,
   submitAttemptResponseSchema,
   usageResponseSchema,
@@ -183,6 +186,8 @@ export async function listSources(
   query: ListSourcesQueryInput = {},
 ): Promise<ListSourcesResponse> {
   const search = new URLSearchParams();
+  if (query.q) search.set("q", query.q);
+  if (query.archived) search.set("archived", query.archived);
   if (query.type !== undefined) {
     search.set("type", query.type);
   }
@@ -487,4 +492,29 @@ export function streamGenerationEvents(
 
 export async function getUsage(tokenResolver: TokenResolver) {
   return (await requestApi("/me/usage", tokenResolver, usageResponseSchema)).data;
+}
+
+export async function patchSource(token: TokenResolver, id: string, input: PatchSourceBody) {
+  return (
+    await requestApi(`/sources/${encodeURIComponent(id)}`, token, getSourceResponseSchema, {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    })
+  ).data;
+}
+export async function getSourcePreview(token: TokenResolver, id: string) {
+  return (
+    await requestApi(
+      `/sources/${encodeURIComponent(id)}/preview`,
+      token,
+      sourcePreviewResponseSchema,
+    )
+  ).data;
+}
+export async function getSourceFile(token: TokenResolver, id: string) {
+  return (
+    await requestApi(`/sources/${encodeURIComponent(id)}/file`, token, sourceFileResponseSchema, {
+      cache: "no-store",
+    })
+  ).data;
 }

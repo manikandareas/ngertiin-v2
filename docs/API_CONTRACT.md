@@ -217,6 +217,7 @@ type SourceType = "pdf" | "url" | "text";
 type SourceStatus = "pending" | "processing" | "ready" | "failed";
 
 type Source = {
+  archivedAt: string | null; // ISO timestamp; null means active
   retriesRemaining: number; // 0..2; text sources always 0
   id: string;
   type: SourceType;
@@ -596,7 +597,9 @@ GET /api/v1/sources?type=pdf&status=ready&limit=20&cursor=<opaque>
 GET /api/v1/sources/:sourceId
 ```
 
-Supported filters are `type` and `status`. `limit` defaults to `20` and is capped at `100`.
+Supported filters are `type`, `status`, `q` (case-insensitive literal title, filename, or URL search),
+and `archived=true|false` (default `false`). `q` is trimmed and capped at 500 characters.
+`limit` defaults to `20` and is capped at `100`.
 Ordering is `createdAt DESC, id DESC`.
 
 The detail endpoint is the polling fallback for source processing. Clients should back off while
@@ -609,10 +612,50 @@ POST /api/v1/sources/:sourceId/retry
 Idempotency-Key: 018f0df2-f35a-7c12-9dd2-ff7f5d3ef9ad
 ```
 
-Allowed only when `status = failed` and `failure.retryable = true`. Returns `202` with the Source in
+Allowed only when `archivedAt = null`, `status = failed`, and `failure.retryable = true`. Returns `202` with the Source in
 `pending`. Otherwise returns `409 SOURCE_RETRY_NOT_ALLOWED`. A PDF/URL Source has at most two
 lifetime manual retries; exhaustion returns `409 RETRY_LIMIT_EXCEEDED`. Worker retries do not
 create processing runs and do not consume manual retries.
+
+### 7.6 Rename, Archive, and Restore
+
+```http
+PATCH /api/v1/sources/:sourceId
+Content-Type: application/json
+
+{ "title": "New display title", "archived": true }
+```
+
+At least one field is required. `title` is trimmed, must not be empty, and is capped at 200 Unicode
+code points. `archived: false` restores the source. Returns `200 { data: Source }`. Rename changes
+only the display title. Archive/restore preserves files, extracted content, generation relationships,
+and quota usage. There is no permanent-delete endpoint.
+
+All source operations require ownership; inaccessible resources return `404 NOT_FOUND`. Archived
+sources remain readable through detail, preview, and file endpoints. Restore before retrying source
+processing. Processing already underway may complete without changing archive state.
+
+### 7.7 Source Preview and Original PDF
+
+```http
+GET /api/v1/sources/:sourceId/preview
+GET /api/v1/sources/:sourceId/file
+```
+
+Preview returns `{ data: { text: string | null, sections: Array<{ position: number,
+pageNumber: number | null, heading: string | null, content: string }> } }`. Sections follow stored
+position order. Content comes only from saved text/extraction; preview never fetches a URL again.
+Pending, processing, or failed sources may have no extracted content yet.
+
+The file endpoint is PDF-only and returns `{ data: { url: string, expiresAt: string } }` with
+`Cache-Control: private, no-store`. The signed URL expires after five minutes and is generated on
+demand. Clients can request another URL when the document expires. Missing/non-PDF files return
+`404 NOT_FOUND`; signing failures return `503 DEPENDENCY_UNAVAILABLE`.
+
+New module generation rejects archived sources with `409 VALIDATION_ERROR`. Source validation
+holds row share locks until the generation transaction commits; archive updates acquire conflicting
+row locks, so whichever operation obtains its lock first determines acceptance. Already accepted
+generation and retries of existing modules continue to read archived sources.
 
 ## 8. Module Creation and Generation
 

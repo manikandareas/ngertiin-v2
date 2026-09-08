@@ -5,6 +5,7 @@ import { AuthenticatedRoute } from "./authenticated-route";
 
 const DashboardPage = lazy(() => import("../pages/dashboard"));
 const NewModulePage = lazy(() => import("../pages/new-module"));
+const SourcesPage = lazy(() => import("../pages/sources"));
 const ModulesPage = lazy(() => import("../pages/modules"));
 const ModuleStatusPage = lazy(() => import("../pages/module-status"));
 const ModuleJourneyPage = lazy(() => import("../pages/module-journey"));
@@ -36,6 +37,7 @@ export function AppRoutes() {
             element={<AdaptiveInterventionPage />}
           />
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/sources" element={<SourcesPage />} />
           <Route path="/modules" element={<ModulesPage />} />
           <Route path="/modules/new" element={<NewModulePage />} />
           <Route path="/modules/:moduleId/journey" element={<ModuleJourneyPage />} />

@@ -2,10 +2,12 @@ import {
   Body,
   Controller,
   Get,
+  Header,
   Headers,
   HttpCode,
   Inject,
   Param,
+  Patch,
   Post,
   Query,
   Req,
@@ -18,14 +20,14 @@ import { FileInterceptor } from "@nestjs/platform-express";
 import {
   type CreatePdfSourceFields,
   type CreatePdfSourceResponse,
-  createPdfSourceFieldsSchema,
-  createPdfSourceResponseSchema,
   type CreateTextSourceBody,
   type CreateTextSourceResponse,
-  createTextSourceBodySchema,
-  createTextSourceResponseSchema,
   type CreateUrlSourceBody,
   type CreateUrlSourceResponse,
+  createPdfSourceFieldsSchema,
+  createPdfSourceResponseSchema,
+  createTextSourceBodySchema,
+  createTextSourceResponseSchema,
   createUrlSourceBodySchema,
   createUrlSourceResponseSchema,
   type GetSourceResponse,
@@ -35,10 +37,16 @@ import {
   listSourcesQuerySchema,
   listSourcesResponseSchema,
   MAX_PDF_SIZE_BYTES,
+  type PatchSourceBody,
+  patchSourceBodySchema,
   type RetrySourceResponse,
   retrySourceResponseSchema,
+  type SourceFileResponse,
   type SourceParams,
+  type SourcePreviewResponse,
+  sourceFileResponseSchema,
   sourceParamsSchema,
+  sourcePreviewResponseSchema,
 } from "@ngertiin/contracts/api";
 import { ClerkAuthGuard } from "../auth/clerk-auth.guard.js";
 import { IdempotencyKeyPipe } from "../http/idempotency-key.pipe.js";
@@ -123,6 +131,38 @@ export class SourcesController {
   ): Promise<GetSourceResponse> {
     const source = await this.sourcesService.getSource(getLocalUserId(request), params.sourceId);
     return getSourceResponseSchema.parse({ data: source });
+  }
+
+  @Patch(":sourceId")
+  async patchSource(
+    @Req() request: ProductRequest,
+    @Param(new ZodValidationPipe(sourceParamsSchema)) params: SourceParams,
+    @Body(new ZodValidationPipe(patchSourceBodySchema)) input: PatchSourceBody,
+  ): Promise<GetSourceResponse> {
+    return getSourceResponseSchema.parse({
+      data: await this.sourcesService.patchSource(getLocalUserId(request), params.sourceId, input),
+    });
+  }
+
+  @Get(":sourceId/preview")
+  async preview(
+    @Req() request: ProductRequest,
+    @Param(new ZodValidationPipe(sourceParamsSchema)) params: SourceParams,
+  ): Promise<SourcePreviewResponse> {
+    return sourcePreviewResponseSchema.parse(
+      await this.sourcesService.preview(getLocalUserId(request), params.sourceId),
+    );
+  }
+
+  @Get(":sourceId/file")
+  @Header("Cache-Control", "private, no-store")
+  async file(
+    @Req() request: ProductRequest,
+    @Param(new ZodValidationPipe(sourceParamsSchema)) params: SourceParams,
+  ): Promise<SourceFileResponse> {
+    return sourceFileResponseSchema.parse(
+      await this.sourcesService.file(getLocalUserId(request), params.sourceId),
+    );
   }
 
   @Post(":sourceId/retry")

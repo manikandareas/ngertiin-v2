@@ -134,6 +134,7 @@ export const sources = pgTable(
       .references(() => users.id),
     type: source_type().notNull(),
     title: varchar(),
+    archived_at: optionalTimestamp(),
     storage_key: varchar(),
     original_url: text(),
     text_content: text(),

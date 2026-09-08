@@ -4,19 +4,24 @@ import type {
   CreateTextSourceBodyInput,
   CreateUrlSourceBodyInput,
   ListSourcesQueryInput,
+  PatchSourceBody,
+  SourceStatus,
 } from "@ngertiin/contracts/api";
-import { useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createPdfSource,
   createTextSource,
   createUrlSource,
   getSource,
+  getSourceFile,
+  getSourcePreview,
   listSources,
+  patchSource,
   retrySource,
 } from "../../../lib/api";
 import { useRefreshUsage } from "../../usage/use-usage";
 
-type SourceFilters = Pick<ListSourcesQueryInput, "type" | "status" | "limit">;
+type SourceFilters = Pick<ListSourcesQueryInput, "type" | "status" | "limit" | "q" | "archived">;
 
 export function sourcesQueryKey(userId: string | null | undefined, filters: SourceFilters = {}) {
   return ["sources", userId, filters] as const;
@@ -104,5 +109,41 @@ export function useRetrySource() {
     onSettled: refreshUsage,
     mutationFn: ({ sourceId, key }: { sourceId: string; key: string }) =>
       retrySource(getToken, sourceId, key),
+  });
+}
+
+export function usePatchSource() {
+  const { userId, getToken } = useAuth();
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: PatchSourceBody }) =>
+      patchSource(getToken, id, input),
+    onSuccess: async (source) => {
+      client.setQueryData(sourceQueryKey(userId, source.id), source);
+      await Promise.all([
+        client.invalidateQueries({ queryKey: sourcesQueryRootKey(userId) }),
+        client.invalidateQueries({ queryKey: ["source", userId] }),
+        client.invalidateQueries({ queryKey: ["source-preview", userId, source.id] }),
+      ]);
+    },
+  });
+}
+export function useSourcePreview(id: string, status: SourceStatus) {
+  const { userId, getToken } = useAuth();
+  return useQuery({
+    queryKey: ["source-preview", userId, id, status],
+    queryFn: () => getSourcePreview(getToken, id),
+    enabled: Boolean(userId),
+    refetchInterval: status === "pending" || status === "processing" ? 2000 : false,
+  });
+}
+export function useSourceFile(id: string) {
+  const { userId, getToken } = useAuth();
+  return useQuery({
+    queryKey: ["source-file", userId, id],
+    queryFn: () => getSourceFile(getToken, id),
+    enabled: Boolean(userId),
+    staleTime: 0,
+    gcTime: 0,
   });
 }

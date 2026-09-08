@@ -6,7 +6,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../../components/ui/select";
-import { statusLabels } from "./source-presentation";
+import { statusLabels } from "../sources/source-presentation";
 import type { ModuleBuilderState } from "./use-module-builder";
 
 const roleDescriptions = {

@@ -4,7 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
 import { Button } from "../../components/ui/button";
 import { ApiProblemError } from "../../lib/api";
-import { sourceQueryKey, sourcesQueryRootKey, useRetrySource } from "../sources/api/use-sources";
+import { sourceQueryKey, sourcesQueryRootKey, useRetrySource } from "./api/use-sources";
 
 export function SourceRetry({ source }: { source: Source }) {
   const { userId } = useAuth();
@@ -23,7 +23,7 @@ export function SourceRetry({ source }: { source: Source }) {
           Batas 2 kali percobaan ulang sudah tercapai.
         </p>
       ) : null}
-      {source.failure?.retryable && source.retriesRemaining > 0 ? (
+      {!source.archivedAt && source.failure?.retryable && source.retriesRemaining > 0 ? (
         <Button
           type="button"
           size="sm"

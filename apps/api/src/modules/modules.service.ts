@@ -227,6 +227,7 @@ export class ModulesService {
             id: sources.id,
             type: sources.type,
             status: sources.status,
+            archivedAt: sources.archived_at,
             metadata: sources.metadata,
           })
           .from(sources)
@@ -254,6 +255,13 @@ export class ModulesService {
               "The requested resource was not found.",
             );
           }
+          if (source.archivedAt)
+            throw new ProductError(
+              409,
+              "VALIDATION_ERROR",
+              "Source archived",
+              "Pulihkan atau lepaskan materi arsip sebelum membuat modul baru.",
+            );
           if (source.status === "failed") {
             throw new ProductError(
               409,

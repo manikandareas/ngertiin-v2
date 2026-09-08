@@ -3,6 +3,7 @@ import {
   AddCircleHalfDotIcon,
   BookOpen01Icon,
   Home01Icon,
+  LibraryIcon,
   SidebarLeftIcon,
   SidebarRightIcon,
   UserCircleIcon,
@@ -20,6 +21,7 @@ const navigation = [
   { to: "/dashboard", label: "Beranda", icon: Home01Icon },
   { to: "/modules/new", label: "Buat modul", icon: AddCircleHalfDotIcon },
   { to: "/modules", label: "Modul saya", icon: BookOpen01Icon },
+  { to: "/sources", label: "Materi saya", icon: LibraryIcon },
 ];
 const focus = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
 const navItemClass = `flex min-h-11 min-w-0 items-center gap-3 rounded-lg px-3 text-sm font-medium text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-sidebar-foreground aria-[current=page]:bg-sidebar-accent aria-[current=page]:font-semibold aria-[current=page]:text-sidebar-accent-foreground motion-reduce:transition-none ${focus}`;

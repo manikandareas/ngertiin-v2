@@ -1,6 +1,7 @@
 import { ContextMenu, DropdownMenu } from "radix-ui";
+import { menuItemClassName } from "../../components/ui/menu-styles";
 import { useSources } from "../sources/api/use-sources";
-import { statusLabels } from "./source-presentation";
+import { statusLabels } from "../sources/source-presentation";
 import type { ModuleBuilderState } from "./use-module-builder";
 
 export function SourceLibrary({
@@ -16,13 +17,13 @@ export function SourceLibrary({
   return (
     <>
       {query.isPending ? (
-        <Menu.Item disabled className="material-menu-item">
+        <Menu.Item disabled className={menuItemClassName}>
           Memuat materi…
         </Menu.Item>
       ) : null}
       {query.isError ? (
         <Menu.Item
-          className="material-menu-item"
+          className={menuItemClassName}
           onSelect={(event) => {
             event.preventDefault();
             void query.refetch();
@@ -32,7 +33,7 @@ export function SourceLibrary({
         </Menu.Item>
       ) : null}
       {!query.isPending && !query.isError && !sources.length ? (
-        <Menu.Item disabled className="material-menu-item">
+        <Menu.Item disabled className={menuItemClassName}>
           Belum ada materi tersimpan
         </Menu.Item>
       ) : null}
@@ -42,7 +43,7 @@ export function SourceLibrary({
           <Menu.Item
             key={source.id}
             disabled={state.busy || selected || state.count >= 10}
-            className="material-menu-item"
+            className={menuItemClassName}
             onSelect={() => state.toggle(source)}
           >
             <span className="min-w-0">
@@ -58,7 +59,7 @@ export function SourceLibrary({
       })}
       {query.hasNextPage ? (
         <Menu.Item
-          className="material-menu-item"
+          className={menuItemClassName}
           disabled={query.isFetchingNextPage}
           onSelect={(event) => {
             event.preventDefault();
