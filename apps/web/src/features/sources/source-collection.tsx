@@ -1,10 +1,12 @@
-import type { Source, SourceType } from "@ngertiin/contracts/api";
+import type { Source } from "@ngertiin/contracts/api";
 import { Plus } from "lucide-react";
+import { parseAsString, parseAsStringLiteral, useQueryStates } from "nuqs";
 import { ContextMenu, DropdownMenu, Tabs } from "radix-ui";
-import { useDeferredValue, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { AppShell } from "../../components/app-shell";
 import { Button } from "../../components/ui/button";
 import { menuContentClassName } from "../../components/ui/menu-styles";
+import { useDebouncedValue } from "../../lib/use-debounced-value";
 import { useSources } from "./api/use-sources";
 import { SourceActionDialog } from "./source-action-dialog";
 import type { SourceAction } from "./source-actions";
@@ -30,11 +32,16 @@ const emptyMessages = {
     description: "Tambahkan PDF, tautan, atau catatan teks.",
   },
 };
+
+const filterParsers = {
+  archived: parseAsStringLiteral(["true", "false"]).withDefault("false"),
+  q: parseAsString.withDefault(""),
+  type: parseAsStringLiteral(["", "pdf", "url", "text"]).withDefault(""),
+};
+
 export function SourceCollection() {
-  const [archived, setArchived] = useState<"true" | "false">("false");
-  const [search, setSearch] = useState("");
-  const q = useDeferredValue(search);
-  const [type, setType] = useState<SourceType | "">("");
+  const [{ archived, q: search, type }, setFilters] = useQueryStates(filterParsers);
+  const q = useDebouncedValue(search, 300);
   const [add, setAdd] = useState<AddSourceAction | null>(null);
   const [preview, setPreview] = useState<Source | null>(null);
   const [action, setAction] = useState<SourceAction | null>(null);
@@ -42,9 +49,7 @@ export function SourceCollection() {
   const addButton = useRef<HTMLSpanElement>(null);
   const save = useSaveSource();
   const form = useSourceForm(save, () => {
-    setArchived("false");
-    setSearch("");
-    setType("");
+    void setFilters(null);
   });
   const query = useSources({
     archived,
@@ -95,14 +100,16 @@ export function SourceCollection() {
       </header>
       <Tabs.Root
         value={archived}
-        onValueChange={(value) => setArchived(value === "true" ? "true" : "false")}
+        onValueChange={(value) =>
+          void setFilters({ archived: value === "true" ? "true" : "false" })
+        }
         className="mt-7"
       >
         <SourceFilters
           search={search}
           type={type}
-          onSearchChange={setSearch}
-          onTypeChange={setType}
+          onSearchChange={(q) => void setFilters({ q })}
+          onTypeChange={(type) => void setFilters({ type })}
         />
         <Tabs.Content value={archived} className="mt-6">
           <ContextMenu.Root>

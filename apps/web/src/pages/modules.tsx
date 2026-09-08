@@ -1,7 +1,6 @@
 import { Plus } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import type { ModuleProgressStatus } from "@ngertiin/contracts/api";
-import { useDeferredValue, useState } from "react";
+import { parseAsString, parseAsStringLiteral, useQueryStates } from "nuqs";
 import { Link } from "react-router-dom";
 import { AppShell } from "../components/app-shell";
 import { Button } from "../components/ui/button";
@@ -9,12 +8,19 @@ import { Card } from "../components/ui/card";
 import { useModules } from "../features/modules/api/use-modules";
 import { ModuleCard } from "../features/modules/components/module-card";
 import { ModulesFilters } from "../features/modules/components/modules-filters";
+import { useDebouncedValue } from "../lib/use-debounced-value";
+
+const filterParsers = {
+  collection: parseAsStringLiteral(["active", "archived"]).withDefault("active"),
+  q: parseAsString.withDefault(""),
+  progressStatus: parseAsStringLiteral(["", "not_started", "in_progress", "completed"]).withDefault(
+    "",
+  ),
+};
 
 export default function ModulesPage() {
-  const [collection, setCollection] = useState<"active" | "archived">("active");
-  const [search, setSearch] = useState("");
-  const [progressStatus, setProgressStatus] = useState<ModuleProgressStatus | "">("");
-  const q = useDeferredValue(search.trim());
+  const [{ collection, q: search, progressStatus }, setFilters] = useQueryStates(filterParsers);
+  const q = useDebouncedValue(search.trim(), 300);
   const modules = useModules({
     ...(collection === "archived" ? { status: "archived" as const } : {}),
     ...(q ? { q } : {}),
@@ -42,12 +48,9 @@ export default function ModulesPage() {
         collection={collection}
         search={search}
         progressStatus={progressStatus}
-        onCollectionChange={(value) => {
-          setCollection(value);
-          setProgressStatus("");
-        }}
-        onSearchChange={setSearch}
-        onProgressChange={setProgressStatus}
+        onCollectionChange={(collection) => void setFilters({ collection, progressStatus: "" })}
+        onSearchChange={(q) => void setFilters({ q })}
+        onProgressChange={(progressStatus) => void setFilters({ progressStatus })}
       />
 
       {modules.isPending ? (
