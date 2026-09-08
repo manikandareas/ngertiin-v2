@@ -70,7 +70,7 @@ export function AppSidebar({
     <>
       <aside
         aria-label="Sidebar"
-        className={`sticky top-0 hidden h-dvh shrink-0 flex-col overflow-y-auto bg-sidebar text-sidebar-foreground xl:flex ${collapsed ? "xl:w-16" : "xl:w-64"}`}
+        className={`sticky top-0 hidden h-dvh shrink-0 flex-col overflow-y-auto border-r bg-sidebar text-sidebar-foreground xl:flex ${collapsed ? "xl:w-16" : "xl:w-64"}`}
       >
         <div className={`flex items-center gap-2.5 py-5 ${collapsed ? "flex-col px-2" : "px-3"}`}>
           <Link
