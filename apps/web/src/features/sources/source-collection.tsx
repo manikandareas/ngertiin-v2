@@ -1,8 +1,8 @@
-import type { Source } from "@ngertiin/contracts/api";
 import { Plus } from "lucide-react";
 import { parseAsString, parseAsStringLiteral, useQueryStates } from "nuqs";
 import { ContextMenu, DropdownMenu, Tabs } from "radix-ui";
 import { useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { AppShell } from "../../components/app-shell";
 import { Button } from "../../components/ui/button";
 import { menuContentClassName } from "../../components/ui/menu-styles";
@@ -14,7 +14,6 @@ import { type AddSourceAction, SourceDialog } from "./source-dialog";
 import { SourceFilters } from "./source-filters";
 import { SourceItem } from "./source-item";
 import { SourceMenu } from "./source-menu";
-import { SourcePreview } from "./source-preview";
 import { useSaveSource } from "./use-save-source";
 import { useSourceForm } from "./use-source-form";
 
@@ -43,7 +42,8 @@ export function SourceCollection() {
   const [{ archived, q: search, type }, setFilters] = useQueryStates(filterParsers);
   const q = useDebouncedValue(search, 300);
   const [add, setAdd] = useState<AddSourceAction | null>(null);
-  const [preview, setPreview] = useState<Source | null>(null);
+  const navigate = useNavigate();
+  const location = useLocation();
   const [action, setAction] = useState<SourceAction | null>(null);
   const focus = useRef<HTMLElement | null>(null);
   const addButton = useRef<HTMLSpanElement>(null);
@@ -140,10 +140,11 @@ export function SourceCollection() {
                     <SourceItem
                       key={source.id}
                       source={source}
-                      onPreview={(value, trigger) => {
-                        focus.current = trigger;
-                        setPreview(value);
-                      }}
+                      onPreview={(value) =>
+                        navigate(`/sources/${value.id}`, {
+                          state: { returnTo: location.pathname + location.search },
+                        })
+                      }
                       onAction={(value, trigger) => {
                         focus.current = trigger;
                         setAction(value);
@@ -195,13 +196,6 @@ export function SourceCollection() {
         onClose={() => setAdd(null)}
         returnFocus={returnFocus}
       />
-      {preview ? (
-        <SourcePreview
-          source={preview}
-          onClose={() => setPreview(null)}
-          returnFocus={returnFocus}
-        />
-      ) : null}
       {action ? (
         <SourceActionDialog
           key={`${action.source.id}-${action.kind}`}

@@ -4,10 +4,8 @@ import { Settings04Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { GripVertical } from "lucide-react";
 import { useReducedMotion } from "motion/react";
-import { useRef, useState } from "react";
 import { Button } from "../../components/ui/button";
 import { SourceItemContent } from "../sources/source-item-content";
-import { SourcePreview } from "../sources/source-preview";
 import type { Selection } from "./use-module-builder";
 
 export function SortableMaterial({
@@ -22,8 +20,6 @@ export function SortableMaterial({
   onSettings: () => void;
 }) {
   const reducedMotion = useReducedMotion();
-  const [previewOpen, setPreviewOpen] = useState(false);
-  const previewTrigger = useRef<HTMLElement | null>(null);
   const {
     attributes,
     listeners,
@@ -73,9 +69,8 @@ export function SortableMaterial({
         <SourceItemContent
           compact
           source={item.source}
-          onPreview={(_, trigger) => {
-            previewTrigger.current = trigger;
-            setPreviewOpen(true);
+          onPreview={() => {
+            window.open(`/sources/${item.source.id}`, "_blank", "noopener,noreferrer");
           }}
           disabled={disabled}
           actions={
@@ -93,13 +88,6 @@ export function SortableMaterial({
           }
         />
       </div>
-      {previewOpen ? (
-        <SourcePreview
-          source={item.source}
-          onClose={() => setPreviewOpen(false)}
-          returnFocus={() => previewTrigger.current?.focus()}
-        />
-      ) : null}
     </li>
   );
 }

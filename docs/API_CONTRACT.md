@@ -617,7 +617,7 @@ Allowed only when `archivedAt = null`, `status = failed`, and `failure.retryable
 lifetime manual retries; exhaustion returns `409 RETRY_LIMIT_EXCEEDED`. Worker retries do not
 create processing runs and do not consume manual retries.
 
-### 7.6 Rename, Archive, and Restore
+### 7.6 Edit, Rename, Archive, and Restore
 
 ```http
 PATCH /api/v1/sources/:sourceId
@@ -625,6 +625,10 @@ Content-Type: application/json
 
 { "title": "New display title", "archived": true }
 ```
+
+Optional `text` updates the content of a text source only; PDF/URL edits return `422 VALIDATION_ERROR`.
+Text is trimmed, must be nonempty, and is limited to 100,000 Unicode code points.
+Updating text also updates its content hash; existing generated modules are not regenerated.
 
 At least one field is required. `title` is trimmed, must not be empty, and is capped at 200 Unicode
 code points. `archived: false` restores the source. Returns `200 { data: Source }`. Rename changes

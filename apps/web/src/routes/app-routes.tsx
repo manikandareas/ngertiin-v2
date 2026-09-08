@@ -5,6 +5,7 @@ import { AuthenticatedRoute } from "./authenticated-route";
 
 const DashboardPage = lazy(() => import("../pages/dashboard"));
 const NewModulePage = lazy(() => import("../pages/new-module"));
+const SourceDetailPage = lazy(() => import("../pages/source-detail"));
 const SourcesPage = lazy(() => import("../pages/sources"));
 const ModulesPage = lazy(() => import("../pages/modules"));
 const ModuleStatusPage = lazy(() => import("../pages/module-status"));
@@ -38,6 +39,7 @@ export function AppRoutes() {
           />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/sources" element={<SourcesPage />} />
+          <Route path="/sources/:sourceId" element={<SourceDetailPage />} />
           <Route path="/modules" element={<ModulesPage />} />
           <Route path="/modules/new" element={<NewModulePage />} />
           <Route path="/modules/:moduleId/journey" element={<ModuleJourneyPage />} />

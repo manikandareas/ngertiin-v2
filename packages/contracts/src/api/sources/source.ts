@@ -179,11 +179,21 @@ export const patchSourceBodySchema = z
         "Judul maksimal 200 karakter Unicode.",
       )
       .optional(),
+    text: z
+      .string()
+      .trim()
+      .min(1)
+      .refine(
+        (value) => codePointLength(value) <= MAX_TEXT_CODE_POINTS,
+        "Teks maksimal 100.000 karakter Unicode.",
+      )
+      .optional(),
     archived: z.boolean().optional(),
   })
   .strict()
   .refine(
-    (value) => value.title !== undefined || value.archived !== undefined,
+    (value) =>
+      value.title !== undefined || value.archived !== undefined || value.text !== undefined,
     "Perubahan wajib diisi.",
   );
 export type PatchSourceBody = z.infer<typeof patchSourceBodySchema>;

@@ -503,10 +503,26 @@ export class SourcesService {
   }
 
   async patchSource(userId: string, sourceId: string, input: PatchSourceBody): Promise<Source> {
+    if (input.text !== undefined) {
+      const source = await this.getSource(userId, sourceId);
+      if (source.type !== "text")
+        throw new ProductError(
+          422,
+          "VALIDATION_ERROR",
+          "Invalid source type",
+          "Only text sources can be edited.",
+        );
+    }
     const [row] = await this.infrastructure.database.db
       .update(sources)
       .set({
         ...(input.title !== undefined ? { title: input.title } : {}),
+        ...(input.text !== undefined
+          ? {
+              text_content: input.text,
+              content_hash: createHash("sha256").update(input.text).digest("hex"),
+            }
+          : {}),
         ...(input.archived !== undefined
           ? { archived_at: input.archived ? new Date() : null }
           : {}),

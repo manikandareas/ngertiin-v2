@@ -5,6 +5,7 @@ import type {
   CreateUrlSourceBodyInput,
   ListSourcesQueryInput,
   PatchSourceBody,
+  SourcePreviewResponse,
   SourceStatus,
 } from "@ngertiin/contracts/api";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -118,7 +119,15 @@ export function usePatchSource() {
   return useMutation({
     mutationFn: ({ id, input }: { id: string; input: PatchSourceBody }) =>
       patchSource(getToken, id, input),
-    onSuccess: async (source) => {
+    onSuccess: async (source, { input }) => {
+      if (input.text !== undefined) {
+        const text = input.text.trim();
+        await client.cancelQueries({ queryKey: ["source-preview", userId, source.id] });
+        client.setQueriesData<SourcePreviewResponse["data"]>(
+          { queryKey: ["source-preview", userId, source.id] },
+          (preview) => (preview ? { ...preview, text } : preview),
+        );
+      }
       client.setQueryData(sourceQueryKey(userId, source.id), source);
       await Promise.all([
         client.invalidateQueries({ queryKey: sourcesQueryRootKey(userId) }),
