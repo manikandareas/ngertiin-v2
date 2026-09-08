@@ -3,6 +3,7 @@ import {
   GENERATION_LENGTH_RANGES,
   GENERATION_NODE_TYPES,
   type GenerationSettings,
+  markdownLessonContentSchema,
 } from "@ngertiin/contracts/api";
 import { z } from "zod";
 
@@ -259,7 +260,7 @@ const conceptWeightsSchema = z
   })
   .describe("Concept-level evaluation weights with at least one positive weight.");
 
-const lessonActivitySchema = z
+const legacyLessonActivitySchema = z
   .object({
     type: z.literal("lesson").describe("Activity discriminator; always lesson."),
     content: z
@@ -291,6 +292,24 @@ const lessonActivitySchema = z
   .describe(
     "Lesson activity. It must contain exactly type and content; content must contain introduction, explanation, keyPoints, examples, and summary.",
   );
+
+const lessonActivitySchema = z.object({
+  type: z.literal("lesson"),
+  content: markdownLessonContentSchema.omit({ images: true }),
+  visualNeeds: z
+    .array(
+      z.object({
+        id: z.enum(["visual-1", "visual-2"]),
+        concept: shortTextSchema,
+        query: shortTextSchema,
+      }),
+    )
+    .max(2),
+});
+const storedLessonActivitySchema = z.object({
+  type: z.literal("lesson"),
+  content: markdownLessonContentSchema,
+});
 
 const flashcardActivitySchema = z
   .object({
@@ -498,9 +517,52 @@ export function nodeActivitiesSchemaFor(
     .describe(nodeActivityRequirement(nodeType));
 }
 
+export function checkpointActivitiesSchemaFor(
+  nodeType: CurriculumNode["type"],
+  settings: GenerationSettings | null = null,
+) {
+  const allowedTypes = settings?.activityTypes.flatMap((type) => [
+    ...GENERATION_CONTENT_TYPES[type],
+  ]);
+  return z
+    .object({
+      activities: z
+        .array(
+          z.union([
+            legacyLessonActivitySchema,
+            storedLessonActivitySchema,
+            flashcardActivitySchema,
+            multipleChoiceActivitySchema,
+            trueFalseActivitySchema,
+            shortAnswerActivitySchema,
+          ]),
+        )
+        .min(1)
+        .max(10),
+    })
+    .refine(
+      (output) => {
+        const types = output.activities.map((activity) => activity.type);
+        if (allowedTypes && types.some((type) => !allowedTypes.includes(type))) return false;
+        if (nodeType === "lesson" || nodeType === "flashcard") return types.includes(nodeType);
+        return types.some(
+          (type) => type === "multiple_choice" || type === "true_false" || type === "short_answer",
+        );
+      },
+      { message: `Activities must satisfy the ${nodeType} node.` },
+    );
+}
+
 export type ChunkMapOutput = z.infer<typeof chunkMapOutputSchema>;
 export type MaterialAnalysis = z.infer<typeof materialAnalysisSchema>;
 export type ConceptMap = z.infer<typeof conceptMapSchema>;
 export type CurriculumNode = z.infer<typeof curriculumNodeSchema>;
 export type CurriculumPlan = z.infer<typeof curriculumPlanSchema>;
-export type NodeActivities = z.infer<typeof nodeActivitiesSchema>;
+export type GeneratedNodeActivities = z.infer<typeof nodeActivitiesSchema>;
+export type NodeActivities = {
+  activities: Array<
+    | Exclude<GeneratedNodeActivities["activities"][number], { type: "lesson" }>
+    | z.infer<typeof legacyLessonActivitySchema>
+    | z.infer<typeof storedLessonActivitySchema>
+  >;
+};

@@ -11,6 +11,7 @@ export interface PutObjectInput {
   key: string;
   body: Uint8Array | string;
   contentType?: string;
+  signal?: AbortSignal;
 }
 
 export interface StoredObject {
@@ -57,6 +58,7 @@ export class S3StorageService implements StorageService {
         Body: input.body,
         ContentType: input.contentType,
       }),
+      { abortSignal: input.signal },
     );
     return { key: input.key, etag: result.ETag };
   }

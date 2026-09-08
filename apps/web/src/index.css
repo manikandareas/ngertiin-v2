@@ -1,7 +1,10 @@
+@import "streamdown/styles.css";
 @import "@fontsource-variable/nunito/wght.css";
 @import "@fontsource-variable/nunito-sans/wght.css";
 @import "tailwindcss";
 @import "tw-animate-css";
+@source "../node_modules/streamdown/dist/*.js";
+@source "../node_modules/@streamdown/code/dist/*.js";
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
@@ -331,4 +334,19 @@
 
 @utility material-menu-item {
   @apply flex min-h-9.5 cursor-default select-none items-center gap-2.5 rounded-[7px] px-2.5 py-2 text-caption leading-normal outline-none data-highlighted:bg-accent data-highlighted:text-accent-foreground data-[state=open]:bg-accent data-[state=open]:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50;
+}
+
+.lesson-markdown [data-streamdown="table-wrapper"],
+.lesson-markdown [data-streamdown="code-block"],
+.lesson-markdown pre,
+.lesson-markdown .katex-display {
+  max-width: 100%;
+  overflow-x: auto;
+}
+.lesson-markdown {
+  overflow-wrap: anywhere;
+}
+.lesson-markdown a {
+  color: var(--link);
+  text-decoration: underline;
 }

@@ -25,3 +25,12 @@ export const adaptivePlanSchema = z
   .strict();
 
 export type AdaptivePlan = z.infer<typeof adaptivePlanSchema>;
+
+export const adaptiveCheckpointSchema = z
+  .object({
+    plan: adaptivePlanSchema,
+    generated: z.array(z.unknown()).max(3),
+  })
+  .refine(({ plan, generated }) => generated.length <= plan.nodes.length, {
+    message: "Checkpoint cannot contain more completed nodes than its plan.",
+  });

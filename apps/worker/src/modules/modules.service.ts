@@ -27,7 +27,7 @@ import { and, asc, eq, gt, inArray, sql } from "drizzle-orm";
 import { InfrastructureService } from "../infrastructure/infrastructure.service.js";
 import { invalidContext, invalidOutput, type ModuleGenerationFailure } from "./modules.failure.js";
 import type { ConceptMap, CurriculumPlan, NodeActivities } from "./modules.schemas.js";
-import { curriculumPlanSchemaFor, nodeActivitiesSchemaFor } from "./modules.schemas.js";
+import { checkpointActivitiesSchemaFor, curriculumPlanSchemaFor } from "./modules.schemas.js";
 
 const DISPATCH_INTERVAL_MILLISECONDS = 2_000;
 
@@ -282,7 +282,8 @@ export class ModulesService implements OnApplicationBootstrap, OnApplicationShut
         !curriculumPlanSchemaFor(settings).safeParse(curriculum).success ||
         curriculum.nodes.some(
           (node) =>
-            !nodeActivitiesSchemaFor(node.type, settings).safeParse(generated[node.key]).success,
+            !checkpointActivitiesSchemaFor(node.type, settings).safeParse(generated[node.key])
+              .success,
         )
       ) {
         invalidOutput("validate_module");
@@ -350,7 +351,7 @@ export class ModulesService implements OnApplicationBootstrap, OnApplicationShut
             position: position + 1,
             content: activity.content,
             evaluation_config: "evaluationConfig" in activity ? activity.evaluationConfig : null,
-            schema_version: 1,
+            schema_version: activity.type === "lesson" && "format" in activity.content ? 2 : 1,
             created_at: now,
             updated_at: now,
           }));

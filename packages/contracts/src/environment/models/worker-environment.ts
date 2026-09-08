@@ -1,8 +1,13 @@
-import { infrastructureEnvSchema } from "./infrastructure-environment.js";
 import { z } from "zod";
+import { infrastructureEnvSchema } from "./infrastructure-environment.js";
 
 export const workerEnvSchema = infrastructureEnvSchema.extend({
   OPENAI_API_KEY: z.string().min(1),
+  AI_IMAGE_INPUT_ENABLED: z
+    .enum(["true", "false"])
+    .transform((value) => value === "true")
+    .default(true),
+  WIKIMEDIA_USER_AGENT: z.string().min(1).default("NgertiinLessonImages/1.0 (https://ngerti.in)"),
   OPENAI_MODEL: z.string().min(1),
   MISTRAL_API_KEY: z.string().min(1),
   MISTRAL_OCR_MODEL: z.string().min(1).default("mistral-ocr-latest"),

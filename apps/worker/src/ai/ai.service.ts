@@ -20,6 +20,8 @@ export interface GenerateObjectRequest<OutputValue extends Record<string, unknow
   readonly schemaName: string;
   readonly operation: string;
   readonly prompt: string;
+  readonly images?: readonly string[];
+  readonly signal?: AbortSignal;
   readonly retryInvalidOutput?: boolean;
   readonly logProviderMetadata?: boolean;
 }
@@ -113,7 +115,20 @@ export class AiService {
 
     while (true) {
       try {
-        const output = await structuredModel.invoke(request.prompt);
+        const output = await structuredModel.invoke(
+          request.images?.length
+            ? [
+                {
+                  role: "user",
+                  content: [
+                    { type: "text", text: request.prompt },
+                    ...request.images.map((url) => ({ type: "image_url", image_url: { url } })),
+                  ],
+                },
+              ]
+            : request.prompt,
+          { signal: request.signal },
+        );
         console.log(
           JSON.stringify({
             level: "log",

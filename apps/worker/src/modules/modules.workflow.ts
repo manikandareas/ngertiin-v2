@@ -7,6 +7,7 @@ import type { ModuleGenerationJob } from "@ngertiin/contracts/jobs";
 import { AiService } from "../ai/ai.service.js";
 import { WORKER_ENV } from "../config.js";
 import type { ChunkDescriptor, SourceChunk } from "../source/source.service.js";
+import { LessonImagesService } from "./lesson-images.service.js";
 import { invalidContext } from "./modules.failure.js";
 import {
   buildActivityGenerationRequest,
@@ -72,6 +73,7 @@ export class ModulesWorkflow implements OnModuleInit, OnApplicationShutdown {
 
   constructor(
     @Inject(WORKER_ENV) environment: WorkerEnvironment,
+    @Inject(LessonImagesService) private readonly lessonImages: LessonImagesService,
     @Inject(AiService) private readonly ai: AiService,
     @Inject(ModulesService) private readonly modules: ModulesService,
   ) {
@@ -203,7 +205,8 @@ export class ModulesWorkflow implements OnModuleInit, OnApplicationShutdown {
           ),
         );
         const completed = state.activityIndex + 1;
-        const activities = { ...state.activities, [node.key]: output };
+        const enriched = await this.lessonImages.enrich(output, state.generationRunId, node.key);
+        const activities = { ...state.activities, [node.key]: enriched };
         await this.modules.updateActivityProgress(
           state.generationRunId,
           completed,

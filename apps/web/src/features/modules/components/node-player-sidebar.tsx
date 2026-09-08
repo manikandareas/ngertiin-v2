@@ -11,7 +11,9 @@ interface NodePlayerSidebarProps {
 function getActivityTitle(activity: PublicActivity): string {
   switch (activity.type) {
     case "lesson":
-      return activity.content.introduction?.trim() || activity.content.explanation;
+      return "format" in activity.content
+        ? activity.content.title
+        : activity.content.introduction?.trim() || activity.content.explanation;
     case "flashcard":
       return activity.content.cards[0]?.front || "Kartu pengingat";
     case "multiple_choice":

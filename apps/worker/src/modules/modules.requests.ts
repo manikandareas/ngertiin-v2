@@ -10,11 +10,12 @@ import {
   chunkMapOutputSchema,
   conceptMapSchema,
   curriculumPlanSchemaFor,
+  type GeneratedNodeActivities,
   type MaterialAnalysis,
   materialAnalysisSchema,
-  type NodeActivities,
   nodeActivitiesSchemaFor,
 } from "./modules.schemas.js";
+import { TEACHING_STYLE } from "./teaching-style.js";
 
 function instructionSection(instruction: string | null): string {
   return instruction
@@ -44,7 +45,7 @@ function activityOutputRules(
     requiredActivityRule(nodeType),
     'Every "multiple_choice" and "true_false" activity must include evaluationConfig with correctAnswer, explanation, and conceptWeights.',
     'Every "short_answer" activity must include evaluationConfig with expectedConcepts and rubric.',
-    "Keep answers, explanations, concept weights, and rubrics inside evaluationConfig, never inside content.",
+    "Keep assessment answer keys, assessment explanations, concept weights, and rubrics inside evaluationConfig, never inside assessment content.",
     "Return every schema field. Use null only for fields whose description explicitly permits null.",
   ].join("\n");
 }
@@ -150,7 +151,7 @@ export function buildActivityGenerationRequest(
   chunks: SourceChunk[],
   instruction: string | null,
   settings: GenerationSettings | null = null,
-): GenerateObjectRequest<NodeActivities> {
+): GenerateObjectRequest<GeneratedNodeActivities> {
   const nodeConceptKeys = new Set(node.concepts.map((concept) => concept.conceptKey));
   const evidenceIds = new Set(
     conceptMap.concepts
@@ -174,6 +175,7 @@ export function buildActivityGenerationRequest(
     operation: "generate_activities",
     prompt: prompt([
       "Generate browser-safe learning activities for exactly one core node.",
+      TEACHING_STYLE,
       "Assessment answers and grading details belong only in evaluationConfig.",
       "Use only supplied concept keys and source evidence. Do not create adaptive content.",
       `OUTPUT CONTRACT:\n${activityOutputRules(node.type, settings)}`,

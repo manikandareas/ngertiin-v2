@@ -210,6 +210,36 @@ export class AdaptiveService implements OnApplicationBootstrap, OnApplicationShu
     });
   }
 
+  async readCheckpoint(runId: string): Promise<unknown> {
+    const [step] = await this.infrastructure.database.db
+      .select({ metadata: generation_run_steps.metadata })
+      .from(generation_run_steps)
+      .where(
+        and(
+          eq(generation_run_steps.generation_run_id, runId),
+          eq(generation_run_steps.step, "generate_adaptive_activities"),
+        ),
+      )
+      .limit(1);
+    return step?.metadata;
+  }
+
+  async saveCheckpoint(
+    runId: string,
+    plan: AdaptivePlan,
+    generated: NodeActivities[],
+  ): Promise<void> {
+    await this.infrastructure.database.db
+      .update(generation_run_steps)
+      .set({ metadata: { plan, generated } })
+      .where(
+        and(
+          eq(generation_run_steps.generation_run_id, runId),
+          eq(generation_run_steps.step, "generate_adaptive_activities"),
+        ),
+      );
+  }
+
   async complete(
     runId: string,
     step: AdaptiveGenerationStep,
@@ -311,7 +341,7 @@ export class AdaptiveService implements OnApplicationBootstrap, OnApplicationShu
               position: index + 1,
               content: activity.content,
               evaluation_config: "evaluationConfig" in activity ? activity.evaluationConfig : null,
-              schema_version: 1,
+              schema_version: activity.type === "lesson" && "format" in activity.content ? 2 : 1,
               created_at: now,
               updated_at: now,
             })) ?? [],

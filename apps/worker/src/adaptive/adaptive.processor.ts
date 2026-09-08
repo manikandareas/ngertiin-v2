@@ -10,8 +10,14 @@ import { Worker as BullWorker, type Job, UnrecoverableError } from "bullmq";
 import { AiService } from "../ai/ai.service.js";
 import { InfrastructureService } from "../infrastructure/infrastructure.service.js";
 import { generationLanguageRule } from "../modules/generation-settings.js";
-import { type NodeActivities, nodeActivitiesSchemaFor } from "../modules/modules.schemas.js";
-import { adaptivePlanSchema } from "./adaptive.schemas.js";
+import { LessonImagesService } from "../modules/lesson-images.service.js";
+import {
+  checkpointActivitiesSchemaFor,
+  type NodeActivities,
+  nodeActivitiesSchemaFor,
+} from "../modules/modules.schemas.js";
+import { TEACHING_STYLE } from "../modules/teaching-style.js";
+import { adaptiveCheckpointSchema, adaptivePlanSchema } from "./adaptive.schemas.js";
 import { AdaptiveService } from "./adaptive.service.js";
 
 @Injectable()
@@ -20,6 +26,7 @@ export class AdaptiveProcessor implements OnApplicationBootstrap, OnApplicationS
   constructor(
     @Inject(InfrastructureService) private readonly infrastructure: InfrastructureService,
     @Inject(AdaptiveService) private readonly adaptive: AdaptiveService,
+    @Inject(LessonImagesService) private readonly lessonImages: LessonImagesService,
     @Inject(AiService) private readonly ai: AiService,
   ) {}
   onApplicationBootstrap(): void {
@@ -95,45 +102,60 @@ export class AdaptiveProcessor implements OnApplicationBootstrap, OnApplicationS
           conceptCount: context.concepts.length,
         });
         await this.adaptive.begin(payload.generationRunId, "plan_remediation");
-        const plan = await this.ai.generateObject({
-          schema: adaptivePlanSchema,
-          schemaName: "adaptive_plan",
-          operation: "plan_remediation",
-          prompt: [
-            generationLanguageRule(context.generationSettings),
-            "Create a focused remediation plan of one to three nodes.",
-            "Use only the supplied target concept keys. Do not create or modify core nodes.",
-            "Allowed node types: review, practice, flashcard, remedial_quiz.",
-            `TARGET CONCEPTS:\n${JSON.stringify(context.concepts)}`,
-            `RELEVANT CORE CONTENT:\n${JSON.stringify(context.coreContent)}`,
-          ].join("\n\n"),
-        });
+        const checkpoint = adaptiveCheckpointSchema.safeParse(
+          await this.adaptive.readCheckpoint(payload.generationRunId),
+        );
+        const plan = checkpoint.success
+          ? checkpoint.data.plan
+          : await this.ai.generateObject({
+              schema: adaptivePlanSchema,
+              schemaName: "adaptive_plan",
+              operation: "plan_remediation",
+              prompt: [
+                generationLanguageRule(context.generationSettings),
+                "Create a focused remediation plan of one to three nodes.",
+                "Use only the supplied target concept keys. Do not create or modify core nodes.",
+                "Allowed node types: review, practice, flashcard, remedial_quiz.",
+                `TARGET CONCEPTS:\n${JSON.stringify(context.concepts)}`,
+                `RELEVANT CORE CONTENT:\n${JSON.stringify(context.coreContent)}`,
+              ].join("\n\n"),
+            });
         await this.adaptive.complete(payload.generationRunId, "plan_remediation", {
           nodeCount: plan.nodes.length,
         });
         await this.adaptive.begin(payload.generationRunId, "generate_adaptive_activities");
         const generated: NodeActivities[] = [];
-        for (const node of plan.nodes) {
+        for (const [nodeIndex, node] of plan.nodes.entries()) {
           const schemaType =
             node.type === "flashcard" ? "flashcard" : node.type === "review" ? "lesson" : "quiz";
+          const cached = checkpoint.success ? checkpoint.data.generated[nodeIndex] : undefined;
+          if (cached !== undefined) {
+            generated.push(checkpointActivitiesSchemaFor(schemaType).parse(cached));
+            continue;
+          }
+          const output = await this.ai.generateObject({
+            schema: nodeActivitiesSchemaFor(schemaType),
+            schemaName: "adaptive_node_activities",
+            operation: "generate_adaptive_activities",
+            prompt: [
+              generationLanguageRule(context.generationSettings),
+              TEACHING_STYLE,
+              "Generate focused remediation activities for this adaptive node.",
+              "Use only supplied concept keys and existing core content. Put answer keys only in evaluationConfig.",
+              `NODE:\n${JSON.stringify(node)}`,
+              `TARGET CONCEPTS:\n${JSON.stringify(context.concepts)}`,
+              `RELEVANT CORE CONTENT:\n${JSON.stringify(context.coreContent)}`,
+            ].join("\n\n"),
+          });
           generated.push(
-            await this.ai.generateObject({
-              schema: nodeActivitiesSchemaFor(schemaType),
-              schemaName: "adaptive_node_activities",
-              operation: "generate_adaptive_activities",
-              prompt: [
-                generationLanguageRule(context.generationSettings),
-                "Generate focused remediation activities for this adaptive node.",
-                "Use only supplied concept keys and existing core content. Put answer keys only in evaluationConfig.",
-                `NODE:\n${JSON.stringify(node)}`,
-                `TARGET CONCEPTS:\n${JSON.stringify(context.concepts)}`,
-                `RELEVANT CORE CONTENT:\n${JSON.stringify(context.coreContent)}`,
-              ].join("\n\n"),
-            }),
+            await this.lessonImages.enrich(output, payload.generationRunId, String(nodeIndex)),
           );
+          await this.adaptive.saveCheckpoint(payload.generationRunId, plan, generated);
         }
         await this.adaptive.complete(payload.generationRunId, "generate_adaptive_activities", {
           nodeCount: generated.length,
+          plan,
+          generated,
         });
         await this.adaptive.begin(payload.generationRunId, "validate_adaptive_content");
         await this.adaptive.finalize(payload, context, plan, generated);

@@ -20,6 +20,7 @@ import type {
 } from "@ngertiin/contracts/api";
 import {
   generationFailureSchema,
+  markdownLessonContentSchema,
   publicActivitySchema,
   timestampSchema,
   uuidSchema,
@@ -759,7 +760,7 @@ export class ModulesService {
     return {
       latestCompletedAttemptId: latestCompletedAttempt?.id ?? null,
       node,
-      activities: rows.map((row) => this.mapPublicActivity(row)),
+      activities: await Promise.all(rows.map((row) => this.mapPublicActivity(row))),
       moduleProgress: journey.progress,
       nextAction: journey.nextAction,
     };
@@ -1263,14 +1264,32 @@ export class ModulesService {
     return { progress, nodes };
   }
 
-  private mapPublicActivity(row: {
+  private async mapPublicActivity(row: {
     id: string;
     type: "lesson" | "flashcard" | "multiple_choice" | "true_false" | "short_answer";
     position: number;
     content: unknown;
-  }): PublicActivity {
+  }): Promise<PublicActivity> {
     if (row.type !== "lesson") return publicActivitySchema.parse(row);
     const content = row.content as Record<string, unknown>;
+    if (content.format === "markdown") {
+      const parsed = markdownLessonContentSchema.parse(content);
+      const images = (
+        await Promise.all(
+          parsed.images.map(async ({ objectKey, ...image }) => {
+            try {
+              return {
+                ...image,
+                url: await this.infrastructure.storage.createSignedUrl(objectKey),
+              };
+            } catch {
+              return null;
+            }
+          }),
+        )
+      ).filter((image) => image !== null);
+      return publicActivitySchema.parse({ ...row, content: { ...parsed, images } });
+    }
     return publicActivitySchema.parse({
       id: row.id,
       type: row.type,

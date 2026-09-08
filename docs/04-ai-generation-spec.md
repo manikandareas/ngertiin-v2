@@ -231,22 +231,37 @@ This allows independent retries.
 
 # 11. Lesson Generation
 
-Recommended output:
+New generation output (core and adaptive):
 
 ```ts
 type LessonActivity = {
   type: "lesson";
-  content: {
-    introduction: string | null;
-    explanation: string;
-    keyPoints: string[];
-    examples: string[] | null;
-    summary: string | null;
-  };
+  content: { format: "markdown"; title: string; body: string };
+  visualNeeds: Array<{
+    id: "visual-1" | "visual-2";
+    concept: string;
+    query: string;
+  }>;
 };
 ```
 
-The lesson should be concise and appropriate to the generated difficulty.
+`visualNeeds` is optional in meaning, but always emitted as an array (maximum two).
+Place `![description](visual-1)` near the relevant explanation. The worker resolves
+these internal references through Wikimedia Commons, visually reviews raster thumbnails,
+and stores selected bytes before checkpointing. Persisted content adds `images` with
+object keys and attribution; `visualNeeds` is discarded. Public content replaces object
+keys with signed URLs. New lessons use `schema_version: 2`; other activities remain v1.
+Legacy lesson content and existing core checkpoints remain readable without rewriting.
+
+Use the shared warm tutor rules in `teaching-style.ts`: concrete context, direct
+sentences, short paragraphs, explained technical terms, and grounded illustrative
+examples. Adapt structure to the topic. Markdown headings, lists, tables, code, and
+math are available; use `$...$` inline and `$$...$$` on separate lines for display math.
+No raw HTML or Mermaid. Quiz explanations and answer keys remain in `evaluationConfig`;
+flashcards have one concise recall target. Respect the selected language throughout.
+
+See [lesson Markdown rollout](release/lesson-markdown.md) for limits, deployment order,
+and verification evidence.
 
 ---
 

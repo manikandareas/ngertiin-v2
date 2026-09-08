@@ -356,6 +356,24 @@ type PublicActivity =
       type: "lesson";
       position: number;
       content: {
+        format: "markdown";
+        title: string;
+        body: string; // Whole Markdown document; images reference visual-1 / visual-2.
+        images: Array<{
+          id: string;
+          url: string; // Signed URL, expires after 15 minutes.
+          fileTitle: string;
+          width: number;
+          height: number;
+          caption: string;
+          alt: string;
+          creator: string;
+          sourceUrl: string;
+          license: string;
+          licenseVersion: string;
+          licenseUrl: string;
+        }>;
+      } | { // Legacy lesson content remains readable.
         introduction?: string;
         explanation: string;
         keyPoints: string[];

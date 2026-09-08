@@ -1,11 +1,21 @@
 import type { PublicActivity } from "@ngertiin/contracts/api";
-import type { JSX } from "react";
+import { type JSX, lazy, Suspense } from "react";
+
+const MarkdownLesson = lazy(() =>
+  import("./markdown-lesson").then((module) => ({ default: module.MarkdownLesson })),
+);
 
 interface LessonProps {
   activity: Extract<PublicActivity, { type: "lesson" }>;
 }
 
 export function Lesson({ activity }: LessonProps): JSX.Element {
+  if ("format" in activity.content)
+    return (
+      <Suspense fallback={<p className="text-muted-foreground">Menyiapkan materi…</p>}>
+        <MarkdownLesson key={activity.id} activityId={activity.id} content={activity.content} />
+      </Suspense>
+    );
   return (
     <article className="space-y-5">
       {activity.content.introduction ? (

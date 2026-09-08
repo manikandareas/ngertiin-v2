@@ -235,17 +235,48 @@ export const journeyNodeSchema = z.object({
   interventionId: uuidSchema.optional(),
 });
 
+export const lessonImageSchema = z.object({
+  id: z.string().regex(/^visual-[12]$/),
+  fileTitle: z.string(),
+  width: z.number().int().positive(),
+  height: z.number().int().positive(),
+  caption: z.string(),
+  alt: z.string(),
+  creator: z.string(),
+  sourceUrl: z.url(),
+  license: z.string(),
+  licenseVersion: z.string(),
+  licenseUrl: z.url(),
+});
+export const storedLessonImageSchema = lessonImageSchema.extend({ objectKey: z.string().min(1) });
+export const markdownLessonContentSchema = z.object({
+  format: z.literal("markdown"),
+  title: z.string().min(1).max(500),
+  body: z.string().min(1).max(24000),
+  images: z.array(storedLessonImageSchema).max(2),
+});
+
+const publicMarkdownLessonContentSchema = markdownLessonContentSchema.extend({
+  images: z.array(lessonImageSchema.extend({ url: z.url() })).max(2),
+});
+export type MarkdownLessonContent = z.infer<typeof publicMarkdownLessonContentSchema>;
+export type PublicLessonImage = MarkdownLessonContent["images"][number];
+export type StoredLessonImage = z.infer<typeof storedLessonImageSchema>;
+
 const lessonActivitySchema = z.object({
   id: uuidSchema,
   type: z.literal("lesson"),
   position: z.number().int().positive(),
-  content: z.object({
-    introduction: z.string().optional(),
-    explanation: z.string(),
-    keyPoints: z.array(z.string()),
-    examples: z.array(z.string()).optional(),
-    summary: z.string().optional(),
-  }),
+  content: z.union([
+    publicMarkdownLessonContentSchema,
+    z.object({
+      introduction: z.string().optional(),
+      explanation: z.string(),
+      keyPoints: z.array(z.string()),
+      examples: z.array(z.string()).optional(),
+      summary: z.string().optional(),
+    }),
+  ]),
 });
 
 const flashcardActivitySchema = z.object({
