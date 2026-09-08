@@ -4,14 +4,15 @@ import {
   type OnApplicationBootstrap,
   type OnApplicationShutdown,
 } from "@nestjs/common";
-import { adaptiveGenerationJobSchema, type AdaptiveGenerationJob } from "@ngertiin/contracts/jobs";
+import { type AdaptiveGenerationJob, adaptiveGenerationJobSchema } from "@ngertiin/contracts/jobs";
 import { QUEUE_NAMES } from "@ngertiin/shared";
 import { Worker as BullWorker, type Job, UnrecoverableError } from "bullmq";
 import { AiService } from "../ai/ai.service.js";
 import { InfrastructureService } from "../infrastructure/infrastructure.service.js";
-import { nodeActivitiesSchemaFor, type NodeActivities } from "../modules/modules.schemas.js";
-import { AdaptiveService } from "./adaptive.service.js";
+import { generationLanguageRule } from "../modules/generation-settings.js";
+import { type NodeActivities, nodeActivitiesSchemaFor } from "../modules/modules.schemas.js";
 import { adaptivePlanSchema } from "./adaptive.schemas.js";
+import { AdaptiveService } from "./adaptive.service.js";
 
 @Injectable()
 export class AdaptiveProcessor implements OnApplicationBootstrap, OnApplicationShutdown {
@@ -99,6 +100,7 @@ export class AdaptiveProcessor implements OnApplicationBootstrap, OnApplicationS
           schemaName: "adaptive_plan",
           operation: "plan_remediation",
           prompt: [
+            generationLanguageRule(context.generationSettings),
             "Create a focused remediation plan of one to three nodes.",
             "Use only the supplied target concept keys. Do not create or modify core nodes.",
             "Allowed node types: review, practice, flashcard, remedial_quiz.",
@@ -120,6 +122,7 @@ export class AdaptiveProcessor implements OnApplicationBootstrap, OnApplicationS
               schemaName: "adaptive_node_activities",
               operation: "generate_adaptive_activities",
               prompt: [
+                generationLanguageRule(context.generationSettings),
                 "Generate focused remediation activities for this adaptive node.",
                 "Use only supplied concept keys and existing core content. Put answer keys only in evaluationConfig.",
                 `NODE:\n${JSON.stringify(node)}`,

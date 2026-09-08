@@ -41,6 +41,10 @@ export function BuilderForm({
         return;
       }
     }
+    if (step === 1 && !state.generationSettings.activityTypes.length) {
+      setValidation("Pilih minimal satu jenis aktivitas.");
+      return;
+    }
     if (step === 1 && Array.from(state.instruction.trim()).length > 4000) {
       setValidation("Fokus belajar maksimal 4.000 karakter.");
       return;

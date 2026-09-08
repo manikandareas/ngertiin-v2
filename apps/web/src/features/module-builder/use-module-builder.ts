@@ -4,6 +4,8 @@ import {
   createPdfSourceFieldsSchema,
   createTextSourceBodySchema,
   createUrlSourceBodySchema,
+  type GenerationSettings,
+  generationSettingsSchema,
   MAX_PDF_SIZE_BYTES,
   type Source,
 } from "@ngertiin/contracts/api";
@@ -44,6 +46,9 @@ export function useModuleBuilder(api: ModuleBuilderApi) {
   const [url, setUrl] = useState("");
   const [file, setFile] = useState<File>();
   const [instruction, setInstruction] = useState("");
+  const [generationSettings, setGenerationSettings] = useState<GenerationSettings>(() =>
+    generationSettingsSchema.parse({}),
+  );
   const [selected, setSelected] = useState<Selection[]>([]);
   const [busy, setBusy] = useState(false);
   const lock = useRef(false);
@@ -71,6 +76,7 @@ export function useModuleBuilder(api: ModuleBuilderApi) {
   const blocked = getBlockedReason();
 
   function getBlockedReason(): string | null {
+    if (!generationSettings.activityTypes.length) return "Pilih minimal satu jenis aktivitas.";
     if (count === 0) return "Tambahkan materi untuk mulai.";
     if (count > 10) return "Maksimum 10 materi.";
     if (Array.from(instruction.trim()).length > 4_000)
@@ -193,6 +199,7 @@ export function useModuleBuilder(api: ModuleBuilderApi) {
     setError(null);
     try {
       const input: CreateModuleBodyInput = {
+        generationSettings: generationSettingsSchema.parse(generationSettings),
         ...(instruction.trim() ? { instruction } : {}),
         sources: resolved.map(({ source, ...item }, index) => ({
           ...item,
@@ -203,7 +210,7 @@ export function useModuleBuilder(api: ModuleBuilderApi) {
       const parsed = createModuleBodySchema.safeParse(input);
       if (!parsed.success)
         throw new BuilderValidationError(parsed.error.issues[0]?.message ?? "Materi belum valid.");
-      const fingerprint = JSON.stringify(input);
+      const fingerprint = JSON.stringify(parsed.data);
       if (moduleCommand.current?.fingerprint !== fingerprint)
         moduleCommand.current = { fingerprint, input, key: crypto.randomUUID() };
       await api.create(moduleCommand.current.input, moduleCommand.current.key);
@@ -231,6 +238,8 @@ export function useModuleBuilder(api: ModuleBuilderApi) {
     setFile,
     instruction,
     setInstruction,
+    generationSettings,
+    setGenerationSettings,
     selected: resolved,
     busy,
     error,

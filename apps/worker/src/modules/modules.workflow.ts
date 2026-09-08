@@ -1,6 +1,7 @@
 import { Annotation, END, Send, START, StateGraph } from "@langchain/langgraph";
 import { PostgresSaver } from "@langchain/langgraph-checkpoint-postgres";
 import { Inject, Injectable, type OnApplicationShutdown, type OnModuleInit } from "@nestjs/common";
+import type { GenerationSettings } from "@ngertiin/contracts/api";
 import type { WorkerEnvironment } from "@ngertiin/contracts/environment";
 import type { ModuleGenerationJob } from "@ngertiin/contracts/jobs";
 import { AiService } from "../ai/ai.service.js";
@@ -55,6 +56,7 @@ const WorkflowState = Annotation.Root({
 
 const WorkflowContext = Annotation.Root({
   instruction: Annotation<string | null>(),
+  generationSettings: Annotation<GenerationSettings | null>(),
   chunks: Annotation<SourceChunk[]>(),
 });
 
@@ -89,7 +91,11 @@ export class ModulesWorkflow implements OnModuleInit, OnApplicationShutdown {
 
   async run(
     payload: ModuleGenerationJob,
-    context: { instruction: string | null; chunks: SourceChunk[] },
+    context: {
+      instruction: string | null;
+      chunks: SourceChunk[];
+      generationSettings: GenerationSettings | null;
+    },
   ): Promise<void> {
     const config = {
       configurable: { thread_id: payload.generationRunId },
@@ -121,7 +127,11 @@ export class ModulesWorkflow implements OnModuleInit, OnApplicationShutdown {
           chunkAnalyses: {
             chunkId: state.chunk.id,
             analysis: await this.ai.generateObject(
-              buildChunkAnalysisRequest(state.chunk, runtime.context?.instruction ?? null),
+              buildChunkAnalysisRequest(
+                state.chunk,
+                runtime.context?.instruction ?? null,
+                runtime.context?.generationSettings ?? null,
+              ),
             ),
           },
         }),
@@ -135,6 +145,7 @@ export class ModulesWorkflow implements OnModuleInit, OnApplicationShutdown {
             chunks,
             state.chunkAnalyses,
             runtime.context?.instruction ?? null,
+            runtime.context?.generationSettings ?? null,
           ),
         );
         await this.modules.completeStep(state.generationRunId, "analyze_material", {
@@ -146,7 +157,11 @@ export class ModulesWorkflow implements OnModuleInit, OnApplicationShutdown {
         if (!state.materialAnalysis) invalidContext("create_concepts");
         await this.modules.beginStep(state.generationRunId, "create_concepts");
         const conceptMap = await this.ai.generateObject(
-          buildConceptMapRequest(state.materialAnalysis, runtime.context?.instruction ?? null),
+          buildConceptMapRequest(
+            state.materialAnalysis,
+            runtime.context?.instruction ?? null,
+            runtime.context?.generationSettings ?? null,
+          ),
         );
         await this.modules.completeStep(state.generationRunId, "create_concepts", {
           conceptCount: conceptMap.concepts.length,
@@ -163,6 +178,7 @@ export class ModulesWorkflow implements OnModuleInit, OnApplicationShutdown {
             state.materialAnalysis,
             state.conceptMap,
             runtime.context?.instruction ?? null,
+            runtime.context?.generationSettings ?? null,
           ),
         );
         await this.modules.completeStep(state.generationRunId, "create_curriculum", {
@@ -183,6 +199,7 @@ export class ModulesWorkflow implements OnModuleInit, OnApplicationShutdown {
             state.conceptMap,
             chunks,
             runtime.context?.instruction ?? null,
+            runtime.context?.generationSettings ?? null,
           ),
         );
         const completed = state.activityIndex + 1;

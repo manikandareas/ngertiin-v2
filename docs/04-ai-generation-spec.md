@@ -670,3 +670,48 @@ apps/worker/src/
 curriculum plans, and per-node activities. `modules.schemas.ts` owns their structured-output schemas
 and inferred types. The workflow passes these requests through the generic AI interface without
 adding module-specific behavior to `AiModule`.
+
+
+## Module generation settings
+
+The optional API `generationSettings` object is normalized using
+`packages/contracts/src/api/modules/generation-settings.ts`. That contract owns defaults,
+language/category enums, category-to-node/activity mappings, and length ranges.
+
+- Language: Bahasa Indonesia (`id`, default), Bahasa Melayu (`ms`), or English (`en`).
+- Core length: automatic 1–20 nodes, short 3–5, medium 6–10, long 11–15.
+  Count all core nodes, including checkpoints. Automatic lets the model choose based on material.
+- Allowed categories: lesson, flashcard, quiz (all by default, at least one, unique).
+  Lesson permits lesson nodes; flashcard permits flashcard nodes; quiz permits quiz/checkpoint
+  nodes with multiple-choice, true/false, or short-answer assessments.
+  Every activity within every node must also respect the selected categories.
+  A subset need not use every selected category. A journey without assessment is valid and uses
+  the existing non-assessment node completion/progress path.
+
+The Focus step always exposes language and a closed-by-default advanced section for length and
+categories. Selections survive closing the section and step navigation; Review summarizes all
+settings with an edit action. The UI remains Indonesian.
+
+Persist normalized settings in nullable JSONB `generation_requests.generation_settings`.
+Queue jobs carry IDs; the worker loads settings from the request into workflow context on every
+run/resume. Manual retry keeps the same request. Frontend fingerprints and API idempotency
+hashes include canonical settings, independent of checkbox order.
+
+Propagate structured requirements through material analysis, concept mapping, curriculum planning,
+and activity generation. Generate human-readable concept names, titles, descriptions, lessons,
+flashcards, questions, answers, explanations, and rubrics in the selected language even when
+sources or free-text instructions use another language. Preserve internal identifiers, code,
+quotations, and necessary technical terms. Structured settings override conflicting free text.
+
+Enforce ranges and allowed node/activity types both in prompts and generated output schemas.
+Before finalization, revalidate curriculum length/types and every node's activities against the
+persisted settings. Violations follow the existing invalid-output retry/failure path: never truncate
+nodes or silently broaden categories.
+
+Adaptive generation inherits the module language only. Keep its existing 1–3-node schema and
+unrestricted activity categories. Short-answer evaluation explanations and overall feedback also
+inherit the module language, for both core and adaptive attempts.
+
+Migration `0012_loving_genesis.sql` is additive and must run before the updated API/worker.
+Do not backfill existing requests: NULL retains legacy generation behavior during checkpoint
+resume and retry. Never reinterpret NULL as new defaults or translate existing content.

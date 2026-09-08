@@ -1,3 +1,9 @@
+import {
+  GENERATION_CONTENT_TYPES,
+  GENERATION_LENGTH_RANGES,
+  GENERATION_NODE_TYPES,
+  type GenerationSettings,
+} from "@ngertiin/contracts/api";
 import { z } from "zod";
 
 const shortTextSchema = z.string().trim().min(1).max(500);
@@ -221,6 +227,19 @@ export const curriculumPlanSchema = z
       .describe("Ordered core learning journey from introduction through assessment."),
   })
   .describe("Complete ordered curriculum plan for the generated module.");
+
+export function curriculumPlanSchemaFor(settings: GenerationSettings | null) {
+  if (!settings) return curriculumPlanSchema;
+  const range = GENERATION_LENGTH_RANGES[settings.length];
+  const types = settings.activityTypes.flatMap((type) => [...GENERATION_NODE_TYPES[type]]);
+  return curriculumPlanSchema.extend({
+    nodes: z
+      .array(curriculumNodeSchema.extend({ type: z.enum(types) }))
+      .min(range.min)
+      .max(range.max)
+      .describe("All core nodes, using only permitted types. Selected types need not all appear."),
+  });
+}
 
 const conceptWeightsSchema = z
   .array(
@@ -446,8 +465,22 @@ function nodeActivityRequirement(nodeType: CurriculumNode["type"]): string {
   return `For this ${nodeType} curriculum node, activities must include at least one assessment with type multiple_choice, true_false, or short_answer; do not use ${nodeType} as an activity type.`;
 }
 
-export function nodeActivitiesSchemaFor(nodeType: CurriculumNode["type"]) {
-  return nodeActivitiesSchema
+export function nodeActivitiesSchemaFor(
+  nodeType: CurriculumNode["type"],
+  settings: GenerationSettings | null = null,
+) {
+  const allowedTypes = settings?.activityTypes.flatMap((type) => [
+    ...GENERATION_CONTENT_TYPES[type],
+  ]);
+  const allowedSchemas = generatedActivitySchema.options.filter(
+    (schema) => !allowedTypes || allowedTypes.includes(schema.shape.type.value),
+  );
+  const schema = settings
+    ? nodeActivitiesSchema.extend({
+        activities: z.array(z.union(allowedSchemas)).min(1).max(10),
+      })
+    : nodeActivitiesSchema;
+  return schema
     .refine(
       (output) => {
         const types = new Set(output.activities.map((activity) => activity.type));

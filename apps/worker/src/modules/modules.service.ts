@@ -5,6 +5,7 @@ import {
   type OnApplicationBootstrap,
   type OnApplicationShutdown,
 } from "@nestjs/common";
+import { type GenerationSettings, parseStoredGenerationSettings } from "@ngertiin/contracts/api";
 import {
   MODULE_GENERATION_STEPS,
   type ModuleGenerationJob,
@@ -26,12 +27,14 @@ import { and, asc, eq, gt, inArray, sql } from "drizzle-orm";
 import { InfrastructureService } from "../infrastructure/infrastructure.service.js";
 import { invalidContext, invalidOutput, type ModuleGenerationFailure } from "./modules.failure.js";
 import type { ConceptMap, CurriculumPlan, NodeActivities } from "./modules.schemas.js";
+import { curriculumPlanSchemaFor, nodeActivitiesSchemaFor } from "./modules.schemas.js";
 
 const DISPATCH_INTERVAL_MILLISECONDS = 2_000;
 
 type StartedRun = {
   readonly userId: string;
   readonly instruction: string | null;
+  readonly generationSettings: GenerationSettings | null;
 };
 
 type QueuedRun = {
@@ -102,6 +105,7 @@ export class ModulesService implements OnApplicationBootstrap, OnApplicationShut
         .select({
           userId: generation_requests.user_id,
           instruction: generation_requests.instruction,
+          generationSettings: generation_requests.generation_settings,
         })
         .from(generation_requests)
         .where(eq(generation_requests.id, payload.generationRequestId))
@@ -116,7 +120,11 @@ export class ModulesService implements OnApplicationBootstrap, OnApplicationShut
           error: null,
         })
         .where(eq(generation_runs.id, payload.generationRunId));
-      return { userId: run.userId, instruction: request.instruction };
+      return {
+        userId: run.userId,
+        instruction: request.instruction,
+        generationSettings: parseStoredGenerationSettings(request.generationSettings),
+      };
     });
   }
 
@@ -262,6 +270,23 @@ export class ModulesService implements OnApplicationBootstrap, OnApplicationShut
       if (!run) invalidContext("validate_module");
       if (run.status === "completed") return;
       if (run.status !== "processing") invalidContext("validate_module");
+
+      const [request] = await transaction
+        .select({ settings: generation_requests.generation_settings })
+        .from(generation_requests)
+        .where(eq(generation_requests.id, payload.generationRequestId))
+        .limit(1);
+      if (!request) invalidContext("validate_module");
+      const settings = parseStoredGenerationSettings(request.settings);
+      if (
+        !curriculumPlanSchemaFor(settings).safeParse(curriculum).success ||
+        curriculum.nodes.some(
+          (node) =>
+            !nodeActivitiesSchemaFor(node.type, settings).safeParse(generated[node.key]).success,
+        )
+      ) {
+        invalidOutput("validate_module");
+      }
 
       const now = new Date();
       const conceptsWithIds = conceptMap.concepts.map((concept, position) => ({

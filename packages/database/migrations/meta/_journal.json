@@ -85,6 +85,13 @@
       "when": 1788786433848,
       "tag": "0011_lyrical_moondragon",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1788846305511,
+      "tag": "0012_loving_genesis",
+      "breakpoints": true
     }
   ]
 }

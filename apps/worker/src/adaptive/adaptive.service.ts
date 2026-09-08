@@ -5,6 +5,7 @@ import {
   type OnApplicationBootstrap,
   type OnApplicationShutdown,
 } from "@nestjs/common";
+import { type GenerationSettings, parseStoredGenerationSettings } from "@ngertiin/contracts/api";
 import {
   ADAPTIVE_GENERATION_STEPS,
   type AdaptiveGenerationJob,
@@ -14,16 +15,18 @@ import {
   activities,
   adaptive_intervention_concepts,
   adaptive_interventions,
+  generation_requests,
   generation_run_steps,
   generation_runs,
   module_concepts,
   module_nodes,
+  modules,
   node_concepts,
   node_progress,
 } from "@ngertiin/database";
 import { and, asc, eq, gt, inArray, sql } from "drizzle-orm";
-import type { NodeActivities } from "../modules/modules.schemas.js";
 import { InfrastructureService } from "../infrastructure/infrastructure.service.js";
+import type { NodeActivities } from "../modules/modules.schemas.js";
 import type { AdaptivePlan } from "./adaptive.schemas.js";
 
 const POLL_MS = 2_000;
@@ -34,6 +37,7 @@ const SAFE_FAILURE = {
 };
 
 export type AdaptiveContext = {
+  generationSettings: GenerationSettings | null;
   userId: string;
   triggerNodeId: string;
   resumeNodeId: string | null;
@@ -160,7 +164,14 @@ export class AdaptiveService implements OnApplicationBootstrap, OnApplicationShu
         .update(generation_runs)
         .set({ status: "processing", started_at: run.startedAt ?? new Date(), error: null })
         .where(eq(generation_runs.id, payload.generationRunId));
+      const [module] = await transaction
+        .select({ settings: generation_requests.generation_settings })
+        .from(modules)
+        .innerJoin(generation_requests, eq(generation_requests.id, modules.generation_request_id))
+        .where(eq(modules.id, payload.moduleId))
+        .limit(1);
       return {
+        generationSettings: parseStoredGenerationSettings(module?.settings),
         userId: run.userId,
         triggerNodeId: intervention.triggerNodeId,
         resumeNodeId: intervention.resumeNodeId,

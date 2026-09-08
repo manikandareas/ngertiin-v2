@@ -122,16 +122,16 @@ function UsageInfoTooltip() {
           >
             <div className="space-y-2">
               <p>
-                <strong className="font-semibold text-primary">Modul tersisa</strong>: jumlah
-                modul baru yang masih bisa kamu buat minggu ini.
+                <strong className="font-semibold text-primary">Modul tersisa</strong>: jumlah modul
+                baru yang masih bisa kamu buat minggu ini.
               </p>
               <p>
-                <strong className="font-semibold text-primary">Bahan tersisa</strong>: jumlah
-                bahan belajar yang masih bisa kamu tambahkan minggu ini.
+                <strong className="font-semibold text-primary">Bahan tersisa</strong>: jumlah bahan
+                belajar yang masih bisa kamu tambahkan minggu ini.
               </p>
               <p>
-                Kuota diisi ulang <strong className="font-semibold">setiap minggu</strong>.
-                Modul yang sudah ada <strong className="font-semibold">tetap bisa dipelajari</strong>,
+                Kuota diisi ulang <strong className="font-semibold">setiap minggu</strong>. Modul
+                yang sudah ada <strong className="font-semibold">tetap bisa dipelajari</strong>,
                 meski kuota habis.
               </p>
             </div>

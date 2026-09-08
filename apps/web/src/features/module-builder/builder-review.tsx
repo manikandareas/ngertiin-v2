@@ -1,10 +1,15 @@
 import { File01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { GENERATION_LANGUAGES } from "@ngertiin/contracts/api";
 import { Button } from "../../components/ui/button";
+import { activityLabels, generationLengthLabel } from "./generation-settings-presentation";
 import { statusLabels } from "./source-presentation";
 import type { ModuleBuilderState } from "./use-module-builder";
 
-type ReviewState = Pick<ModuleBuilderState, "selected" | "instruction" | "blocked">;
+type ReviewState = Pick<
+  ModuleBuilderState,
+  "selected" | "instruction" | "blocked" | "generationSettings"
+>;
 export function BuilderReview({
   state,
   onEdit,
@@ -27,13 +32,35 @@ export function BuilderReview({
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold">Fokus belajar</h2>
           <Button variant="link" size="sm" onClick={() => onEdit(1)}>
-            Ubah fokus
+            Ubah fokus & pengaturan
           </Button>
         </div>
         <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-relaxed text-muted-foreground">
           {state.instruction.trim() || "Disesuaikan dengan materi."}
         </p>
       </div>
+      <dl className="grid gap-4 border-t pt-4 text-sm sm:grid-cols-3">
+        <div>
+          <dt className="text-muted-foreground">Bahasa modul</dt>
+          <dd className="mt-1 font-medium">
+            {GENERATION_LANGUAGES[state.generationSettings.language].label}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-muted-foreground">Jumlah langkah</dt>
+          <dd className="mt-1 font-medium">
+            {generationLengthLabel(state.generationSettings.length)}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-muted-foreground">Jenis aktivitas</dt>
+          <dd className="mt-1 font-medium">
+            {state.generationSettings.activityTypes
+              .map((type) => activityLabels[type])
+              .join(", ") || "Belum dipilih"}
+          </dd>
+        </div>
+      </dl>
       <p className="rounded-xl bg-secondary p-4 text-sm leading-relaxed text-secondary-foreground">
         Materimu akan dirangkai menjadi alur belajar, penjelasan, dan aktivitas untuk membantu kamu
         memahami setiap konsep.

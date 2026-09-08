@@ -246,6 +246,7 @@ export const generation_requests = pgTable(
       .notNull()
       .references(() => users.id),
     instruction: text(),
+    generation_settings: jsonb(),
     created_at: createdAt(),
   },
   (table) => [index("generation_requests_user_id_idx").on(table.user_id)],

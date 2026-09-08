@@ -607,6 +607,11 @@ Content-Type: application/json
 
 {
   "instruction": "Focus on pages 45-62 and target senior high school level.",
+  "generationSettings": {
+    "language": "id",
+    "length": "auto",
+    "activityTypes": ["lesson", "flashcard", "quiz"]
+  },
   "sources": [
     {
       "sourceId": "ba60399e-f5ff-43a6-b5ad-b692bad7516e",
@@ -644,6 +649,27 @@ Validation and policy:
 - the selected pages must exist in the processed PDF;
 - selector is forbidden for URL and text sources;
 - instruction is optional and stored separately from source content.
+- `generationSettings` is optional. New requests normalize omitted settings/fields to
+  `language: "id"`, `length: "auto"`, and `activityTypes: ["lesson", "flashcard", "quiz"]`.
+  Languages: `id` (Bahasa Indonesia), `ms` (Bahasa Melayu), `en` (English).
+  Length counts **all core nodes**: `auto` 1–20 (model chooses), `short` 3–5,
+  `medium` 6–10, `long` 11–15.
+- Activity categories must be a nonempty unique subset of `lesson | flashcard | quiz`;
+  unknown values, duplicate categories, empty selections, and unknown settings fields are rejected.
+  Selected categories are allowed, not required: not every category must appear.
+  `lesson` permits lesson nodes/activities; `flashcard` permits flashcard nodes/activities;
+  `quiz` permits quiz/checkpoint nodes and multiple_choice/true_false/short_answer activities.
+  Every activity in every core node must belong to a selected category, including mixed nodes.
+- Structured settings override conflicting free-text instructions. The chosen language governs
+  generated learner content and short-answer feedback; application UI remains Indonesian.
+  Adaptive content inherits only the language, permits all existing activity types, and remains 1–3 nodes.
+- Normalized settings are stored in `generation_requests.generation_settings` (JSONB) and included
+  in the idempotency payload hash. Category order is canonical, so checkbox order does not change
+  request identity; a changed setting does. Queue payloads continue to contain IDs only.
+- Retry reuses the stored request/settings; checkpoint resume reloads the same settings.
+  Existing rows retain NULL and legacy behavior, including retry/resume. Existing content is not translated.
+  Apply migration `0012_loving_genesis.sql` before starting the updated API/worker.
+
 
 Returns `202`:
 

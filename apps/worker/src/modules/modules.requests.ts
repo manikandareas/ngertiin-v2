@@ -1,5 +1,7 @@
+import { GENERATION_CONTENT_TYPES, type GenerationSettings } from "@ngertiin/contracts/api";
 import type { GenerateObjectRequest } from "../ai/ai.service.js";
 import type { SourceChunk } from "../source/source.service.js";
+import { coreGenerationRules } from "./generation-settings.js";
 import {
   type ChunkMapOutput,
   type ConceptMap,
@@ -7,7 +9,7 @@ import {
   type CurriculumPlan,
   chunkMapOutputSchema,
   conceptMapSchema,
-  curriculumPlanSchema,
+  curriculumPlanSchemaFor,
   type MaterialAnalysis,
   materialAnalysisSchema,
   type NodeActivities,
@@ -30,10 +32,15 @@ function requiredActivityRule(nodeType: CurriculumNode["type"]): string {
   return 'Include at least one assessment with type "multiple_choice", "true_false", or "short_answer".';
 }
 
-function activityOutputRules(nodeType: CurriculumNode["type"]): string {
+function activityOutputRules(
+  nodeType: CurriculumNode["type"],
+  settings: GenerationSettings | null,
+): string {
   return [
     `The curriculum node type is "${nodeType}"; it is not automatically an activity type.`,
-    'Allowed activity types are exactly "lesson", "flashcard", "multiple_choice", "true_false", and "short_answer". Never use "quiz" or "checkpoint" as an activity type.',
+    settings
+      ? `Allowed activity types are exactly ${settings.activityTypes.flatMap((type) => [...GENERATION_CONTENT_TYPES[type]]).join(", ")}. Never use "quiz" or "checkpoint" as an activity type.`
+      : 'Allowed activity types are exactly "lesson", "flashcard", "multiple_choice", "true_false", and "short_answer". Never use "quiz" or "checkpoint" as an activity type.',
     requiredActivityRule(nodeType),
     'Every "multiple_choice" and "true_false" activity must include evaluationConfig with correctAnswer, explanation, and conceptWeights.',
     'Every "short_answer" activity must include evaluationConfig with expectedConcepts and rubric.',
@@ -45,6 +52,7 @@ function activityOutputRules(nodeType: CurriculumNode["type"]): string {
 export function buildChunkAnalysisRequest(
   chunk: SourceChunk,
   instruction: string | null,
+  settings: GenerationSettings | null = null,
 ): GenerateObjectRequest<ChunkMapOutput> {
   return {
     schema: chunkMapOutputSchema,
@@ -53,6 +61,7 @@ export function buildChunkAnalysisRequest(
     prompt: prompt([
       "Analyze this source chunk for curriculum generation. Return concise grounded facts only.",
       instructionSection(instruction),
+      coreGenerationRules(settings),
       `SOURCE CHUNK ID: ${chunk.id}`,
       `SOURCE ROLE: ${chunk.role}`,
       `SOURCE PRIORITY: ${chunk.priority}`,
@@ -67,6 +76,7 @@ export function buildMaterialReductionRequest(
   chunks: SourceChunk[],
   analyses: Record<string, ChunkMapOutput>,
   instruction: string | null,
+  settings: GenerationSettings | null = null,
 ): GenerateObjectRequest<MaterialAnalysis> {
   return {
     schema: materialAnalysisSchema,
@@ -76,6 +86,7 @@ export function buildMaterialReductionRequest(
       "Reduce all chunk analyses into one bounded material analysis.",
       "Every key topic must cite one or more SOURCE CHUNK IDs present in the input.",
       instructionSection(instruction),
+      coreGenerationRules(settings),
       "CHUNK ANALYSES:",
       JSON.stringify(
         chunks.map((chunk) => ({
@@ -93,6 +104,7 @@ export function buildMaterialReductionRequest(
 export function buildConceptMapRequest(
   analysis: MaterialAnalysis,
   instruction: string | null,
+  settings: GenerationSettings | null = null,
 ): GenerateObjectRequest<ConceptMap> {
   return {
     schema: conceptMapSchema,
@@ -102,6 +114,7 @@ export function buildConceptMapRequest(
       "Create a concept map grounded only in the material analysis.",
       "Use stable lowercase keys. Preserve evidence SOURCE CHUNK IDs for every concept.",
       instructionSection(instruction),
+      coreGenerationRules(settings),
       "MATERIAL ANALYSIS:",
       JSON.stringify(analysis),
     ]),
@@ -112,15 +125,17 @@ export function buildCurriculumRequest(
   analysis: MaterialAnalysis,
   conceptMap: ConceptMap,
   instruction: string | null,
+  settings: GenerationSettings | null = null,
 ): GenerateObjectRequest<CurriculumPlan> {
   return {
-    schema: curriculumPlanSchema,
+    schema: curriculumPlanSchemaFor(settings),
     schemaName: "curriculum_plan",
     operation: "create_curriculum",
     prompt: prompt([
       "Create an ordered core learning journey. Do not create adaptive nodes.",
       "All node concept references must use keys from the supplied concept map.",
       instructionSection(instruction),
+      coreGenerationRules(settings),
       "MATERIAL ANALYSIS:",
       JSON.stringify(analysis),
       "CONCEPT MAP:",
@@ -134,6 +149,7 @@ export function buildActivityGenerationRequest(
   conceptMap: ConceptMap,
   chunks: SourceChunk[],
   instruction: string | null,
+  settings: GenerationSettings | null = null,
 ): GenerateObjectRequest<NodeActivities> {
   const nodeConceptKeys = new Set(node.concepts.map((concept) => concept.conceptKey));
   const evidenceIds = new Set(
@@ -153,15 +169,16 @@ export function buildActivityGenerationRequest(
     .map(({ chunk }) => chunk);
 
   return {
-    schema: nodeActivitiesSchemaFor(node.type),
+    schema: nodeActivitiesSchemaFor(node.type, settings),
     schemaName: "node_activities",
     operation: "generate_activities",
     prompt: prompt([
       "Generate browser-safe learning activities for exactly one core node.",
       "Assessment answers and grading details belong only in evaluationConfig.",
       "Use only supplied concept keys and source evidence. Do not create adaptive content.",
-      `OUTPUT CONTRACT:\n${activityOutputRules(node.type)}`,
+      `OUTPUT CONTRACT:\n${activityOutputRules(node.type, settings)}`,
       instructionSection(instruction),
+      coreGenerationRules(settings),
       "NODE:",
       JSON.stringify(node),
       "CONCEPTS:",

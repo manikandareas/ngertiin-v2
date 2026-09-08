@@ -99,7 +99,11 @@ export class ModulesProcessor implements OnApplicationBootstrap, OnApplicationSh
           generationRequestId: payload.generationRequestId,
           userId: run.userId,
         });
-        await this.workflow.run(payload, { instruction: run.instruction, chunks });
+        await this.workflow.run(payload, {
+          instruction: run.instruction,
+          chunks,
+          generationSettings: run.generationSettings,
+        });
       } catch (error) {
         let failure = findModuleGenerationFailure(error, "extract_sources");
         if (!failure && job.attemptsMade + 1 < (job.opts.attempts ?? 1)) throw error;

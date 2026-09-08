@@ -1,16 +1,25 @@
 import { Button } from "../../components/ui/button";
+import { Field, FieldDescription, FieldLabel } from "../../components/ui/field";
 import { Textarea } from "../../components/ui/textarea";
+import { BuilderGenerationSettings } from "./builder-generation-settings";
+import { BuilderLanguage } from "./builder-language";
 import type { ModuleBuilderState } from "./use-module-builder";
 
 export function BuilderFocus({
   state,
 }: {
-  state: Pick<ModuleBuilderState, "instruction" | "setInstruction">;
+  state: Pick<
+    ModuleBuilderState,
+    "instruction" | "setInstruction" | "generationSettings" | "setGenerationSettings" | "busy"
+  >;
 }) {
   return (
     <>
-      <label htmlFor="builder-focus" className="block space-y-3 text-sm font-semibold">
-        Fokus belajar <span className="font-normal text-muted-foreground">(opsional)</span>
+      <BuilderLanguage state={state} />
+      <Field>
+        <FieldLabel htmlFor="builder-focus">
+          Fokus belajar <span className="font-normal text-muted-foreground">(opsional)</span>
+        </FieldLabel>
         <Textarea
           id="builder-focus"
           rows={6}
@@ -19,10 +28,10 @@ export function BuilderFocus({
           onChange={(e) => state.setInstruction(e.target.value)}
           placeholder="Contoh: Aku masih pemula. Bantu aku memahami fotosintesis dengan contoh sehari-hari."
         />
-      </label>
-      <p id="focus-help" className="text-xs text-muted-foreground">
-        {Array.from(state.instruction).length.toLocaleString("id-ID")} / 4.000 karakter
-      </p>
+        <FieldDescription id="focus-help" className="text-xs">
+          {Array.from(state.instruction).length.toLocaleString("id-ID")} / 4.000 karakter
+        </FieldDescription>
+      </Field>
       <div>
         <p className="mb-3 text-sm text-muted-foreground">Tambahkan arahan singkat:</p>
         <div className="flex flex-wrap gap-2">
@@ -50,6 +59,7 @@ export function BuilderFocus({
       <p className="rounded-xl bg-muted p-4 text-sm leading-relaxed text-muted-foreground">
         Tanpa arahan tambahan, modul akan disusun berdasarkan materi yang kamu pilih.
       </p>
+      <BuilderGenerationSettings state={state} />
     </>
   );
 }

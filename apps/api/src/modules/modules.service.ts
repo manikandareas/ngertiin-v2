@@ -207,7 +207,13 @@ export class ModulesService {
           left.priority - right.priority || left.sourceId.localeCompare(right.sourceId),
       );
     const payloadHash = createHash("sha256")
-      .update(JSON.stringify({ instruction: input.instruction, sources: sourcesByPriority }))
+      .update(
+        JSON.stringify({
+          instruction: input.instruction,
+          sources: sourcesByPriority,
+          generationSettings: input.generationSettings,
+        }),
+      )
       .digest("hex");
 
     return this.idempotency.execute(
@@ -307,6 +313,7 @@ export class ModulesService {
           id: generationRequestId,
           user_id: userId,
           instruction: input.instruction,
+          generation_settings: input.generationSettings,
           created_at: now,
         });
         await transaction.insert(generation_request_sources).values(

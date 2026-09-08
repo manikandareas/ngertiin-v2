@@ -2,6 +2,7 @@ import { z } from "zod";
 import { MODULE_GENERATION_PHASES } from "../../jobs/module-generation.js";
 import { successEnvelopeSchema, timestampSchema, uuidSchema } from "../common/identifiers.js";
 import { paginatedSuccessEnvelopeSchema } from "../common/pagination.js";
+import { DEFAULT_GENERATION_SETTINGS, generationSettingsSchema } from "./generation-settings.js";
 
 const MAX_INSTRUCTION_CODE_POINTS = 4_000;
 const MAX_SOURCES = 10;
@@ -110,6 +111,7 @@ const sourceSelectorSchema = z
 export const createModuleBodySchema = z
   .object({
     instruction: z.string().optional(),
+    generationSettings: generationSettingsSchema.default(DEFAULT_GENERATION_SETTINGS),
     sources: z
       .array(
         z
@@ -128,6 +130,7 @@ export const createModuleBodySchema = z
   .transform((value) => ({
     instruction: value.instruction?.trim() || null,
     sources: value.sources,
+    generationSettings: value.generationSettings,
   }))
   .superRefine((value, context) => {
     if (
