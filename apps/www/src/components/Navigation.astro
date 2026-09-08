@@ -1,0 +1,15 @@
+---
+import Brand from "./Brand.astro";
+import Button from "./Button.astro";
+import MobileNavigation from "./MobileNavigation.astro";
+import { navigationLinks, signInUrl } from "../lib/links";
+---
+
+<header class="wrap relative flex flex-wrap items-center justify-between gap-5 py-6">
+  <Brand />
+  <nav aria-label="Navigasi utama" class="hidden items-center gap-7 sm:flex">
+    {navigationLinks.map(({ href, label }) => <a href={href}>{label}</a>)}
+  </nav>
+  <div class="hidden sm:block"><Button href={signInUrl} variant="outline">Masuk</Button></div>
+  <MobileNavigation />
+</header>

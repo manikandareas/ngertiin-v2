@@ -1,0 +1,14 @@
+---
+import Brand from "./Brand.astro";
+import { dashboardUrl, navigationLinks, signInUrl } from "../lib/links";
+---
+
+<footer class="wrap flex flex-wrap items-center justify-between gap-6 py-10">
+  <div>
+    <Brand /><p class="mt-2 text-sm text-muted-foreground">Selangkah lebih ngerti.</p>
+  </div><nav aria-label="Navigasi footer" class="flex flex-wrap gap-x-6 gap-y-4 text-sm">
+    {navigationLinks.map(({ href, label }) => <a href={href}>{label}</a>)}<a href={signInUrl}
+      >Masuk</a
+    ><a href={dashboardUrl}>Buka aplikasi ↗</a>
+  </nav>
+</footer>

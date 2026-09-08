@@ -1,0 +1,57 @@
+---
+interface Props {
+  href: string;
+  variant?: "primary" | "outline";
+}
+const { href, variant = "primary" } = Astro.props;
+---
+
+<a href={href} class:list={["button", `button-${variant}`]}><slot /></a>
+
+<style>
+  @layer components {
+    .button {
+      display: inline-flex;
+      min-height: 52px;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 12px 23px;
+      border: 2px solid transparent;
+      border-radius: var(--button-radius);
+      font-size: 14px;
+      font-weight: 850;
+      letter-spacing: 0.053em;
+      text-transform: uppercase;
+    }
+    .button.button-primary {
+      background: var(--primary);
+      color: var(--primary-foreground);
+      box-shadow: 0 4px 0 var(--primary-edge);
+    }
+    .button.button-primary:hover {
+      background: var(--primary-hover);
+    }
+    .button.button-outline {
+      background: var(--background);
+      color: var(--link);
+      border-color: var(--border);
+      box-shadow: 0 3px 0 var(--border);
+    }
+    .button.button-outline:hover {
+      background: var(--accent);
+    }
+    .button:active {
+      transform: translateY(4px);
+      box-shadow: none;
+    }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .button {
+      transition:
+        background-color 0.15s,
+        box-shadow 0.15s,
+        transform 0.15s;
+    }
+  }
+</style>

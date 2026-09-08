@@ -26,6 +26,7 @@ bun dev
 
 Layanan lokal:
 
+- Landing page: http://localhost:4321 (lihat [apps/www](apps/www/README.md))
 - Web: http://localhost:5173/dashboard
 - API live: http://localhost:3000/health/live
 - API ready: http://localhost:3000/health/ready
@@ -38,7 +39,8 @@ Nilai Clerk contoh bukan credential nyata. Ganti `VITE_CLERK_PUBLISHABLE_KEY` da
 ## Perintah
 
 ```bash
-bun dev              # web, API, dan worker
+bun dev              # landing page, web, API, dan worker
+bun dev:www
 bun dev:web
 bun dev:api
 bun dev:worker
@@ -66,6 +68,7 @@ MinIO, dan initializer bucket `ngertiin`.
 
 ```text
 apps/
+  www/       Astro static landing page, Tailwind v4
   web/       React, Vite, React Router, TanStack Query, Tailwind, shadcn/ui, Motion, Clerk
   api/       NestJS HTTP API dan dependency readiness
   worker/    NestJS application context dan koneksi BullMQ

@@ -1,0 +1,63 @@
+<figure class="practice-stage">
+  <div class="preview-panel">
+    <div class="preview-top">
+      <span>FLASHCARD & KUIS · EKOSISTEM</span><span class="example">Contoh</span>
+    </div>
+    <div class="flex justify-between text-sm text-muted-foreground">
+      <span>Kartu belajar</span><span>1 / 6</span>
+    </div>
+    <div class="flashcard">
+      <span class="eyebrow">LATIHAN INGATAN</span><h3>
+        Apa peran produsen<br />dalam ekosistem?
+      </h3><span class="text-sm text-muted-foreground">Sisi pertanyaan</span>
+    </div>
+    <div class="quiz-answer">
+      <span class="answer-letter">A</span><span>Menghasilkan makanan sendiri</span><span
+        aria-hidden="true">✓</span
+      >
+    </div>
+    <p class="mt-3 text-xs text-muted-foreground">Contoh opsi kuis pilihan ganda.</p>
+  </div>
+  <figcaption class="preview-caption">
+    Kombinasi flashcard dan kuis untuk daya ingat jangka panjang.
+  </figcaption>
+</figure>
+
+<style>
+  @layer components {
+    .practice-stage {
+      background: var(--success-subtle);
+      padding: 28px;
+      border-radius: 32px;
+    }
+    .flashcard {
+      display: grid;
+      justify-items: center;
+      gap: 24px;
+      text-align: center;
+      background: var(--muted);
+      border: 2px solid var(--border);
+      border-radius: 16px;
+      box-shadow: 0 5px 0 var(--border);
+      padding: 30px 16px;
+      margin-block: 18px 24px;
+    }
+    .quiz-answer {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      border: 2px solid var(--success);
+      border-radius: 12px;
+      background: var(--success-subtle);
+      color: var(--success-foreground);
+      font-size: 13px;
+      font-weight: 750;
+    }
+    .answer-letter {
+      border: 2px solid var(--success);
+      border-radius: 6px;
+      padding: 2px 8px;
+    }
+  }
+</style>

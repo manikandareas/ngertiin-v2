@@ -1,0 +1,142 @@
+---
+import Layout from "../layouts/Layout.astro";
+import Navigation from "../components/Navigation.astro";
+import Footer from "../components/Footer.astro";
+import Button from "../components/Button.astro";
+import JourneyPreview from "../components/JourneyPreview.astro";
+import PracticePreview from "../components/PracticePreview.astro";
+import AdaptivePreview from "../components/AdaptivePreview.astro";
+import { dashboardUrl } from "../lib/links";
+const steps = [
+  {
+    number: "01",
+    label: "INPUT MATERI",
+    title: "Unggah materi belajarmu",
+    text: "Masukkan file PDF, tautan artikel web, atau tempel catatan materi yang ingin kamu kuasai.",
+  },
+  {
+    number: "02",
+    label: "GENERASI OTOMATIS",
+    title: "Tersusun jadi modul terarah",
+    text: "Ngerti.in langsung memecah materi panjang menjadi peta topik yang terstruktur dan mudah dipelajari bertahap.",
+  },
+  {
+    number: "03",
+    label: "AKTIF BERLATIH",
+    title: "Pelajari, ingat, dan uji",
+    text: "Pahami intisari konsep, latih daya ingat dengan flashcard, lalu validasi kesiapanmu lewat kuis interaktif.",
+  },
+];
+---
+
+<Layout>
+  <Navigation />
+  <main id="konten">
+    <section class="wrap hero" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <p class="eyebrow mb-5">BELAJAR LEBIH TERARAH</p>
+        <h1 id="hero-title">
+          Ubah materi apa pun jadi <span class="text-primary">mudah dipahami.</span>
+        </h1>
+        <p class="intro">
+          Ubah PDF, artikel, atau catatanmu jadi modul belajar ringkas, lengkap dengan flashcard dan
+          kuis interaktif.
+        </p>
+        <div class="flex flex-wrap gap-4">
+          <Button href={dashboardUrl}>Mulai gratis <span aria-hidden="true">→</span></Button><Button
+            href="#cara-kerja"
+            variant="outline">Lihat cara kerja</Button
+          >
+        </div>
+        <p class="mt-6 text-sm text-muted-foreground">
+          Untuk catatan sekolah, materi kuliah, dan persiapan ujian.
+        </p>
+      </div>
+      <JourneyPreview hero />
+    </section>
+    <section id="cara-kerja" class="section-space bg-muted" aria-labelledby="steps-title">
+      <div class="wrap">
+        <p class="eyebrow">CARA KERJA</p><h2 id="steps-title" class="mt-3">
+          Dari tumpukan materi,<br />jadi alur belajar yang terarah.
+        </h2>
+        <ol class="mt-12 grid gap-10 md:grid-cols-3 md:gap-8">
+          {
+            steps.map((step) => (
+              <li class="step">
+                <div class="step-line">
+                  <span>{step.number}</span>
+                  <span aria-hidden="true">→</span>
+                </div>
+                <p class="eyebrow mt-6 mb-3">{step.label}</p>
+                <h3>{step.title}</h3>
+                <p class="mt-3 text-muted-foreground">{step.text}</p>
+              </li>
+            ))
+          }
+        </ol>
+      </div>
+    </section>
+    <div id="kenapa-ngertiin" class="wrap">
+      <section class="feature section-space" aria-labelledby="direction-title">
+        <div>
+          <p class="eyebrow">01 / ALUR TERSTRUKTUR</p><h2 id="direction-title">
+            Tahu mulai dari mana.<br />Tahu lanjut ke mana.
+          </h2><p class="intro">
+            Dokumen puluhan halaman terasa jauh lebih ringan saat dipecah menjadi langkah-langkah
+            terarah. Ikuti alur belajarmu tahap demi tahap, mulai dari memahami konsep dasar hingga
+            evaluasi mandiri.
+          </p><p class="benefit-note">
+            Fokus pada satu topik dalam satu waktu tanpa rasa kewalahan.
+          </p>
+        </div>
+        <JourneyPreview />
+      </section>
+      <section class="feature feature-reverse section-space" aria-labelledby="practice-title">
+        <div>
+          <p class="eyebrow">02 / METODE BELAJAR AKTIF</p><h2 id="practice-title">
+            Bukan cuma dibaca.<br />Diingat, dicoba, dipahami.
+          </h2><p class="intro">
+            Membaca pasif sering memberi ilusi sudah paham. Flashcard melatih daya ingat aktifmu
+            (active recall), sedangkan kuis interaktif memastikan kamu benar-benar menguasai esensi
+            materi.
+          </p><p class="benefit-note">
+            Bukan sekadar menggulir layar, tapi sungguh melatih pemahaman.
+          </p>
+        </div>
+        <PracticePreview />
+      </section>
+      <section class="feature section-space" aria-labelledby="adaptive-title">
+        <div>
+          <p class="eyebrow">03 / PENGUATAN ADAPTIF</p><h2 id="adaptive-title">
+            Belum paham di satu bagian?<br />Langsung diperkuat.
+          </h2><p class="intro">
+            Saat kuis mendeteksi ada konsep yang belum kamu kuasai, Ngerti.in otomatis menyajikan
+            materi penguatan khusus untuk topik tersebut. Kamu bisa berlatih kembali sampai
+            benar-benar tuntas.
+          </p><p class="benefit-note">
+            Tidak ada konsep penting yang terlewat atau dibiarkan menggantung.
+          </p>
+        </div>
+        <AdaptivePreview />
+      </section>
+    </div>
+    <section class="wrap closing" aria-labelledby="closing-title">
+      <div>
+        <p class="eyebrow">MULAI SEKARANG</p><h2 id="closing-title">
+          Siap kuasai materimu<br />dengan lebih mudah?
+        </h2><p class="mt-4 mb-7">
+          Cukup bawa PDF, artikel, atau catatanmu. Mulai alur belajarmu sekarang juga.
+        </p><Button href={dashboardUrl}
+          >Mulai belajar gratis <span aria-hidden="true">→</span></Button
+        >
+      </div><img
+        src="/ngertiin-mascot.webp"
+        alt="Maskot Ngerti.in"
+        width="220"
+        height="220"
+        loading="lazy"
+      />
+    </section>
+  </main>
+  <Footer />
+</Layout>

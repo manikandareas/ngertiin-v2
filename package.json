@@ -15,8 +15,8 @@
     "build": "bun --filter '@ngertiin/*' build",
     "typecheck": "bun --filter '@ngertiin/*' typecheck",
     "lint": "biome lint .",
-    "format": "biome format --write .",
-    "format:check": "biome format .",
+    "format": "biome format --write . && bun --filter @ngertiin/www format",
+    "format:check": "biome format . && bun --filter @ngertiin/www format:check",
     "db:generate": "bun --cwd packages/database db:generate",
     "db:migrate": "bun --cwd packages/database db:migrate",
     "db:check": "bun --cwd packages/database db:check",
@@ -26,7 +26,8 @@
     "infra:down": "docker compose down",
     "infra:logs": "docker compose logs -f",
     "release:check": "bun install --frozen-lockfile && bun infra:config && bun db:check && bun typecheck && bun lint && bun format:check && bun run build && git diff --check",
-    "release:integrity": "psql \"$DATABASE_URL\" -v ON_ERROR_STOP=1 -f docs/release/m9-integrity-check.sql"
+    "release:integrity": "psql \"$DATABASE_URL\" -v ON_ERROR_STOP=1 -f docs/release/m9-integrity-check.sql",
+    "dev:www": "bun --cwd apps/www dev"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.12",

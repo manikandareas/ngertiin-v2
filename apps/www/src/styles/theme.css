@@ -1,0 +1,41 @@
+/* Light palette and font families from apps/web/src/index.css. */
+:root {
+  color-scheme: light;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  --background: #ffffff;
+  --foreground: #4b4b4b;
+  --primary: #1cb0f6;
+  --primary-foreground: #ffffff;
+  --primary-hover: #48bff8;
+  --primary-edge: #008acb;
+  --button-radius: 16px;
+  --card-radius: 20px;
+  --link: #0077ad;
+  --secondary: #e5f5ff;
+  --secondary-foreground: #005d87;
+  --muted: #f7f7f7;
+  --muted-foreground: #707070;
+  --accent: #e5f5ff;
+  --adaptive: #f5c542;
+  --adaptive-edge: #b88712;
+  --adaptive-ink: #513800;
+  --adaptive-subtle: #fff4ce;
+  --adaptive-foreground: #705000;
+  --success: #58cc02;
+  --success-foreground: #234700;
+  --success-subtle: #d7ffb8;
+  --border: #e5e5e5;
+  --input: #afafaf;
+  --ring: #0077ad;
+}
+
+@theme {
+  --font-sans: "Nunito Sans Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Nunito Variable", ui-sans-serif, system-ui, sans-serif;
+}
+@theme inline {
+  --color-primary: var(--primary);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+}

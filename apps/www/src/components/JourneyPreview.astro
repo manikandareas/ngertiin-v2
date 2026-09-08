@@ -1,0 +1,214 @@
+---
+interface Props {
+  hero?: boolean;
+}
+const { hero = false } = Astro.props;
+const nodes = [
+  { title: "Mengenal ekosistem", type: "Materi", status: "Selesai", symbol: "✓", state: "done" },
+  {
+    title: "Siapa makan siapa?",
+    type: "Kartu belajar",
+    status: "Sedang dipelajari",
+    symbol: "▷",
+    state: "current",
+  },
+  { title: "Uji pemahamanmu", type: "Kuis", status: "Terkunci", symbol: "3", state: "locked" },
+];
+---
+
+<figure class:list={["journey-stage", { "hero-stage": hero }]}>
+  {
+    hero && (
+      <div class="source-note">
+        <span class="file-mark">PDF</span>
+        <div>
+          <strong>Catatan ekosistem.pdf</strong>
+          <span>Materi yang kamu unggah.</span>
+        </div>
+        <span aria-hidden="true">↘</span>
+      </div>
+    )
+  }
+  <div class="preview-panel journey-panel">
+    <div class="preview-top">
+      <span>ALUR BELAJAR</span><span class="example">Contoh</span>
+    </div>
+    <h3>Ekosistem</h3><p class="text-sm text-muted-foreground">
+      Kenali hubungan makhluk hidup di sekitarmu.
+    </p>
+    <ol class="journey-list">
+      {
+        nodes.map((node) => (
+          <li class={node.state}>
+            <span class="node-medal" aria-hidden="true">
+              {node.symbol}
+            </span>
+            <div>
+              <span class="node-type">{node.type}</span>
+              <strong>{node.title}</strong>
+              <span class="node-status">{node.status}</span>
+            </div>
+          </li>
+        ))
+      }
+    </ol>
+  </div>
+  {
+    hero && (
+      <div class="finish-note">
+        <span aria-hidden="true">✓</span> Langkah demi langkah, makin paham.
+      </div>
+    )
+  }
+  <figcaption class="sr-only">
+    Contoh alur belajar Ekosistem dengan materi selesai, kartu belajar aktif, dan kuis terkunci.
+    Preview statis.
+  </figcaption>
+</figure>
+
+<style>
+  @layer components {
+    .journey-stage {
+      background: var(--secondary);
+      padding: 24px;
+      border-radius: 32px;
+    }
+    .hero-stage {
+      position: relative;
+      padding: 28px 20px 24px;
+    }
+    .source-note {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--background);
+      border: 2px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 18px;
+      width: fit-content;
+      margin: -44px 0 24px -36px;
+      transform: rotate(-4deg);
+    }
+    .source-note strong {
+      display: block;
+      font-size: 14px;
+    }
+    .source-note :where(div) span {
+      font-size: 12px;
+      color: var(--muted-foreground);
+    }
+    .file-mark {
+      border: 2px solid var(--primary);
+      color: var(--link);
+      border-radius: 6px;
+      padding: 10px 5px;
+      font-size: 10px;
+      font-weight: 850;
+    }
+    .journey-list {
+      display: grid;
+      gap: 28px;
+      padding-block: 26px 12px;
+    }
+    .journey-list li {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      position: relative;
+    }
+    .journey-list li:nth-child(2) {
+      margin-left: 32px;
+    }
+    .journey-list li > div {
+      display: grid;
+      gap: 2px;
+    }
+    .journey-list strong {
+      font-size: 15px;
+      line-height: 1.3;
+    }
+    .node-type,
+    .node-status {
+      font-size: 11px;
+      color: var(--muted-foreground);
+    }
+    .node-medal {
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+      width: 64px;
+      height: 48px;
+      border-radius: 50%;
+      border: 5px solid var(--background);
+      outline: 3px solid var(--border);
+      background: var(--border);
+      box-shadow: 0 7px 0 var(--input);
+      font-size: 22px;
+      font-weight: 850;
+    }
+    .done .node-medal {
+      background: var(--success-subtle);
+      outline-color: var(--success-subtle);
+      color: var(--success-foreground);
+      box-shadow: 0 7px 0 var(--success);
+    }
+    .current .node-medal {
+      background: var(--primary);
+      outline-color: var(--primary);
+      color: var(--primary-foreground);
+      box-shadow: 0 7px 0 var(--primary-edge);
+    }
+    .current .node-status {
+      color: var(--link);
+      font-weight: 750;
+    }
+    .locked .node-medal {
+      border-radius: 24%;
+    }
+    .finish-note {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 18px 0 0 18px;
+      font-size: 13px;
+      font-weight: 750;
+      color: var(--secondary-foreground);
+    }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .hero-stage {
+      animation-delay: 0.12s;
+    }
+  }
+  @media (max-width: 1023px) {
+    .hero-stage {
+      margin-top: 30px;
+    }
+  }
+  @media (max-width: 639px) {
+    .source-note {
+      margin: -32px 0 20px -6px;
+      padding: 12px;
+    }
+    .journey-list {
+      gap: 28px;
+    }
+    .journey-list li {
+      gap: 14px;
+    }
+    .journey-list li:nth-child(2) {
+      margin-left: 12px;
+    }
+    .node-medal {
+      width: 52px;
+      height: 44px;
+    }
+    .journey-list strong {
+      font-size: 14px;
+    }
+    .finish-note {
+      margin-left: 0;
+      font-size: 11px;
+    }
+  }
+</style>
