@@ -1,10 +1,10 @@
 import { UserButton, useUser } from "@clerk/react";
 import {
   AddCircleHalfDotIcon,
-  ArrowLeftDoubleIcon,
-  ArrowRightDoubleIcon,
   BookOpen01Icon,
   Home01Icon,
+  SidebarLeftIcon,
+  SidebarRightIcon,
   UserCircleIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -22,6 +22,7 @@ const navigation = [
   { to: "/modules", label: "Modul saya", icon: BookOpen01Icon },
 ];
 const focus = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
+const navItemClass = `flex min-h-11 min-w-0 items-center gap-3 rounded-lg px-3 text-sm font-medium text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-sidebar-foreground aria-[current=page]:bg-sidebar-accent aria-[current=page]:font-semibold aria-[current=page]:text-sidebar-accent-foreground motion-reduce:transition-none ${focus}`;
 
 export function ConnectedAppSidebar() {
   useUsageSync();
@@ -76,11 +77,20 @@ export function AppSidebar({
             to="/dashboard"
             aria-label="ngerti.in — Beranda"
             title="ngerti.in"
-            className={`flex min-h-8 min-w-0 flex-1 items-center rounded-sm px-1 font-display text-lg font-black tracking-tight ${focus}`}
+            className={`flex min-h-8 min-w-0 flex-1 items-center gap-2 rounded-sm px-1 font-display text-lg font-black tracking-tight ${focus}`}
           >
-            <span className={collapsed ? "hidden" : ""}>ngerti.in</span>
-            {collapsed ? <span className="inline">n</span> : null}
-            <span className="text-primary">.</span>
+            <img
+              src="/ngertiin-mascot.webp"
+              alt=""
+              width={36}
+              height={36}
+              className="size-9 shrink-0 object-contain"
+            />
+            {!collapsed && (
+              <span>
+                ngerti.in<span className="text-primary">.</span>
+              </span>
+            )}
           </Link>
           <button
             type="button"
@@ -90,7 +100,7 @@ export function AppSidebar({
             className={`flex size-8 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted ${focus}`}
           >
             <HugeiconsIcon
-              icon={collapsed ? ArrowRightDoubleIcon : ArrowLeftDoubleIcon}
+              icon={collapsed ? SidebarRightIcon : SidebarLeftIcon}
               size={20}
               strokeWidth={1.5}
               aria-hidden="true"
@@ -109,16 +119,16 @@ export function AppSidebar({
                 to={to}
                 aria-current={active ? "page" : undefined}
                 title={collapsed ? label : undefined}
-                className={`flex min-h-10 min-w-0 items-center justify-between gap-2 rounded-full px-3 text-sm ${focus} ${active ? "bg-muted text-foreground" : "hover:bg-muted"}`}
+                className={`${navItemClass} ${collapsed ? "justify-center" : ""}`}
               >
-                <span className={labelClass}>{label}</span>
                 <HugeiconsIcon
                   icon={icon}
                   size={20}
                   strokeWidth={1.5}
                   aria-hidden="true"
-                  className={`shrink-0 ${active ? "text-foreground" : "text-muted-foreground"} ${collapsed ? "mx-auto" : ""}`}
+                  className="shrink-0"
                 />
+                <span className={collapsed ? "sr-only" : "truncate"}>{label}</span>
               </Link>
             );
           })}
@@ -206,10 +216,16 @@ export function AppSidebar({
                       to={to}
                       onClick={() => setMenuOpen(false)}
                       aria-current={active ? "page" : undefined}
-                      className={`flex min-h-11 items-center justify-between gap-2 rounded-full px-3 text-sm ${focus} ${active ? "bg-muted text-foreground" : "hover:bg-muted"}`}
+                      className={navItemClass}
                     >
-                      {label}
-                      <HugeiconsIcon icon={icon} size={20} strokeWidth={1.5} aria-hidden="true" />
+                      <HugeiconsIcon
+                        icon={icon}
+                        size={20}
+                        strokeWidth={1.5}
+                        aria-hidden="true"
+                        className="shrink-0"
+                      />
+                      <span className="truncate">{label}</span>
                     </Link>
                   );
                 })}
