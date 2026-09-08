@@ -45,7 +45,7 @@ export function AppSidebar({
   account?: ReactNode;
   usageBanner?: ReactNode;
 }) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   useEffect(() => {
