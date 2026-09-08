@@ -1,19 +1,19 @@
-import { SignIn } from "@clerk/react";
+import { SignUp } from "@clerk/react";
 import { AuthLayout } from "../components/auth-layout";
 import { isClerkConfigured } from "../config";
 
-export default function SignInPage() {
+export default function SignUpPage() {
   return (
     <AuthLayout>
       {isClerkConfigured ? (
-        <SignIn
+        <SignUp
           routing="path"
-          path="/sign-in"
+          path="/sign-up"
           appearance={{ elements: { rootBox: "w-full", cardBox: "w-full" } }}
         />
       ) : (
         <p className="text-center text-sm text-muted-foreground">
-          Halaman masuk belum tersedia. Silakan coba lagi nanti.
+          Halaman daftar belum tersedia. Silakan coba lagi nanti.
         </p>
       )}
     </AuthLayout>

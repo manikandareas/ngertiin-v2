@@ -1,7 +1,7 @@
-import { useAuth } from "@clerk/react";
+import { RedirectToSignIn, useAuth } from "@clerk/react";
 import type { ReactNode } from "react";
 import { Navigate } from "react-router-dom";
-import { AppShell } from "../components/app-shell";
+import { AuthLayout } from "../components/auth-layout";
 import { isClerkConfigured } from "../config";
 
 function ClerkAuthenticatedRoute({ children }: { children: ReactNode }) {
@@ -9,12 +9,13 @@ function ClerkAuthenticatedRoute({ children }: { children: ReactNode }) {
 
   if (!isLoaded) {
     return (
-      <AppShell>
-        <p className="text-sm text-slate-500">Memeriksa sesi…</p>
-      </AppShell>
+      <AuthLayout>
+        <p className="text-center text-sm text-muted-foreground">Memeriksa sesi…</p>
+      </AuthLayout>
     );
   }
-  return isSignedIn ? children : <Navigate replace to="/sign-in" />;
+
+  return isSignedIn ? children : <RedirectToSignIn />;
 }
 
 export function AuthenticatedRoute({ children }: { children: ReactNode }) {

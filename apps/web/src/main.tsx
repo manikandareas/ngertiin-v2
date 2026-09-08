@@ -19,12 +19,12 @@ const rootElement = getRootElement();
 
 createRoot(rootElement).render(
   <StrictMode>
-    <ClerkRoot>
-      <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
+    <BrowserRouter>
+      <ClerkRoot>
+        <QueryClientProvider client={queryClient}>
           <App />
-        </BrowserRouter>
-      </QueryClientProvider>
-    </ClerkRoot>
+        </QueryClientProvider>
+      </ClerkRoot>
+    </BrowserRouter>
   </StrictMode>,
 );
