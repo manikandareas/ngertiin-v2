@@ -3,6 +3,7 @@ import { Navigate, Outlet, Route, Routes } from "react-router-dom";
 import { AuthLayout } from "../components/auth-layout";
 import { AuthenticatedRoute } from "./authenticated-route";
 
+const LeaderboardPage = lazy(() => import("../pages/leaderboard"));
 const DashboardPage = lazy(() => import("../pages/dashboard"));
 const NewModulePage = lazy(() => import("../pages/new-module"));
 const SourceDetailPage = lazy(() => import("../pages/source-detail"));
@@ -37,6 +38,7 @@ export function AppRoutes() {
             path="/adaptive-interventions/:interventionId"
             element={<AdaptiveInterventionPage />}
           />
+          <Route path="/leaderboard" element={<LeaderboardPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/sources" element={<SourcesPage />} />
           <Route path="/sources/:sourceId" element={<SourceDetailPage />} />

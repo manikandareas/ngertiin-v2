@@ -5,9 +5,10 @@ import { AttemptsModule } from "./attempts/attempts.module.js";
 import { ConfigModule } from "./config.module.js";
 import { DashboardModule } from "./dashboard/dashboard.module.js";
 import { HealthModule } from "./health/health.module.js";
-import { ModulesModule } from "./modules/modules.module.js";
 import { RequestPolicyInterceptor } from "./http/request-policy.interceptor.js";
 import { InfrastructureModule } from "./infrastructure/infrastructure.module.js";
+import { LeaderboardModule } from "./leaderboard/leaderboard.module.js";
+import { ModulesModule } from "./modules/modules.module.js";
 import { SourcesModule } from "./sources/sources.module.js";
 import { UsersModule } from "./users/users.module.js";
 
@@ -17,6 +18,7 @@ import { UsersModule } from "./users/users.module.js";
     InfrastructureModule,
     HealthModule,
     DashboardModule,
+    LeaderboardModule,
     UsersModule,
     SourcesModule,
     ModulesModule,

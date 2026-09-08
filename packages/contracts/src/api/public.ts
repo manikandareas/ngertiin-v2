@@ -72,6 +72,7 @@ export {
   type GetDashboardResponse,
   getDashboardResponseSchema,
 } from "./dashboard/dashboard.js";
+export * from "./leaderboard.js";
 export {
   DEFAULT_GENERATION_SETTINGS,
   GENERATION_ACTIVITY_TYPES,

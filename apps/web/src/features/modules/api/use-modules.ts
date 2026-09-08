@@ -34,6 +34,7 @@ import {
 } from "../../../lib/api";
 import { currentUserQueryKey } from "../../current-user/api/use-current-user";
 import { dashboardQueryKey } from "../../dashboard/api/use-dashboard";
+import { leaderboardQueryKey } from "../../leaderboard/use-leaderboard";
 import { usageQueryKey, useRefreshUsage } from "../../usage/use-usage";
 
 const reconnectDelays = [1_000, 2_000, 4_000, 8_000] as const;
@@ -133,6 +134,7 @@ export function useAdaptiveDecision(interventionId: string, moduleId?: string) {
         queryClient.invalidateQueries({ queryKey: journeyQueryKey(userId, moduleId) }),
         queryClient.invalidateQueries({ queryKey: moduleQueryKey(userId, moduleId) }),
         queryClient.invalidateQueries({ queryKey: currentUserQueryKey(userId) }),
+        queryClient.invalidateQueries({ queryKey: leaderboardQueryKey(userId) }),
         invalidateModuleCollections(queryClient, userId),
       ]);
     },
@@ -244,6 +246,7 @@ function useProgressCacheSync(moduleId: string, nodeId: string) {
       queryClient.invalidateQueries({ queryKey: ["adaptive-intervention", userId] }),
       queryClient.invalidateQueries({ queryKey: ["attempt", userId] }),
       queryClient.invalidateQueries({ queryKey: currentUserQueryKey(userId) }),
+      queryClient.invalidateQueries({ queryKey: leaderboardQueryKey(userId) }),
       invalidateModuleCollections(queryClient, userId),
     ]);
   }, [moduleId, nodeId, queryClient, userId]);

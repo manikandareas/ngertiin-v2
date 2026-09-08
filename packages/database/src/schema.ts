@@ -725,6 +725,8 @@ export const user_stats = pgTable("user_stats", {
     .primaryKey()
     .references(() => users.id),
   total_xp: integer().notNull().default(0),
+  leaderboard_xp: integer().notNull().default(0),
+  leaderboard_expires_at: timestamp({ withTimezone: true }),
   current_streak: integer().notNull().default(0),
   longest_streak: integer().notNull().default(0),
   last_learning_date: date({ mode: "string" }),

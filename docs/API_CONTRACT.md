@@ -1515,3 +1515,42 @@ logs with user/request IDs, code, and applicable quota/active-module context.
 
 Deploy migration `0011_lyrical_moondragon.sql` before the API and web bundles. See
 [usage rollout verification](release/usage-mvp.md) for evidence and remaining runtime checks.
+
+## Global leaderboard
+
+`GET /api/v1/leaderboard` requires authentication. Returns the standard `{ data }`
+envelope. Participant identities contain only local `userId` and `displayName`;
+blank names become `Pelajar`. No email or Clerk identity is returned.
+
+```json
+{
+  "data": {
+    "serverTime": "2026-09-09T00:00:00.000Z",
+    "inactivityDays": 7,
+    "nextExpiresAt": "2026-09-16T00:00:00.000Z",
+    "participants": [
+      { "userId": "00000000-0000-4000-8000-000000000001", "displayName": "Pelajar", "score": 500, "rank": 1 }
+    ],
+    "self": {
+      "userId": "00000000-0000-4000-8000-000000000001",
+      "score": 500,
+      "rank": 1,
+      "expiresAt": "2026-09-16T00:00:00.000Z"
+    }
+  }
+}
+```
+
+At launch, existing lifetime XP seeds active leaderboard XP once. Each successfully
+inserted XP event adds to an unexpired score (or starts a new score after expiry)
+and sets expiry to database award time plus 168 hours. Retries and reading content
+do not extend it. The effective score is zero at or after expiry. Lifetime XP and
+learning progress remain unchanged by reset.
+
+Only positive, unexpired scores are ranked. Equal scores share competition rank
+(1, 1, 3); user ID orders ties. `participants` contains at most 50 users, while
+`self` always describes the caller, including ranks outside the top 50. An unranked
+caller has score 0 and rank null. `self.expiresAt` retains a past expiry to distinguish
+a reset score from a new user (null). `nextExpiresAt` is the earliest active expiry
+across all participants, including those outside the top 50, or null. Clients use
+it with `serverTime` to schedule refreshes. All values use one database snapshot.

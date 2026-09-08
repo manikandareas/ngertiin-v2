@@ -2,6 +2,7 @@ import { UserButton, useUser } from "@clerk/react";
 import {
   AddCircleHalfDotIcon,
   BookOpen01Icon,
+  ChampionIcon,
   Home01Icon,
   LibraryIcon,
   SidebarLeftIcon,
@@ -19,6 +20,7 @@ import { ThemeToggle } from "./theme-toggle";
 
 const navigation = [
   { to: "/dashboard", label: "Beranda", icon: Home01Icon },
+  { to: "/leaderboard", label: "Leaderboard", icon: ChampionIcon },
   { to: "/modules/new", label: "Buat modul", icon: AddCircleHalfDotIcon },
   { to: "/modules", label: "Modul belajar", icon: BookOpen01Icon },
   { to: "/sources", label: "Pustaka saya", icon: LibraryIcon },

@@ -27,6 +27,7 @@ import {
   getDashboardResponseSchema,
   getGenerationResponseSchema,
   getJourneyResponseSchema,
+  getLeaderboardResponseSchema,
   getModuleResponseSchema,
   getNodeResponseSchema,
   getSourceResponseSchema,
@@ -518,4 +519,9 @@ export async function getSourceFile(token: TokenResolver, id: string) {
       cache: "no-store",
     })
   ).data;
+}
+
+export async function getLeaderboard(tokenResolver: TokenResolver) {
+  const response = await requestApi("/leaderboard", tokenResolver, getLeaderboardResponseSchema);
+  return response.data;
 }

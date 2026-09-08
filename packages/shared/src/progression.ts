@@ -14,6 +14,7 @@ import {
   xp_events,
 } from "@ngertiin/database";
 import { and, asc, eq, sql } from "drizzle-orm";
+import { addLeaderboardXp } from "./leaderboard.js";
 
 type ProgressNode = {
   id: string;
@@ -230,6 +231,7 @@ export async function finalizeAdaptiveNodeProgress(
       })
       .returning({ id: xp_events.id });
     if (event) {
+      await addLeaderboardXp(transaction, input.userId, 20);
       xpAwarded = 20;
       const sameDay = stats.lastLearningDate === stats.learningDate;
       const consecutive =
@@ -500,6 +502,7 @@ export async function finalizeCoreNodeProgress(
       })
       .returning({ id: xp_events.id });
     if (event) {
+      await addLeaderboardXp(transaction, input.userId, input.xp.amount);
       xpAwarded = input.xp.amount;
       const sameDay = stats.lastLearningDate === stats.learningDate;
       const consecutive =
