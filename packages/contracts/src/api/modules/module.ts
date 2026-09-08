@@ -196,6 +196,7 @@ const moduleStatusesQuerySchema = z.string().transform((value, context) => {
 
 export const listModulesQuerySchema = z
   .object({
+    q: z.string().trim().max(500).optional(),
     status: moduleStatusesQuerySchema.optional(),
     progressStatus: moduleProgressStatusSchema.optional(),
     limit: z.coerce.number().int().min(1).max(100).default(20),

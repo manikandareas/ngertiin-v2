@@ -1,7 +1,7 @@
 import { Plus } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import type { ModuleProgressStatus, ModuleStatus } from "@ngertiin/contracts/api";
-import { useState } from "react";
+import type { ModuleProgressStatus } from "@ngertiin/contracts/api";
+import { useDeferredValue, useState } from "react";
 import { Link } from "react-router-dom";
 import { AppShell } from "../components/app-shell";
 import { Button } from "../components/ui/button";
@@ -12,10 +12,12 @@ import { ModulesFilters } from "../features/modules/components/modules-filters";
 
 export default function ModulesPage() {
   const [collection, setCollection] = useState<"active" | "archived">("active");
-  const [status, setStatus] = useState<ModuleStatus | "">("");
+  const [search, setSearch] = useState("");
   const [progressStatus, setProgressStatus] = useState<ModuleProgressStatus | "">("");
+  const q = useDeferredValue(search.trim());
   const modules = useModules({
-    ...(collection === "archived" ? { status: "archived" as const } : status ? { status } : {}),
+    ...(collection === "archived" ? { status: "archived" as const } : {}),
+    ...(q ? { q } : {}),
     ...(progressStatus ? { progressStatus } : {}),
   });
   const items = modules.data?.pages.flatMap((page) => page.data) ?? [];
@@ -38,14 +40,13 @@ export default function ModulesPage() {
 
       <ModulesFilters
         collection={collection}
-        status={status}
+        search={search}
         progressStatus={progressStatus}
         onCollectionChange={(value) => {
           setCollection(value);
-          setStatus("");
           setProgressStatus("");
         }}
-        onStatusChange={setStatus}
+        onSearchChange={setSearch}
         onProgressChange={setProgressStatus}
       />
 
@@ -74,9 +75,9 @@ export default function ModulesPage() {
         </div>
       ) : items.length === 0 ? (
         <div className="mt-8 rounded-2xl border border-dashed border-border bg-background p-8">
-          <h2 className="text-lg font-bold">Belum ada modul pada filter ini</h2>
+          <h2 className="text-lg font-bold">Belum ada modul yang cocok</h2>
           <p className="mt-2 text-muted-foreground">
-            Ubah filter atau{" "}
+            Coba kata kunci lain, ubah filter, atau{" "}
             <Link className="text-link underline" to="/modules/new">
               buat modul baru
             </Link>

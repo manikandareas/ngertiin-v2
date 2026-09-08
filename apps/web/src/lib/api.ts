@@ -245,6 +245,7 @@ export async function listModules(
   query: ListModulesQueryInput = {},
 ): Promise<ListModulesResponse> {
   const search = new URLSearchParams();
+  if (query.q !== undefined) search.set("q", query.q);
   if (query.status !== undefined) search.set("status", query.status);
   if (query.progressStatus !== undefined) search.set("progressStatus", query.progressStatus);
   if (query.limit !== undefined) search.set("limit", String(query.limit));

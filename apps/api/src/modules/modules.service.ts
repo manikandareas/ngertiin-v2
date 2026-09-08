@@ -46,7 +46,7 @@ import {
   finalizeCoreNodeProgress,
   selectLearningAction,
 } from "@ngertiin/shared";
-import { and, asc, desc, eq, inArray, lt, or, type SQL, sql } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, inArray, lt, or, type SQL, sql } from "drizzle-orm";
 import { z } from "zod";
 import { ProductError } from "../http/product-error.js";
 import { IdempotencyService } from "../idempotency/idempotency.service.js";
@@ -389,6 +389,10 @@ export class ModulesService {
       filters.push(inArray(modules.status, query.status));
     } else {
       filters.push(sql`${modules.status} <> 'archived'`);
+    }
+    if (query.q) {
+      const pattern = `%${query.q.replace(/[\\%_]/g, "\\$&")}%`;
+      filters.push(or(ilike(modules.title, pattern), ilike(modules.description, pattern)) as SQL);
     }
     if (query.progressStatus) {
       filters.push(eq(user_module_progress.status, query.progressStatus));

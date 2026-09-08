@@ -1,6 +1,13 @@
 import type { SourceType } from "@ngertiin/contracts/api";
 import { Tabs } from "radix-ui";
 import { Input } from "../../components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../components/ui/select";
 
 type SourceFiltersProps = {
   search: string;
@@ -30,21 +37,25 @@ export function SourceFilters({ search, type, onSearchChange, onTypeChange }: So
           aria-label="Cari materi"
           placeholder="Cari materi…"
           type="search"
+          maxLength={500}
           value={search}
           onChange={(event) => onSearchChange(event.target.value)}
           className="h-10 min-w-0 flex-1 rounded-xl border sm:w-48"
         />
-        <select
-          aria-label="Jenis materi"
-          value={type}
-          onChange={(event) => onTypeChange(event.target.value as SourceType | "")}
-          className="h-10 w-36 rounded-xl border border-border bg-background px-3 text-sm focus-visible:outline-2 focus-visible:outline-ring sm:w-45"
+        <Select
+          value={type || "all"}
+          onValueChange={(value) => onTypeChange(value === "all" ? "" : (value as SourceType))}
         >
-          <option value="">Semua jenis</option>
-          <option value="pdf">PDF</option>
-          <option value="url">Web</option>
-          <option value="text">Teks</option>
-        </select>
+          <SelectTrigger aria-label="Jenis materi" className="h-10 w-36 sm:w-45">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent position="popper">
+            <SelectItem value="all">Semua jenis</SelectItem>
+            <SelectItem value="pdf">PDF</SelectItem>
+            <SelectItem value="url">Web</SelectItem>
+            <SelectItem value="text">Teks</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
     </div>
   );

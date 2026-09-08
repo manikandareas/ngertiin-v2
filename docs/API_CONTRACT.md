@@ -775,7 +775,9 @@ GET /api/v1/modules?status=ready&progressStatus=in_progress&limit=20&cursor=<opa
 GET /api/v1/modules/:moduleId
 ```
 
-Supported filters are `status` and `progressStatus`. Multiple `status` values may be comma-separated.
+Supported filters are `status`, `progressStatus`, and `q`. Multiple `status` values may be comma-separated.
+`q` searches module titles and descriptions case-insensitively before pagination. It is trimmed,
+limited to 500 characters, and treats `%`, `_`, and backslashes literally. Empty `q` applies no search filter.
 Archived modules are excluded unless explicitly requested. Ordering is `updatedAt DESC, id DESC`.
 
 ### 8.3 Read Generation Status

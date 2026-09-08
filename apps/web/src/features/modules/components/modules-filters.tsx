@@ -1,4 +1,5 @@
-import type { ModuleProgressStatus, ModuleStatus } from "@ngertiin/contracts/api";
+import type { ModuleProgressStatus } from "@ngertiin/contracts/api";
+import { Input } from "../../../components/ui/input";
 import {
   Select,
   SelectContent,
@@ -9,19 +10,19 @@ import {
 
 type ModulesFiltersProps = {
   collection: "active" | "archived";
-  status: ModuleStatus | "";
+  search: string;
   progressStatus: ModuleProgressStatus | "";
   onCollectionChange: (collection: "active" | "archived") => void;
-  onStatusChange: (status: ModuleStatus | "") => void;
+  onSearchChange: (search: string) => void;
   onProgressChange: (status: ModuleProgressStatus | "") => void;
 };
 
 export function ModulesFilters({
   collection,
-  status,
+  search,
   progressStatus,
   onCollectionChange,
-  onStatusChange,
+  onSearchChange,
   onProgressChange,
 }: ModulesFiltersProps) {
   return (
@@ -44,32 +45,23 @@ export function ModulesFilters({
           </button>
         ))}
       </fieldset>
-      <div className="flex flex-wrap items-center gap-2">
-        {collection === "active" ? (
-          <Select
-            value={status || "all"}
-            onValueChange={(value) =>
-              onStatusChange(value === "all" ? "" : (value as ModuleStatus))
-            }
-          >
-            <SelectTrigger aria-label="Status modul" className="h-10 w-[180px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent position="popper">
-              <SelectItem value="all">Semua status</SelectItem>
-              <SelectItem value="generating">Sedang dibuat</SelectItem>
-              <SelectItem value="ready">Siap dipelajari</SelectItem>
-              <SelectItem value="failed">Perlu dicoba lagi</SelectItem>
-            </SelectContent>
-          </Select>
-        ) : null}
+      <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+        <Input
+          type="search"
+          aria-label="Cari modul"
+          placeholder="Cari modul…"
+          maxLength={500}
+          value={search}
+          onChange={(event) => onSearchChange(event.target.value)}
+          className="h-10 min-w-0 flex-1 rounded-xl border sm:w-48"
+        />
         <Select
           value={progressStatus || "all"}
           onValueChange={(value) =>
             onProgressChange(value === "all" ? "" : (value as ModuleProgressStatus))
           }
         >
-          <SelectTrigger aria-label="Progres belajar" className="h-10 w-[190px]">
+          <SelectTrigger aria-label="Progres belajar" className="h-10 w-40 sm:w-47.5">
             <SelectValue />
           </SelectTrigger>
           <SelectContent position="popper">
