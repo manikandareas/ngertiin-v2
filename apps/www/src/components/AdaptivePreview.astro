@@ -1,14 +1,21 @@
-<figure class="adaptive-stage">
+<figure class="rounded-3xl bg-adaptive-subtle p-3.5 sm:rounded-[32px] sm:p-7">
   <div class="preview-panel">
     <div class="preview-top">
-      <span>HASIL KUIS · EKOSISTEM</span><span class="example">Contoh</span>
+      <span>HASIL KUIS · EKOSISTEM</span>
     </div>
     <h3>Satu konsep butuh penguatan.</h3><p class="mt-2 text-muted-foreground">
       Topik "Rantai Makanan" perlu diulas kembali.
     </p>
-    <div class="reinforcement">
-      <span class="adaptive-medal" aria-hidden="true">✦</span><div>
-        <span class="eyebrow">PENGUATAN OTOMATIS</span><h4>Ke mana energi mengalir?</h4><p>
+    <div class="my-6 flex items-center gap-[18px] border-y-2 border-border py-6">
+      <span
+        class="grid h-[50px] w-14 shrink-0 place-items-center rounded-full bg-adaptive text-[28px] text-adaptive-ink shadow-[0_7px_0_var(--adaptive-edge)]"
+        aria-hidden="true">✦</span
+      ><div>
+        <span class="eyebrow text-[10px] text-adaptive-foreground">PENGUATAN OTOMATIS</span><h4
+          class="my-2"
+        >
+          Ke mana energi mengalir?
+        </h4><p class="text-sm text-muted-foreground">
           Pelajari kembali perpindahan energi dari produsen ke konsumen.
         </p>
       </div>
@@ -23,46 +30,3 @@
     Evaluasi cerdas: konsep yang belum tuntas langsung diberi penguatan.
   </figcaption>
 </figure>
-
-<style>
-  @layer components {
-    .reinforcement .eyebrow {
-      color: var(--adaptive-foreground);
-      font-size: 10px;
-    }
-  }
-  @layer components {
-    .adaptive-stage {
-      background: var(--adaptive-subtle);
-      padding: 28px;
-      border-radius: 32px;
-    }
-    .reinforcement {
-      display: flex;
-      gap: 18px;
-      align-items: center;
-      padding: 24px 0;
-      margin-block: 24px;
-      border-block: 2px solid var(--border);
-    }
-    .reinforcement h4 {
-      margin-block: 8px;
-    }
-    .reinforcement p {
-      font-size: 14px;
-      color: var(--muted-foreground);
-    }
-    .adaptive-medal {
-      display: grid;
-      place-items: center;
-      flex-shrink: 0;
-      width: 56px;
-      height: 50px;
-      border-radius: 50%;
-      background: var(--adaptive);
-      color: var(--adaptive-ink);
-      box-shadow: 0 7px 0 var(--adaptive-edge);
-      font-size: 28px;
-    }
-  }
-</style>

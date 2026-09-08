@@ -1,0 +1,110 @@
+---
+const nodes = [
+  { x: 104, y: 286, title: "Pahami", detail: "Materi ringkas", icon: "book" },
+  { x: 251, y: 348, title: "Ingat", detail: "Flashcard", icon: "cards" },
+  { x: 428, y: 412, title: "Kuasai", detail: "Kuis interaktif", icon: "quiz" },
+];
+---
+
+<figure class="m-0 w-full min-w-0">
+  <svg
+    class="block h-auto w-full overflow-visible font-display fill-foreground"
+    viewBox="0 0 560 565"
+    aria-hidden="true"
+    focusable="false"
+  >
+    <path
+      d="M91 167Q75 217 98 272"
+      class="fill-none stroke-primary stroke-2 opacity-45 [stroke-linecap:round] [stroke-dasharray:4_7]"
+    ></path>
+    <g transform="translate(48 43)">
+      <g class="hero-sources">
+        <g transform="rotate(-12)">
+          <path d="M0 0H49L66 17V86H0Z" class="fill-background stroke-primary stroke-2"></path>
+          <path d="M49 0V17H66" class="fill-secondary stroke-primary stroke-2"></path>
+          <text x="12" y="43" class="fill-link text-base font-[950]">PDF</text>
+          <path
+            d="M12 56H51 M12 64H44 M12 72H34"
+            class="fill-none stroke-secondary stroke-[3] [stroke-linecap:round]"></path>
+        </g>
+        <g transform="translate(86 24) rotate(9)">
+          <circle cx="17" cy="17" r="17" class="fill-secondary"></circle>
+          <g class="fill-none stroke-link stroke-[1.6]">
+            <circle cx="17" cy="17" r="11"></circle>
+            <ellipse cx="17" cy="17" rx="5" ry="11"></ellipse>
+            <path d="M6 17H28"></path>
+          </g>
+          <text x="-2" y="49" class="fill-link text-[11px] tracking-[1px] font-[850]">WEB</text>
+        </g>
+      </g>
+      <g transform="translate(56 64)">
+        <path
+          d="m0 0 4 26 7-8 10-2Z"
+          class="hero-drag-cursor fill-foreground stroke-background stroke-2 opacity-0"></path>
+      </g>
+    </g>
+    <text x="220" y="93" class="fill-muted-foreground text-xs font-semibold">Materi panjang?</text>
+    <text x="220" y="112" class="fill-muted-foreground text-xs font-semibold"
+      >Kita urai jadi langkah kecil.</text
+    >
+    <g class="hero-track">
+      <path
+        d="M104 286C174 286 160 348 251 348S369 412 428 412"
+        class="fill-none stroke-secondary stroke-[34] [stroke-linecap:round]"></path>
+      <path
+        d="M104 286C174 286 160 348 251 348S369 412 428 412"
+        class="fill-none stroke-primary stroke-2 opacity-45 [stroke-linecap:round] [stroke-dasharray:3_9]"
+      ></path>
+    </g>
+    <text x="212" y="218" class="fill-link text-[11px] tracking-[1px] font-[850]"
+      >EKOSISTEM, SELANGKAH DEMI SELANGKAH</text
+    >
+    {
+      nodes.map((node, index) => (
+        <g transform={`translate(${node.x} ${node.y})`}>
+          <g
+            class:list={[
+              "hero-journey-node",
+              node.icon === "quiz"
+                ? "[--node-fill:var(--success)] [--node-edge:color-mix(in_srgb,var(--success)_78%,var(--success-foreground))]"
+                : "[--node-fill:var(--primary)] [--node-edge:var(--primary-edge)]",
+            ]}
+            style={`--step: ${index}`}
+          >
+            <circle cy="6" r="31" class="fill-(--node-edge)" />
+            <circle r="31" class="fill-(--node-fill)" />
+            <circle r="24" class="fill-none stroke-background stroke-[1.5] [stroke-opacity:0.35]" />
+            <g class="fill-none stroke-primary-foreground stroke-[2.4] [stroke-linecap:round] [stroke-linejoin:round]">
+              {node.icon === "book" && (
+                <path d="M-13-10 Q-5-14 0-9 Q5-14 13-10 V10 Q5 6 0 11 Q-5 6-13 10Z M0-9V11" />
+              )}
+              {node.icon === "cards" && (
+                <>
+                  <rect x="-9" y="-10" width="19" height="25" rx="3" />
+                  <path d="M-14 7V-14H4 M-4-3H5 M-4 3H3" />
+                </>
+              )}
+              {node.icon === "quiz" && <path d="m-10 0 7 7 14-15" />}
+            </g>
+            <text y="64" text-anchor="middle" class="text-base font-[850]">
+              {node.title}
+            </text>
+            <text y="85" text-anchor="middle" class="fill-muted-foreground text-xs font-semibold">
+              {node.detail}
+            </text>
+          </g>
+        </g>
+      ))
+    }
+    <path
+      d="M445 320v-42m0 0q16-10 32 0v21q-16-10-32 0"
+      class="fill-success-subtle stroke-success stroke-2 [stroke-linejoin:round]"></path>
+    <text x="438" y="531" text-anchor="end" class="fill-muted-foreground text-xs font-semibold"
+      >Dari sekadar baca, jadi bisa.</text
+    >
+  </svg>
+  <p class="sr-only">
+    PDF dan artikel web menjadi alur belajar diagonal: pahami konsep melalui materi ringkas, latih
+    ingatan dengan flashcard, lalu uji pemahaman melalui kuis interaktif.
+  </p>
+</figure>

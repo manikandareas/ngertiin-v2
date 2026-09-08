@@ -18,15 +18,6 @@
     color: var(--muted-foreground);
     margin-bottom: 20px;
   }
-  .example {
-    padding: 3px 8px;
-    background: var(--muted);
-    border-radius: 6px;
-    font-size: 11px;
-    letter-spacing: 0;
-    font-weight: 700;
-  }
-  .finish-note > span,
   .small-check {
     display: inline-grid;
     place-items: center;
@@ -45,12 +36,6 @@
   }
 }
 @media (max-width: 639px) {
-  .journey-stage,
-  .practice-stage,
-  .adaptive-stage {
-    padding: 14px;
-    border-radius: 24px;
-  }
   .preview-panel {
     padding: 18px;
   }

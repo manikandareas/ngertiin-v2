@@ -152,8 +152,7 @@
   }
 }
 @media (prefers-reduced-motion: no-preference) {
-  .hero-copy,
-  .hero-stage {
+  .hero-copy {
     animation: entrance 0.65s ease-out both;
   }
 }
@@ -218,5 +217,75 @@
     height: 120px;
     align-self: flex-end;
     margin-top: -12px;
+  }
+}
+
+/* Overlapping founder photos keep their stacking order until the exit motion finishes. */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .founder-photos img {
+    transition:
+      transform 350ms cubic-bezier(0.22, 1, 0.36, 1),
+      rotate 350ms cubic-bezier(0.22, 1, 0.36, 1),
+      z-index 0s 350ms;
+  }
+  .founder-photos img:hover {
+    z-index: 1;
+    rotate: 0deg;
+    transform: translateY(-10px) scale(1.035);
+    transition-delay: 0s;
+  }
+}
+
+/* Hero illustration entrance motion. */
+@media (prefers-reduced-motion: no-preference) {
+  .hero-sources {
+    animation: hero-source-drag 1.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .hero-drag-cursor {
+    animation: hero-cursor-drag 2.5s both;
+  }
+  .hero-track {
+    animation: hero-journey-appear 1.2s 0.3s both;
+  }
+  .hero-journey-node {
+    animation: hero-journey-appear 0.65s both;
+    animation-delay: calc(0.55s + var(--step) * 0.16s);
+  }
+}
+@keyframes hero-source-drag {
+  from {
+    transform: translate(-55px, -45px);
+    opacity: 0;
+  }
+  40% {
+    opacity: 1;
+  }
+  to {
+    transform: translate(0, 0);
+    opacity: 1;
+  }
+}
+@keyframes hero-cursor-drag {
+  0% {
+    transform: translate(-55px, -45px);
+    opacity: 0;
+  }
+  25%,
+  70% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(8px, 10px);
+    opacity: 0;
+  }
+}
+@keyframes hero-journey-appear {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }

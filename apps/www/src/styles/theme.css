@@ -35,6 +35,24 @@
   --font-display: "Nunito Variable", ui-sans-serif, system-ui, sans-serif;
 }
 @theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-edge: var(--primary-edge);
+  --color-link: var(--link);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-success: var(--success);
+  --color-success-subtle: var(--success-subtle);
+  --color-success-foreground: var(--success-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-adaptive: var(--adaptive);
+  --color-adaptive-edge: var(--adaptive-edge);
+  --color-adaptive-ink: var(--adaptive-ink);
+  --color-adaptive-subtle: var(--adaptive-subtle);
+  --color-adaptive-foreground: var(--adaptive-foreground);
+
   --color-primary: var(--primary);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);

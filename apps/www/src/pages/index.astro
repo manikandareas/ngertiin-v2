@@ -3,6 +3,9 @@ import Layout from "../layouts/Layout.astro";
 import Navigation from "../components/Navigation.astro";
 import Footer from "../components/Footer.astro";
 import Button from "../components/Button.astro";
+import AssessmentPreview from "../components/AssessmentPreview.astro";
+import FounderStory from "../components/FounderStory.astro";
+import HeroJourney from "../components/HeroJourney.astro";
 import JourneyPreview from "../components/JourneyPreview.astro";
 import PracticePreview from "../components/PracticePreview.astro";
 import AdaptivePreview from "../components/AdaptivePreview.astro";
@@ -52,7 +55,7 @@ const steps = [
           Untuk catatan sekolah, materi kuliah, dan persiapan ujian.
         </p>
       </div>
-      <JourneyPreview hero />
+      <HeroJourney />
     </section>
     <section id="cara-kerja" class="section-space bg-muted" aria-labelledby="steps-title">
       <div class="wrap">
@@ -119,7 +122,23 @@ const steps = [
         </div>
         <AdaptivePreview />
       </section>
+      <section class="feature feature-reverse section-space" aria-labelledby="assessment-title">
+        <div>
+          <p class="eyebrow">04 / HASIL BELAJAR YANG JELAS</p>
+          <h2 id="assessment-title">Bukan cuma tahu nilainya.<br />Tahu apa yang perlu dilatih.</h2>
+          <p class="intro">
+            Setelah mengerjakan kuis, lihat skor beserta poin yang kamu capai, bagian yang sudah
+            kuat, dan bagian yang masih perlu dilatih. Ulasan jawaban membantumu memahami alasan di
+            balik hasilnya.
+          </p>
+          <p class="benefit-note">
+            Jadikan hasil belajar sebagai petunjuk untuk langkah berikutnya.
+          </p>
+        </div>
+        <AssessmentPreview />
+      </section>
     </div>
+    <FounderStory />
     <section class="wrap closing" aria-labelledby="closing-title">
       <div>
         <p class="eyebrow">MULAI SEKARANG</p><h2 id="closing-title">
