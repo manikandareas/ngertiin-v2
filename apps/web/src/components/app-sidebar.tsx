@@ -173,9 +173,18 @@ export function AppSidebar({
         <Link
           to="/dashboard"
           aria-label="ngerti.in — Beranda"
-          className={`rounded-sm font-display text-xl font-black tracking-tight ${focus}`}
+          className={`flex items-center gap-2 rounded-sm font-display text-xl font-black tracking-tight ${focus}`}
         >
-          ngerti.in<span className="text-primary">.</span>
+          <img
+            src="/ngertiin-mascot.webp"
+            alt=""
+            width={36}
+            height={36}
+            className="size-9 shrink-0 object-contain"
+          />
+          <span>
+            ngerti.in<span className="text-primary">.</span>
+          </span>
         </Link>
         <Dialog.Root open={menuOpen} onOpenChange={setMenuOpen}>
           <Dialog.Trigger asChild>
@@ -194,8 +203,17 @@ export function AppSidebar({
               className="fixed inset-y-0 left-0 z-50 flex w-80 max-w-[calc(100%-2rem)] flex-col overflow-y-auto border-r bg-background p-5 shadow-xl data-[state=open]:animate-in data-[state=open]:slide-in-from-left duration-200 motion-reduce:animate-none"
             >
               <div className="mb-6 flex items-center justify-between">
-                <Dialog.Title className="font-display text-xl font-black">
-                  ngerti.in<span className="text-primary">.</span>
+                <Dialog.Title className="flex items-center gap-2 font-display text-xl font-black">
+                  <img
+                    src="/ngertiin-mascot.webp"
+                    alt=""
+                    width={36}
+                    height={36}
+                    className="size-9 shrink-0 object-contain"
+                  />
+                  <span>
+                    ngerti.in<span className="text-primary">.</span>
+                  </span>
                 </Dialog.Title>
                 <Dialog.Close asChild>
                   <button
