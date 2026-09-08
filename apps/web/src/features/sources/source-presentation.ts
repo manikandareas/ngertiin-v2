@@ -19,8 +19,31 @@ export function sourceMetadata(source: Source): string {
     sourceDate.format(new Date(source.createdAt)),
   ];
   if (source.archivedAt) parts.push("Diarsipkan");
+  parts.push(...sourceFileMetadata(source));
+  return parts.join(" · ");
+}
+
+export function sourceOrigin(source: Source): string {
+  if (source.type === "pdf") return source.originalFilename || "Dokumen PDF";
+  if (source.type === "url" && source.originalUrl) {
+    try {
+      return new URL(source.originalUrl).hostname;
+    } catch {
+      return source.originalUrl;
+    }
+  }
+  return source.type === "url" ? "Halaman web" : "Catatan teks";
+}
+
+export function sourceItemMetadata(source: Source): string {
+  if (source.type !== "pdf") return source.type === "url" ? "Halaman web" : "Catatan teks";
+  return sourceFileMetadata(source).join(" · ") || "Dokumen PDF";
+}
+
+function sourceFileMetadata(source: Source): string[] {
+  const parts: string[] = [];
   if (source.pageCount !== undefined) parts.push(`${source.pageCount} halaman`);
   if (source.sizeBytes !== undefined)
     parts.push(`${(source.sizeBytes / 1024 / 1024).toFixed(1)} MiB`);
-  return parts.join(" · ");
+  return parts;
 }

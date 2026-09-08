@@ -328,3 +328,69 @@
   color: var(--link);
   text-decoration: underline;
 }
+
+/* Scrapbook materials keep their physical paper palette in either app theme. */
+@theme {
+  --color-source-book: #e8e9dc;
+  --color-source-book-ink: #46553f;
+  --color-source-book-edge: #c2c5af;
+  --color-source-book-spine: #63765b;
+  --color-source-book-stamp: #829275;
+  --color-source-postcard: #f1f6fc;
+  --color-source-postcard-ink: #365e7b;
+  --color-source-postcard-edge: #e6e7e7;
+  --color-source-postcard-rule: #b6cddd;
+  --color-source-postcard-art: #cfe7ee;
+  --color-source-postcard-art-ink: #3d7681;
+  --color-source-tape: #e1d7c5ad;
+  --color-source-note: #fffdf3;
+  --color-source-note-ink: #615b4b;
+  --color-source-note-rule: #dbd9c9;
+  --color-source-note-margin: #dfada0;
+  --shadow-source-book: 5px 4px 0 -1px #faf9ee, 7px 6px 0 -1px #cbd0bb;
+}
+
+@utility bg-source-postcard-dots {
+  background-image: radial-gradient(#70a1a74d 1px, transparent 1px);
+  background-size: 9px 9px;
+}
+
+@utility bg-source-note-holes {
+  background:
+    radial-gradient(
+      circle,
+      var(--background) 0 3px,
+      var(--color-source-note-rule) 3px 4px,
+      transparent 4px
+    )
+    0 0 / 8px 28px;
+}
+
+@utility source-note-paper {
+  background-image: repeating-linear-gradient(
+    transparent 0 27px,
+    var(--color-source-note-rule) 27px 28px
+  );
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    100% 98%,
+    94% 100%,
+    88% 98%,
+    82% 100%,
+    76% 98%,
+    70% 100%,
+    64% 98%,
+    58% 100%,
+    52% 98%,
+    46% 100%,
+    40% 98%,
+    34% 100%,
+    28% 98%,
+    22% 100%,
+    16% 98%,
+    10% 100%,
+    4% 98%,
+    0 100%
+  );
+}

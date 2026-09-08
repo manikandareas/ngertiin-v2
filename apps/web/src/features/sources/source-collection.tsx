@@ -1,4 +1,5 @@
 import type { Source, SourceType } from "@ngertiin/contracts/api";
+import { Plus } from "lucide-react";
 import { ContextMenu, DropdownMenu, Tabs } from "radix-ui";
 import { useDeferredValue, useRef, useState } from "react";
 import { AppShell } from "../../components/app-shell";
@@ -9,9 +10,9 @@ import { SourceActionDialog } from "./source-action-dialog";
 import type { SourceAction } from "./source-actions";
 import { type AddSourceAction, SourceDialog } from "./source-dialog";
 import { SourceFilters } from "./source-filters";
+import { SourceItem } from "./source-item";
 import { SourceMenu } from "./source-menu";
 import { SourcePreview } from "./source-preview";
-import { SourceRow } from "./source-row";
 import { useSaveSource } from "./use-save-source";
 import { useSourceForm } from "./use-source-form";
 
@@ -66,15 +67,17 @@ export function SourceCollection() {
     <AppShell>
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Materi saya</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <h1 className="text-2xl font-bold tracking-tight">Materi saya</h1>
+          <p className="mt-1.5 text-sm text-muted-foreground">
             Simpan bahan belajar untuk dipakai di berbagai modul.
           </p>
         </div>
         <span ref={addButton}>
           <DropdownMenu.Root>
             <DropdownMenu.Trigger asChild>
-              <Button>Tambah materi</Button>
+              <Button size="sm" variant="outline">
+                Tambah materi <Plus size={20} aria-hidden="true" />
+              </Button>
             </DropdownMenu.Trigger>
             <DropdownMenu.Portal>
               <DropdownMenu.Content
@@ -93,56 +96,54 @@ export function SourceCollection() {
       <Tabs.Root
         value={archived}
         onValueChange={(value) => setArchived(value === "true" ? "true" : "false")}
-        className="mt-6"
+        className="mt-7"
       >
-        <Tabs.List aria-label="Koleksi materi" className="flex gap-2 border-b pb-3">
-          <Tabs.Trigger
-            className="rounded-lg px-4 py-2 data-[state=active]:bg-secondary"
-            value="false"
-          >
-            Aktif
-          </Tabs.Trigger>
-          <Tabs.Trigger
-            className="rounded-lg px-4 py-2 data-[state=active]:bg-secondary"
-            value="true"
-          >
-            Arsip
-          </Tabs.Trigger>
-        </Tabs.List>
-        <Tabs.Content value={archived}>
-          <SourceFilters
-            search={search}
-            type={type}
-            onSearchChange={setSearch}
-            onTypeChange={setType}
-          />
+        <SourceFilters
+          search={search}
+          type={type}
+          onSearchChange={setSearch}
+          onTypeChange={setType}
+        />
+        <Tabs.Content value={archived} className="mt-6">
           <ContextMenu.Root>
             <ContextMenu.Trigger asChild>
-              <section aria-label="Daftar materi" className="min-h-64 rounded-card border">
+              <section aria-label="Daftar materi" className="min-h-64">
                 {query.isPending ? (
-                  <p role="status" className="p-6">
-                    Memuat materi…
-                  </p>
+                  <div role="status">
+                    <span className="sr-only">Memuat materi…</span>
+                    <div
+                      aria-hidden="true"
+                      className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,16rem),1fr))] gap-4"
+                    >
+                      {["a", "b", "c", "d"].map((id) => (
+                        <div key={id} className="px-3 pt-4">
+                          <div className="h-100 rounded-xl bg-muted motion-safe:animate-pulse" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 ) : !query.isError && !items.length ? (
-                  <div className="p-8">
+                  <div className="rounded-2xl border border-dashed border-border p-8">
                     <h2 className="font-semibold">{emptyCopy.title}</h2>
                     <p className="mt-2 text-sm text-muted-foreground">{emptyCopy.description}</p>
                   </div>
                 ) : null}
-                {items.map((source) => (
-                  <SourceRow
-                    key={source.id}
-                    source={source}
-                    onPreview={(value, trigger) => {
-                      focus.current = trigger;
-                      setPreview(value);
-                    }}
-                    onAction={(value, trigger) => {
-                      focus.current = trigger;
-                      setAction(value);
-                    }}
-                  />
-                ))}
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,16rem),1fr))] gap-4">
+                  {items.map((source) => (
+                    <SourceItem
+                      key={source.id}
+                      source={source}
+                      onPreview={(value, trigger) => {
+                        focus.current = trigger;
+                        setPreview(value);
+                      }}
+                      onAction={(value, trigger) => {
+                        focus.current = trigger;
+                        setAction(value);
+                      }}
+                    />
+                  ))}
+                </div>
               </section>
             </ContextMenu.Trigger>
             <ContextMenu.Portal>
@@ -171,7 +172,7 @@ export function SourceCollection() {
           ) : null}
           {query.hasNextPage ? (
             <Button
-              className="mt-6"
+              className="mt-8"
               variant="outline"
               disabled={query.isFetching}
               onClick={() => void query.fetchNextPage()}

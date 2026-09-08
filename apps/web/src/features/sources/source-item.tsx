@@ -4,16 +4,26 @@ import { useRef } from "react";
 import { Button } from "../../components/ui/button";
 import { menuContentClassName } from "../../components/ui/menu-styles";
 import { type SourceAction, SourceActionItems } from "./source-actions";
-import { sourceMetadata, sourceTitle } from "./source-presentation";
+import { SourcePaper } from "./source-paper";
+import { sourceTitle, statusLabels } from "./source-presentation";
 import { SourceRetry } from "./source-retry";
 
-type SourceRowProps = {
+const dateFormat = new Intl.DateTimeFormat("id-ID", { dateStyle: "medium" });
+const statusDotClass = {
+  ready: "bg-success",
+  pending: "bg-adaptive-edge",
+  processing: "bg-adaptive-edge",
+  failed: "bg-destructive",
+};
+
+type SourceItemProps = {
   source: Source;
   onPreview: (source: Source, trigger: HTMLElement) => void;
   onAction: (action: SourceAction, trigger: HTMLElement | null) => void;
 };
 
-export function SourceRow({ source, onPreview, onAction }: SourceRowProps) {
+export function SourceItem({ source, onPreview, onAction }: SourceItemProps) {
+  const title = sourceTitle(source);
   const trigger = useRef<HTMLElement | null>(null);
   const openingDialog = useRef(false);
   function openAction(action: SourceAction) {
@@ -28,28 +38,32 @@ export function SourceRow({ source, onPreview, onAction }: SourceRowProps) {
     <ContextMenu.Root>
       <ContextMenu.Trigger asChild>
         <article
-          className="border-b p-4 last:border-0 sm:p-5"
+          className="min-w-0 px-3 pt-4 pb-2"
           onContextMenu={(event) => {
             trigger.current = event.currentTarget.querySelector("button");
           }}
         >
-          <div className="flex items-start gap-3">
-            <button
-              type="button"
-              className="min-w-0 flex-1 rounded-sm text-left focus-visible:outline-2 focus-visible:outline-ring"
-              onClick={(event) => onPreview(source, event.currentTarget)}
+          <SourcePaper source={source} onPreview={onPreview} />
+          <div className="mt-4 flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
+            <span
+              className={`inline-flex items-center gap-1.5 text-[11px] ${source.status === "failed" ? "text-destructive" : ""}`}
             >
-              <span className="block truncate font-semibold">{sourceTitle(source)}</span>
-              <span className="mt-2 block text-xs leading-6 text-muted-foreground">
-                {sourceMetadata(source)}
-              </span>
-            </button>
+              <span
+                aria-hidden="true"
+                className={`size-1.5 shrink-0 rounded-full ${statusDotClass[source.status]}`}
+              />
+              {statusLabels[source.status]}
+            </span>
+            <time className="ml-auto shrink-0 text-[10px]" dateTime={source.createdAt}>
+              {dateFormat.format(new Date(source.createdAt))}
+            </time>
             <DropdownMenu.Root>
               <DropdownMenu.Trigger asChild>
                 <Button
                   variant="ghost"
-                  size="sm"
-                  aria-label={`Tindakan untuk ${sourceTitle(source)}`}
+                  size="icon"
+                  className="size-8 shrink-0 rounded-lg text-muted-foreground"
+                  aria-label={`Tindakan untuk ${title}`}
                   onPointerDown={(event) => {
                     trigger.current = event.currentTarget;
                   }}

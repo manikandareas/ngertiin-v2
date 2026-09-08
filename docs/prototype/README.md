@@ -23,3 +23,8 @@ Direktori ini berisi file eksplorasi dan prototipe antarmuka (HTML standalone) y
 5. **[usage-banner-prototype.html](./usage-banner-prototype.html)**
    - **Fokus:** Eksplorasi visual banner kuota pemakaian (usage quota) pada sidebar.
    - **Fitur:** 5 konsep visual berbeda (space postcard, ticket silhouette, seed packet, cassette reel, delivery parcel) untuk menampilkan batas kuota mingguan.
+
+6. **[source-item-variations.html](./source-item-variations.html)**
+   - **Fokus:** Tiga bentuk item PDF, web, dan teks dalam layout halaman Modules.
+   - **Pilihan:** Varian 2, Scrapbook, dengan ukuran seragam 400 px dan tanpa rotasi, telah diterapkan pada halaman Sources.
+   - **Fitur:** Pergantian variasi, pencarian, filter jenis, arsip, dan pratinjau memakai data contoh. HTML tetap standalone; aplikasi menggunakan metadata asli dari API.
