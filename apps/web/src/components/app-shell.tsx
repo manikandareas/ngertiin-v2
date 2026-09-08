@@ -12,7 +12,7 @@ export function AppShell({
   workspace?: boolean;
 }) {
   return (
-    <div className="flex h-dvh flex-col overflow-hidden xl:flex-row bg-background text-foreground">
+    <div className="fixed inset-0 flex h-dvh flex-col overflow-hidden bg-background text-foreground xl:flex-row">
       {sidebar ?? (isClerkConfigured ? <ConnectedAppSidebar /> : <AppSidebar />)}
       <main className={`min-h-0 min-w-0 flex-1 ${workspace ? "flex flex-col" : "overflow-y-auto"}`}>
         {workspace ? (
