@@ -1,5 +1,8 @@
 import { ContextMenu, DropdownMenu } from "radix-ui";
+import { useState } from "react";
+import { Input } from "../../components/ui/input";
 import { menuItemClassName } from "../../components/ui/menu-styles";
+import { useDebouncedValue } from "../../lib/use-debounced-value";
 import { useSources } from "../sources/api/use-sources";
 import { statusLabels } from "../sources/source-presentation";
 import type { ModuleBuilderState } from "./use-module-builder";
@@ -11,11 +14,28 @@ export function SourceLibrary({
   state: ModuleBuilderState;
   menu: "context" | "dropdown";
 }) {
-  const query = useSources({ limit: 20 });
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search.trim(), 300);
+  const query = useSources({ limit: 5, q: debouncedSearch || undefined });
   const Menu = menu === "context" ? ContextMenu : DropdownMenu;
-  const sources = query.data?.pages.flatMap((page) => page.data) ?? [];
+  const sources = query.data?.pages[0]?.data.slice(0, 5) ?? [];
   return (
     <>
+      <div className="p-2">
+        <Input
+          type="search"
+          aria-label="Cari materi saya"
+          placeholder="Cari materi…"
+          className="h-9 text-sm"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key !== "Escape" && event.key !== "Tab") {
+              event.stopPropagation();
+            }
+          }}
+        />
+      </div>
       {query.isPending ? (
         <Menu.Item disabled className={menuItemClassName}>
           Memuat materi…
@@ -34,7 +54,7 @@ export function SourceLibrary({
       ) : null}
       {!query.isPending && !query.isError && !sources.length ? (
         <Menu.Item disabled className={menuItemClassName}>
-          Belum ada materi tersimpan
+          {debouncedSearch ? "Materi tidak ditemukan" : "Belum ada materi tersimpan"}
         </Menu.Item>
       ) : null}
       {sources.map((source) => {
@@ -57,18 +77,6 @@ export function SourceLibrary({
           </Menu.Item>
         );
       })}
-      {query.hasNextPage ? (
-        <Menu.Item
-          className={menuItemClassName}
-          disabled={query.isFetchingNextPage}
-          onSelect={(event) => {
-            event.preventDefault();
-            void query.fetchNextPage();
-          }}
-        >
-          {query.isFetchingNextPage ? "Memuat…" : "Muat lebih banyak"}
-        </Menu.Item>
-      ) : null}
     </>
   );
 }

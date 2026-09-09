@@ -58,7 +58,7 @@ export function SourceMenu({
               />
             </Menu.SubTrigger>
             <Menu.Portal>
-              <Menu.SubContent className={menuContentClassName} sideOffset={6}>
+              <Menu.SubContent className={`${menuContentClassName} w-60`} sideOffset={6}>
                 {library(menu)}
               </Menu.SubContent>
             </Menu.Portal>
