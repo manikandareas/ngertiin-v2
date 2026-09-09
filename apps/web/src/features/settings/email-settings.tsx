@@ -42,6 +42,7 @@ export function EmailSettings() {
                       setCode("");
                     },
                     success: "Kode verifikasi sudah dikirim.",
+                    tone: "info",
                   })
                 }
               >

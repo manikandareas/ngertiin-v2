@@ -51,14 +51,14 @@ export function SessionSettings({ unsavedChanges = false }: { unsavedChanges?: b
           const activity = item.latestActivity;
           return (
             <div key={item.id} className="space-y-3 rounded-xl border p-4">
-              <p className="text-sm font-semibold">
+              <p className="flex flex-wrap items-center justify-between gap-2 text-sm font-semibold">
                 {activity?.browserName || "Browser"} · {activity?.deviceType || "Perangkat"}
+                {current && <Badge variant="secondary">Perangkat ini</Badge>}
               </p>
               <p className="text-sm text-muted-foreground">
                 {[activity?.city, activity?.country].filter(Boolean).join(", ") ||
                   "Lokasi tidak tersedia"}
               </p>
-              {current && <Badge variant="secondary">Perangkat ini</Badge>}
               <div>
                 <Button
                   type="button"
@@ -67,6 +67,7 @@ export function SessionSettings({ unsavedChanges = false }: { unsavedChanges?: b
                   disabled={action.busy}
                   onClick={() =>
                     action.run({
+                      silent: current,
                       confirmation: current
                         ? `${unsavedChanges ? "Perubahan form belum disimpan dan akan hilang. " : ""}Keluar dari akun? Kamu perlu masuk kembali untuk melanjutkan belajar.`
                         : "Keluar dari perangkat ini? Sesi perangkat tersebut akan dicabut.",

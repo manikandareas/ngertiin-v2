@@ -14,6 +14,7 @@ import { ProfileSettings } from "../features/settings/profile-settings";
 import { SessionSettings } from "../features/settings/session-settings";
 import { SocialSettings } from "../features/settings/social-settings";
 import { UsageSettings } from "../features/settings/usage-settings";
+import { useConnectionFeedback } from "../features/settings/use-connection-feedback";
 
 const tabs = [
   { value: "account", label: "Profil & akun" },
@@ -27,6 +28,7 @@ export default function SettingsPage() {
   const [params, setParams] = useSearchParams();
   const requested = params.get("tab");
   const tab = tabs.find((item) => item.value === requested)?.value ?? "account";
+  useConnectionFeedback();
   const [dirty, setDirty] = useState(false);
   const onDirty = useCallback((value: boolean) => setDirty(value), []);
   const blocker = useBlocker(dirty);
@@ -86,13 +88,6 @@ export default function SettingsPage() {
             </TabsList>
           </div>
           <TabsContent value="account">
-            {params.has("connection") && (
-              <p role="status" className="mt-5 rounded-xl border p-4 text-sm">
-                {params.get("connection") === "connected"
-                  ? "Koneksi akun berhasil diperbarui."
-                  : "Koneksi akun belum selesai atau dibatalkan. Kamu bisa mencoba lagi di bawah."}
-              </p>
-            )}
             {profile.data ? (
               <>
                 <AvatarSettings user={profile.data} />

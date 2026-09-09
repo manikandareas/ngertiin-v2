@@ -4,7 +4,7 @@ import { Button } from "../../components/ui/button";
 import { Field, FieldLabel } from "../../components/ui/field";
 import { Input } from "../../components/ui/input";
 import { SettingsRow } from "./settings-row";
-import { settingsError, useSettingsForm } from "./use-settings-form";
+import { useSettingsForm } from "./use-settings-form";
 
 export function ProfileSettings({
   user,
@@ -16,7 +16,7 @@ export function ProfileSettings({
   const [draft, setDraft] = useState<string | null>(null);
   const name = draft ?? user.displayName ?? "";
   const dirty = name !== (user.displayName ?? "");
-  const save = useSettingsForm(dirty, onDirty);
+  const save = useSettingsForm(dirty, onDirty, "Nama tampilan tersimpan.");
   return (
     <form
       onSubmit={(event) => {
@@ -57,16 +57,6 @@ export function ProfileSettings({
             Batal
           </Button>
         </div>
-        {save.isError && (
-          <p role="alert" className="text-sm text-destructive">
-            {settingsError(save.error)}
-          </p>
-        )}
-        {save.isSuccess && (
-          <p role="status" className="text-sm text-primary">
-            Nama tampilan tersimpan.
-          </p>
-        )}
       </SettingsRow>
     </form>
   );

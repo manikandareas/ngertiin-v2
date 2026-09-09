@@ -375,3 +375,86 @@
     0 100%
   );
 }
+
+/* Fresh Fill. Sonner owns positioning, stacking, gestures, and lifecycle. */
+.ngertiin-toaster [data-sonner-toast] {
+  --toast-fill: var(--muted);
+  --toast-ink: var(--foreground);
+  --toast-edge: var(--border);
+  --toast-accent: var(--toast-ink);
+  --toast-badge: #ffffffb3;
+  --toast-description: var(--toast-ink);
+}
+.ngertiin-toaster [data-type="success"] {
+  --toast-fill: #d7ffb8;
+  --toast-ink: #326b09;
+  --toast-edge: #326b09;
+}
+.ngertiin-toaster [data-type="error"] {
+  --toast-fill: #ffd9d3;
+  --toast-ink: #b42318;
+  --toast-edge: #b42318;
+}
+.ngertiin-toaster [data-type="info"],
+.ngertiin-toaster [data-type="loading"] {
+  --toast-fill: #c8edff;
+  --toast-ink: #005d87;
+  --toast-edge: #005d87;
+}
+.ngertiin-toaster [data-type="warning"] {
+  --toast-fill: #ffe58a;
+  --toast-ink: #705000;
+  --toast-edge: #705000;
+}
+.ngertiin-toaster[data-sonner-theme="dark"] [data-sonner-toast] {
+  --toast-fill: #292929;
+  --toast-ink: #e6e6e6;
+  --toast-description: #bcbcbc;
+  --toast-edge: #464646;
+  --toast-accent: #d2d2d2;
+  --toast-badge: #353535;
+}
+.ngertiin-toaster[data-sonner-theme="dark"] [data-type="success"] {
+  --toast-fill: #252e24;
+  --toast-edge: #43543c;
+  --toast-accent: #b7cbaa;
+  --toast-badge: #33412e;
+}
+.ngertiin-toaster[data-sonner-theme="dark"] [data-type="error"] {
+  --toast-fill: #342725;
+  --toast-edge: #64423d;
+  --toast-accent: #dbb3ac;
+  --toast-badge: #49312d;
+}
+.ngertiin-toaster[data-sonner-theme="dark"] [data-type="info"],
+.ngertiin-toaster[data-sonner-theme="dark"] [data-type="loading"] {
+  --toast-fill: #242d33;
+  --toast-edge: #3b515f;
+  --toast-accent: #acc8d8;
+  --toast-badge: #2e3e49;
+}
+.ngertiin-toaster[data-sonner-theme="dark"] [data-type="warning"] {
+  --toast-fill: #312d23;
+  --toast-edge: #5d5138;
+  --toast-accent: #d3c29c;
+  --toast-badge: #443b29;
+}
+
+/* Unlayered selectors override Sonner's injected theme styles. */
+.ngertiin-toaster [data-sonner-toast] [data-description] {
+  @apply text-(--toast-description);
+}
+.ngertiin-toaster[data-sonner-theme] [data-sonner-toast] [data-close-button] {
+  @apply bg-transparent text-(--toast-description);
+}
+.ngertiin-toaster[data-sonner-theme] [data-sonner-toast] [data-close-button]:hover {
+  @apply bg-(--toast-badge) text-(--toast-accent);
+}
+.ngertiin-toaster [data-sonner-toast]:focus-visible,
+.ngertiin-toaster [data-sonner-toast] button:focus-visible {
+  @apply outline-2 outline-offset-3 outline-(--toast-accent) shadow-none;
+}
+/* Unstyled toasts need the same content hiding as Sonner's default collapsed stack. */
+.ngertiin-toaster [data-sonner-toast][data-expanded="false"][data-front="false"] > * {
+  @apply opacity-0;
+}

@@ -1,5 +1,6 @@
 import { useUser } from "@clerk/react";
 import type { UserResource } from "@clerk/react/types";
+import { toast } from "sonner";
 import { Button } from "../../components/ui/button";
 import { SettingsRow } from "./settings-row";
 import { useAccountAction } from "./use-account-action";
@@ -80,6 +81,7 @@ export function SocialSettings() {
                 disabled={action.busy}
                 onClick={() =>
                   action.run({
+                    silent: true,
                     run: async () => {
                       if (!user) return;
                       const redirectUrl = new URL(
@@ -99,6 +101,7 @@ export function SocialSettings() {
                         await user.reload();
                         if (account.verification?.status !== "verified")
                           throw new Error("Connection incomplete");
+                        toast.success("Koneksi akun berhasil diperbarui.");
                       }
                     },
                   })

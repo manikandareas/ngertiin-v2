@@ -1,17 +1,23 @@
 import { useReverification } from "@clerk/react";
+import { isReverificationCancelledError } from "@clerk/react/errors";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { Button } from "../../components/ui/button";
 import { DialogFrame } from "../../components/ui/dialog-frame";
 import { accountError } from "./account-errors";
 import { ReverificationDialog, type ReverificationRequest } from "./reverification-dialog";
 
-type Action = { run: () => Promise<unknown>; confirmation?: string; success?: string };
+type Action = {
+  run: () => Promise<unknown>;
+  confirmation?: string;
+  success?: string;
+  tone?: "success" | "info";
+  silent?: boolean;
+};
 export function useAccountAction() {
   const [busy, setBusy] = useState(false);
   const lock = useRef(false);
   const mounted = useRef(true);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<Action | null>(null);
   const [verification, setVerification] = useState<ReverificationRequest | null>(null);
   const pendingVerification = useRef<ReverificationRequest | null>(null);
@@ -51,14 +57,16 @@ export function useAccountAction() {
     if (lock.current) return;
     lock.current = true;
     setBusy(true);
-    setError(null);
-    setSuccess(null);
     setConfirmation(null);
     try {
       await verified(action.run);
-      if (mounted.current) setSuccess(action.success ?? "Perubahan akun berhasil.");
+      if (mounted.current && !action.silent)
+        toast[action.tone ?? "success"](action.success ?? "Perubahan akun berhasil.");
     } catch (error) {
-      if (mounted.current) setError(accountError(error));
+      if (mounted.current) {
+        if (isReverificationCancelledError(error)) toast.info(accountError(error));
+        else toast.error(accountError(error));
+      }
     } finally {
       lock.current = false;
       if (mounted.current) setBusy(false);
@@ -67,8 +75,6 @@ export function useAccountAction() {
   function run(action: Action) {
     if (lock.current) return;
     trigger.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    setError(null);
-    setSuccess(null);
     if (action.confirmation) setConfirmation(action);
     else void execute(action);
   }
@@ -77,16 +83,6 @@ export function useAccountAction() {
       {busy && (
         <p role="status" className="text-sm text-muted-foreground">
           Memproses aksi akun…
-        </p>
-      )}
-      {error && (
-        <p role="alert" className="text-sm text-destructive">
-          {error}
-        </p>
-      )}
-      {success && (
-        <p role="status" className="text-sm text-primary">
-          {success}
         </p>
       )}
       <DialogFrame

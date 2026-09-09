@@ -5,6 +5,7 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { App } from "./app";
 import { ClerkRoot } from "./components/clerk-root";
 import { ThemeProvider } from "./components/theme-provider";
+import { Toaster } from "./components/ui/sonner";
 import "./index.css";
 
 function getRootElement(): HTMLElement {
@@ -33,6 +34,7 @@ createRoot(rootElement).render(
   <StrictMode>
     <ThemeProvider defaultTheme="system" storageKey="ngertiin-theme">
       <RouterProvider router={router} />
+      <Toaster />
     </ThemeProvider>
   </StrictMode>,
 );

@@ -11,7 +11,7 @@ import { Input } from "../../components/ui/input";
 import { BuilderGenerationSettings } from "../module-builder/builder-generation-settings";
 import { BuilderLanguage } from "../module-builder/builder-language";
 import { SettingsRow } from "./settings-row";
-import { settingsError, useSettingsForm } from "./use-settings-form";
+import { useSettingsForm } from "./use-settings-form";
 
 const zones = Array.from(
   new Set([
@@ -41,7 +41,7 @@ export function LearningSettings({
   const dirty =
     timezone !== user.timezone ||
     JSON.stringify(generationSettings) !== JSON.stringify(user.defaultGenerationSettings);
-  const save = useSettingsForm(dirty, onDirty);
+  const save = useSettingsForm(dirty, onDirty, "Preferensi belajar tersimpan.");
   const valid = ianaTimezoneSchema.safeParse(timezone).success;
   const canSave =
     dirty &&
@@ -143,16 +143,6 @@ export function LearningSettings({
           Batal
         </Button>
       </div>
-      {save.isError && (
-        <p role="alert" className="text-sm text-destructive">
-          {settingsError(save.error)}
-        </p>
-      )}
-      {save.isSuccess && (
-        <p role="status" className="text-sm text-primary">
-          Preferensi belajar tersimpan.
-        </p>
-      )}
     </form>
   );
 }

@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import { useTheme } from "../../components/theme-provider";
 import { RadioGroup, RadioGroupItem } from "../../components/ui/radio-group";
 import { SettingsRow } from "./settings-row";
@@ -21,7 +22,10 @@ export function AppearanceSettings() {
       <RadioGroup
         value={theme}
         onValueChange={(value) => {
-          if (value === "light" || value === "dark" || value === "system") setTheme(value);
+          if (value !== theme && (value === "light" || value === "dark" || value === "system")) {
+            setTheme(value);
+            toast.info("Tema tampilan diperbarui.", { id: "settings-theme" });
+          }
         }}
         aria-label="Tema aplikasi"
         className="grid-cols-3 gap-2 sm:gap-4"

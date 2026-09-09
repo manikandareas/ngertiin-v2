@@ -2,6 +2,7 @@ import { useAuth } from "@clerk/react";
 import type { CurrentUser } from "@ngertiin/contracts/api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { Button } from "../../components/ui/button";
 import { DialogFrame } from "../../components/ui/dialog-frame";
 import { Input } from "../../components/ui/input";
@@ -19,7 +20,6 @@ export function AvatarSettings({ user }: { user: CurrentUser }) {
   const resetButton = useRef<HTMLButtonElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [confirm, setConfirm] = useState(false);
   useEffect(() => {
     if (!file) {
@@ -32,7 +32,12 @@ export function AvatarSettings({ user }: { user: CurrentUser }) {
   }, [file]);
   const upload = useMutation({
     mutationFn: (next: File | null) => updateAvatar(getToken, next),
+    onError: (error) => {
+      setConfirm(false);
+      toast.error(settingsError(error));
+    },
     onSuccess: (updated) => {
+      toast.success("Foto profil diperbarui.");
       client.setQueryData(currentUserQueryKey(userId), updated);
       void client.invalidateQueries({ queryKey: leaderboardQueryKey(userId) });
       setFile(null);
@@ -64,7 +69,6 @@ export function AvatarSettings({ user }: { user: CurrentUser }) {
             onChange={(event) => {
               const next = event.target.files?.[0];
               upload.reset();
-              setError(null);
               setFile(null);
               if (!next) return;
               if (
@@ -72,7 +76,9 @@ export function AvatarSettings({ user }: { user: CurrentUser }) {
                 next.size > 5 * 1024 * 1024 ||
                 !next.size
               ) {
-                setError("Pilih JPG, PNG, atau WebP maksimal 5 MB.");
+                toast.warning("Foto belum bisa digunakan", {
+                  description: "Pilih JPG, PNG, atau WebP maksimal 5 MB.",
+                });
                 event.target.value = "";
                 return;
               }
@@ -113,16 +119,6 @@ export function AvatarSettings({ user }: { user: CurrentUser }) {
           </button>
         </Button>
       )}
-      {(error || upload.isError) && (
-        <p role="alert" className="text-sm text-destructive">
-          {error ?? settingsError(upload.error)}
-        </p>
-      )}
-      {upload.isSuccess && (
-        <p role="status" className="text-sm text-primary">
-          Foto profil diperbarui.
-        </p>
-      )}
       <DialogFrame
         open={confirm}
         title="Gunakan avatar otomatis?"
@@ -144,11 +140,6 @@ export function AvatarSettings({ user }: { user: CurrentUser }) {
             Batal
           </Button>
         </div>
-        {upload.isError && (
-          <p role="alert" className="mt-3 text-sm text-destructive">
-            {settingsError(upload.error)}
-          </p>
-        )}
       </DialogFrame>
     </SettingsRow>
   );
