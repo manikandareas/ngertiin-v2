@@ -1,4 +1,4 @@
-import { UserButton, useUser } from "@clerk/react";
+import { UserButton } from "@clerk/react";
 import {
   AddCircleHalfDotIcon,
   BookOpen01Icon,
@@ -14,6 +14,7 @@ import { Menu, X } from "lucide-react";
 import { Dialog } from "radix-ui";
 import { type ReactNode, useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { useCurrentUser } from "../features/current-user/api/use-current-user";
 import { UsageBanner } from "../features/usage/usage-banner";
 import { useUsageSync } from "../features/usage/use-usage-sync";
 import { ThemeToggle } from "./theme-toggle";
@@ -30,10 +31,10 @@ const navItemClass = `flex min-h-11 min-w-0 items-center gap-3 rounded-lg px-3 t
 
 export function ConnectedAppSidebar() {
   useUsageSync();
-  const { user } = useUser();
+  const user = useCurrentUser();
   return (
     <AppSidebar
-      name={user?.fullName || user?.firstName || "Akun belajar"}
+      name={user.data?.displayName || "Akun belajar"}
       account={<UserButton />}
       usageBanner={<UsageBanner />}
     />

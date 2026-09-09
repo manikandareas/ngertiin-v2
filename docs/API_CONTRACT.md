@@ -198,6 +198,7 @@ The examples below define public shapes, not database row shapes.
 type CurrentUser = {
   id: string;
   displayName: string | null;
+  avatarUrl: string;
   timezone: string;
   stats: {
     totalXp: number;
@@ -1519,7 +1520,7 @@ Deploy migration `0011_lyrical_moondragon.sql` before the API and web bundles. S
 ## Global leaderboard
 
 `GET /api/v1/leaderboard` requires authentication. Returns the standard `{ data }`
-envelope. Participant identities contain only local `userId` and `displayName`;
+envelope. Participant identities contain local `userId`, `displayName`, and `avatarUrl`;
 blank names become `Pelajar`. No email or Clerk identity is returned.
 
 ```json
@@ -1529,7 +1530,7 @@ blank names become `Pelajar`. No email or Clerk identity is returned.
     "inactivityDays": 7,
     "nextExpiresAt": "2026-09-16T00:00:00.000Z",
     "participants": [
-      { "userId": "00000000-0000-4000-8000-000000000001", "displayName": "Pelajar", "score": 500, "rank": 1 }
+      { "userId": "00000000-0000-4000-8000-000000000001", "displayName": "Pelajar", "avatarUrl": "https://api.dicebear.com/10.x/adventurer-neutral/svg?seed=00000000-0000-4000-8000-000000000001&backgroundColor=ff2e88,00e5ff,ffe600,7cff00,ff6a00,b400ff", "score": 500, "rank": 1 }
     ],
     "self": {
       "userId": "00000000-0000-4000-8000-000000000001",
@@ -1554,3 +1555,19 @@ caller has score 0 and rank null. `self.expiresAt` retains a past expiry to dist
 a reset score from a new user (null). `nextExpiresAt` is the earliest active expiry
 across all participants, including those outside the top 50, or null. Clients use
 it with `serverTime` to schedule refreshes. All values use one database snapshot.
+
+
+### Profile initialization
+
+Local provisioning assigns a DiceBear Adventurer Neutral avatar URL using the local user UUID
+as the seed and background colors `ff2e88,00e5ff,ffe600,7cff00,ff6a00,b400ff`.
+`avatarUrl` is read-only. Username is not stored. Clerk first and last names are trimmed and
+joined once to initialize an empty display name. Existing nonempty names are preserved.
+A successful read with no name still completes initialization; later local profile edits,
+including clearing the name, are not overwritten. Clerk reads happen outside transactions,
+with a three-second wait limit and a persisted five-minute retry lease. Authentication remains
+available when the profile provider fails. Initialization does not continuously sync Clerk edits.
+
+Migration 0015 fills avatars for all existing users. Pending users initialize their names on
+their next API request, with failed reads eligible for retry after five minutes. Clerk account
+controls in the sidebar retain their existing avatar independently.

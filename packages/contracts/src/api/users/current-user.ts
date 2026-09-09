@@ -24,6 +24,7 @@ export const userStatsSchema = z.object({
 export const currentUserSchema = z.object({
   id: uuidSchema,
   displayName: z.string().nullable(),
+  avatarUrl: z.url(),
   timezone: ianaTimezoneSchema,
   stats: userStatsSchema,
 });

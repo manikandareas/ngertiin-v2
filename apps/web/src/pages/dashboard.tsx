@@ -1,13 +1,13 @@
-import { useUser } from "@clerk/react";
 import { AppShell } from "../components/app-shell";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
+import { useCurrentUser } from "../features/current-user/api/use-current-user";
 import { useDashboard } from "../features/dashboard/api/use-dashboard";
 import { DashboardContent } from "../features/dashboard/components/dashboard-content";
 
 export default function DashboardPage() {
   const dashboard = useDashboard();
-  const { user } = useUser();
+  const user = useCurrentUser();
   const fallback = dashboard.isPending ? (
     <div
       role="status"
@@ -33,7 +33,7 @@ export default function DashboardPage() {
     <AppShell workspace>
       <DashboardContent
         data={dashboard.data}
-        name={user?.firstName ?? undefined}
+        name={user.data?.displayName ?? undefined}
         fallback={fallback}
       />
     </AppShell>

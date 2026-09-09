@@ -3,6 +3,7 @@ import type { CurrentUser } from "@ngertiin/contracts/api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Button } from "../../../components/ui/button";
+import { UserAvatar } from "../../../components/user-avatar";
 import { ApiProblemError, patchCurrentUser } from "../../../lib/api";
 import { currentUserQueryKey } from "../api/use-current-user";
 
@@ -45,6 +46,11 @@ export function ProfileForm({ user }: { user: CurrentUser }) {
         mutation.mutate();
       }}
     >
+      <UserAvatar
+        avatarUrl={user.avatarUrl}
+        name={user.displayName}
+        className="size-20 rounded-2xl"
+      />
       <div>
         <label className="text-sm font-semibold" htmlFor="displayName">
           Nama tampilan

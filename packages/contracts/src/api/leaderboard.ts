@@ -4,6 +4,7 @@ import { successEnvelopeSchema } from "./common/identifiers.js";
 export const leaderboardParticipantSchema = z.object({
   userId: z.uuid(),
   displayName: z.string().min(1),
+  avatarUrl: z.url(),
   score: z.number().int().positive(),
   rank: z.number().int().positive(),
 });

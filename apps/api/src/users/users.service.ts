@@ -16,6 +16,7 @@ export class UsersService {
       .select({
         id: users.id,
         displayName: users.display_name,
+        avatarUrl: users.avatar_url,
         timezone: users.timezone,
         totalXp: user_stats.total_xp,
         currentStreak: user_stats.current_streak,
@@ -39,6 +40,7 @@ export class UsersService {
     return {
       id: row.id,
       displayName: row.displayName,
+      avatarUrl: row.avatarUrl,
       timezone: row.timezone,
       stats: {
         totalXp: row.totalXp,
@@ -54,10 +56,12 @@ export class UsersService {
       display_name?: string | null;
       timezone?: string;
       updated_at: Date;
+      profile_initialized_at?: Date;
     } = { updated_at: new Date() };
 
     if (Object.hasOwn(input, "displayName")) {
       values.display_name = input.displayName ?? null;
+      values.profile_initialized_at = new Date();
     }
     if (Object.hasOwn(input, "timezone") && input.timezone !== undefined) {
       values.timezone = input.timezone;

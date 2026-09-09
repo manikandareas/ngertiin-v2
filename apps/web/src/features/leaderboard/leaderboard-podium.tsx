@@ -1,6 +1,7 @@
 import type { Leaderboard } from "@ngertiin/contracts/api";
 import { Crown } from "lucide-react";
 import { Badge } from "../../components/ui/badge";
+import { UserAvatar } from "../../components/user-avatar";
 import { cn } from "../../lib/utils";
 import { LeaderboardBookStack } from "./leaderboard-book-stack";
 
@@ -46,16 +47,22 @@ export function LeaderboardPodium({ participants, currentUserId }: LeaderboardPo
             <div
               aria-hidden="true"
               className={cn(
-                "mx-auto mb-3 grid size-14 place-items-center rounded-card border-4 border-background font-display text-xl font-black sm:size-16",
+                "mx-auto mb-3 overflow-hidden grid size-14 place-items-center rounded-card border-4 border-background font-display text-xl font-black sm:size-16",
                 person?.rank === 1
                   ? "size-16 -rotate-6 bg-adaptive text-adaptive-ink sm:size-20 sm:text-2xl"
                   : "rotate-6 bg-primary text-night-ink",
                 !person && "border-dashed bg-muted text-muted-foreground",
               )}
             >
-              {person
-                ? Array.from(person.displayName.trim())[0]?.toLocaleUpperCase("id-ID") || "?"
-                : "?"}
+              {person ? (
+                <UserAvatar
+                  avatarUrl={person.avatarUrl}
+                  name={person.displayName}
+                  className="size-full"
+                />
+              ) : (
+                "?"
+              )}
             </div>
             <p className="sr-only">{person ? `Peringkat ${person.rank}` : "Podium belum terisi"}</p>
             <p className="min-h-10 break-words text-xs font-bold sm:text-sm">

@@ -15,7 +15,7 @@ export class LeaderboardService {
       with instant as materialized (select statement_timestamp() as now),
       ranked as materialized (
         select s.user_id, coalesce(nullif(btrim(u.display_name), ''), 'Pelajar') as name,
-          s.leaderboard_xp as score, s.leaderboard_expires_at as expires_at,
+          u.avatar_url, s.leaderboard_xp as score, s.leaderboard_expires_at as expires_at,
           rank() over (order by s.leaderboard_xp desc)::integer as rank
         from user_stats s join users u on u.id = s.user_id cross join instant
         where s.leaderboard_xp > 0 and s.leaderboard_expires_at > instant.now
@@ -25,7 +25,7 @@ export class LeaderboardService {
         'inactivityDays', 7,
         'nextExpiresAt', (select min(expires_at) from ranked),
         'participants', coalesce((select jsonb_agg(jsonb_build_object(
-          'userId', user_id, 'displayName', name, 'score', score, 'rank', rank
+          'userId', user_id, 'displayName', name, 'avatarUrl', avatar_url, 'score', score, 'rank', rank
         ) order by score desc, user_id) from top), '[]'::jsonb),
         'self', jsonb_build_object('userId', ${userId}::uuid,
           'score', coalesce((select score from ranked where user_id = ${userId}::uuid), 0),

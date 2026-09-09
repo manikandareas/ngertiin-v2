@@ -3,6 +3,7 @@ import { ArrowUpRight } from "lucide-react";
 import { useRef } from "react";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
+import { UserAvatar } from "../../components/user-avatar";
 import { cn } from "../../lib/utils";
 
 const numberFormat = new Intl.NumberFormat("id-ID");
@@ -79,7 +80,11 @@ export function LeaderboardRanking({ participants, currentUserId }: LeaderboardR
                       aria-hidden="true"
                       className="hidden size-9 shrink-0 items-center justify-center rounded-xl bg-muted font-display font-extrabold text-muted-foreground sm:inline-flex"
                     >
-                      {Array.from(person.displayName.trim())[0]?.toLocaleUpperCase("id-ID") || "?"}
+                      <UserAvatar
+                        avatarUrl={person.avatarUrl}
+                        name={person.displayName}
+                        className="size-full rounded-xl"
+                      />
                     </span>
                     <span className="min-w-0 break-words">
                       {person.displayName}

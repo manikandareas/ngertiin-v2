@@ -1,12 +1,10 @@
 import { verifyToken } from "@clerk/backend";
 import { type CanActivate, type ExecutionContext, Inject, Injectable } from "@nestjs/common";
 import type { ApiEnvironment } from "@ngertiin/contracts/environment";
-import { user_stats, users } from "@ngertiin/database";
-import { eq } from "drizzle-orm";
 import { API_ENV } from "../config.js";
 import { ProductError } from "../http/product-error.js";
 import { type ProductRequest, setLocalUserId } from "../http/request-context.js";
-import { InfrastructureService } from "../infrastructure/infrastructure.service.js";
+import { AuthService } from "./auth.service.js";
 
 function bearerToken(request: ProductRequest): string {
   const authorization = request.headers.authorization;
@@ -44,7 +42,7 @@ function bearerToken(request: ProductRequest): string {
 export class ClerkAuthGuard implements CanActivate {
   constructor(
     @Inject(API_ENV) private readonly environment: ApiEnvironment,
-    @Inject(InfrastructureService) private readonly infrastructure: InfrastructureService,
+    @Inject(AuthService) private readonly auth: AuthService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -67,27 +65,7 @@ export class ClerkAuthGuard implements CanActivate {
       );
     }
 
-    const localUserId = await this.infrastructure.database.db.transaction(async (transaction) => {
-      await transaction
-        .insert(users)
-        .values({ clerk_user_id: clerkUserId })
-        .onConflictDoNothing({ target: users.clerk_user_id });
-
-      const [user] = await transaction
-        .select({ id: users.id })
-        .from(users)
-        .where(eq(users.clerk_user_id, clerkUserId))
-        .limit(1);
-      if (!user) {
-        throw new Error("Local user provisioning did not return a user");
-      }
-
-      await transaction
-        .insert(user_stats)
-        .values({ user_id: user.id })
-        .onConflictDoNothing({ target: user_stats.user_id });
-      return user.id;
-    });
+    const localUserId = await this.auth.ensureUser(clerkUserId);
 
     setLocalUserId(request, localUserId);
     return true;
