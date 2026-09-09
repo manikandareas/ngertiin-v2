@@ -1,6 +1,9 @@
-import { useEffect, useId, useState } from "react";
+import { Monitor } from "lucide-react";
+import { useId } from "react";
+import { cn } from "../lib/utils";
+import { useTheme } from "./theme-provider";
+import { DropdownMenuItem } from "./ui/dropdown-menu";
 
-type Theme = "system" | "light" | "dark";
 const rays = [
   "M12 1.4v2.4",
   "m20.3 3.7-2.5 2.5",
@@ -12,62 +15,43 @@ const rays = [
   "m3.7 3.7 2.5 2.5",
 ];
 
-export function ThemeToggle() {
+const modes = {
+  system: { label: "Sistem", next: "light" },
+  light: { label: "Terang", next: "dark" },
+  dark: { label: "Gelap", next: "system" },
+} as const;
+
+export function ThemeToggle({ variant = "button" }: { variant?: "button" | "menu" }) {
   const clipId = `theme-classic-${useId()}`;
-  const [theme, setTheme] = useState<Theme>(() => {
-    try {
-      const stored = localStorage.getItem("ngertiin-theme");
-      return stored === "light" || stored === "dark" ? stored : "system";
-    } catch {
-      return "system";
-    }
-  });
-  const [systemDark, setSystemDark] = useState(
-    () => matchMedia("(prefers-color-scheme: dark)").matches,
-  );
-  const dark = theme === "system" ? systemDark : theme === "dark";
-
-  useEffect(() => {
-    const syncTheme = (event: Event) => {
-      setTheme((event as CustomEvent<Theme>).detail);
-    };
-    window.addEventListener("ngertiin-theme-change", syncTheme);
-    return () => window.removeEventListener("ngertiin-theme-change", syncTheme);
-  }, []);
-
-  useEffect(() => {
-    const system = matchMedia("(prefers-color-scheme: dark)");
-    const update = () => setSystemDark(system.matches);
-    update();
-    system.addEventListener("change", update);
-    return () => system.removeEventListener("change", update);
-  }, []);
-
-  useEffect(() => {
-    document.documentElement.dataset.theme = dark ? "dark" : "light";
-    try {
-      localStorage.setItem("ngertiin-theme", theme);
-    } catch {
-      /* Theme remains usable without storage. */
-    }
-  }, [theme, dark]);
-
-  const label = dark ? "Gunakan tema terang" : "Gunakan tema gelap";
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      title={label}
-      onClick={() => {
-        const nextTheme = dark ? "light" : "dark";
-        setTheme(nextTheme);
-        window.dispatchEvent(
-          new CustomEvent<Theme>("ngertiin-theme-change", { detail: nextTheme }),
-        );
-      }}
-      className="grid size-11 shrink-0 place-items-center rounded-full text-foreground hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+  const { theme, setTheme } = useTheme();
+  const mode = modes[theme];
+  const label = `Tema ${mode.label.toLowerCase()}. Gunakan tema ${modes[mode.next].label.toLowerCase()}`;
+  const toggle = () => setTheme(mode.next);
+  const icon = (
+    <span
+      aria-hidden="true"
+      className={cn(
+        "relative grid shrink-0 place-items-center",
+        variant === "menu" ? "size-5" : "size-6",
+      )}
     >
-      <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
+      <Monitor
+        strokeWidth={1.5}
+        className={cn(
+          "absolute size-full transition-[transform,opacity] duration-400 ease-out motion-reduce:transition-none",
+          theme === "system" ? "scale-100 rotate-0 opacity-100" : "scale-75 -rotate-12 opacity-0",
+        )}
+      />
+      <svg
+        aria-hidden="true"
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        className={cn(
+          "absolute size-full transition-[transform,opacity] duration-400 ease-out motion-reduce:transition-none",
+          theme === "system" ? "scale-75 rotate-12 opacity-0" : "scale-100 rotate-0 opacity-100",
+        )}
+      >
         <defs>
           <clipPath id={clipId}>
             <path
@@ -99,6 +83,33 @@ export function ThemeToggle() {
           ))}
         </g>
       </svg>
+    </span>
+  );
+  if (variant === "menu") {
+    return (
+      <DropdownMenuItem
+        aria-label={label}
+        title={label}
+        onSelect={(event) => {
+          event.preventDefault();
+          toggle();
+        }}
+      >
+        {icon}
+        Tema
+        <span className="ml-auto text-xs text-muted-foreground">{mode.label}</span>
+      </DropdownMenuItem>
+    );
+  }
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      onClick={toggle}
+      className="grid size-11 shrink-0 place-items-center rounded-full text-foreground hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+    >
+      {icon}
     </button>
   );
 }

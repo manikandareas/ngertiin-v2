@@ -1,4 +1,4 @@
-import { UserButton } from "@clerk/react";
+import { useClerk, useUser } from "@clerk/react";
 import {
   AddCircleHalfDotIcon,
   BookOpen01Icon,
@@ -7,7 +7,6 @@ import {
   LibraryIcon,
   SidebarLeftIcon,
   SidebarRightIcon,
-  UserCircleIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Menu, X } from "lucide-react";
@@ -17,7 +16,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useCurrentUser } from "../features/current-user/api/use-current-user";
 import { UsageBanner } from "../features/usage/usage-banner";
 import { useUsageSync } from "../features/usage/use-usage-sync";
-import { ThemeToggle } from "./theme-toggle";
+import { NavUser, type NavUserProps } from "./nav-user";
 
 const navigation = [
   { to: "/dashboard", label: "Beranda", icon: Home01Icon },
@@ -32,22 +31,26 @@ const navItemClass = `flex min-h-11 min-w-0 items-center gap-3 rounded-lg px-3 t
 export function ConnectedAppSidebar() {
   useUsageSync();
   const user = useCurrentUser();
+  const { user: clerkUser } = useUser();
+  const { signOut } = useClerk();
   return (
     <AppSidebar
-      name={user.data?.displayName || "Akun belajar"}
-      account={<UserButton />}
+      user={{
+        name: user.data?.displayName || clerkUser?.fullName || "Akun belajar",
+        email: clerkUser?.primaryEmailAddress?.emailAddress,
+        avatarUrl: user.data?.avatarUrl || clerkUser?.imageUrl,
+        onLogout: () => signOut({ redirectUrl: "/sign-in" }),
+      }}
       usageBanner={<UsageBanner />}
     />
   );
 }
 
 export function AppSidebar({
-  name = "Akun belajar",
-  account,
+  user = { name: "Akun belajar" },
   usageBanner,
 }: {
-  name?: string;
-  account?: ReactNode;
+  user?: Omit<NavUserProps, "collapsed" | "side">;
   usageBanner?: ReactNode;
 }) {
   const [collapsed, setCollapsed] = useState(true);
@@ -70,7 +73,6 @@ export function AppSidebar({
         !location.pathname.startsWith("/modules/new")
       : location.pathname === to || location.pathname.startsWith(`${to}/`),
   )?.to;
-  const labelClass = collapsed ? "sr-only" : "";
   return (
     <>
       <aside
@@ -140,37 +142,8 @@ export function AppSidebar({
         </nav>
         <div className="mt-auto">
           {!collapsed && usageBanner ? <div className="px-3 pb-4 pt-8">{usageBanner}</div> : null}
-          <div
-            className={`flex items-center border-t py-2 ${collapsed ? "mx-2 flex-col gap-1" : "mx-4 justify-between gap-2"}`}
-          >
-            <div
-              className={`flex min-w-0 items-center gap-2 ${collapsed ? "justify-center" : "flex-1"}`}
-            >
-              <div className="shrink-0">
-                {account ?? (
-                  <Link
-                    to="/profile"
-                    aria-label="Profil"
-                    className={`grid size-8 place-items-center rounded-full bg-secondary text-secondary-foreground ${focus}`}
-                  >
-                    <HugeiconsIcon
-                      icon={UserCircleIcon}
-                      size={24}
-                      strokeWidth={1.5}
-                      aria-hidden="true"
-                    />
-                  </Link>
-                )}
-              </div>
-              <Link
-                to="/profile"
-                title={name}
-                className={`min-w-0 truncate rounded-sm text-sm ${focus} ${labelClass}`}
-              >
-                {name}
-              </Link>
-            </div>
-            <ThemeToggle />
+          <div className="border-t p-2">
+            <NavUser {...user} collapsed={collapsed} />
           </div>
         </div>
       </aside>
@@ -255,16 +228,8 @@ export function AppSidebar({
               </nav>
               <div className="mt-auto">
                 {usageBanner ? <div className="pb-4 pt-8">{usageBanner}</div> : null}
-                <div className="flex items-center gap-2 border-t pt-3">
-                  {account}
-                  <Link
-                    to="/profile"
-                    onClick={() => setMenuOpen(false)}
-                    className={`min-w-0 flex-1 truncate rounded-sm text-sm ${focus}`}
-                  >
-                    {name}
-                  </Link>
-                  <ThemeToggle />
+                <div className="border-t pt-3">
+                  <NavUser {...user} side="top" />
                 </div>
               </div>
             </Dialog.Content>

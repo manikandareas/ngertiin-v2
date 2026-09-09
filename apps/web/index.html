@@ -2,6 +2,20 @@
 <html lang="id">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      (() => {
+        let theme = "system";
+        try {
+          const stored = localStorage.getItem("ngertiin-theme");
+          if (stored === "light" || stored === "dark") theme = stored;
+        } catch {
+          // Use the system preference when storage is unavailable.
+        }
+        const systemTheme = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        const resolved = theme === "system" ? systemTheme : theme;
+        document.documentElement.classList.add(resolved);
+      })();
+    </script>
     <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png" />
     <link rel="icon" type="image/svg+xml" sizes="any" href="/favicon.svg" />
     <link rel="shortcut icon" href="/favicon.ico" />

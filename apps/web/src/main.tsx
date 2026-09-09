@@ -5,6 +5,7 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { App } from "./app";
 import { ClerkRoot } from "./components/clerk-root";
+import { ThemeProvider } from "./components/theme-provider";
 import "./index.css";
 
 const queryClient = new QueryClient();
@@ -20,14 +21,16 @@ const rootElement = getRootElement();
 
 createRoot(rootElement).render(
   <StrictMode>
-    <BrowserRouter>
-      <ClerkRoot>
-        <QueryClientProvider client={queryClient}>
-          <NuqsAdapter>
-            <App />
-          </NuqsAdapter>
-        </QueryClientProvider>
-      </ClerkRoot>
-    </BrowserRouter>
+    <ThemeProvider defaultTheme="system" storageKey="ngertiin-theme">
+      <BrowserRouter>
+        <ClerkRoot>
+          <QueryClientProvider client={queryClient}>
+            <NuqsAdapter>
+              <App />
+            </NuqsAdapter>
+          </QueryClientProvider>
+        </ClerkRoot>
+      </BrowserRouter>
+    </ThemeProvider>
   </StrictMode>,
 );

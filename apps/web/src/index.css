@@ -8,7 +8,7 @@
 @source "../node_modules/streamdown/dist/*.js";
 @source "../node_modules/@streamdown/code/dist/*.js";
 
-@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+@custom-variant dark (&:where(.dark, .dark *));
 
 :root {
   color-scheme: light;
@@ -155,7 +155,7 @@
   }
 }
 
-:root[data-theme="dark"] {
+:root.dark {
   color-scheme: dark;
   --background: #141414;
   --foreground: #f2f2f2;
@@ -181,7 +181,7 @@
   --success-foreground: #a5ed6e;
 }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]):not([data-theme="dark"]) {
+  :root:not(.light):not(.dark) {
     color-scheme: dark;
     --background: #141414;
     --foreground: #f2f2f2;
