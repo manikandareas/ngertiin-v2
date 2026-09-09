@@ -1,5 +1,19 @@
 import { z } from "zod";
 
+export const ADAPTIVE_MAX_ATTEMPTS = 3;
+export const ADAPTIVE_MAX_RETRIES = 2;
+export const ADAPTIVE_RETRY_DELAY_MS = 5_000;
+
+export const adaptiveRunMetadataSchema = z.object({
+  attemptNumber: z.number().int().nonnegative().default(0),
+  retryCount: z.number().int().min(0).max(ADAPTIVE_MAX_RETRIES).default(0),
+  nextRetryAt: z.string().datetime().nullable().default(null),
+});
+
+export function readAdaptiveRunMetadata(value: unknown) {
+  return adaptiveRunMetadataSchema.parse(value ?? {});
+}
+
 export const ADAPTIVE_GENERATION_STEPS = [
   {
     name: "analyze_weak_concepts",

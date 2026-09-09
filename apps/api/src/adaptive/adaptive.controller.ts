@@ -11,21 +11,21 @@ import {
   UseGuards,
 } from "@nestjs/common";
 import {
+  type AdaptiveDecisionBody,
+  type AdaptiveInterventionParams,
   adaptiveDecisionBodySchema,
   adaptiveGenerationEventSchema,
   adaptiveInterventionParamsSchema,
-  decideAdaptiveInterventionResponseSchema,
-  getAdaptiveInterventionResponseSchema,
-  type AdaptiveDecisionBody,
-  type AdaptiveInterventionParams,
   type DecideAdaptiveInterventionResponse,
+  decideAdaptiveInterventionResponseSchema,
   type GetAdaptiveInterventionResponse,
+  getAdaptiveInterventionResponseSchema,
 } from "@ngertiin/contracts/api";
 import { ClerkAuthGuard } from "../auth/clerk-auth.guard.js";
 import {
-  streamGeneration,
   type StreamRequest,
   type StreamResponse,
+  streamGeneration,
 } from "../http/generation-sse.js";
 import { IdempotencyKeyPipe } from "../http/idempotency-key.pipe.js";
 import { getLocalUserId, type ProductRequest } from "../http/request-context.js";
@@ -57,6 +57,23 @@ export class AdaptiveController {
     );
     response.status(result.status);
     return decideAdaptiveInterventionResponseSchema.parse(result.body);
+  }
+
+  @Post(":interventionId/retry")
+  async retry(
+    @Req() request: ProductRequest,
+    @Headers("idempotency-key") keyHeader: unknown,
+    @Param(new ZodValidationPipe(adaptiveInterventionParamsSchema))
+    params: AdaptiveInterventionParams,
+    @Res({ passthrough: true }) response: PassthroughResponse,
+  ): Promise<GetAdaptiveInterventionResponse> {
+    const result = await this.adaptive.retry(
+      getLocalUserId(request),
+      params.interventionId,
+      idempotencyKeyPipe.transform(keyHeader),
+    );
+    response.status(result.status);
+    return getAdaptiveInterventionResponseSchema.parse(result.body);
   }
 
   @Get(":interventionId/generation/events")

@@ -5,11 +5,18 @@ import {
   type OnApplicationBootstrap,
   type OnApplicationShutdown,
 } from "@nestjs/common";
-import { type GenerationSettings, parseStoredGenerationSettings } from "@ngertiin/contracts/api";
+import {
+  type GenerationSettings,
+  type GenerationStatus,
+  parseStoredGenerationSettings,
+} from "@ngertiin/contracts/api";
 import {
   ADAPTIVE_GENERATION_STEPS,
+  ADAPTIVE_MAX_ATTEMPTS,
+  ADAPTIVE_RETRY_DELAY_MS,
   type AdaptiveGenerationJob,
   type AdaptiveGenerationStep,
+  readAdaptiveRunMetadata,
 } from "@ngertiin/contracts/jobs";
 import {
   activities,
@@ -28,6 +35,11 @@ import { and, asc, eq, gt, inArray, sql } from "drizzle-orm";
 import { InfrastructureService } from "../infrastructure/infrastructure.service.js";
 import type { NodeActivities } from "../modules/modules.schemas.js";
 import type { AdaptivePlan } from "./adaptive.schemas.js";
+import {
+  adaptiveErrorDetails,
+  parseAdaptiveActivities,
+  validateAdaptivePlan,
+} from "./adaptive-content.js";
 
 const POLL_MS = 2_000;
 const SAFE_FAILURE = {
@@ -37,6 +49,7 @@ const SAFE_FAILURE = {
 };
 
 export type AdaptiveContext = {
+  attemptNumber: number;
   generationSettings: GenerationSettings | null;
   userId: string;
   triggerNodeId: string;
@@ -83,7 +96,7 @@ export class AdaptiveService implements OnApplicationBootstrap, OnApplicationShu
     }
   }
 
-  async start(payload: AdaptiveGenerationJob): Promise<AdaptiveContext | null> {
+  async start(payload: AdaptiveGenerationJob, jobId?: string): Promise<AdaptiveContext | null> {
     return this.infrastructure.database.db.transaction(async (transaction) => {
       const [run] = await transaction
         .select({
@@ -93,6 +106,8 @@ export class AdaptiveService implements OnApplicationBootstrap, OnApplicationShu
           interventionId: generation_runs.adaptive_intervention_id,
           type: generation_runs.type,
           startedAt: generation_runs.started_at,
+          metadata: generation_runs.metadata,
+          jobId: generation_runs.bullmq_job_id,
         })
         .from(generation_runs)
         .where(eq(generation_runs.id, payload.generationRunId))
@@ -105,6 +120,7 @@ export class AdaptiveService implements OnApplicationBootstrap, OnApplicationShu
       )
         throw new Error("Invalid adaptive generation context.");
       if (run.status === "completed" || run.status === "failed") return null;
+      if (jobId && run.jobId && jobId !== run.jobId) return null;
       const [intervention] = await transaction
         .select({
           triggerNodeId: adaptive_interventions.trigger_node_id,
@@ -160,10 +176,26 @@ export class AdaptiveService implements OnApplicationBootstrap, OnApplicationShu
           ),
         )
         .orderBy(asc(module_nodes.core_position), asc(activities.position));
+      const metadata = readAdaptiveRunMetadata(run.metadata);
+      const attemptNumber = metadata.attemptNumber + 1;
       await transaction
         .update(generation_runs)
-        .set({ status: "processing", started_at: run.startedAt ?? new Date(), error: null })
+        .set({
+          status: "processing",
+          started_at: run.startedAt ?? new Date(),
+          error: null,
+          metadata: { ...metadata, attemptNumber, nextRetryAt: null },
+        })
         .where(eq(generation_runs.id, payload.generationRunId));
+      await transaction
+        .update(generation_run_steps)
+        .set({ status: "pending", finished_at: null })
+        .where(
+          and(
+            eq(generation_run_steps.generation_run_id, payload.generationRunId),
+            eq(generation_run_steps.status, "processing"),
+          ),
+        );
       const [module] = await transaction
         .select({ settings: generation_requests.generation_settings })
         .from(modules)
@@ -171,6 +203,7 @@ export class AdaptiveService implements OnApplicationBootstrap, OnApplicationShu
         .where(eq(modules.id, payload.moduleId))
         .limit(1);
       return {
+        attemptNumber,
         generationSettings: parseStoredGenerationSettings(module?.settings),
         userId: run.userId,
         triggerNodeId: intervention.triggerNodeId,
@@ -193,6 +226,7 @@ export class AdaptiveService implements OnApplicationBootstrap, OnApplicationShu
         .set({
           status: "processing",
           error: null,
+          finished_at: null,
           started_at: sql`coalesce(${generation_run_steps.started_at}, now())`,
         })
         .where(
@@ -224,10 +258,19 @@ export class AdaptiveService implements OnApplicationBootstrap, OnApplicationShu
     return step?.metadata;
   }
 
+  async scheduleRetry(runId: string, nextRetryAt: string): Promise<void> {
+    await this.infrastructure.database.db
+      .update(generation_runs)
+      .set({
+        metadata: sql`coalesce(${generation_runs.metadata}, '{}'::jsonb) || ${JSON.stringify({ nextRetryAt })}::jsonb`,
+      })
+      .where(and(eq(generation_runs.id, runId), eq(generation_runs.status, "processing")));
+  }
+
   async saveCheckpoint(
     runId: string,
     plan: AdaptivePlan,
-    generated: NodeActivities[],
+    generated: Array<NodeActivities | null>,
   ): Promise<void> {
     await this.infrastructure.database.db
       .update(generation_run_steps)
@@ -283,23 +326,10 @@ export class AdaptiveService implements OnApplicationBootstrap, OnApplicationShu
       if (run.status !== "processing" || plan.nodes.length !== generated.length)
         throw new Error("Invalid adaptive finalization state.");
       const conceptByKey = new Map(context.concepts.map((concept) => [concept.key, concept.id]));
-      if (plan.nodes.some((node) => node.targetConceptKeys.some((key) => !conceptByKey.has(key))))
-        throw new Error("Adaptive plan references an unrelated concept.");
+      validateAdaptivePlan(plan, [...conceptByKey.keys()]);
       for (const [index, output] of generated.entries()) {
-        const allowed = new Set(plan.nodes[index]?.targetConceptKeys ?? []);
-        for (const activity of output.activities) {
-          const references =
-            activity.type === "flashcard"
-              ? activity.content.cards.map((card) => card.conceptKey)
-              : activity.type === "multiple_choice" || activity.type === "true_false"
-                ? activity.evaluationConfig.conceptWeights.map((weight) => weight.conceptKey)
-                : activity.type === "short_answer"
-                  ? activity.evaluationConfig.expectedConcepts
-                  : [];
-          if (references.some((key) => !allowed.has(key))) {
-            throw new Error("Adaptive activity references an unrelated concept.");
-          }
-        }
+        const node = plan.nodes[index];
+        if (node) parseAdaptiveActivities(node, output, index);
       }
       const now = new Date();
       const nodes = plan.nodes.map((node, index) => ({
@@ -380,27 +410,46 @@ export class AdaptiveService implements OnApplicationBootstrap, OnApplicationShu
     });
   }
 
-  async fail(payload: AdaptiveGenerationJob): Promise<void> {
+  async fail(
+    payload: AdaptiveGenerationJob,
+    failure: NonNullable<GenerationStatus["failure"]> = SAFE_FAILURE,
+    expectedRetryCount?: number,
+  ): Promise<void> {
     await this.infrastructure.database.db.transaction(async (transaction) => {
       const [run] = await transaction
-        .select({ status: generation_runs.status })
+        .select({ status: generation_runs.status, metadata: generation_runs.metadata })
         .from(generation_runs)
         .where(eq(generation_runs.id, payload.generationRunId))
         .for("update")
         .limit(1);
       if (!run || run.status === "completed" || run.status === "failed") return;
+      if (
+        expectedRetryCount !== undefined &&
+        readAdaptiveRunMetadata(run.metadata).retryCount !== expectedRetryCount
+      )
+        return;
       const now = new Date();
       await transaction
         .update(generation_run_steps)
         .set({
-          status: sql`case when ${generation_run_steps.status} = 'processing' then 'failed'::generation_step_status else ${generation_run_steps.status} end`,
-          error: SAFE_FAILURE,
-          finished_at: sql`case when ${generation_run_steps.status} = 'processing' then ${now} else ${generation_run_steps.finished_at} end`,
+          status: "failed",
+          error: failure,
+          finished_at: now,
         })
-        .where(eq(generation_run_steps.generation_run_id, payload.generationRunId));
+        .where(
+          and(
+            eq(generation_run_steps.generation_run_id, payload.generationRunId),
+            eq(generation_run_steps.status, "processing"),
+          ),
+        );
       await transaction
         .update(generation_runs)
-        .set({ status: "failed", error: SAFE_FAILURE, finished_at: now })
+        .set({
+          status: "failed",
+          error: failure,
+          finished_at: now,
+          metadata: sql`coalesce(${generation_runs.metadata}, '{}'::jsonb) || '{"nextRetryAt":null}'::jsonb`,
+        })
         .where(eq(generation_runs.id, payload.generationRunId));
       await transaction
         .update(adaptive_interventions)
@@ -418,6 +467,7 @@ export class AdaptiveService implements OnApplicationBootstrap, OnApplicationShu
           generationRunId: generation_runs.id,
           moduleId: generation_runs.module_id,
           adaptiveInterventionId: generation_runs.adaptive_intervention_id,
+          metadata: generation_runs.metadata,
         })
         .from(generation_runs)
         .where(
@@ -436,27 +486,52 @@ export class AdaptiveService implements OnApplicationBootstrap, OnApplicationShu
             moduleId: run.moduleId,
             adaptiveInterventionId: run.adaptiveInterventionId,
           };
+          const metadata = readAdaptiveRunMetadata(run.metadata);
+          const jobId = metadata.retryCount
+            ? `${run.generationRunId}-retry-${metadata.retryCount}`
+            : run.generationRunId;
+          const existing = await this.infrastructure.adaptiveGenerationQueue.getJob(jobId);
+          const state = await existing?.getState();
+          // A terminal queue job must never silently restart the same generation cycle.
+          // Reconcile PostgreSQL if recording the failure previously failed or the worker stalled.
+          if (
+            state === "failed" ||
+            state === "completed" ||
+            (!existing && metadata.attemptNumber >= ADAPTIVE_MAX_ATTEMPTS)
+          ) {
+            await this.fail(payload, { ...SAFE_FAILURE, retryable: true }, metadata.retryCount);
+            continue;
+          }
           const outcome = await this.infrastructure.ensureJob({
             queue: this.infrastructure.adaptiveGenerationQueue,
             name: "generate-adaptive",
             data: payload,
-            jobId: run.generationRunId,
-            options: { attempts: 3, backoff: { type: "exponential", delay: 5_000 } },
+            jobId,
+            options: {
+              attempts: ADAPTIVE_MAX_ATTEMPTS,
+              backoff: { type: "exponential", delay: ADAPTIVE_RETRY_DELAY_MS },
+            },
           });
           await this.infrastructure.database.db
             .update(generation_runs)
-            .set({ bullmq_job_id: run.generationRunId })
-            .where(eq(generation_runs.id, run.generationRunId));
-          console.log(
-            JSON.stringify({
-              level: "log",
-              event: "adaptive.dispatched",
-              runId: run.generationRunId,
-              moduleId: run.moduleId,
-              interventionId: run.adaptiveInterventionId,
-              outcome,
-            }),
-          );
+            .set({ bullmq_job_id: jobId })
+            .where(
+              and(
+                eq(generation_runs.id, run.generationRunId),
+                sql`coalesce((${generation_runs.metadata}->>'retryCount')::int, 0) = ${metadata.retryCount}`,
+              ),
+            );
+          if (outcome !== "preserved")
+            console.log(
+              JSON.stringify({
+                level: "log",
+                event: "adaptive.dispatched",
+                runId: run.generationRunId,
+                moduleId: run.moduleId,
+                interventionId: run.adaptiveInterventionId,
+                outcome,
+              }),
+            );
         }
       this.dispatchCursor = runs.length === 25 ? runs.at(-1)?.generationRunId : undefined;
     } catch (error) {
@@ -464,7 +539,7 @@ export class AdaptiveService implements OnApplicationBootstrap, OnApplicationShu
         JSON.stringify({
           level: "error",
           event: "adaptive.dispatch_failed",
-          errorType: error instanceof Error ? error.name : "UnknownError",
+          ...adaptiveErrorDetails(error),
         }),
       );
     } finally {

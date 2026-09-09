@@ -26,6 +26,7 @@ import {
   getModule,
   getNode,
   listModules,
+  retryAdaptiveGeneration,
   retryGeneration,
   startNode,
   streamAdaptiveGenerationEvents,
@@ -137,6 +138,18 @@ export function useAdaptiveDecision(interventionId: string, moduleId?: string) {
         queryClient.invalidateQueries({ queryKey: leaderboardQueryKey(userId) }),
         invalidateModuleCollections(queryClient, userId),
       ]);
+    },
+  });
+}
+
+export function useRetryAdaptiveGeneration(interventionId: string) {
+  const { getToken, userId } = useAuth();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (key: string) => retryAdaptiveGeneration(getToken, interventionId, key),
+    onSuccess: async (data) => {
+      queryClient.setQueryData(adaptiveQueryKey(userId, interventionId), data);
+      await invalidateModuleCollections(queryClient, userId);
     },
   });
 }

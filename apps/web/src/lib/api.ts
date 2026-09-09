@@ -417,6 +417,20 @@ export async function decideAdaptiveIntervention(
   return response.data;
 }
 
+export async function retryAdaptiveGeneration(
+  tokenResolver: TokenResolver,
+  interventionId: string,
+  idempotencyKey: string,
+): Promise<AdaptiveIntervention> {
+  const response = await requestApi(
+    `/adaptive-interventions/${encodeURIComponent(interventionId)}/retry`,
+    tokenResolver,
+    getAdaptiveInterventionResponseSchema,
+    { method: "POST", headers: { "Idempotency-Key": idempotencyKey } },
+  );
+  return response.data;
+}
+
 async function streamApiEvents<Value>(input: {
   tokenResolver: TokenResolver;
   path: string;

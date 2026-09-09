@@ -4,9 +4,13 @@ import type {
   AdaptiveDecisionBody,
   AdaptiveIntervention,
   GenerationPhase,
-  GenerationStatus,
 } from "@ngertiin/contracts/api";
-import { ADAPTIVE_GENERATION_STEPS } from "@ngertiin/contracts/jobs";
+import {
+  ADAPTIVE_GENERATION_STEPS,
+  ADAPTIVE_MAX_ATTEMPTS,
+  ADAPTIVE_MAX_RETRIES,
+  readAdaptiveRunMetadata,
+} from "@ngertiin/contracts/jobs";
 import {
   adaptive_intervention_concepts,
   adaptive_interventions,
@@ -19,7 +23,7 @@ import {
   user_module_progress,
 } from "@ngertiin/database";
 import { selectLearningAction } from "@ngertiin/shared";
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { ProductError } from "../http/product-error.js";
 import { IdempotencyService } from "../idempotency/idempotency.service.js";
@@ -150,6 +154,101 @@ export class AdaptiveService {
     return this.read(userId, interventionId, this.infrastructure.database.db);
   }
 
+  async retry(userId: string, interventionId: string, key: string) {
+    return this.idempotency.execute(
+      {
+        userId,
+        method: "POST",
+        route: `/api/v1/adaptive-interventions/${interventionId}/retry`,
+        key,
+        payloadHash: createHash("sha256").update("{}").digest("hex"),
+      },
+      async (transaction) => {
+        const [owned] = await transaction
+          .select({ runId: generation_runs.id })
+          .from(generation_runs)
+          .innerJoin(
+            adaptive_interventions,
+            eq(adaptive_interventions.id, generation_runs.adaptive_intervention_id),
+          )
+          .innerJoin(modules, eq(modules.id, adaptive_interventions.module_id))
+          .where(
+            and(
+              eq(adaptive_interventions.id, interventionId),
+              eq(adaptive_interventions.user_id, userId),
+              eq(modules.owner_id, userId),
+            ),
+          )
+          .limit(1);
+        if (!owned) this.notFound();
+        // Match the worker's lock order; a stale worker must finish before this run can be reset.
+        await transaction.execute(
+          sql`select pg_advisory_xact_lock(hashtextextended(${`adaptive-generation:${owned.runId}`}, 0))`,
+        );
+        const [run] = await transaction
+          .select({
+            status: generation_runs.status,
+            metadata: generation_runs.metadata,
+            error: generation_runs.error,
+            interventionStatus: adaptive_interventions.status,
+            moduleStatus: modules.status,
+          })
+          .from(generation_runs)
+          .innerJoin(
+            adaptive_interventions,
+            eq(adaptive_interventions.id, generation_runs.adaptive_intervention_id),
+          )
+          .innerJoin(modules, eq(modules.id, adaptive_interventions.module_id))
+          .where(eq(generation_runs.id, owned.runId))
+          .for("update")
+          .limit(1);
+        const metadata = readAdaptiveRunMetadata(run?.metadata);
+        const failure = failureSchema.safeParse(run?.error);
+        if (
+          run?.status !== "failed" ||
+          run.interventionStatus !== "failed" ||
+          run.moduleStatus !== "ready" ||
+          !failure.success ||
+          !failure.data.retryable ||
+          metadata.retryCount >= ADAPTIVE_MAX_RETRIES
+        ) {
+          throw new ProductError(
+            409,
+            "GENERATION_RETRY_NOT_ALLOWED",
+            "Generation retry is not allowed",
+            "Penguatan ini belum dapat dicoba ulang. Kamu tetap bisa melanjutkan perjalanan utama.",
+          );
+        }
+        const retryCount = metadata.retryCount + 1;
+        await transaction
+          .update(generation_runs)
+          .set({
+            status: "queued",
+            progress_percentage: 0,
+            error: null,
+            started_at: null,
+            finished_at: null,
+            bullmq_job_id: `${owned.runId}-retry-${retryCount}`,
+            metadata: { attemptNumber: 0, retryCount, nextRetryAt: null },
+          })
+          .where(eq(generation_runs.id, owned.runId));
+        // Keep validated checkpoints; the worker revalidates each cached node before reuse.
+        await transaction
+          .update(generation_run_steps)
+          .set({ status: "pending", error: null, started_at: null, finished_at: null })
+          .where(eq(generation_run_steps.generation_run_id, owned.runId));
+        await transaction
+          .update(adaptive_interventions)
+          .set({ status: "generating" })
+          .where(eq(adaptive_interventions.id, interventionId));
+        return {
+          status: 202,
+          body: { data: await this.read(userId, interventionId, transaction) },
+        };
+      },
+    );
+  }
+
   async generationEventData(userId: string, interventionId: string) {
     const intervention = await this.get(userId, interventionId);
     if (!intervention.generation)
@@ -254,6 +353,7 @@ export class AdaptiveService {
           error: generation_runs.error,
           startedAt: generation_runs.started_at,
           finishedAt: generation_runs.finished_at,
+          metadata: generation_runs.metadata,
         })
         .from(generation_runs)
         .where(eq(generation_runs.adaptive_intervention_id, row.id))
@@ -330,8 +430,9 @@ export class AdaptiveService {
       error: unknown;
       startedAt: Date | null;
       finishedAt: Date | null;
+      metadata: unknown;
     },
-  ): Promise<GenerationStatus> {
+  ): Promise<NonNullable<AdaptiveIntervention["generation"]>> {
     const steps = await database
       .select({ step: generation_run_steps.step, status: generation_run_steps.status })
       .from(generation_run_steps)
@@ -346,8 +447,12 @@ export class AdaptiveService {
         : (steps.find((step) => step.status === "processing") ??
           steps.find((step) => step.status === "pending"));
     const failure = failureSchema.safeParse(run.error);
+    const metadata = readAdaptiveRunMetadata(run.metadata);
     return {
-      retriesRemaining: 0,
+      retriesRemaining: Math.max(0, ADAPTIVE_MAX_RETRIES - metadata.retryCount),
+      attemptNumber: metadata.attemptNumber,
+      maxAttempts: ADAPTIVE_MAX_ATTEMPTS,
+      nextRetryAt: metadata.nextRetryAt,
       state: run.status,
       progressPercentage: run.progressPercentage,
       currentPhase: current ? (phaseByStep.get(current.step) ?? null) : null,

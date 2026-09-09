@@ -20,6 +20,12 @@ export const adaptiveDecisionSchema = z.enum(["accept", "decline"]);
 export const adaptiveDecisionBodySchema = z.object({ decision: adaptiveDecisionSchema }).strict();
 export const adaptiveInterventionParamsSchema = z.object({ interventionId: uuidSchema }).strict();
 
+const adaptiveGenerationStatusSchema = generationStatusSchema.extend({
+  attemptNumber: z.number().int().nonnegative().optional(),
+  maxAttempts: z.number().int().positive().optional(),
+  nextRetryAt: timestampSchema.nullable().optional(),
+});
+
 export const adaptiveInterventionSchema = z.object({
   id: uuidSchema,
   moduleId: uuidSchema,
@@ -36,7 +42,7 @@ export const adaptiveInterventionSchema = z.object({
     }),
   ),
   nodes: z.array(journeyNodeSchema),
-  generation: generationStatusSchema.nullable(),
+  generation: adaptiveGenerationStatusSchema.nullable(),
   nextAction: nextLearningActionSchema,
   coreNextAction: nextLearningActionSchema,
   createdAt: timestampSchema,
@@ -49,7 +55,7 @@ export const getAdaptiveInterventionResponseSchema = successEnvelopeSchema(
 export const decideAdaptiveInterventionResponseSchema = getAdaptiveInterventionResponseSchema;
 
 const adaptiveGenerationEventDataSchema = z.object({
-  generation: generationStatusSchema,
+  generation: adaptiveGenerationStatusSchema,
   nextAction: nextLearningActionSchema,
 });
 

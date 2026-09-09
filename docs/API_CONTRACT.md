@@ -448,6 +448,7 @@ concept weights used for grading.
 | `POST` | `/api/v1/modules/:moduleId/nodes/:nodeId/attempts` | Submit one assessment attempt |
 | `GET` | `/api/v1/attempts/:attemptId` | Read evaluation state and result |
 | `POST` | `/api/v1/adaptive-interventions/:interventionId/decision` | Accept or decline optional review |
+| `POST` | `/api/v1/adaptive-interventions/:interventionId/retry` | Retry a failed adaptive generation |
 | `GET` | `/api/v1/adaptive-interventions/:interventionId` | Read adaptive state and nodes |
 | `GET` | `/api/v1/adaptive-interventions/:interventionId/generation/events` | Stream adaptive generation status |
 
@@ -1308,6 +1309,24 @@ type AdaptiveIntervention = {
 
 `reasonSummary` is safe, concise learner-facing text. It must not reveal internal threshold values,
 prompts, or model reasoning.
+
+Adaptive `generation` additionally includes `attemptNumber` (zero while initially queued),
+`maxAttempts` (3), and nullable `nextRetryAt`. A non-null `nextRetryAt` means the worker is waiting
+to retry automatically; progress retains the highest completed milestone during automatic retries.
+`retriesRemaining` counts learner-initiated retries, independently of automatic job attempts.
+
+```http
+POST /api/v1/adaptive-interventions/:interventionId/retry
+Idempotency-Key: 018f0df2-f35a-7c12-9dd2-ff7f5d3ef9b0
+```
+
+Only the owner of a ready Module may retry a failed intervention whose generation failure is
+retryable. Each intervention permits at most two explicit retries, each with at most three
+automatic attempts. The command resets the existing generation run to `queued`, preserves
+checkpoints for per-node revalidation, and returns `202` with the intervention envelope.
+It uses a new queue job ID for each explicit retry. Repeating the same idempotency key replays
+the response; a fresh key while generation is active or after the limit returns
+`409 GENERATION_RETRY_NOT_ALLOWED`. Core progress and XP are unchanged.
 
 ### 11.4 Stream Adaptive Generation
 
