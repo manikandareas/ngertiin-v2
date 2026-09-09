@@ -1,4 +1,4 @@
-import { LogOut, MoreVertical, Settings, UserRound } from "lucide-react";
+import { LogOut, MoreVertical, Settings } from "lucide-react";
 import { AlertDialog } from "radix-ui";
 import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
@@ -112,12 +112,6 @@ export function NavUser({
           {identity}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link to="/settings?tab=account">
-            <UserRound aria-hidden="true" />
-            Profil
-          </Link>
-        </DropdownMenuItem>
         <DropdownMenuItem asChild>
           <Link to="/settings">
             <Settings aria-hidden="true" />
