@@ -12,14 +12,19 @@ import {
   useStartNode,
   useSubmitAttempt,
 } from "../features/modules/api/use-modules";
+import { getAttemptPresentation } from "../features/modules/attempt-presentation";
 import { NodeActivity } from "../features/modules/components/node-activity";
 import { NodeAttemptResult } from "../features/modules/components/node-attempt-result";
 import { NodePlayerFooter } from "../features/modules/components/node-player-footer";
 import { NodePlayerLayout } from "../features/modules/components/node-player-layout";
+import { useAttemptEffects } from "../features/modules/hooks/use-attempt-effects";
 import { nextLearningRoute } from "../features/modules/next-learning-route";
 import { ApiProblemError } from "../lib/api";
 
 const primaryActionClassName = "max-w-full rounded-full px-6 normal-case tracking-normal";
+
+// Reset hook state during development updates, including changes to imported hooks.
+// @refresh reset
 
 function isAnswered(answer: AssessmentAnswer | undefined): boolean {
   return answer !== undefined && (!("text" in answer) || answer.text.trim().length > 0);
@@ -66,6 +71,14 @@ function NodePlayer({ moduleId, nodeId }: NodePlayerProps): JSX.Element {
     startedNodeId.current = nodeId;
     start.mutate();
   }, [moduleQuery.data?.status, nodeId, nodeQuery.data?.node.progress.status, start.mutate]);
+
+  const attemptResult = attemptQuery.data ?? submit.data;
+  const showResult = Boolean((attemptResult || attemptId) && !reviewing);
+  const resultEffects = useAttemptEffects(attemptResult, showResult);
+  const resultTone =
+    showResult && attemptResult?.attempt.evaluationStatus === "completed"
+      ? getAttemptPresentation(attemptResult.attempt.normalizedScore).tone
+      : undefined;
 
   if (nodeQuery.isPending || moduleQuery.isPending)
     return (
@@ -115,7 +128,6 @@ function NodePlayer({ moduleId, nodeId }: NodePlayerProps): JSX.Element {
       const answer = answers[activity.id];
       return isAnswered(answer);
     });
-  const attemptResult = attemptQuery.data ?? submit.data;
   const mutationError = start.error ?? complete.error ?? submit.error;
   let errorMessage: string | null = null;
   if (mutationError instanceof ApiProblemError) {
@@ -140,6 +152,7 @@ function NodePlayer({ moduleId, nodeId }: NodePlayerProps): JSX.Element {
 
   async function handleSubmit(): Promise<void> {
     if (!allAnswered) return;
+    resultEffects.prepareSubmission();
     submissionId.current ??= attemptResult?.attempt.submissionId ?? crypto.randomUUID();
     try {
       const result = await submit.mutateAsync({
@@ -149,6 +162,7 @@ function NodePlayer({ moduleId, nodeId }: NodePlayerProps): JSX.Element {
           answer: answers[activity.id] as AssessmentAnswer,
         })),
       });
+      resultEffects.markSubmitted(result.attempt.id);
       setSearchParams({ attemptId: result.attempt.id }, { replace: true });
       setReviewing(false);
       setRetrying(false);
@@ -170,7 +184,6 @@ function NodePlayer({ moduleId, nodeId }: NodePlayerProps): JSX.Element {
   }
 
   const activity = data.activities[slide];
-  const showResult = Boolean((attemptResult || attemptId) && !reviewing);
   const locked = readOnly || completed || Boolean(attemptResult || attemptId) || submit.isPending;
   const activityResult =
     activity && attemptResult?.attempt.evaluationStatus === "completed"
@@ -260,6 +273,8 @@ function NodePlayer({ moduleId, nodeId }: NodePlayerProps): JSX.Element {
       activities={data.activities}
       slide={slide}
       showResult={showResult}
+      resultTone={resultTone}
+      animateResult={resultEffects.animateResult}
       contentRef={contentRef}
       footer={
         showResult ? null : (
@@ -285,6 +300,7 @@ function NodePlayer({ moduleId, nodeId }: NodePlayerProps): JSX.Element {
       {showResult ? (
         <NodeAttemptResult
           result={attemptResult}
+          animate={resultEffects.animateResult}
           error={attemptQuery.error}
           loading={attemptQuery.isFetching}
           readOnly={readOnly}

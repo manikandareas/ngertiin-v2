@@ -458,3 +458,101 @@
 .ngertiin-toaster [data-sonner-toast][data-expanded="false"][data-front="false"] > * {
   @apply opacity-0;
 }
+
+/* Assessment feedback shares the app's semantic colors in both themes. */
+[data-attempt-tone="success"] {
+  --attempt-color: var(--success);
+  --attempt-ink: var(--success-foreground);
+  --attempt-surface: var(--success-subtle);
+}
+
+[data-attempt-tone="warning"] {
+  --attempt-color: var(--adaptive);
+  --attempt-ink: var(--adaptive-foreground);
+  --attempt-surface: var(--adaptive-subtle);
+}
+
+[data-attempt-tone="attention"] {
+  --attempt-color: var(--destructive);
+  --attempt-ink: var(--destructive);
+  --attempt-surface: color-mix(in srgb, var(--destructive) 8%, var(--background));
+}
+
+.attempt-environment {
+  border-color: color-mix(in srgb, var(--attempt-color) 65%, transparent);
+  box-shadow: inset 0 -24px 60px -42px var(--attempt-color);
+}
+
+.attempt-score-card {
+  background: var(--attempt-surface);
+}
+
+.attempt-score-track {
+  stroke: var(--attempt-ink);
+  opacity: 0.15;
+}
+
+.attempt-score-ring {
+  stroke: var(--attempt-ink);
+}
+
+.attempt-confetti {
+  background: var(--success);
+  animation: attempt-confetti 1600ms ease-out both;
+}
+
+.attempt-confetti:nth-child(3n) {
+  background: var(--primary);
+}
+
+.attempt-confetti:nth-child(3n + 1) {
+  background: var(--adaptive);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .attempt-environment[data-animate] {
+    animation: attempt-environment-reveal 850ms ease-out;
+  }
+
+  .attempt-summary[data-animate] .attempt-score-card {
+    animation: attempt-score-reveal 550ms ease-out;
+  }
+
+  .attempt-summary[data-animate] .attempt-score-ring {
+    animation: attempt-score-fill 800ms ease-out;
+  }
+}
+
+@keyframes attempt-environment-reveal {
+  from {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+    box-shadow: inset 0 0 55px -22px var(--attempt-color);
+  }
+}
+
+@keyframes attempt-score-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes attempt-score-fill {
+  from {
+    stroke-dasharray: 0 100;
+  }
+}
+
+@keyframes attempt-confetti {
+  from {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0deg);
+  }
+  to {
+    opacity: 0;
+    transform: translate(var(--confetti-x), var(--confetti-y)) rotate(var(--confetti-rotation));
+  }
+}

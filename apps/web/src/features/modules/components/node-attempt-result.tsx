@@ -10,6 +10,7 @@ interface NodeAttemptResultProps {
   error: Error | null;
   loading: boolean;
   readOnly: boolean;
+  animate: boolean;
   onReload: () => void;
   onReview: () => void;
   onRetry: () => void;
@@ -20,6 +21,7 @@ export function NodeAttemptResult({
   error,
   loading,
   readOnly,
+  animate,
   onReload,
   onReview,
   onRetry,
@@ -43,7 +45,7 @@ export function NodeAttemptResult({
       ) : null}
       {result ? (
         <>
-          <AttemptSummary result={result} />
+          <AttemptSummary result={result} animate={animate} />
           <AttemptResultActions
             canRetry={result.attempt.evaluationStatus === "completed" && !readOnly}
             onReview={onReview}

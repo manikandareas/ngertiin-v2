@@ -4,6 +4,8 @@ import type { JSX, ReactNode, Ref } from "react";
 import { Link } from "react-router-dom";
 import { ThemeToggle } from "../../../components/theme-toggle";
 import { Button } from "../../../components/ui/button";
+import type { AttemptTone } from "../attempt-presentation";
+import { AttemptEnvironment } from "./attempt-environment";
 import { NodePlayerSidebar } from "./node-player-sidebar";
 
 interface NodePlayerLayoutProps {
@@ -12,6 +14,8 @@ interface NodePlayerLayoutProps {
   activities: PublicActivity[];
   slide: number;
   showResult: boolean;
+  resultTone?: AttemptTone;
+  animateResult: boolean;
   contentRef: Ref<HTMLDivElement>;
   children: ReactNode;
   footer: ReactNode;
@@ -23,12 +27,15 @@ export function NodePlayerLayout({
   activities,
   slide,
   showResult,
+  resultTone,
+  animateResult,
   contentRef,
   children,
   footer,
 }: NodePlayerLayoutProps): JSX.Element {
   return (
     <div className="flex min-h-dvh flex-col bg-background px-6 text-foreground sm:px-10 lg:px-12">
+      {resultTone ? <AttemptEnvironment tone={resultTone} animate={animateResult} /> : null}
       <header className="sticky top-0 z-20 -mx-6 bg-background px-6 sm:-mx-10 sm:px-10 lg:-mx-12 lg:px-12">
         <div className="mx-auto flex w-full max-w-7xl items-center justify-between py-1 sm:py-2">
           <ThemeToggle />

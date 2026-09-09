@@ -10,12 +10,14 @@ import type { JSX } from "react";
 import { Link } from "react-router-dom";
 import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";
+import { getAttemptPresentation } from "../attempt-presentation";
 import { nextLearningRoute } from "../next-learning-route";
 import { AttemptAdaptiveAction } from "./attempt-adaptive-action";
 import { AttemptAnswerReview } from "./attempt-answer-review";
 
 interface AttemptSummaryProps {
   result: AttemptResult;
+  animate?: boolean;
 }
 
 const nextActionLabels = {
@@ -31,7 +33,7 @@ const nextActionLabels = {
   none: null,
 } satisfies Record<AttemptResult["nextAction"]["type"], string | null>;
 
-export function AttemptSummary({ result }: AttemptSummaryProps): JSX.Element {
+export function AttemptSummary({ result, animate = false }: AttemptSummaryProps): JSX.Element {
   const { attempt } = result;
   if (attempt.evaluationStatus === "evaluating") {
     return (
@@ -74,26 +76,33 @@ export function AttemptSummary({ result }: AttemptSummaryProps): JSX.Element {
     );
   }
 
+  const presentation = getAttemptPresentation(attempt.normalizedScore);
   const percentage = Math.round(attempt.normalizedScore * 100);
   const destination = nextLearningRoute(result.nextAction);
   const nextAction = nextActionLabels[result.nextAction.type];
   const feedback = attempt.feedback;
 
   return (
-    <section className="space-y-8 text-foreground" aria-label="Hasil assessment">
+    <section
+      className="attempt-summary space-y-8 text-foreground"
+      data-attempt-tone={presentation.tone}
+      data-animate={animate || undefined}
+      aria-label="Hasil assessment"
+    >
       <header className="space-y-3">
         <p className="text-xs font-bold uppercase tracking-wide text-link">Hasil assessment</p>
-        <h2 className="text-3xl font-bold">Assessment selesai.</h2>
+        <h2 className="text-3xl font-bold">{presentation.title}</h2>
+        <p className="text-sm leading-7 text-muted-foreground">{presentation.description}</p>
       </header>
 
-      <div className="flex items-center gap-5 rounded-card bg-accent p-5 sm:gap-7 sm:p-6">
+      <div className="attempt-score-card flex items-center gap-5 rounded-card p-5 sm:gap-7 sm:p-6">
         <div className="relative grid size-24 shrink-0 place-items-center sm:size-28">
           <svg
             aria-hidden="true"
             viewBox="0 0 120 120"
             className="absolute inset-0 size-full -rotate-90 fill-none stroke-7"
           >
-            <circle cx="60" cy="60" r="51" className="stroke-accent-foreground/15" />
+            <circle cx="60" cy="60" r="51" className="attempt-score-track" />
             <circle
               cx="60"
               cy="60"
@@ -101,18 +110,18 @@ export function AttemptSummary({ result }: AttemptSummaryProps): JSX.Element {
               pathLength="100"
               strokeDasharray={`${attempt.normalizedScore * 100} 100`}
               strokeLinecap="round"
-              className="stroke-primary"
+              className="attempt-score-ring"
             />
           </svg>
-          <p className="font-display text-3xl font-extrabold tabular-nums text-accent-foreground">
+          <p className="font-display text-3xl font-extrabold tabular-nums text-foreground">
             <span className="sr-only">Skor </span>
             {percentage}
             <span className="text-sm">%</span>
           </p>
         </div>
         <div className="min-w-0 space-y-2">
-          <h3 className="text-lg font-bold text-accent-foreground">Hasil belajarmu.</h3>
-          <p className="text-sm text-accent-foreground">
+          <h3 className="text-lg font-bold text-foreground">{presentation.label}</h3>
+          <p className="text-sm text-foreground">
             {attempt.score} dari {attempt.maxScore} poin tercapai
           </p>
           <p className="text-sm font-bold text-success-foreground">

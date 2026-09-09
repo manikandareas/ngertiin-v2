@@ -13,6 +13,7 @@ import { LearningSettings } from "../features/settings/learning-settings";
 import { ProfileSettings } from "../features/settings/profile-settings";
 import { SessionSettings } from "../features/settings/session-settings";
 import { SocialSettings } from "../features/settings/social-settings";
+import { SoundSettings } from "../features/settings/sound-settings";
 import { UsageSettings } from "../features/settings/usage-settings";
 import { useConnectionFeedback } from "../features/settings/use-connection-feedback";
 
@@ -112,6 +113,7 @@ export default function SettingsPage() {
             <AppearanceSettings />
           </TabsContent>
           <TabsContent value="learning">
+            <SoundSettings />
             {profile.data ? (
               <LearningSettings user={profile.data} onDirty={onDirty} />
             ) : (
