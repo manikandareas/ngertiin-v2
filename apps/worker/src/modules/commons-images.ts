@@ -129,11 +129,26 @@ async function readBounded(response: Response): Promise<Uint8Array> {
   }
   return bytes;
 }
+export function normalizeCommonsQuery(query: string): string {
+  return query
+    .replace(/(?:^|\s)-?site:\s*(?:"[^"]*"|\S+)/gi, " ")
+    .replace(/https?:\/\/\S+/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export interface CommonsSearchResult {
+  candidates: CommonsCandidate[];
+  resultCount: number;
+}
+
 export async function searchCommons(
   query: string,
   signal: AbortSignal,
   userAgent: string,
-): Promise<CommonsCandidate[]> {
+): Promise<CommonsSearchResult> {
+  query = normalizeCommonsQuery(query);
+  if (!query) throw new Error("empty_search_query");
   const url = new URL("https://commons.wikimedia.org/w/api.php");
   url.search = new URLSearchParams({
     action: "query",
@@ -223,7 +238,7 @@ export async function searchCommons(
       mime: info.thumbmime,
     });
   }
-  return candidates;
+  return { candidates, resultCount: result.query?.pages.length ?? 0 };
 }
 export async function downloadThumbnail(
   candidate: CommonsCandidate,

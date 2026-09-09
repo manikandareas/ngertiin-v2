@@ -300,8 +300,15 @@ const lessonActivitySchema = z.object({
     .array(
       z.object({
         id: z.enum(["visual-1", "visual-2"]),
-        concept: shortTextSchema,
-        query: shortTextSchema,
+        concept: shortTextSchema.describe(
+          "Exactly one concrete concept the image should clarify, not the entire lesson or a list of objectives. For example: chloroplast structure OR the Calvin cycle.",
+        ),
+        query: shortTextSchema.describe(
+          "Short English Commons keywords for one visual concept; no URLs or site: operators.",
+        ),
+        fallbackQuery: shortTextSchema.describe(
+          "A broader English query of 2-5 words for the same concept; different from query.",
+        ),
       }),
     )
     .max(2),
