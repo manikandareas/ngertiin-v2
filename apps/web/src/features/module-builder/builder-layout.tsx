@@ -38,7 +38,7 @@ export function BuilderLayout({
   return (
     <main className="builder-controls min-h-dvh w-full bg-background text-foreground">
       <div className="min-h-dvh w-full">
-        <header className="flex h-12 items-center border-b border-muted px-4 sm:px-8">
+        <header className="sticky top-0 z-20 flex h-12 items-center border-b border-muted bg-background px-4 sm:px-8">
           <Button
             asChild
             variant="ghost"
@@ -57,7 +57,7 @@ export function BuilderLayout({
           </Button>
         </header>
         <div className="mx-auto grid w-full max-w-6xl gap-10 px-5 py-8 sm:px-10 sm:py-12 lg:grid-cols-[180px_minmax(0,1fr)] lg:gap-24 lg:px-16 lg:py-16">
-          <nav aria-label="Langkah pembuatan modul">
+          <nav aria-label="Langkah pembuatan modul" className="lg:sticky lg:top-20 lg:self-start">
             <p className="mb-4 text-xs font-medium text-muted-foreground lg:hidden">
               Langkah {step + 1} dari 5 · {steps[step]}
             </p>
