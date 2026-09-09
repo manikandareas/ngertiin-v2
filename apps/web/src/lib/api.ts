@@ -525,3 +525,16 @@ export async function getLeaderboard(tokenResolver: TokenResolver) {
   const response = await requestApi("/leaderboard", tokenResolver, getLeaderboardResponseSchema);
   return response.data;
 }
+
+export async function updateAvatar(
+  tokenResolver: TokenResolver,
+  file: File | null,
+): Promise<CurrentUser> {
+  const body = file ? new FormData() : undefined;
+  if (body && file) body.set("file", file);
+  const response = await requestApi("/me/avatar", tokenResolver, getCurrentUserResponseSchema, {
+    method: file ? "POST" : "DELETE",
+    body,
+  });
+  return response.data;
+}

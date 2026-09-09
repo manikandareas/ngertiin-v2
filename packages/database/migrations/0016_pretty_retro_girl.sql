@@ -1,0 +1,2 @@
+ALTER TABLE "users" ADD COLUMN "avatar_object_key" varchar;--> statement-breakpoint
+ALTER TABLE "users" ADD COLUMN "default_generation_settings" jsonb DEFAULT '{"language":"id","length":"auto","activityTypes":["lesson","flashcard","quiz"]}'::jsonb NOT NULL;

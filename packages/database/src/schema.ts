@@ -119,6 +119,10 @@ export const users = pgTable(
     clerk_user_id: varchar().notNull(),
     display_name: varchar(),
     avatar_url: varchar().notNull(),
+    avatar_object_key: varchar(),
+    default_generation_settings: jsonb()
+      .notNull()
+      .default({ language: "id", length: "auto", activityTypes: ["lesson", "flashcard", "quiz"] }),
     profile_initialized_at: optionalTimestamp(),
     profile_retry_after: optionalTimestamp(),
     timezone: varchar().notNull().default("UTC"),

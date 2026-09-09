@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { successEnvelopeSchema, uuidSchema } from "../common/identifiers.js";
+import { generationSettingsSchema } from "../modules/generation-settings.js";
 
 function isIanaTimezone(value: string): boolean {
   try {
@@ -26,6 +27,8 @@ export const currentUserSchema = z.object({
   displayName: z.string().nullable(),
   avatarUrl: z.url(),
   timezone: ianaTimezoneSchema,
+  hasCustomAvatar: z.boolean(),
+  defaultGenerationSettings: generationSettingsSchema,
   stats: userStatsSchema,
 });
 
@@ -33,10 +36,15 @@ export const patchCurrentUserBodySchema = z
   .object({
     displayName: z.string().nullable().optional(),
     timezone: ianaTimezoneSchema.optional(),
+    defaultGenerationSettings: generationSettingsSchema.optional(),
   })
   .strict()
   .superRefine((value, context) => {
-    if (value.displayName === undefined && value.timezone === undefined) {
+    if (
+      value.displayName === undefined &&
+      value.timezone === undefined &&
+      value.defaultGenerationSettings === undefined
+    ) {
       context.addIssue({
         code: "custom",
         message: "At least one profile field must be supplied.",

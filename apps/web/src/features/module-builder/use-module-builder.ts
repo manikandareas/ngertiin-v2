@@ -29,10 +29,10 @@ export type ModuleBuilderApi = {
   create: (input: CreateModuleBodyInput, key: string) => Promise<void>;
 };
 
-export function useModuleBuilder(api: ModuleBuilderApi) {
+export function useModuleBuilder(api: ModuleBuilderApi, defaults?: GenerationSettings) {
   const [instruction, setInstruction] = useState("");
   const [generationSettings, setGenerationSettings] = useState<GenerationSettings>(() =>
-    generationSettingsSchema.parse({}),
+    generationSettingsSchema.parse(defaults ?? {}),
   );
   const [selected, setSelected] = useState<Selection[]>([]);
   const [busy, setBusy] = useState(false);

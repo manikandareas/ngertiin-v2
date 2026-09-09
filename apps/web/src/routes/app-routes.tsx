@@ -13,7 +13,8 @@ const ModuleStatusPage = lazy(() => import("../pages/module-status"));
 const ModuleJourneyPage = lazy(() => import("../pages/module-journey"));
 const ModuleNodePage = lazy(() => import("../pages/module-node"));
 const AdaptiveInterventionPage = lazy(() => import("../pages/adaptive-intervention"));
-const ProfilePage = lazy(() => import("../pages/profile"));
+const SettingsPage = lazy(() => import("../pages/settings"));
+const AccountCallbackPage = lazy(() => import("../pages/account-callback"));
 const SignInPage = lazy(() => import("../pages/sign-in"));
 const SignUpPage = lazy(() => import("../pages/sign-up"));
 
@@ -47,7 +48,9 @@ export function AppRoutes() {
           <Route path="/modules/:moduleId/journey" element={<ModuleJourneyPage />} />
           <Route path="/modules/:moduleId/nodes/:nodeId" element={<ModuleNodePage />} />
           <Route path="/modules/:moduleId" element={<ModuleStatusPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/profile" element={<Navigate replace to="/settings?tab=account" />} />
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/settings/account-callback" element={<AccountCallbackPage />} />
         </Route>
         <Route path="/sign-in/*" element={<SignInPage />} />
         <Route path="/sign-up/*" element={<SignUpPage />} />

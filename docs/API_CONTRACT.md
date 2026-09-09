@@ -199,7 +199,9 @@ type CurrentUser = {
   id: string;
   displayName: string | null;
   avatarUrl: string;
+  hasCustomAvatar: boolean;
   timezone: string;
+  defaultGenerationSettings: GenerationSettings;
   stats: {
     totalXp: number;
     currentStreak: number;
@@ -423,6 +425,8 @@ concept weights used for grading.
 | `GET` | `/api/v1/me` | Current profile and stats |
 | `GET` | `/api/v1/me/usage` | Current weekly quotas and active module generation |
 | `PATCH` | `/api/v1/me` | Update local profile preferences |
+| `POST` | `/api/v1/me/avatar` | Upload and normalize a profile photo |
+| `DELETE` | `/api/v1/me/avatar` | Restore the automatic avatar |
 | `GET` | `/api/v1/dashboard` | Continue-learning card and module preview |
 | `POST` | `/api/v1/sources/text` | Create a ready pasted-text source |
 | `POST` | `/api/v1/sources/url` | Create and queue URL processing |
@@ -468,12 +472,39 @@ Content-Type: application/json
 
 {
   "displayName": "Vito",
-  "timezone": "Asia/Makassar"
+  "timezone": "Asia/Makassar",
+  "defaultGenerationSettings": {
+    "language": "id",
+    "length": "auto",
+    "activityTypes": ["lesson", "flashcard", "quiz"]
+  }
 }
 ```
 
-Both fields are optional, but at least one must be supplied. `displayName` may be explicitly set to
+All three fields are optional, but at least one must be supplied. `displayName` may be explicitly set to
 `null`; `timezone` must be a valid IANA timezone. Returns `200` with `CurrentUser`.
+`defaultGenerationSettings` uses the existing `GenerationSettings` contract. Defaults are Indonesian,
+automatic length, and all activity types. They initialize only a new builder after the profile loads;
+refetches do not overwrite the current draft. Existing modules, retries, resumed generations, and
+legacy null generation settings retain their persisted configuration.
+
+Profile photos use `POST /api/v1/me/avatar` with multipart field `file` (one file, no other fields).
+Accepts static JPG/PNG/WebP up to 5 MiB and 25 million decoded pixels. The server verifies image
+content, applies orientation, crops/resizes to at most 512 x 512, strips metadata, and stores WebP.
+`DELETE /api/v1/me/avatar` restores the automatic avatar. Both return `200` with the `CurrentUser`
+envelope; `avatarUrl` and `hasCustomAvatar` cannot be changed through PATCH.
+
+Avatar object keys stay internal. Profile and leaderboard resolve fresh one-hour signed URLs when
+reading; the browser refreshes the profile periodically. Replacement uploads first, then locks the
+user row and swaps the key transactionally. Failed uploads/database writes retain the old avatar;
+superseded objects and failed-upload objects are deleted. Cleanup checks that no user references the key, retries three times, and logs the
+key for operator review if the database or storage remains unavailable.
+
+Account email addresses, Google/GitHub connections, and device sessions remain Clerk resources.
+The custom settings UI wraps sensitive SDK operations in `useReverification` and only uses factors
+returned by Clerk. Unsupported factors stop the action; no Backend API bypass or new login method
+is introduced. OAuth linking returns through `/settings/account-callback` to the account tab after
+reloading the user. `/profile` redirects to `/settings?tab=account`.
 
 ### 6.3 Dashboard
 
@@ -1561,7 +1592,7 @@ it with `serverTime` to schedule refreshes. All values use one database snapshot
 
 Local provisioning assigns a DiceBear Adventurer Neutral avatar URL using the local user UUID
 as the seed and background colors `ff2e88,00e5ff,ffe600,7cff00,ff6a00,b400ff`.
-`avatarUrl` is read-only. Username is not stored. Clerk first and last names are trimmed and
+`avatarUrl` is read-only in PATCH; the avatar endpoints manage custom photos. Username is not stored. Clerk first and last names are trimmed and
 joined once to initialize an empty display name. Existing nonempty names are preserved.
 A successful read with no name still completes initialization; later local profile edits,
 including clearing the name, are not overwritten. Clerk reads happen outside transactions,
@@ -1569,5 +1600,6 @@ with a three-second wait limit and a persisted five-minute retry lease. Authenti
 available when the profile provider fails. Initialization does not continuously sync Clerk edits.
 
 Migration 0015 fills avatars for all existing users. Pending users initialize their names on
-their next API request, with failed reads eligible for retry after five minutes. Clerk account
-controls in the sidebar retain their existing avatar independently.
+their next API request, with failed reads eligible for retry after five minutes. Migration 0016 adds
+user generation defaults and an optional internal avatar key without changing module settings.
+The sidebar, settings profile, and leaderboard share the resolved local avatar.

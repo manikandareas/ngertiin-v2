@@ -21,6 +21,7 @@ export type NavUserProps = {
   avatarUrl?: string;
   onLogout?: () => Promise<void>;
   collapsed?: boolean;
+  unsavedChanges?: boolean;
   side?: "right" | "top";
 };
 
@@ -30,6 +31,7 @@ export function NavUser({
   avatarUrl,
   onLogout,
   collapsed = false,
+  unsavedChanges = false,
   side = "right",
 }: NavUserProps) {
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -111,14 +113,16 @@ export function NavUser({
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link to="/profile">
+          <Link to="/settings?tab=account">
             <UserRound aria-hidden="true" />
             Profil
           </Link>
         </DropdownMenuItem>
-        <DropdownMenuItem disabled>
-          <Settings aria-hidden="true" />
-          Pengaturan<span className="ml-auto text-xs">Segera hadir</span>
+        <DropdownMenuItem asChild>
+          <Link to="/settings">
+            <Settings aria-hidden="true" />
+            Pengaturan
+          </Link>
         </DropdownMenuItem>
         <ThemeToggle variant="menu" />
         <DropdownMenuSeparator />
@@ -156,6 +160,7 @@ export function NavUser({
               Keluar dari akun?
             </AlertDialog.Title>
             <AlertDialog.Description className="mt-2 text-sm leading-6 text-muted-foreground">
+              {unsavedChanges ? "Perubahan form belum disimpan dan akan hilang saat keluar. " : ""}
               Kamu perlu masuk kembali untuk melanjutkan belajar.
             </AlertDialog.Description>
             {logoutError && (

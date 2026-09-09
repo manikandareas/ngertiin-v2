@@ -1,6 +1,6 @@
 {
-  "id": "8d0775fb-c9e5-4d95-a4f3-0d7d75179ebc",
-  "prevId": "b4b3479c-b359-4338-909c-55389aece78e",
+  "id": "1ce32229-a509-4a91-8aed-d0ccd38c1509",
+  "prevId": "a5033585-ba32-458a-ad5c-706a2ccd299b",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -3002,6 +3002,37 @@
         "display_name": {
           "name": "display_name",
           "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "avatar_url": {
+          "name": "avatar_url",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "avatar_object_key": {
+          "name": "avatar_object_key",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "default_generation_settings": {
+          "name": "default_generation_settings",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{\"language\":\"id\",\"length\":\"auto\",\"activityTypes\":[\"lesson\",\"flashcard\",\"quiz\"]}'::jsonb"
+        },
+        "profile_initialized_at": {
+          "name": "profile_initialized_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "profile_retry_after": {
+          "name": "profile_retry_after",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
         },

@@ -28,7 +28,7 @@ const navigation = [
 const focus = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
 const navItemClass = `flex min-h-11 min-w-0 items-center gap-3 rounded-lg px-3 text-sm font-medium text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-sidebar-foreground aria-[current=page]:bg-sidebar-accent aria-[current=page]:font-semibold aria-[current=page]:text-sidebar-accent-foreground motion-reduce:transition-none ${focus}`;
 
-export function ConnectedAppSidebar() {
+export function ConnectedAppSidebar({ unsavedChanges = false }: { unsavedChanges?: boolean }) {
   useUsageSync();
   const user = useCurrentUser();
   const { user: clerkUser } = useUser();
@@ -39,6 +39,7 @@ export function ConnectedAppSidebar() {
         name: user.data?.displayName || clerkUser?.fullName || "Akun belajar",
         email: clerkUser?.primaryEmailAddress?.emailAddress,
         avatarUrl: user.data?.avatarUrl || clerkUser?.imageUrl,
+        unsavedChanges,
         onLogout: () => signOut({ redirectUrl: "/sign-in" }),
       }}
       usageBanner={<UsageBanner />}

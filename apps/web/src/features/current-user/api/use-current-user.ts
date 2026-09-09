@@ -10,6 +10,8 @@ export function useCurrentUser() {
   const { getToken, userId } = useAuth();
   return useQuery({
     queryKey: currentUserQueryKey(userId),
+    enabled: Boolean(userId),
+    refetchInterval: 15 * 60_000,
     queryFn: () => getCurrentUser(getToken),
   });
 }

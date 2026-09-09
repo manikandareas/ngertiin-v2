@@ -31,6 +31,7 @@ export function BuilderGenerationSettings({ state }: { state: SettingsState }) {
     <Collapsible className="rounded-xl border" disabled={state.busy}>
       <CollapsibleTrigger asChild>
         <Button
+          type="button"
           variant="ghost"
           className="group min-h-14 w-full justify-between rounded-xl px-4 py-3 text-sm font-semibold normal-case tracking-normal"
         >

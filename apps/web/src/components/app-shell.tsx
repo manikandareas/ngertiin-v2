@@ -6,14 +6,21 @@ export function AppShell({
   children,
   sidebar,
   workspace = false,
+  unsavedChanges = false,
 }: {
   children: ReactNode;
   sidebar?: ReactNode;
   workspace?: boolean;
+  unsavedChanges?: boolean;
 }) {
   return (
     <div className="fixed inset-0 flex h-dvh flex-col overflow-hidden bg-background text-foreground xl:flex-row">
-      {sidebar ?? (isClerkConfigured ? <ConnectedAppSidebar /> : <AppSidebar />)}
+      {sidebar ??
+        (isClerkConfigured ? (
+          <ConnectedAppSidebar unsavedChanges={unsavedChanges} />
+        ) : (
+          <AppSidebar />
+        ))}
       <main className={`min-h-0 min-w-0 flex-1 ${workspace ? "flex flex-col" : "overflow-y-auto"}`}>
         {workspace ? (
           children

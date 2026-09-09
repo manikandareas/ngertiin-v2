@@ -1,13 +1,16 @@
 import { Inject, Injectable } from "@nestjs/common";
 import type { CurrentUser, PatchCurrentUserBody } from "@ngertiin/contracts/api";
+import { generationSettingsSchema } from "@ngertiin/contracts/api";
 import { user_stats, users } from "@ngertiin/database";
 import { eq } from "drizzle-orm";
 import { ProductError } from "../http/product-error.js";
 import { InfrastructureService } from "../infrastructure/infrastructure.service.js";
+import { AvatarService } from "./avatar.service.js";
 
 @Injectable()
 export class UsersService {
   constructor(
+    @Inject(AvatarService) private readonly avatars: AvatarService,
     @Inject(InfrastructureService) private readonly infrastructure: InfrastructureService,
   ) {}
 
@@ -17,6 +20,8 @@ export class UsersService {
         id: users.id,
         displayName: users.display_name,
         avatarUrl: users.avatar_url,
+        avatarObjectKey: users.avatar_object_key,
+        defaultGenerationSettings: users.default_generation_settings,
         timezone: users.timezone,
         totalXp: user_stats.total_xp,
         currentStreak: user_stats.current_streak,
@@ -40,7 +45,9 @@ export class UsersService {
     return {
       id: row.id,
       displayName: row.displayName,
-      avatarUrl: row.avatarUrl,
+      avatarUrl: await this.avatars.resolve(row.avatarObjectKey, row.avatarUrl),
+      hasCustomAvatar: row.avatarObjectKey !== null,
+      defaultGenerationSettings: generationSettingsSchema.parse(row.defaultGenerationSettings),
       timezone: row.timezone,
       stats: {
         totalXp: row.totalXp,
@@ -55,6 +62,7 @@ export class UsersService {
     const values: {
       display_name?: string | null;
       timezone?: string;
+      default_generation_settings?: PatchCurrentUserBody["defaultGenerationSettings"];
       updated_at: Date;
       profile_initialized_at?: Date;
     } = { updated_at: new Date() };
@@ -65,6 +73,10 @@ export class UsersService {
     }
     if (Object.hasOwn(input, "timezone") && input.timezone !== undefined) {
       values.timezone = input.timezone;
+    }
+
+    if (input.defaultGenerationSettings !== undefined) {
+      values.default_generation_settings = input.defaultGenerationSettings;
     }
 
     const [updated] = await this.infrastructure.database.db
