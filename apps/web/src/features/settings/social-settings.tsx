@@ -1,14 +1,12 @@
 import { useUser } from "@clerk/react";
 import type { UserResource } from "@clerk/react/types";
-import { GithubIcon, GoogleIcon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { Button } from "../../components/ui/button";
 import { SettingsRow } from "./settings-row";
 import { useAccountAction } from "./use-account-action";
 
 const providers = [
-  { id: "google", label: "Google", icon: GoogleIcon },
-  { id: "github", label: "GitHub", icon: GithubIcon },
+  { id: "google", label: "Google", icon: "/icons/google.svg" },
+  { id: "github", label: "GitHub", icon: "/icons/github.svg" },
 ] as const;
 function getLoginConnections(user: UserResource) {
   return user.externalAccounts.filter(
@@ -33,7 +31,7 @@ export function SocialSettings() {
         return (
           <div key={provider.id} className="space-y-3 rounded-xl border p-4">
             <p className="flex items-center gap-2 font-semibold">
-              <HugeiconsIcon icon={provider.icon} className="size-5 shrink-0" aria-hidden="true" />
+              <img src={provider.icon} className="size-5 shrink-0" width={20} height={20} alt="" />
               {provider.label}
             </p>
             {accounts.map((account) => {
