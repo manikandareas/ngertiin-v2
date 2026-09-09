@@ -1,27 +1,14 @@
-<figure class="rounded-3xl bg-success-subtle p-3.5 sm:rounded-[32px] sm:p-7">
-  <div class="preview-panel">
-    <div class="preview-top">
-      <span>FLASHCARD & KUIS · EKOSISTEM</span>
-    </div>
-    <div class="flex justify-between text-sm text-muted-foreground">
-      <span>Kartu belajar</span><span>1 / 6</span>
-    </div>
-    <div
-      class="mt-[18px] mb-6 grid justify-items-center gap-6 rounded-2xl border-2 border-border bg-muted px-4 py-[30px] text-center shadow-[0_5px_0_var(--border)]"
-    >
-      <span class="eyebrow">LATIHAN INGATAN</span><h3>
-        Apa peran produsen<br />dalam ekosistem?
-      </h3><span class="text-sm text-muted-foreground">Sisi pertanyaan</span>
-    </div>
-    <div
-      class="flex items-center gap-3 rounded-xl border-2 border-success bg-success-subtle p-3 text-[13px] font-[750] text-success-foreground"
-    >
-      <span class="rounded-md border-2 border-success px-2 py-0.5">A</span><span
-        >Menghasilkan makanan sendiri</span
-      ><span aria-hidden="true">✓</span>
-    </div>
-  </div>
-  <figcaption class="preview-caption">
+---
+import FeatureVideo from "./FeatureVideo.astro";
+---
+
+<figure class="rounded-3xl bg-success-subtle p-3.5 sm:rounded-[32px] sm:p-6">
+  <FeatureVideo
+    name="learning-session"
+    width={1884}
+    label="Demo materi, flashcard, dan kuis dalam sesi belajar."
+  />
+  <figcaption class="mt-[18px] text-center text-[13px] font-[750]">
     Kombinasi flashcard dan kuis untuk daya ingat jangka panjang.
   </figcaption>
 </figure>

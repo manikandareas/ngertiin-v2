@@ -1,0 +1,55 @@
+---
+import FeatureVideoDialog from "./FeatureVideoDialog.astro";
+
+interface Props {
+  name: string;
+  width: number;
+  label: string;
+}
+const { name, width, label } = Astro.props;
+const assetsUrl = (
+  import.meta.env.PUBLIC_ASSETS_URL || "https://ngertiin-assets.whoismanik.dev"
+).replace(/\/$/, "");
+const src = `${assetsUrl}/videos/${name}-v1.mp4`;
+const poster = `${assetsUrl}/videos/${name}-v1.jpg`;
+---
+
+<div data-feature-player>
+  <button
+    data-video-trigger
+    class="group relative block w-full cursor-pointer overflow-hidden rounded-[20px] border-2 border-border bg-background focus-visible:outline-3 focus-visible:outline-offset-5 focus-visible:outline-primary"
+    type="button"
+    aria-label={`Lihat demo: ${label}`}
+    aria-haspopup="dialog"
+  >
+    <video
+      data-preview
+      class="pointer-events-none block h-auto w-full"
+      width={width}
+      height="1080"
+      src={src}
+      poster={poster}
+      preload="none"
+      muted
+      loop
+      playsinline
+      aria-hidden="true"
+      tabindex="-1"></video>
+    <span
+      class="video-preview-overlay absolute inset-0 grid place-items-center bg-black/24 opacity-0 backdrop-blur-sm transition-opacity duration-180 group-focus-visible:opacity-100 group-focus-visible:transition-none motion-reduce:transition-none"
+      aria-hidden="true"
+    >
+      <span
+        class="video-preview-cta inline-flex items-center gap-2.5 rounded-full bg-background px-5 py-3 text-sm font-extrabold text-foreground shadow-[0_4px_20px_rgb(0_0_0/0.12)]"
+        ><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"
+          ><path d="M8 5v14l11-7z"></path></svg
+        >Lihat demo</span
+      >
+    </span>
+  </button>
+  <FeatureVideoDialog {name} {width} {label} {poster} />
+</div>
+
+<script>
+  import "../scripts/feature-videos";
+</script>

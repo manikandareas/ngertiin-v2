@@ -31,8 +31,9 @@ Salin `.env.example` ke `.env` di direktori ini bila ingin mengganti default.
 | --- | --- | --- |
 | `PUBLIC_APP_URL` | `http://localhost:5173` | Origin aplikasi; CTA menuju `/dashboard`, Masuk menuju `/sign-in` |
 | `PUBLIC_SITE_URL` | `http://localhost:4321` | URL deployment landing page untuk canonical dan metadata sosial |
+| `PUBLIC_ASSETS_URL` | `https://ngertiin-assets.whoismanik.dev` | Origin aset video dan poster pada bucket R2 `ngertiin-assets` |
 
-Keduanya dibaca saat build; build ulang setelah mengganti URL. Gunakan URL HTTP(S)
+Variabel ini dibaca saat build; build ulang setelah mengganti URL. Gunakan URL HTTP(S)
 landing page pada root domain/subdomain. Isi URL deployment sebelum build produksi.
 Landing page meneruskan pengunjung ke route aplikasi; autentikasi tetap ditangani `apps/web`.
 
@@ -42,11 +43,63 @@ Landing page meneruskan pengunjung ke route aplikasi; autentikasi tetap ditangan
   dan `apps/web/src/components/ui/button.tsx`; salin perubahan relevan secara eksplisit.
 - Bentuk node mengikuti `journey-node-item.tsx`; kartu mengikuti `flashcard-activity.tsx`.
 - Favicon, identitas sosial, dan maskot disalin dari `apps/web/public`.
-- Seluruh preview memakai contoh Ekosistem dan ditandai **Contoh**. Tidak interaktif.
+- Empat card fitur memakai rekaman produk dari R2 melalui `FeatureVideo.astro`.
+  `FeatureVideoDialog.astro` menangani markup dialog dan kontrol;
+  `src/scripts/feature-videos.ts` mengatur playback dan interaksi.
+  Styling memakai utility Tailwind; aturan rasio, fullscreen, dan perangkat sentuh
+  dipusatkan di `src/styles/global.css`. Warna card luar tetap memakai token tema;
+  video mempertahankan rasio rekaman.
 - Spark Blue/teks putih pada CTA dipertahankan sesuai design system, termasuk kompromi
   kontrasnya. Halaman ini tidak mengklaim kepatuhan WCAG penuh.
-- Motion hanya entrance hero dan feedback tombol. Entrance/transisi dinonaktifkan
-  mengikuti `prefers-reduced-motion`.
+- Video memakai poster dan `preload="none"`, diputar tanpa suara saat terlihat,
+  lalu dijeda saat hover, keluar viewport, tab tidak aktif, atau popup terbuka.
+  Hover menampilkan overlay blur dan tombol “Lihat demo”; pada perangkat sentuh
+  tombol selalu terlihat. Klik membuka dialog dengan backdrop blur, rasio asli,
+  dan kontrol play/pause, seek, serta fullscreen. Semua video selalu muted.
+  Dialog dapat ditutup lewat tombol tutup, backdrop, atau Escape; fokus kembali
+  ke preview.
+  `prefers-reduced-motion` mematikan autoplay serta entrance/transisi; kontrol
+  video tetap dapat digunakan untuk play, seek, dan fullscreen.
+
+### Aset video
+
+Bucket R2 `ngertiin-assets` (APAC, Standard) melayani custom domain
+`ngertiin-assets.whoismanik.dev`; public development URL tetap nonaktif.
+Cache menggunakan konfigurasi standar Cloudflare (browser TTL 4 jam).
+Nama objek berversi; gunakan versi baru saat mengganti konten agar cache lama
+tidak menampilkan rekaman sebelumnya.
+
+| Card | Video pada prefix `videos/` | Resolusi |
+| --- | --- | --- |
+| Alur terstruktur | `create-module-v1.mp4` | 1920 × 1080 |
+| Metode belajar aktif | `learning-session-v1.mp4` | 1884 × 1080 |
+| Penguatan adaptif | `adaptive-v1.mp4` | 1920 × 1080 |
+| Hasil belajar | `attempt-result-v1.mp4` | 1884 × 1080 |
+
+Poster menggunakan nama yang sama dengan ekstensi `.jpg`. Semua video tetap
+30 fps dengan durasi utuh. File sumber di `public/videos/` tidak ditimpa;
+landing menggunakan URL R2, bukan file sumber tersebut. Astro tetap menyalin
+file apa pun di `public/` ke hasil build lokal.
+
+Persiapan aset dari MP4 sumber (ganti `input.mp4` dan `output-v1`):
+
+```sh
+# Sumber HEVC: H.264 berkualitas tinggi, tanpa menurunkan resolusi/fps.
+ffmpeg -i input.mp4 -map 0:v:0 -c:v libx264 -preset slow -crf 17 -pix_fmt yuv420p -an -map_metadata -1 -movflags +faststart output-v1.mp4
+# Sumber H.264: pertahankan stream video tanpa encode ulang.
+ffmpeg -i input.mp4 -map 0:v:0 -c:v copy -an -map_metadata -1 -movflags +faststart output-v1.mp4
+# Poster pada resolusi asli.
+ffmpeg -ss 0.5 -i output-v1.mp4 -frames:v 1 -q:v 2 output-v1.jpg
+```
+
+Catatan verifikasi integrasi sebelum cleanup, 9 September 2026: empat video berhasil dimainkan di Chromium;
+viewport 375px tanpa overflow; pause manual dan reduced motion berfungsi.
+Endpoint R2 mengembalikan `video/mp4`, byte-range `206`, dan cache `HIT`.
+Ukuran total MP4 turun dari 49.02 MB menjadi 28.06 MB. SSIM dua konversi HEVC
+sekitar 0.997; dua sumber H.264 memakai stream copy. Safari/iOS belum diuji.
+
+Validasi cleanup: Astro check, build, Prettier, dan Biome lulus. Pengujian browser
+setelah cleanup belum dijalankan karena koneksi alat browser gagal.
 
 Biome memeriksa JS/TS, JSON, dan CSS. File `.astro` serta `.astro/` hasil generate
 dikecualikan dari Biome karena dukungan template parsial menghasilkan false positive

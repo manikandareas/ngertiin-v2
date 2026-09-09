@@ -1,64 +1,12 @@
 ---
-const nodes = [
-  { title: "Mengenal ekosistem", type: "Materi", status: "Selesai", symbol: "✓", state: "done" },
-  {
-    title: "Siapa makan siapa?",
-    type: "Kartu belajar",
-    status: "Sedang dipelajari",
-    symbol: "▷",
-    state: "current",
-  },
-  { title: "Uji pemahamanmu", type: "Kuis", status: "Terkunci", symbol: "3", state: "locked" },
-];
+import FeatureVideo from "./FeatureVideo.astro";
 ---
 
 <figure class="rounded-3xl bg-secondary p-3.5 sm:rounded-[32px] sm:p-6">
-  <div class="preview-panel">
-    <div class="preview-top">
-      <span>ALUR BELAJAR</span>
-    </div>
-    <h3>Ekosistem</h3><p class="text-sm text-muted-foreground">
-      Kenali hubungan makhluk hidup di sekitarmu.
-    </p>
-    <ol class="grid gap-7 pt-[26px] pb-3">
-      {
-        nodes.map((node) => (
-          <li class="relative flex items-center gap-3.5 even:ml-3 sm:gap-5 sm:even:ml-8">
-            <span
-              class:list={[
-                "grid h-11 w-[52px] shrink-0 place-items-center border-[5px] border-background text-[22px] font-[850] outline-3 sm:h-12 sm:w-16",
-                {
-                  "rounded-full bg-success-subtle text-success-foreground outline-success-subtle shadow-[0_7px_0_var(--success)]":
-                    node.state === "done",
-                  "rounded-full bg-primary text-primary-foreground outline-primary shadow-[0_7px_0_var(--primary-edge)]":
-                    node.state === "current",
-                  "rounded-[24%] bg-border outline-border shadow-[0_7px_0_var(--input)]":
-                    node.state === "locked",
-                },
-              ]}
-              aria-hidden="true"
-            >
-              {node.symbol}
-            </span>
-            <div class="grid gap-0.5">
-              <span class="text-[11px] text-muted-foreground">{node.type}</span>
-              <strong class="text-sm leading-[1.3] sm:text-[15px]">{node.title}</strong>
-              <span
-                class:list={[
-                  "text-[11px]",
-                  node.state === "current" ? "font-[750] text-link" : "text-muted-foreground",
-                ]}
-              >
-                {node.status}
-              </span>
-            </div>
-          </li>
-        ))
-      }
-    </ol>
-  </div>
-  <figcaption class="sr-only">
-    Contoh alur belajar Ekosistem dengan materi selesai, kartu belajar aktif, dan kuis terkunci.
-    Preview statis.
-  </figcaption>
+  <FeatureVideo
+    name="create-module"
+    width={1920}
+    label="Proses membuat modul dan alur belajar dari materi."
+  />
+  <figcaption class="sr-only">Proses membuat modul dan alur belajar dari materi.</figcaption>
 </figure>
