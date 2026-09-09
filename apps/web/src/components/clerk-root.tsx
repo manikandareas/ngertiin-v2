@@ -1,4 +1,5 @@
 import { ClerkProvider } from "@clerk/react";
+import { shadcn } from "@clerk/themes";
 import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { isClerkConfigured, webEnvironment } from "../config";
@@ -20,6 +21,9 @@ export function ClerkRoot({ children }: { children: ReactNode }) {
       signInFallbackRedirectUrl="/dashboard"
       signUpFallbackRedirectUrl="/dashboard"
       afterSignOutUrl="/sign-in"
+      appearance={{
+        theme: shadcn,
+      }}
     >
       {children}
     </ClerkProvider>
