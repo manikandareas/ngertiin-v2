@@ -151,8 +151,25 @@
   }
 }
 @media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+  .hero-scroll-arrow {
+    transform-origin: 50% 15%;
+    animation: hero-scroll-nudge 3.2s ease-in-out infinite;
+  }
   .hero-copy {
     animation: entrance 0.65s ease-out both;
+  }
+}
+@keyframes hero-scroll-nudge {
+  0%,
+  65%,
+  100% {
+    transform: translateY(0) rotate(-3deg);
+  }
+  35% {
+    transform: translateY(8px) rotate(3deg);
   }
 }
 @keyframes entrance {
