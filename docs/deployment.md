@@ -122,9 +122,9 @@ Project Dokploy `ngertiin` / `production` menjalankan PostgreSQL 17, Redis 7, da
 
 API sudah healthy. Endpoint publik `/health/live` dan `/health/ready` mengembalikan HTTP 200, dengan PostgreSQL, Redis, dan storage `up`. `/api/v1/me` tanpa token mengembalikan 401. CORS preflight mengizinkan origin aplikasi dan header Authorization. Worker mencatat `worker.ready` untuk empat antrean; snapshot awal seluruh antrean kosong. Ini belum membuktikan pemrosesan job AI.
 
-Clerk production menggunakan `app-ngertiin.whoismanik.dev` sebagai secondary application. Lima CNAME dan domain sudah verified; endpoint HTTPS `/v1/environment` mengembalikan HTTP 200. Secret lengkap sudah divalidasi lewat Clerk Backend API dan dipasang di Dokploy. Client OAuth Google dan GitHub `Ngertiin whoismanik production` sudah dibuat dan kredensialnya dipasang di Clerk setelah persetujuan. Client Google lama untuk domain `ngerti.in` tetap utuh. Callback keduanya: `https://clerk.app-ngertiin.whoismanik.dev/v1/oauth_callback`. Halaman login tampil di Brave; tombol Google kini mencapai pemilih akun Google tanpa error OAuth. Penyelesaian login menunggu pengguna memilih akun dan memberikan persetujuan provider.
+Clerk production menggunakan `app-ngertiin.whoismanik.dev` sebagai secondary application. Lima CNAME dan domain sudah verified; endpoint HTTPS `/v1/environment` mengembalikan HTTP 200. Secret lengkap sudah divalidasi lewat Clerk Backend API dan dipasang di Dokploy. Client OAuth Google dan GitHub `Ngertiin whoismanik production` sudah dibuat dan kredensialnya dipasang di Clerk setelah persetujuan. Client Google lama untuk domain `ngerti.in` tetap utuh. Callback keduanya: `https://clerk.app-ngertiin.whoismanik.dev/v1/oauth_callback`. Halaman login tampil di Brave; tombol Google kini mencapai pemilih akun Google tanpa error OAuth. Google login kemudian berhasil dan dashboard production terbuka. Pengujian E2E lanjutan diserahkan kepada pengguna.
 
-Kedua frontend sudah dipublikasikan dari CLI Wrangler dengan environment production. Web version `2cdedad6-e900-480d-8310-c5802464a130`; landing version `4a519bd9-6718-4d81-9ad8-f43100769d04`. Landing, deep link SPA, dan aset pendukung PDF mengembalikan 200. Perbaikan `78b7d2b` meratakan lokasi aset PDF ke `/pdfjs/cmaps`, `/pdfjs/standard_fonts`, dan `/pdfjs/wasm`; file `.DS_Store` dikecualikan dari upload Worker. GitHub environment `production` dan variable publishable key sudah dibuat; secret token Cloudflare untuk workflow frontend belum dipasang. Deployment CLI tersedia lewat OAuth Wrangler yang telah disetujui.
+Kedua frontend sudah berhasil dideploy lewat GitHub Actions pada commit `43bc83b5cdc7249b67366f0a92b37ed86afc00db`: [web](https://github.com/manikandareas/ngertiin-v2/actions/runs/34448326421) dan [www](https://github.com/manikandareas/ngertiin-v2/actions/runs/34448329746). Typecheck, build, Wrangler dry-run, penyimpanan artifact, dan deploy semuanya berhasil. Web version `32ceb01b-5e2d-4cae-bee5-eac7e24558ee`; landing version `ff613dbc-8c63-49ca-ae5a-46bfd57969fe`. Landing, deep link SPA, dan aset pendukung PDF mengembalikan 200. Perbaikan `78b7d2b` meratakan lokasi aset PDF ke `/pdfjs/cmaps`, `/pdfjs/standard_fonts`, dan `/pdfjs/wasm`; file `.DS_Store` dikecualikan dari upload Worker. GitHub environment `production` memiliki variable `VITE_CLERK_PUBLISHABLE_KEY` dan secrets `CLOUDFLARE_ACCOUNT_ID` serta `CLOUDFLARE_API_TOKEN`. Token `ngertiin-github-actions-production` dibatasi ke akun yang digunakan: Workers Scripts Edit dan Account Settings Read; zone `whoismanik.dev`: Workers Routes Edit dan Zone Read. Token tidak memiliki akses bucket R2 aplikasi/backup. URL kedua frontend mengembalikan 200 setelah deployment CI; API readiness tetap menunjukkan semua dependency up. Deployment CLI lewat OAuth Wrangler tetap tersedia.
 
 Bucket R2 `ngertiin-production` tetap private. Uji put, signed GET dengan Range (206), CORS origin aplikasi, dan delete objek sementara berhasil. Video landing pada bucket public yang sudah ada juga mengembalikan 206. Kredensial OpenAI dan Mistral diterima endpoint daftar model (200); belum menjalankan generasi berbayar atau OCR. Tidak ada secret disimpan di repository.
 
@@ -134,4 +134,18 @@ Bucket private `ngertiin-backups` memakai token Object Read & Write terpisah yan
 
 Backup manual pertama pada 10 September 2026 berhasil diekspor dan diunggah ke R2 (status deployment `done`). Objek `.sql.gz` berisi PostgreSQL custom-format dump, sehingga restore menggunakan `gzip -dc backup.sql.gz | pg_restore --exit-on-error`, bukan `psql`. Salinan backup berhasil direstore ke container PostgreSQL 17 lokal dengan jaringan nonaktif dan storage tmpfs: 24 tabel public dan 17 catatan migrasi terbaca. Container uji sudah dihapus. Database live tidak disentuh selama uji restore. Keberhasilan jadwal otomatis berikutnya tetap perlu dipantau.
 
-Login pengguna hingga alur source → modul → evaluasi, pemrosesan job provider/Firecrawl, streaming authenticated, dan restart recovery: **NOT RUN**. Infrastruktur, frontend, konfigurasi OAuth, serta backup sudah terpasang; pengujian aplikasi authenticated menunggu login pengguna.
+Login pengguna hingga alur source → modul → evaluasi, pemrosesan job provider/Firecrawl, streaming authenticated, dan restart recovery: **NOT RUN**. Infrastruktur, frontend, OAuth, backup, serta deployment frontend melalui CI sudah terpasang. Pengujian E2E aplikasi ditangani pengguna.
+
+## Menjalankan deployment frontend melalui CI
+
+Buka GitHub Actions → **Deploy Cloudflare frontend** → **Run workflow**, pilih branch/commit release dan `app` (`web` atau `www`). Workflow tetap manual; push dokumentasi tidak memicu deployment. Untuk perubahan yang membutuhkan backend baru, selesaikan build image, backup, migrasi, dan readiness backend terlebih dahulu.
+
+Alternatif dari checkout dengan GitHub CLI terautentikasi:
+
+```sh
+gh workflow run frontend-deploy.yml --ref main -f app=web
+gh workflow run frontend-deploy.yml --ref main -f app=www
+gh run list --workflow frontend-deploy.yml --limit 5
+```
+
+Setiap run menyimpan artifact build selama 30 hari. Perubahan variable publik membutuhkan build/deploy ulang. Jika token CI dirotasi, perbarui secret GitHub environment `production`, lalu verifikasi workflow sebelum mencabut token lama.
