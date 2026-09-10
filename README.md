@@ -81,3 +81,7 @@ packages/
 
 Web dibuat dengan CLI resmi `create-vite`; API dan worker dibuat dengan Nest CLI resmi. Seluruh
 dependency installation dan runtime tetap menggunakan Bun.
+
+## Deployment production
+
+Panduan Cloudflare Workers Static Assets, R2, Clerk, dan Dokploy tersedia di [docs/deployment.md](docs/deployment.md). Konfigurasi backend production menggunakan `compose.production.yml`; `docker-compose.yml` tetap untuk infrastruktur development.

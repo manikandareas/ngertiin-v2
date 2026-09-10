@@ -1,0 +1,14 @@
+.git
+.github
+**/node_modules
+**/dist
+**/.astro
+**/.wrangler
+**/.env
+**/.env.*
+**/*.log
+**/*.tsbuildinfo
+**/.DS_Store
+coverage
+.turbo
+docs

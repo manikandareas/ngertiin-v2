@@ -1,0 +1,81 @@
+name: ngertiin-production
+
+x-infrastructure: &infrastructure
+  DATABASE_URL: ${DATABASE_URL:?Set internal PostgreSQL URL}
+  REDIS_URL: ${REDIS_URL:?Set internal Redis URL}
+  S3_ENDPOINT: ${S3_ENDPOINT:?Set R2 S3 endpoint}
+  S3_REGION: ${S3_REGION:-auto}
+  S3_ACCESS_KEY: ${S3_ACCESS_KEY:?Set R2 access key}
+  S3_SECRET_KEY: ${S3_SECRET_KEY:?Set R2 secret key}
+  S3_BUCKET: ${S3_BUCKET:?Set private R2 bucket}
+  S3_FORCE_PATH_STYLE: ${S3_FORCE_PATH_STYLE:-true}
+
+x-service: &service
+  restart: unless-stopped
+  init: true
+  stop_grace_period: 120s
+  networks:
+    - backend
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  api:
+    <<: *service
+    image: ${BACKEND_IMAGE:?Set registry image prefix}-api:${RELEASE_TAG:?Set immutable commit tag}
+    environment:
+      <<: *infrastructure
+      NODE_ENV: production
+      API_PORT: "3000"
+      WEB_ORIGIN: https://app-ngertiin.whoismanik.dev
+      CLERK_SECRET_KEY: ${CLERK_SECRET_KEY:?Set Clerk production secret}
+      SOURCE_PDF_MAX_BYTES: ${SOURCE_PDF_MAX_BYTES:-26214400}
+      USAGE_MODULES_WEEKLY_LIMIT: ${USAGE_MODULES_WEEKLY_LIMIT:-10}
+      USAGE_SOURCES_WEEKLY_LIMIT: ${USAGE_SOURCES_WEEKLY_LIMIT:-40}
+      RATE_LIMIT_WINDOW_SECONDS: ${RATE_LIMIT_WINDOW_SECONDS:-60}
+      RATE_LIMIT_READ_MAX: ${RATE_LIMIT_READ_MAX:-120}
+      RATE_LIMIT_MUTATION_MAX: ${RATE_LIMIT_MUTATION_MAX:-60}
+      RATE_LIMIT_EXPENSIVE_MAX: ${RATE_LIMIT_EXPENSIVE_MAX:-10}
+      RATE_LIMIT_STREAM_MAX: ${RATE_LIMIT_STREAM_MAX:-10}
+    expose:
+      - "3000"
+    healthcheck:
+      test: ["CMD", "bun", "-e", "fetch('http://localhost:3000/health/ready', {signal: AbortSignal.timeout(4000)}).then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+
+  worker:
+    <<: *service
+    image: ${BACKEND_IMAGE:?Set registry image prefix}-worker:${RELEASE_TAG:?Set immutable commit tag}
+    environment:
+      <<: *infrastructure
+      NODE_ENV: production
+      OPENAI_API_KEY: ${OPENAI_API_KEY:?Set OpenAI key}
+      OPENAI_MODEL: ${OPENAI_MODEL:?Set validated model}
+      AI_IMAGE_INPUT_ENABLED: ${AI_IMAGE_INPUT_ENABLED:-true}
+      WIKIMEDIA_USER_AGENT: ${WIKIMEDIA_USER_AGENT:-NgertiinLessonImages/1.0 (https://ngertiin.whoismanik.dev)}
+      MISTRAL_API_KEY: ${MISTRAL_API_KEY:?Set Mistral key}
+      MISTRAL_OCR_MODEL: ${MISTRAL_OCR_MODEL:-mistral-ocr-latest}
+      FIRECRAWL_API_KEY: ${FIRECRAWL_API_KEY:?Set Firecrawl key}
+      SOURCE_URL_MAX_CODE_POINTS: ${SOURCE_URL_MAX_CODE_POINTS:-500000}
+
+  # Explicit release step; never start migrations on ordinary app restarts.
+  migrate:
+    image: ${BACKEND_IMAGE:?Set registry image prefix}-migrate:${RELEASE_TAG:?Set immutable commit tag}
+    profiles: [release]
+    restart: "no"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:?Set internal PostgreSQL URL}
+    networks:
+      - backend
+
+networks:
+  backend:
+    external: true
+    name: ${BACKEND_NETWORK:?Set network shared with Dokploy databases}

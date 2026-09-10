@@ -1,0 +1,53 @@
+name: Deploy Cloudflare frontend
+on:
+  workflow_dispatch:
+    inputs:
+      app:
+        description: Frontend to deploy after backend release verification
+        type: choice
+        options: [web, www]
+        required: true
+permissions:
+  contents: read
+concurrency:
+  group: cloudflare-production-${{ inputs.app }}
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      VITE_API_URL: https://api-ngertiin.whoismanik.dev
+      VITE_CLERK_PUBLISHABLE_KEY: ${{ vars.VITE_CLERK_PUBLISHABLE_KEY }}
+      PUBLIC_SITE_URL: https://ngertiin.whoismanik.dev
+      PUBLIC_APP_URL: https://app-ngertiin.whoismanik.dev
+      PUBLIC_ASSETS_URL: https://ngertiin-assets.whoismanik.dev
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.10
+      - run: bun install --frozen-lockfile
+      - name: Validate production Clerk key
+        if: inputs.app == 'web'
+        run: |
+          if [[ "$VITE_CLERK_PUBLISHABLE_KEY" != pk_live_* || "$VITE_CLERK_PUBLISHABLE_KEY" == *replace* ]]; then
+            echo 'Set production variable VITE_CLERK_PUBLISHABLE_KEY.' >&2
+            exit 1
+          fi
+      - run: bun run typecheck
+        working-directory: apps/${{ inputs.app }}
+      - run: bun run build
+        working-directory: apps/${{ inputs.app }}
+      - run: bun run deploy:check
+        working-directory: apps/${{ inputs.app }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ngertiin-${{ inputs.app }}-${{ github.sha }}
+          path: apps/${{ inputs.app }}/dist
+          retention-days: 30
+      - run: bun run deploy
+        working-directory: apps/${{ inputs.app }}
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

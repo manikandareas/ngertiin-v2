@@ -9,7 +9,9 @@
     "preview": "astro preview --port 4321",
     "typecheck": "astro check",
     "format": "prettier --write 'src/**/*.astro'",
-    "format:check": "prettier --check 'src/**/*.astro'"
+    "format:check": "prettier --check 'src/**/*.astro'",
+    "deploy": "wrangler deploy",
+    "deploy:check": "wrangler deploy --dry-run"
   },
   "dependencies": {
     "@fontsource-variable/nunito": "5.3.0",
