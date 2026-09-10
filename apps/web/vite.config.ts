@@ -15,7 +15,8 @@ export default defineConfig({
     viteStaticCopy({
       targets: ["cmaps", "standard_fonts", "wasm"].map((folder) => ({
         src: normalizePath(join(pdfjsRoot, folder)),
-        dest: "pdfjs",
+        dest: `pdfjs/${folder}`,
+        rename: { stripBase: true },
       })),
     }),
   ],
