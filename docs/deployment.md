@@ -114,4 +114,14 @@ Pantau uptime, 5xx, resource VPS, restart container, umur job tertua, failed job
 
 Typecheck, build seluruh workspace, lint (masih ada warning/info), format, pemeriksaan Drizzle, parsing workflow YAML, Compose production, dan Wrangler dry-run kedua frontend berhasil. Ketiga image (API, worker, migrasi) Linux ARM64 berhasil dibangun; pemeriksaan Drizzle dalam image migrasi berhasil; impor modul workspace pada kedua image dan pemrosesan gambar native sharp pada image API berhasil tanpa koneksi jaringan. File dotenv lokal tidak terbawa ke image API.
 
-Deployment Dokploy/Cloudflare, image AMD64 di CI, migrasi database production, Clerk production, provider AI, R2, browser end-to-end, dan backup/restore production: **NOT RUN**. Workflow manual baru berupa file repo; belum dijalankan di GitHub.
+## Status provisioning (10 September 2026)
+
+Release backend `8c80e1e7ff519f36f1d01daae8bb469fcb9d5990` berhasil melalui [workflow backend](https://github.com/manikandareas/ngertiin-v2/actions/runs/34441717266). Ketiga image API, worker, dan migrasi untuk AMD64/ARM64 sudah dipublikasikan. Manifest image API dapat diambil tanpa autentikasi registry. Gunakan SHA release ini sebagai `RELEASE_TAG`, bukan commit dokumentasi berikutnya.
+
+Project Dokploy `ngertiin` / `production`, PostgreSQL 17, Redis 7, dan Compose `ngertiin-backend` sudah dibuat. Deploy PostgreSQL dan Redis telah dipicu; kesehatan runtime belum diverifikasi. Compose memakai repository HTTPS, branch `main`, path `./compose.production.yml`, dan auto-deploy nonaktif. Environment backend, migrasi, routing HTTPS, serta deployment API/worker belum selesai.
+
+Clerk production sudah dibuat untuk `app-ngertiin.whoismanik.dev` sebagai secondary application. Lima CNAME Clerk sudah terpasang; endpoint HTTPS `/v1/environment` mengembalikan HTTP 200. Kredensial OAuth production Google/GitHub dan login pengguna belum diverifikasi. Build kedua frontend dengan domain dan publishable key production berhasil; frontend belum dipublikasikan.
+
+Bucket R2 private `ngertiin-production` sudah dibuat dengan CORS GET/HEAD untuk origin aplikasi. Bucket public aset yang sudah ada tetap tersedia. Record A `api-ngertiin` sudah mengarah ke VPS dengan status DNS-only. Token R2 aplikasi, akses deploy Cloudflare, dan API key Dokploy masih menunggu konfirmasi pembuatan akses; tidak ada secret yang disimpan di repository.
+
+Migrasi database production, readiness API, pemrosesan antrean worker, provider AI, operasi objek R2, browser end-to-end, serta backup/restore production: **NOT RUN**. Aplikasi belum dinyatakan live. Lanjutkan tahapan release pertama setelah akses tersedia; verifikasi database dan jalankan migrasi sebelum menyalakan API/worker.
