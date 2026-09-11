@@ -1,6 +1,6 @@
 import { ChatOpenAI } from "@langchain/openai";
 import { Inject, Injectable } from "@nestjs/common";
-import type { ChatUsage } from "@ngertiin/contracts/api";
+import type { ChatRunError, ChatUsage } from "@ngertiin/contracts/api";
 import type { ApiEnvironment } from "@ngertiin/contracts/environment";
 import { API_ENV } from "../config.js";
 import { ProductError } from "../http/product-error.js";
@@ -9,7 +9,7 @@ import { ProductError } from "../http/product-error.js";
 export class AiService {
   constructor(@Inject(API_ENV) private readonly env: ApiEnvironment) {}
 
-  createChatModel() {
+  createChatModel(options?: { maxTokens: number; timeout: number }) {
     if (!this.env.OPENAI_API_KEY || !this.env.OPENAI_CHAT_MODEL) {
       throw new ProductError(
         503,
@@ -22,12 +22,38 @@ export class AiService {
       apiKey: this.env.OPENAI_API_KEY,
       model: this.env.OPENAI_CHAT_MODEL,
       useResponsesApi: true,
-      maxTokens: this.env.CHAT_OUTPUT_MAX_TOKENS,
-      timeout: Math.min(this.env.CHAT_PROVIDER_TIMEOUT_MS, this.env.CHAT_RUN_TIMEOUT_MS),
+      maxTokens: options?.maxTokens ?? this.env.CHAT_OUTPUT_MAX_TOKENS,
+      timeout: Math.min(
+        this.env.CHAT_PROVIDER_TIMEOUT_MS,
+        options?.timeout ?? this.env.CHAT_RUN_TIMEOUT_MS,
+      ),
       maxRetries: this.env.CHAT_PROVIDER_MAX_RETRIES,
       // Do not persist conversations with the provider; our database owns history.
       modelKwargs: { store: false },
     });
+  }
+
+  normalizeChatError(error: unknown): ChatRunError {
+    const name = error instanceof Error ? error.name : "";
+    if (["TimeoutError", "APIConnectionTimeoutError"].includes(name)) return "RUN_TIMEOUT";
+    if (name === "GraphRecursionError") return "STEP_LIMIT";
+    return "PROVIDER_ERROR";
+  }
+
+  aggregateUsage(calls: ChatUsage[]): ChatUsage {
+    const sum = (key: "inputTokens" | "outputTokens" | "totalTokens") => {
+      const known = calls.flatMap((call) => (call[key] === null ? [] : [call[key]]));
+      return known.length ? known.reduce((a, b) => a + b, 0) : null;
+    };
+    let coverage: ChatUsage["coverage"] = "unavailable";
+    if (calls.length && calls.every((call) => call.coverage === "complete")) coverage = "complete";
+    else if (calls.some((call) => call.coverage !== "unavailable")) coverage = "partial";
+    return {
+      inputTokens: sum("inputTokens"),
+      outputTokens: sum("outputTokens"),
+      totalTokens: sum("totalTokens"),
+      coverage,
+    };
   }
 
   normalizeUsage(metadata: unknown): ChatUsage {

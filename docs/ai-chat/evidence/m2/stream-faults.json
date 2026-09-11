@@ -1,0 +1,28 @@
+[
+  {
+    "name": "subscribe snapshot overlap before commit boundary",
+    "pass": true,
+    "text": "ABC"
+  },
+  {
+    "name": "sequence gap closes subscriber",
+    "pass": true
+  },
+  {
+    "name": "slow writable closes without waiting on provider",
+    "pass": true
+  },
+  {
+    "name": "startup buffer bounded",
+    "pass": true
+  },
+  {
+    "name": "redis disconnect closes subscriber",
+    "pass": true
+  },
+  {
+    "name": "uncooperative provider wait bounded by grace",
+    "pass": true,
+    "elapsedMs": 53
+  }
+]

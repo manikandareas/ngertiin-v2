@@ -1,0 +1,28 @@
+{
+  "cancel": {
+    "body": "Putus koneksi\nTutup chat\n\nslow reconnect browser\n\nTeman belajar\n\nJawaban fixture tetap tersimpan.\n\nslow browser cancel\n\nTeman belajar\n\nJawaban \n\nJawaban terhenti · teks mungkin belum lengkap.\n\nJawaban dihentikan.\n\nCoba ulang\n\nDari Journey · percakapan dalam modul ini\n\nEnter kirim · Shift + Enter baris baru\n\nAI bisa keliru. Periksa kembali hal penting.",
+    "cancelledVisible": true,
+    "partialVisible": true,
+    "postCount": 2
+  },
+  "postRequests": [
+    {
+      "method": "POST",
+      "path": "/api/v1/modules/4c44e4c1-484b-471d-9b09-6145bd7c1242/chat/threads/1202e891-8513-45bd-9565-11038286bbce/messages"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/modules/4c44e4c1-484b-471d-9b09-6145bd7c1242/chat/threads/1202e891-8513-45bd-9565-11038286bbce/messages"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/modules/4c44e4c1-484b-471d-9b09-6145bd7c1242/chat/threads/1202e891-8513-45bd-9565-11038286bbce/runs/6b4e406a-ddde-4c09-829c-aabe59cc8355/cancel"
+    }
+  ],
+  "reconnect": {
+    "body": "Putus koneksi\nTutup chat\n\nslow reconnect browser\n\nTeman belajar\n\nJawaban fixture tetap tersimpan.\n\nDari Journey · percakapan dalam modul ini\n\nEnter kirim · Shift + Enter baris baru\n\nAI bisa keliru. Periksa kembali hal penting.",
+    "errors": [],
+    "messages": ["slow reconnect browser", "Jawaban fixture tetap tersimpan."],
+    "postCount": 1
+  }
+}

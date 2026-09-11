@@ -120,27 +120,37 @@ export function ChatConversation({
       !query.state.data || isChatRunActive(query.state.data.status) ? 2000 : false,
   });
   const active = streaming || Boolean(runId && (!run.data || isChatRunActive(run.data.status)));
-  const awaitingFinalSnapshot = Boolean(
-    ack &&
-      chat.messages.some(
-        (message) => message.role === "assistant" && message.metadata?.runId === ack.runId,
-      ) &&
-      !saved.some(
-        (message) =>
-          message.runId === ack.runId &&
-          message.parts.some(
-            (part) => part.type === "data-run-status" && !isChatRunActive(part.data.status),
-          ),
-      ),
+  const savedAssistant = saved.find(
+    (message) => message.role === "assistant" && message.runId === ack?.runId,
   );
-  const showStream = streaming || awaitingFinalSnapshot;
+  const hasFinalSnapshot = Boolean(
+    savedAssistant?.parts.some(
+      (part) => part.type === "data-run-status" && !isChatRunActive(part.data.status),
+    ),
+  );
+  const showStream =
+    streaming ||
+    Boolean(
+      ack &&
+        !savedAssistant &&
+        chat.messages.some(
+          (message) => message.role === "assistant" && message.metadata?.runId === ack.runId,
+        ),
+    );
   useEffect(() => {
-    if (run.data && !isChatRunActive(run.data.status)) refresh();
-  }, [run.data?.status, refresh, run.data]);
+    if (run.data && !isChatRunActive(run.data.status)) {
+      // A dead SSE connection cannot keep the composer busy after durable completion.
+      if (streaming && ack?.runId === run.data.id) void chat.stop();
+      refresh();
+    }
+  }, [run.data, refresh, streaming, ack?.runId, chat.stop]);
   useEffect(() => {
     if (!showStream && history.data && (!ack || saved.some((m) => m.id === ack.messageId)))
       chat.setMessages(saved.map(toUIMessage));
   }, [saved, showStream, history.data, ack, chat.setMessages]);
+  useEffect(() => {
+    if (chat.error && hasFinalSnapshot) chat.clearError();
+  }, [hasFinalSnapshot, chat.error, chat.clearError]);
   // Disconnecting this transport must never cancel the durable run.
   useEffect(
     () => () => {

@@ -1,0 +1,93 @@
+{
+  "final": {
+    "id": "84ccbce4-ef98-4eb9-9175-7f00d8e9f16f",
+    "threadId": "f09a176d-94b4-41fa-9b73-4e438af7fe7b",
+    "messageId": "c34a750d-7de2-4402-9a18-d6021ab71a20",
+    "assistantMessageId": "755c53c9-d1cf-4927-b004-627f36c64927",
+    "status": "completed",
+    "createdAt": "2026-09-11T11:15:00.342Z",
+    "startedAt": "2026-09-11T11:15:02.114Z",
+    "finishedAt": "2026-09-11T11:15:04.192Z",
+    "errorCode": null,
+    "usage": {
+      "inputTokens": 234,
+      "outputTokens": 12,
+      "totalTokens": 246,
+      "coverage": "complete"
+    }
+  },
+  "history": {
+    "data": [
+      {
+        "id": "755c53c9-d1cf-4927-b004-627f36c64927",
+        "threadId": "f09a176d-94b4-41fa-9b73-4e438af7fe7b",
+        "runId": "84ccbce4-ef98-4eb9-9175-7f00d8e9f16f",
+        "sequence": 2,
+        "role": "assistant",
+        "parts": [
+          {
+            "type": "text",
+            "text": "Hai! Ada yang bisa saya bantu?"
+          },
+          {
+            "type": "data-run-status",
+            "data": {
+              "status": "completed",
+              "errorCode": null
+            }
+          }
+        ],
+        "contexts": [],
+        "createdAt": "2026-09-11T11:15:02.169Z",
+        "availability": "available"
+      },
+      {
+        "id": "c34a750d-7de2-4402-9a18-d6021ab71a20",
+        "threadId": "f09a176d-94b4-41fa-9b73-4e438af7fe7b",
+        "runId": "84ccbce4-ef98-4eb9-9175-7f00d8e9f16f",
+        "sequence": 1,
+        "role": "user",
+        "parts": [
+          {
+            "type": "text",
+            "text": "Hai! Jawab singkat dalam bahasa Indonesia."
+          }
+        ],
+        "contexts": [],
+        "createdAt": "2026-09-11T11:15:00.342Z",
+        "availability": "available"
+      }
+    ],
+    "pageInfo": {
+      "hasNextPage": false,
+      "nextCursor": null
+    }
+  },
+  "raw": "data: {\"type\":\"start\",\"messageId\":\"755c53c9-d1cf-4927-b004-627f36c64927\",\"messageMetadata\":{\"runId\":\"84ccbce4-ef98-4eb9-9175-7f00d8e9f16f\",\"status\":\"running\"}}\n\ndata: {\"type\":\"text-start\",\"id\":\"answer\"}\n\n: keepalive\n\n: keepalive\n\n: keepalive\n\n: keepalive\n\n: keepalive\n\n: keepalive\n\n: keepalive\n\n: keepalive\n\ndata: {\"type\":\"text-delta\",\"id\":\"answer\",\"delta\":\"Hai\"}\n\ndata: {\"type\":\"text-delta\",\"id\":\"answer\",\"delta\":\"! Ada yang bisa saya bantu?\"}\n\n: keepalive\n\ndata: {\"type\":\"text-end\",\"id\":\"answer\"}\n\ndata: {\"type\":\"data-run-status\",\"data\":{\"status\":\"completed\",\"errorCode\":null}}\n\ndata: {\"type\":\"finish\",\"messageMetadata\":{\"runId\":\"84ccbce4-ef98-4eb9-9175-7f00d8e9f16f\",\"status\":\"completed\"}}\n\ndata: [DONE]\n\n",
+  "providerUsage": [
+    {
+      "input_tokens": 234,
+      "output_tokens": 12,
+      "total_tokens": 246,
+      "input_token_details": {
+        "cache_read": 0,
+        "cache_creation": 0
+      },
+      "output_token_details": {
+        "reasoning": 0
+      }
+    }
+  ],
+  "calls": [
+    {
+      "call_id": "956e0f82-701e-4293-966e-0010c6a03899",
+      "provider": "openai",
+      "model": "gpt-5.6-luna",
+      "input_tokens": 234,
+      "output_tokens": 12,
+      "total_tokens": 246,
+      "coverage": "complete"
+    }
+  ],
+  "usageMatchesProvider": true
+}

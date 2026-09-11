@@ -1,6 +1,6 @@
 # Implementasi AI Chat
 
-Status: **M1 diimplementasikan; verifikasi lokal tercatat di [bukti M1](./m1-verification.md). M2–M5 belum dimulai.**
+Status: **M1–M2 diimplementasikan; verifikasi lokal tercatat di [bukti M1](./m1-verification.md) dan [bukti M2](./m2-verification.md). M3–M5 belum dimulai.**
 
 Dokumen ini otoritatif untuk delivery dan verifikasi. Keputusan produk/domain berada di [README](./README.md); payload, schema dan angka operasional berada di [contracts](./contracts.md). Status tiap milestone mengikuti bukti delivery di bawah. Penyusunan blueprint tidak menambahkan test suite.
 
@@ -35,13 +35,15 @@ M1 telah memverifikasi peer dependency adapter serta `createAgent` + Responses A
 
 ## M2 — Ketahanan run
 
+**Delivery:** kode selesai; migrasi `0018_stale_havok` diterapkan lokal. Verifikasi dua proses API, Redis/database terisolasi, provider, dan browser fixture tercatat di [bukti M2](./m2-verification.md). Clerk nyata dan deployment/proxy production **NOT RUN**.
+
 **Prasyarat:** M1; PostgreSQL/Redis pengujian; dua instance API untuk race lintas instance.
 
 **Deliverable:** transaksi idempotency/admission, partial unique aktif, global/user limits, claim/fencing/heartbeat/sweep, cancellation, snapshot dan pub/sub lintas instance, rekonsiliasi setelah restart, usage aktual per call. Tuntaskan detail [lifecycle](./contracts.md#lifecycle-run) dan [streaming](./contracts.md#streaming-dan-frontend), termasuk subscriber yang bergabung setelah output dimulai.
 
 **Acceptance:** retry request sama menghasilkan ID sama; payload berbeda ditolak; dua pesan bersamaan memiliki tepat satu pemenang; cancellation versus completion konsisten; disconnect tidak menghentikan provider; reconnect membaca hasil tanpa send otomatis. Matikan executor saat streaming lalu nyalakan kembali: run menjadi interrupted setelah lease/sweep, output lama tidak bisa menimpa hasil. Matikan seluruh API dan pulihkan: queued diklaim atau timed_out, running menjadi interrupted, tidak ada run aktif selamanya. Error provider, batas langkah/output, timeout dan cancellation menghasilkan status terminal sesuai kontrak.
 
-**Bukti yang harus dicatat:** request/response tersanitasi dengan key/ID; row count run/message; status sebelum/sesudah fault; lease epoch dan finalisasi race; browser disconnect/reconnect; penggunaan token dibanding respons provider; pub/sub gap dan slow subscriber beralih ke history. Status: **NOT RUN**.
+**Bukti yang harus dicatat:** request/response tersanitasi dengan key/ID; row count run/message; status sebelum/sesudah fault; lease epoch dan finalisasi race; browser disconnect/reconnect; penggunaan token dibanding respons provider; pub/sub gap dan slow subscriber beralih ke history. Status: **PASS lokal sesuai [bukti M2](./m2-verification.md)**; step limit memakai fault injection budget, tools nyata belum tersedia.
 
 ## M3 — Konteks belajar
 
@@ -105,15 +107,15 @@ Tabel berikut mempertahankan gate rilis lintas milestone; bukti lokal parsial M1
 | Konteks pilihan, stale revision, akses history dicabut | HTTP + browser + database | M3 | NOT RUN |
 | Tidak ada perubahan progres atau XP | Database sebelum/sesudah | M3 | NOT RUN |
 | Lintas materi dengan citation/origin/lokasi benar | Provider + browser + database | M4 | NOT RUN |
-| Idempotency dan dua pesan bersamaan lintas instance | HTTP race + database | M2 | NOT RUN |
-| Disconnect tetap berjalan; reconnect mendapat hasil | Browser + provider + database | M2 | NOT RUN |
-| Provider error, step/output limit, timeout, cancel terminal | Fault injection + provider + database | M2 | NOT RUN |
-| Restart/fencing tidak meninggalkan run aktif | Deployment fault + database | M2 | NOT RUN |
-| Subscriber terlambat/gap/slow client tidak menggandakan teks | Browser + Redis fault + database | M2 | NOT RUN |
+| Idempotency dan dua pesan bersamaan lintas instance | HTTP race + database | M2 | PASS lokal; lihat bukti M2 |
+| Disconnect tetap berjalan; reconnect mendapat hasil | Browser + provider + database | M2 | PASS lokal; lihat bukti M2 |
+| Provider error, step/output limit, timeout, cancel terminal | Fault injection + provider + database | M2 | PASS lokal; lihat bukti M2 |
+| Restart/fencing tidak meninggalkan run aktif | Deployment fault + database | M2 | PASS lokal; lihat bukti M2 |
+| Subscriber terlambat/gap/slow client tidak menggandakan teks | Browser + Redis fault + database | M2 | PASS lokal; lihat bukti M2 |
 | Reindex tidak membaca chunk lama/duplikasi embedding row | Worker + provider + database | M4 | NOT RUN |
 | Indeks belum siap dan lexical fallback | Provider fault + browser | M4 | NOT RUN |
 | Batas rate/context/token/konkurensi dan feature off | HTTP + provider + database | M5 | NOT RUN |
-| Build/typecheck dependency chat implementasi | Static | M1–M5 | PASS M1; M2–M5 NOT RUN |
+| Build/typecheck dependency chat implementasi | Static | M1–M5 | PASS M1–M2; M3–M5 NOT RUN |
 | SSE proxy, graceful drain, rollout dan rollback | Deployment | M5 | NOT RUN |
 
 Evaluasi kualitas memakai kumpulan contoh Bahasa Indonesia yang mencakup sapaan, follow-up, kutipan, lintas sumber, bukti kurang, prompt injection dalam materi, assessment aktif, dan akses tercabut. Reviewer mencatat apakah tool diperlukan, bukti mendukung klaim, lokasi citation benar, dan jawaban membantu belajar. Larangan akses merupakan gate tanpa toleransi kebocoran; skor kualitas, latency, token dan biaya harus dilaporkan dari sampel nyata sebelum menetapkan target operasional.

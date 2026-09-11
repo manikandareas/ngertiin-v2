@@ -73,6 +73,7 @@ export function createChatTransport(options: {
       });
       if (!stream.ok || !stream.body)
         throw new Error("Koneksi streaming terputus. Jawaban akan dibaca dari riwayat.");
+      let finished = false;
       return parseJsonEventStream({
         stream: stream.body,
         schema: uiMessageChunkSchema,
@@ -80,7 +81,12 @@ export function createChatTransport(options: {
         new TransformStream({
           transform(chunk, controller: TransformStreamDefaultController<UIMessageChunk>) {
             if (!chunk.success) throw chunk.error;
+            if (chunk.value.type === "finish") finished = true;
             controller.enqueue(chunk.value);
+          },
+          flush() {
+            if (!finished)
+              throw new Error("Koneksi streaming terputus. Jawaban akan dibaca dari riwayat.");
           },
         }),
       );

@@ -1111,6 +1111,12 @@ export const chat_threads = pgTable(
     check("chat_thread_title_length", sql`char_length(${t.title}) between 1 and 120`),
   ],
 );
+// Serialize admission across API instances; user rows provide the next lock.
+export const chat_admission_slots = pgTable(
+  "chat_admission_slots",
+  { id: text().primaryKey() },
+  (t) => [check("chat_admission_global_only", sql`${t.id} = 'global'`)],
+);
 export const chat_runs = pgTable(
   "chat_runs",
   {

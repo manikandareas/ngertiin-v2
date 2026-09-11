@@ -1,7 +1,7 @@
 # Blueprint AI Chat Ngerti.in
 
-Status: **M1 diimplementasikan; M2–M5 tetap blueprint**. Diperbarui 11 September 2026.
-Batas implementasi dan bukti aktual berada di [verifikasi M1](./m1-verification.md). Deployment belum dijalankan.
+Status: **M1–M2 diimplementasikan; M3–M5 tetap blueprint**. Diperbarui 11 September 2026.
+Batas implementasi dan bukti aktual berada di [verifikasi M1](./m1-verification.md) dan [verifikasi M2](./m2-verification.md). Deployment belum dijalankan.
 
 ## Otoritas dokumen
 
@@ -11,7 +11,7 @@ Batas implementasi dan bukti aktual berada di [verifikasi M1](./m1-verification.
 | [contracts.md](./contracts.md) | Endpoint, payload, persistence, lifecycle run, streaming, konfigurasi dan default numerik |
 | [implementation.md](./implementation.md) | Urutan implementasi, dependency, migrasi, rollout, rollback, acceptance dan bukti |
 
-Konvensi HTTP, autentikasi, envelope, error, identifier, dan idempotency umum mengikuti [API Contract §3](../API_CONTRACT.md#3-protocol-conventions). Schema executable M1 berada di `packages/contracts/src/api/chat`; konteks materi, tools, retrieval, dan ketahanan lanjutan tetap mengikuti milestone berikutnya.
+Konvensi HTTP, autentikasi, envelope, error, identifier, dan idempotency umum mengikuti [API Contract §3](../API_CONTRACT.md#3-protocol-conventions). Schema executable chat berada di `packages/contracts/src/api/chat`; konteks materi, tools, dan retrieval mengikuti milestone berikutnya.
 **Keputusan final** adalah aturan normatif di blueprint. **Default operasional** diberi label di kontrak dan dapat dituning. Kualitas retrieval, latency, throughput, dan biaya adalah **belum diukur**, bukan janji produk.
 
 ## Perilaku produk dan konteks

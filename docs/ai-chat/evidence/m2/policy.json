@@ -1,0 +1,385 @@
+[
+  {
+    "name": "atomic Redis rolling window",
+    "pass": true,
+    "attempts": [0, 0, 0, 60, 60, 60, 60, 60, 60, 60, 60, 60]
+  },
+  {
+    "name": "feature off blocks admission",
+    "pass": true
+  },
+  {
+    "name": "partial actual usage across calls",
+    "pass": true
+  },
+  {
+    "name": "one user and at most one assistant per run",
+    "pass": true,
+    "rows": [
+      {
+        "id": "3d529654-de0f-4c1e-9a61-fca27c3b3941",
+        "status": "completed",
+        "messages": 2,
+        "user_messages": 1,
+        "assistant_messages": 1
+      },
+      {
+        "id": "2cc459e4-2275-4cfb-998c-61aab78ac5b3",
+        "status": "completed",
+        "messages": 2,
+        "user_messages": 1,
+        "assistant_messages": 1
+      },
+      {
+        "id": "1d0292d3-d35d-4568-84c9-db2054ffec30",
+        "status": "completed",
+        "messages": 2,
+        "user_messages": 1,
+        "assistant_messages": 1
+      },
+      {
+        "id": "45e57477-5646-4a18-9de8-2168fb84d1a9",
+        "status": "cancelled",
+        "messages": 1,
+        "user_messages": 1,
+        "assistant_messages": 0
+      },
+      {
+        "id": "3bc8c05c-7e96-4f72-bc42-9aa2a0b7037c",
+        "status": "failed",
+        "messages": 2,
+        "user_messages": 1,
+        "assistant_messages": 1
+      },
+      {
+        "id": "3bd0a085-bd87-4bf6-8631-7f945d9dbf49",
+        "status": "failed",
+        "messages": 2,
+        "user_messages": 1,
+        "assistant_messages": 1
+      },
+      {
+        "id": "c6a81c44-d8bf-4f4e-ba68-fd5007d319b6",
+        "status": "cancelled",
+        "messages": 1,
+        "user_messages": 1,
+        "assistant_messages": 0
+      },
+      {
+        "id": "efda71c6-0f17-463c-87b7-47cb0414c704",
+        "status": "completed",
+        "messages": 2,
+        "user_messages": 1,
+        "assistant_messages": 1
+      },
+      {
+        "id": "07d14169-32d1-4337-a255-edbaeb0cf9ac",
+        "status": "completed",
+        "messages": 2,
+        "user_messages": 1,
+        "assistant_messages": 1
+      },
+      {
+        "id": "646c0329-9eb5-46ba-bfb6-66a1b6ffdbd1",
+        "status": "completed",
+        "messages": 2,
+        "user_messages": 1,
+        "assistant_messages": 1
+      },
+      {
+        "id": "ffd2590d-43e2-4d98-be8c-30e6b890c696",
+        "status": "timed_out",
+        "messages": 2,
+        "user_messages": 1,
+        "assistant_messages": 1
+      },
+      {
+        "id": "13bc5bf0-d682-41a8-b421-6d5a729896d2",
+        "status": "completed",
+        "messages": 2,
+        "user_messages": 1,
+        "assistant_messages": 1
+      },
+      {
+        "id": "68974933-2e22-42e9-8b87-238eb5aa6397",
+        "status": "completed",
+        "messages": 2,
+        "user_messages": 1,
+        "assistant_messages": 1
+      },
+      {
+        "id": "cab1f386-49a1-433f-9e72-be4d9f0875ab",
+        "status": "cancelled",
+        "messages": 2,
+        "user_messages": 1,
+        "assistant_messages": 1
+      },
+      {
+        "id": "a9179b2e-c69d-423f-94ba-a4f46db22348",
+        "status": "failed",
+        "messages": 2,
+        "user_messages": 1,
+        "assistant_messages": 1
+      },
+      {
+        "id": "ae72d7d0-2cda-406a-a71f-6bd437755006",
+        "status": "failed",
+        "messages": 2,
+        "user_messages": 1,
+        "assistant_messages": 1
+      },
+      {
+        "id": "08250ffa-6328-420e-a64b-4fb6debd1643",
+        "status": "cancelled",
+        "messages": 1,
+        "user_messages": 1,
+        "assistant_messages": 0
+      },
+      {
+        "id": "f9ab989a-570d-453d-9bcb-3bce176cbfae",
+        "status": "completed",
+        "messages": 2,
+        "user_messages": 1,
+        "assistant_messages": 1
+      },
+      {
+        "id": "7b2ba474-76ab-45e8-8241-3b9bf991803a",
+        "status": "completed",
+        "messages": 2,
+        "user_messages": 1,
+        "assistant_messages": 1
+      },
+      {
+        "id": "afe72b17-c6b8-4201-b5d3-5f8f2aa7086b",
+        "status": "completed",
+        "messages": 2,
+        "user_messages": 1,
+        "assistant_messages": 1
+      },
+      {
+        "id": "81b797b8-9377-4041-ae65-5e0b3cbf553b",
+        "status": "timed_out",
+        "messages": 2,
+        "user_messages": 1,
+        "assistant_messages": 1
+      },
+      {
+        "id": "7a5daaf1-0fe4-4356-b724-5eaed8d93421",
+        "status": "interrupted",
+        "messages": 2,
+        "user_messages": 1,
+        "assistant_messages": 1
+      },
+      {
+        "id": "e67384e9-d26c-4326-ae2b-15e39ead726f",
+        "status": "interrupted",
+        "messages": 2,
+        "user_messages": 1,
+        "assistant_messages": 1
+      },
+      {
+        "id": "ea95b7c5-ade0-4aab-bd93-0f36ea3a0e6e",
+        "status": "timed_out",
+        "messages": 1,
+        "user_messages": 1,
+        "assistant_messages": 0
+      },
+      {
+        "id": "81aad749-b2ff-4216-bc2d-66afdca31246",
+        "status": "timed_out",
+        "messages": 1,
+        "user_messages": 1,
+        "assistant_messages": 0
+      },
+      {
+        "id": "4e7c460f-1a98-4290-af25-970c4b60baa3",
+        "status": "completed",
+        "messages": 2,
+        "user_messages": 1,
+        "assistant_messages": 1
+      },
+      {
+        "id": "6f46c92b-b14d-48b5-9a5a-0146610015c6",
+        "status": "completed",
+        "messages": 2,
+        "user_messages": 1,
+        "assistant_messages": 1
+      },
+      {
+        "id": "5c32b4fc-b990-4829-9f45-36ec45c6a36e",
+        "status": "cancelled",
+        "messages": 2,
+        "user_messages": 1,
+        "assistant_messages": 1
+      },
+      {
+        "id": "272ae8fc-a8c7-4453-b62e-248ae5512b08",
+        "status": "timed_out",
+        "messages": 2,
+        "user_messages": 1,
+        "assistant_messages": 1
+      },
+      {
+        "id": "6b4e406a-ddde-4c09-829c-aabe59cc8355",
+        "status": "cancelled",
+        "messages": 2,
+        "user_messages": 1,
+        "assistant_messages": 1
+      },
+      {
+        "id": "e2d90776-8623-40b6-8f69-163429e738d5",
+        "status": "completed",
+        "messages": 2,
+        "user_messages": 1,
+        "assistant_messages": 1
+      },
+      {
+        "id": "6b1f129a-964b-4449-8499-df11ab8404c5",
+        "status": "completed",
+        "messages": 2,
+        "user_messages": 1,
+        "assistant_messages": 1
+      },
+      {
+        "id": "37f24622-dd3c-4675-8ec5-f586a702bfec",
+        "status": "cancelled",
+        "messages": 1,
+        "user_messages": 1,
+        "assistant_messages": 0
+      },
+      {
+        "id": "c7d250ed-f29c-4dbc-b583-108b79c9ba7e",
+        "status": "failed",
+        "messages": 2,
+        "user_messages": 1,
+        "assistant_messages": 1
+      },
+      {
+        "id": "dfb89399-e905-425f-8f36-81aa3785df57",
+        "status": "failed",
+        "messages": 2,
+        "user_messages": 1,
+        "assistant_messages": 1
+      },
+      {
+        "id": "dbb61dcf-3284-447a-8208-66f03b1804d3",
+        "status": "cancelled",
+        "messages": 1,
+        "user_messages": 1,
+        "assistant_messages": 0
+      },
+      {
+        "id": "ac00bd14-e3b1-4dc5-97e8-182fb1aa6bc6",
+        "status": "completed",
+        "messages": 2,
+        "user_messages": 1,
+        "assistant_messages": 1
+      },
+      {
+        "id": "59f5f38d-d484-4327-9897-6b33fa0c6a18",
+        "status": "completed",
+        "messages": 2,
+        "user_messages": 1,
+        "assistant_messages": 1
+      },
+      {
+        "id": "f7221721-4c30-4076-83f0-cfbb981be19d",
+        "status": "completed",
+        "messages": 2,
+        "user_messages": 1,
+        "assistant_messages": 1
+      },
+      {
+        "id": "97bd7b21-e36b-4ebe-ab56-4da002296dff",
+        "status": "timed_out",
+        "messages": 2,
+        "user_messages": 1,
+        "assistant_messages": 1
+      },
+      {
+        "id": "7fefe92e-cc0a-4dd3-9da3-7d24b30c826f",
+        "status": "failed",
+        "messages": 2,
+        "user_messages": 1,
+        "assistant_messages": 1
+      },
+      {
+        "id": "c5beef23-56d3-4335-bdf2-c803bc3c2aa5",
+        "status": "completed",
+        "messages": 2,
+        "user_messages": 1,
+        "assistant_messages": 1
+      },
+      {
+        "id": "ff3ddf15-366c-45a3-805a-86a4fce6ca2a",
+        "status": "cancelled",
+        "messages": 2,
+        "user_messages": 1,
+        "assistant_messages": 1
+      },
+      {
+        "id": "e75c20e3-a929-4b9d-acdf-ab44391add5b",
+        "status": "completed",
+        "messages": 2,
+        "user_messages": 1,
+        "assistant_messages": 1
+      },
+      {
+        "id": "2e3b3636-8894-4fc9-b210-0c2d1b9a5232",
+        "status": "cancelled",
+        "messages": 2,
+        "user_messages": 1,
+        "assistant_messages": 1
+      },
+      {
+        "id": "14259b69-67ce-4a22-bd78-ce5938e9117b",
+        "status": "cancelled",
+        "messages": 2,
+        "user_messages": 1,
+        "assistant_messages": 1
+      },
+      {
+        "id": "5d46688f-196a-4841-84ba-220a13dbbb6f",
+        "status": "cancelled",
+        "messages": 2,
+        "user_messages": 1,
+        "assistant_messages": 1
+      },
+      {
+        "id": "6fe39eeb-ec34-4cd1-beed-fa17faa28577",
+        "status": "cancelled",
+        "messages": 2,
+        "user_messages": 1,
+        "assistant_messages": 1
+      },
+      {
+        "id": "669c307b-a572-440d-9d80-430dcf6133e0",
+        "status": "cancelled",
+        "messages": 2,
+        "user_messages": 1,
+        "assistant_messages": 1
+      },
+      {
+        "id": "8d37b495-b465-49c3-a015-8f956d2ab2cf",
+        "status": "cancelled",
+        "messages": 2,
+        "user_messages": 1,
+        "assistant_messages": 1
+      },
+      {
+        "id": "df22d8f9-d5ee-44b8-8568-2ceb756223f9",
+        "status": "cancelled",
+        "messages": 2,
+        "user_messages": 1,
+        "assistant_messages": 1
+      },
+      {
+        "id": "84ccbce4-ef98-4eb9-9175-7f00d8e9f16f",
+        "status": "completed",
+        "messages": 2,
+        "user_messages": 1,
+        "assistant_messages": 1
+      }
+    ]
+  }
+]

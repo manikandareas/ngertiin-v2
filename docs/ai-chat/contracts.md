@@ -143,7 +143,7 @@ Contoh frame tambahan: `{"type":"tool-input-available","toolCallId":"call-1","to
 
 ## Model persistence
 
-Tabel conversation `chat_threads`, `chat_messages`, `chat_message_contexts`, `chat_runs`, dan `chat_run_usage` sudah ditambahkan pada M1. `chat_admission_slots` dan tabel knowledge masih usulan untuk milestone berikutnya. UUID FK mengikuti tabel pengguna/modul existing; timestamps memakai waktu database. DTO tidak mengekspos row internal.
+Tabel conversation `chat_threads`, `chat_messages`, `chat_message_contexts`, `chat_runs`, dan `chat_run_usage` sudah ditambahkan pada M1. `chat_admission_slots` ditambahkan pada M2; tabel knowledge masih usulan untuk M4. UUID FK mengikuti tabel pengguna/modul existing; timestamps memakai waktu database. DTO tidak mengekspos row internal.
 
 | Tabel | Kolom inti dan constraint |
 | --- | --- |
@@ -152,7 +152,7 @@ Tabel conversation `chat_threads`, `chat_messages`, `chat_message_contexts`, `ch
 | `chat_message_contexts` | `id,message_id,kind,reference_json,snapshot_text,content_revision,dependency_only`; page metadata tanpa isi, selected context dan semua dependensi baca; snapshot tetap tunduk revalidasi akses |
 | `chat_runs` | `id,thread_id,user_message_id,assistant_message_id,status,error_code,executor_id,lease_epoch,lease_expires_at,heartbeat_at,cancel_requested_at,deadline_at,started_at,finished_at,created_at,snapshot_sequence`; partial unique thread untuk status aktif; index status/lease dan status/created |
 | `chat_run_usage` | `run_id,call_id,provider,model,input_tokens,output_tokens,total_tokens,coverage`; unique run/call; nullable token unknown, agregasi tidak menghitung ulang retry call yang sama |
-| `chat_admission_slots` | Row singleton global; row user untuk serialize admission lintas thread; counter boleh dihitung dari run aktif di transaksi |
+| `chat_admission_slots` | Row singleton `id=global`; lock berikutnya memakai row `users` existing (`FOR NO KEY UPDATE`); jumlah slot dihitung dari run aktif dalam transaksi |
 | `knowledge_index_versions` | `id,embedding_model,dimensions,normalizer_version,chunker_version,status,created_at`; status building/active/retired; satu versi active |
 | `knowledge_documents` | `id,module_id,origin,source_content_id,node_id,activity_id,current_content_revision,deleted_at`; tepat satu identitas origin, unique module/origin/item |
 | `knowledge_document_revisions` | `id,document_id,index_version_id,content_revision,status,error_code,created_at,activated_at`; unique document/version/revision; status pending/indexing/ready/failed/obsolete |

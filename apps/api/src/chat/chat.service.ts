@@ -25,30 +25,47 @@ import {
 } from "@ngertiin/contracts/api";
 import type { ApiEnvironment } from "@ngertiin/contracts/environment";
 import {
+  chat_admission_slots,
   chat_message_contexts,
   chat_messages,
   chat_run_usage,
   chat_runs,
   chat_threads,
+  users,
 } from "@ngertiin/database";
-import { and, asc, desc, eq, inArray, isNull, lt, or, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  getTableColumns,
+  inArray,
+  isNull,
+  lt,
+  or,
+  sql,
+} from "drizzle-orm";
 import { AiService } from "../ai/ai.service.js";
 import { API_ENV } from "../config.js";
 import { ProductError } from "../http/product-error.js";
 import { IdempotencyService } from "../idempotency/idempotency.service.js";
 import { InfrastructureService } from "../infrastructure/infrastructure.service.js";
 import { ModulesService } from "../modules/modules.service.js";
+import { ChatExecutionBudget } from "./chat.budget.js";
+import { chatFailureStatus, withAbortGrace } from "./chat.execution.js";
 import { chatPage, readChatCursor } from "./chat.pagination.js";
-import { createLearningAgent } from "./learning.agent.js";
+import { ChatPubSub } from "./chat.pubsub.js";
+import {
+  type ChatEventResponse,
+  type ChatSnapshot,
+  chatSnapshotFrames,
+  streamChatSnapshots,
+} from "./chat.stream.js";
+import { createLearningAgent, LearningRunError } from "./learning.agent.js";
 import { learningPrompt } from "./prompts/learning.prompt.js";
 
 type RunRow = typeof chat_runs.$inferSelect;
-const emptyUsage: ChatUsage = {
-  inputTokens: null,
-  outputTokens: null,
-  totalTokens: null,
-  coverage: "unavailable",
-};
 const textOf = (parts: unknown): string =>
   chatMessageParts(parts)
     .filter((p) => p.type === "text")
@@ -62,6 +79,7 @@ function chatMessageParts(parts: unknown): ChatPart[] {
 export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
   private readonly executorId = randomUUID();
   private readonly executions = new Map<string, { abort: AbortController; done: Promise<void> }>();
+  private readonly pubsub: ChatPubSub;
   private scheduler?: ReturnType<typeof setInterval>;
   private ticking = false;
   private stopping = false;
@@ -75,10 +93,11 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
     @Inject(IdempotencyService) private readonly idempotency: IdempotencyService,
     @Inject(AiService) private readonly ai: AiService,
     @Inject(API_ENV) private readonly env: ApiEnvironment,
-  ) {}
+  ) {
+    this.pubsub = new ChatPubSub(env.REDIS_URL);
+  }
 
   async onApplicationBootstrap() {
-    if (!this.env.OPENAI_CHAT_MODEL || !this.env.OPENAI_API_KEY) return;
     await this.tick();
     this.scheduler = setInterval(() => {
       void this.tick().catch(() => this.log("chat.scheduler_failed"));
@@ -89,8 +108,10 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
     this.stopping = true;
     clearInterval(this.scheduler);
     while (this.ticking) await new Promise((resolve) => setTimeout(resolve, 25));
-    for (const execution of this.executions.values()) execution.abort.abort();
+    for (const execution of this.executions.values())
+      execution.abort.abort(new LearningRunError("PROCESS_INTERRUPTED"));
     await Promise.allSettled([...this.executions.values()].map((e) => e.done));
+    this.pubsub.close();
   }
   private log(event: string, data: Record<string, unknown> = {}) {
     console.log(JSON.stringify({ level: "log", event, ...data }));
@@ -104,6 +125,16 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
       "CHAT_UNAVAILABLE",
       "Chat unavailable",
       "Teman belajar belum tersedia. Coba lagi nanti.",
+    );
+  }
+  private rateLimited(seconds: number): never {
+    throw new ProductError(
+      429,
+      "RATE_LIMITED",
+      "Chat limit reached",
+      "Teman belajar sedang sibuk. Tunggu sebentar, lalu coba lagi.",
+      undefined,
+      { resetAt: new Date(Date.now() + seconds * 1000).toISOString() },
     );
   }
   private conflict(): never {
@@ -250,7 +281,12 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
         .where(eq(chat_threads.id, threadId));
     });
   }
-  private async messageDtos(rows: (typeof chat_messages.$inferSelect)[]): Promise<ChatMessage[]> {
+  private async messageDtos(
+    rows: (typeof chat_messages.$inferSelect & {
+      runStatus: ChatRunStatus;
+      runErrorCode: string | null;
+    })[],
+  ): Promise<ChatMessage[]> {
     const contexts = rows.length
       ? await this.db
           .select()
@@ -262,18 +298,6 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
             ),
           )
       : [];
-    const runs = rows.length
-      ? await this.db
-          .select({ id: chat_runs.id, status: chat_runs.status, errorCode: chat_runs.error_code })
-          .from(chat_runs)
-          .where(inArray(chat_runs.id, [...new Set(rows.map((row) => row.run_id))]))
-      : [];
-    const statusByRun = new Map(
-      runs.map((run) => [
-        run.id,
-        { type: "data-run-status", data: { status: run.status, errorCode: run.errorCode } },
-      ]),
-    );
     return rows.map((row) =>
       chatMessageSchema.parse({
         id: row.id,
@@ -287,7 +311,10 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
                 ...chatMessageParts(row.parts_json).filter(
                   (part) => part.type !== "data-run-status",
                 ),
-                statusByRun.get(row.run_id),
+                {
+                  type: "data-run-status",
+                  data: { status: row.runStatus, errorCode: row.runErrorCode },
+                },
               ]
             : row.parts_json,
         contexts: contexts
@@ -304,9 +331,15 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
       cursor = readChatCursor(query.cursor, scope);
     if (cursor && typeof cursor.order !== "number")
       throw new ProductError(422, "VALIDATION_ERROR", "Invalid cursor", "Cursor tidak valid.");
+    // Read text and its status in the same statement, including during finalization.
     const rows = await this.db
-      .select()
+      .select({
+        ...getTableColumns(chat_messages),
+        runStatus: chat_runs.status,
+        runErrorCode: chat_runs.error_code,
+      })
       .from(chat_messages)
+      .innerJoin(chat_runs, eq(chat_runs.id, chat_messages.run_id))
       .where(
         and(
           eq(chat_messages.thread_id, threadId),
@@ -334,11 +367,18 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
       .where(and(eq(chat_runs.id, runId), eq(chat_runs.thread_id, threadId)))
       .limit(1);
     if (!row) this.notFound();
-    const [usage] = await this.db
+    const calls = await this.db
       .select()
       .from(chat_run_usage)
-      .where(eq(chat_run_usage.run_id, runId))
-      .limit(1);
+      .where(eq(chat_run_usage.run_id, runId));
+    const usage = this.ai.aggregateUsage(
+      calls.map((call) => ({
+        inputTokens: call.input_tokens,
+        outputTokens: call.output_tokens,
+        totalTokens: call.total_tokens,
+        coverage: call.coverage as ChatUsage["coverage"],
+      })),
+    );
     return chatRunSchema.parse({
       id: row.id,
       threadId: row.thread_id,
@@ -349,14 +389,7 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
       startedAt: row.started_at?.toISOString() ?? null,
       finishedAt: row.finished_at?.toISOString() ?? null,
       errorCode: row.error_code,
-      usage: usage
-        ? {
-            inputTokens: usage.input_tokens,
-            outputTokens: usage.output_tokens,
-            totalTokens: usage.total_tokens,
-            coverage: usage.coverage,
-          }
-        : emptyUsage,
+      usage,
     });
   }
   async send(
@@ -396,6 +429,7 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
           "Hanya jawaban yang terhenti dapat dicoba ulang.",
         );
     }
+    let reservation: string | undefined;
     const route = `/api/v1/modules/${moduleId}/chat/threads/${threadId}/messages`;
     const result = await this.idempotency
       .execute<{ data: ChatAcknowledgment }>(
@@ -423,6 +457,18 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
               "Pesan melebihi anggaran konteks.",
             );
 
+          const [slot] = await tx
+            .select()
+            .from(chat_admission_slots)
+            .where(eq(chat_admission_slots.id, "global"))
+            .for("update");
+          if (!slot) this.unavailable();
+          // Idempotency already holds a FK key-share lock on this user. Avoid a lock-upgrade deadlock.
+          await tx
+            .select({ id: users.id })
+            .from(users)
+            .where(eq(users.id, userId))
+            .for("no key update");
           const [thread] = await tx
             .select()
             .from(chat_threads)
@@ -441,13 +487,42 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
             )
             .limit(1);
           if (active) this.conflict();
+          const [global] = await tx
+            .select({ total: count() })
+            .from(chat_runs)
+            .where(inArray(chat_runs.status, [...activeChatStatuses]));
+          const [user] = await tx
+            .select({ total: count() })
+            .from(chat_runs)
+            .innerJoin(chat_threads, eq(chat_threads.id, chat_runs.thread_id))
+            .where(
+              and(
+                eq(chat_threads.user_id, userId),
+                inArray(chat_runs.status, [...activeChatStatuses]),
+              ),
+            );
+          if (
+            (global?.total ?? 0) >= this.env.CHAT_MAX_ACTIVE_RUNS_GLOBAL ||
+            (user?.total ?? 0) >= this.env.CHAT_MAX_ACTIVE_RUNS_PER_USER
+          )
+            this.rateLimited(2);
+          reservation = randomUUID();
+          const retryAfter = await this.pubsub.reserve(
+            userId,
+            reservation,
+            this.env.CHAT_RATE_LIMIT_PER_MINUTE,
+          );
+          if (retryAfter) {
+            reservation = undefined;
+            this.rateLimited(retryAfter);
+          }
           const runId = randomUUID(),
             messageId = randomUUID();
           await tx.insert(chat_runs).values({
             id: runId,
             thread_id: threadId,
             retry_of_run_id: input.retryOfRunId,
-            deadline_at: sql`now() + ${this.env.CHAT_RUN_TIMEOUT_MS} * interval '1 millisecond'`,
+            deadline_at: sql`clock_timestamp() + ${this.env.CHAT_RUN_TIMEOUT_MS} * interval '1 millisecond'`,
           });
           await tx.insert(chat_messages).values({
             id: messageId,
@@ -482,7 +557,11 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
           };
         },
       )
-      .catch((error) => {
+      .catch(async (error) => {
+        if (reservation)
+          await this.pubsub
+            .release(userId, reservation)
+            .catch(() => this.log("chat.rate_release_failed"));
         if (error instanceof ProductError) throw error;
         this.unavailable();
       });
@@ -492,31 +571,39 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
   }
   async cancel(userId: string, moduleId: string, threadId: string, runId: string) {
     await this.getRun(userId, moduleId, threadId, runId);
-    await this.db.transaction(async (tx) => {
+    const committed = await this.db.transaction(async (tx) => {
       const [run] = await tx
         .select()
         .from(chat_runs)
         .where(eq(chat_runs.id, runId))
         .for("update")
         .limit(1);
-      if (!run || !isChatRunActive(run.status)) return;
-      if (run.status === "queued")
-        await tx
-          .update(chat_runs)
-          .set({
-            status: "cancelled",
-            error_code: "USER_CANCELLED",
-            cancel_requested_at: sql`now()`,
-            finished_at: sql`now()`,
-          })
-          .where(eq(chat_runs.id, runId));
-      else
-        await tx
-          .update(chat_runs)
-          .set({ status: "cancelling", cancel_requested_at: sql`now()` })
-          .where(eq(chat_runs.id, runId));
+      if (!run || !isChatRunActive(run.status) || run.status === "cancelling") return;
+      const [message] = run.assistant_message_id
+        ? await tx
+            .select()
+            .from(chat_messages)
+            .where(eq(chat_messages.id, run.assistant_message_id))
+        : [];
+      const text = message ? textOf(message.parts_json) : "";
+      const [updated] = await tx
+        .update(chat_runs)
+        .set({
+          status: run.status === "queued" ? "cancelled" : "cancelling",
+          cancel_requested_at: sql`clock_timestamp()`,
+          snapshot_sequence: sql`${chat_runs.snapshot_sequence}+1`,
+          ...(run.status === "queued"
+            ? { error_code: "USER_CANCELLED", finished_at: sql`clock_timestamp()` }
+            : {}),
+        })
+        .where(eq(chat_runs.id, runId))
+        .returning();
+      return updated
+        ? { snapshot: this.snapshot(updated, text), previous: this.snapshot(run, text) }
+        : undefined;
     });
-    this.executions.get(runId)?.abort.abort();
+    if (committed) await this.publish(committed.snapshot, committed.previous);
+    this.executions.get(runId)?.abort.abort(new LearningRunError("USER_CANCELLED"));
     return this.getRun(userId, moduleId, threadId, runId);
   }
 
@@ -524,34 +611,23 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
     if (this.ticking || this.stopping) return;
     this.ticking = true;
     try {
-      // Minimum recovery required so a local restart cannot leave the M1 thread wedged.
-      await this.db
-        .update(chat_runs)
-        .set({ status: "interrupted", error_code: "PROCESS_INTERRUPTED", finished_at: sql`now()` })
-        .where(
-          and(
-            inArray(chat_runs.status, ["running", "cancelling"]),
-            sql`${chat_runs.lease_expires_at} <= now()`,
-          ),
-        );
-      await this.db
-        .update(chat_runs)
-        .set({ status: "timed_out", error_code: "RUN_TIMEOUT", finished_at: sql`now()` })
-        .where(
-          and(
-            inArray(chat_runs.status, [...activeChatStatuses]),
-            sql`${chat_runs.deadline_at} <= now()`,
-          ),
-        );
+      await this.sweep();
       while (
         !this.stopping &&
+        this.env.OPENAI_CHAT_MODEL &&
+        this.env.OPENAI_API_KEY &&
         this.executions.size < this.env.CHAT_MAX_EXECUTING_RUNS_PER_INSTANCE
       ) {
         const claimed = await this.db.transaction(async (tx) => {
           const [run] = await tx
             .select()
             .from(chat_runs)
-            .where(eq(chat_runs.status, "queued"))
+            .where(
+              and(
+                eq(chat_runs.status, "queued"),
+                sql`${chat_runs.deadline_at} > clock_timestamp()`,
+              ),
+            )
             .orderBy(asc(chat_runs.created_at))
             .for("update", { skipLocked: true })
             .limit(1);
@@ -562,9 +638,9 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
               status: "running",
               executor_id: this.executorId,
               lease_epoch: run.lease_epoch + 1,
-              lease_expires_at: sql`now() + ${this.env.CHAT_LEASE_MS} * interval '1 millisecond'`,
-              heartbeat_at: sql`now()`,
-              started_at: sql`now()`,
+              lease_expires_at: sql`clock_timestamp() + ${this.env.CHAT_LEASE_MS} * interval '1 millisecond'`,
+              heartbeat_at: sql`clock_timestamp()`,
+              started_at: sql`clock_timestamp()`,
             })
             .where(eq(chat_runs.id, run.id))
             .returning();
@@ -587,7 +663,7 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
       eq(chat_runs.executor_id, this.executorId),
       eq(chat_runs.lease_epoch, run.lease_epoch),
       inArray(chat_runs.status, ["running", "cancelling"]),
-      sql`${chat_runs.lease_expires_at} > now()`,
+      sql`${chat_runs.lease_expires_at} > clock_timestamp()`,
     );
   }
   private async promptMessages(run: RunRow, model: ReturnType<AiService["createChatModel"]>) {
@@ -643,90 +719,249 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
     }
     return messages;
   }
+  private snapshot(run: RunRow, text: string): ChatSnapshot {
+    return {
+      run: {
+        id: run.id,
+        assistantMessageId: run.assistant_message_id,
+        status: run.status,
+        errorCode: run.error_code as ChatRunError | null,
+      },
+      text,
+      sequence: run.snapshot_sequence,
+    };
+  }
+  private async publish(snapshot: ChatSnapshot, previous?: ChatSnapshot) {
+    await this.pubsub
+      .publish(snapshot.run.id, snapshot.sequence, chatSnapshotFrames(snapshot, previous))
+      .catch(() => this.log("chat.publish_failed", { runId: snapshot.run.id }));
+  }
   private async persist(
     run: RunRow,
     assistantId: string,
     text: string,
-    terminal?: { status: ChatRunStatus; errorCode: ChatRunError | null; usage: ChatUsage },
+    calls: Map<string, ChatUsage>,
+    terminal?: { status: ChatRunStatus; errorCode: ChatRunError | null },
   ) {
-    return this.db.transaction(async (tx) => {
-      const [current] = await tx
-        .select()
+    const committed = await this.db.transaction(async (tx) => {
+      const [locked] = await tx
+        .select({
+          run: chat_runs,
+          expired: sql<boolean>`${chat_runs.deadline_at} <= clock_timestamp()`,
+        })
         .from(chat_runs)
         .where(this.fence(run))
         .for("update")
         .limit(1);
-      if (!current) return false;
-      const status = terminal
-        ? current.status === "cancelling"
-          ? "cancelled"
-          : terminal.status
-        : current.status;
+      if (!locked) return;
+      const current = locked.run;
+      if (locked.expired) terminal = { status: "timed_out", errorCode: "RUN_TIMEOUT" };
+      const [message] = await tx
+        .select()
+        .from(chat_messages)
+        .where(eq(chat_messages.id, assistantId));
+      const previous = this.snapshot(current, message ? textOf(message.parts_json) : "");
+      let status = current.status;
+      if (terminal) status = current.status === "cancelling" ? "cancelled" : terminal.status;
       const errorCode = status === "cancelled" ? "USER_CANCELLED" : (terminal?.errorCode ?? null);
       const parts: ChatPart[] = [{ type: "text", text }];
       if (terminal) parts.push({ type: "data-run-status", data: { status, errorCode } });
-      await tx
-        .update(chat_messages)
-        .set({ parts_json: parts, content_revision: sql`${chat_messages.content_revision}+1` })
-        .where(eq(chat_messages.id, assistantId));
-      await tx
+      if (message)
+        await tx
+          .update(chat_messages)
+          .set({ parts_json: parts, content_revision: sql`${chat_messages.content_revision}+1` })
+          .where(eq(chat_messages.id, assistantId));
+      const [updated] = await tx
         .update(chat_runs)
         .set({
           snapshot_sequence: sql`${chat_runs.snapshot_sequence}+1`,
-          ...(terminal ? { status, error_code: errorCode, finished_at: sql`now()` } : {}),
+          ...(terminal
+            ? { status, error_code: errorCode, finished_at: sql`clock_timestamp()` }
+            : {}),
         })
-        .where(eq(chat_runs.id, run.id));
-      if (terminal)
+        .where(eq(chat_runs.id, run.id))
+        .returning();
+      for (const [callId, usage] of calls) {
+        const values = {
+          input_tokens: usage.inputTokens,
+          output_tokens: usage.outputTokens,
+          total_tokens: usage.totalTokens,
+          coverage:
+            terminal && status === "cancelled" && usage.coverage !== "complete"
+              ? "partial"
+              : usage.coverage,
+        };
         await tx
           .insert(chat_run_usage)
           .values({
             run_id: run.id,
-            call_id: "model-1",
+            call_id: callId,
             provider: "openai",
             model: this.env.OPENAI_CHAT_MODEL ?? "unavailable",
-            input_tokens: terminal.usage.inputTokens,
-            output_tokens: terminal.usage.outputTokens,
-            total_tokens: terminal.usage.totalTokens,
-            coverage: terminal.usage.coverage,
+            ...values,
           })
-          .onConflictDoNothing();
-      return true;
+          .onConflictDoUpdate({
+            target: [chat_run_usage.run_id, chat_run_usage.call_id],
+            set: values,
+          });
+      }
+      return updated ? { snapshot: this.snapshot(updated, text), previous } : undefined;
     });
+    if (!committed) return false;
+    await this.publish(committed.snapshot, committed.previous);
+    return true;
+  }
+  private async sweep() {
+    // Lock each expired run once. All terminal state, partial text and usage commit together.
+    const committed = await this.db.transaction(async (tx) => {
+      const expired = await tx
+        .select()
+        .from(chat_runs)
+        .where(
+          and(
+            inArray(chat_runs.status, [...activeChatStatuses]),
+            or(
+              sql`${chat_runs.deadline_at} <= clock_timestamp()`,
+              sql`${chat_runs.lease_expires_at} <= clock_timestamp()`,
+              and(
+                eq(chat_runs.status, "cancelling"),
+                sql`${chat_runs.cancel_requested_at} + ${this.env.CHAT_CANCEL_GRACE_MS} * interval '1 millisecond' <= clock_timestamp()`,
+              ),
+            ),
+          ),
+        )
+        .for("update", { skipLocked: true })
+        .limit(100);
+      const snapshots: { snapshot: ChatSnapshot; previous: ChatSnapshot }[] = [];
+      for (const run of expired) {
+        const [updated] = await tx
+          .update(chat_runs)
+          .set({
+            status: sql`case when ${chat_runs.lease_expires_at} <= clock_timestamp() then 'interrupted'::chat_run_status
+            when ${chat_runs.status} = 'cancelling' then 'cancelled'::chat_run_status else 'timed_out'::chat_run_status end`,
+            error_code: sql`case when ${chat_runs.lease_expires_at} <= clock_timestamp() then 'PROCESS_INTERRUPTED'
+            when ${chat_runs.status} = 'cancelling' then 'USER_CANCELLED' else 'RUN_TIMEOUT' end`,
+            snapshot_sequence: sql`${chat_runs.snapshot_sequence}+1`,
+            finished_at: sql`clock_timestamp()`,
+          })
+          .where(eq(chat_runs.id, run.id))
+          .returning();
+        if (!updated) continue;
+        const [message] = run.assistant_message_id
+          ? await tx
+              .select()
+              .from(chat_messages)
+              .where(eq(chat_messages.id, run.assistant_message_id))
+          : [];
+        const text = message ? textOf(message.parts_json) : "";
+        const snapshot = this.snapshot(updated, text);
+        if (message)
+          await tx
+            .update(chat_messages)
+            .set({
+              parts_json: [
+                { type: "text", text },
+                {
+                  type: "data-run-status",
+                  data: { status: updated.status, errorCode: updated.error_code },
+                },
+              ],
+              content_revision: sql`${chat_messages.content_revision}+1`,
+            })
+            .where(eq(chat_messages.id, message.id));
+        await tx
+          .update(chat_run_usage)
+          .set({ coverage: "partial" })
+          .where(
+            and(eq(chat_run_usage.run_id, run.id), eq(chat_run_usage.coverage, "unavailable")),
+          );
+        snapshots.push({ snapshot, previous: this.snapshot(run, text) });
+      }
+      return snapshots;
+    });
+    for (const { snapshot, previous } of committed) await this.publish(snapshot, previous);
   }
   private async execute(run: RunRow, abort: AbortController) {
     const startedAt = performance.now();
     const assistantId = randomUUID();
-    let text = "",
-      usage = { ...emptyUsage },
-      outputLimited = false,
-      callCount = 0,
-      toolCount = 0,
-      lastSnapshot = 0;
-    let heartbeatBusy = false;
+    const calls = new Map<string, ChatUsage>();
+    let text = "";
+    let lastSnapshot = 0;
+    let heartbeatBusy = false,
+      lastHeartbeat = Date.now(),
+      finished = false;
+    const assertActive = () => {
+      if (finished || abort.signal.aborted)
+        throw abort.signal.reason ?? new LearningRunError("PROCESS_INTERRUPTED");
+    };
+    const stop = (code: ChatRunError) => {
+      abort.abort(new LearningRunError(code));
+    };
     const deadline = setTimeout(
-      () => abort.abort(),
+      () => stop("RUN_TIMEOUT"),
       Math.max(1, run.deadline_at.getTime() - Date.now()),
     );
-    const heartbeat = setInterval(() => {
-      if (heartbeatBusy) return;
-      heartbeatBusy = true;
-      void this.db
-        .update(chat_runs)
-        .set({
-          heartbeat_at: sql`now()`,
-          lease_expires_at: sql`now() + ${this.env.CHAT_LEASE_MS} * interval '1 millisecond'`,
-        })
-        .where(this.fence(run))
-        .returning({ status: chat_runs.status })
-        .then((rows) => {
-          if (!rows[0] || rows[0].status === "cancelling") abort.abort();
-        })
-        .catch(() => abort.abort())
+    const heartbeat = setInterval(
+      () => {
+        if (heartbeatBusy || finished) return;
+        heartbeatBusy = true;
+        const renew = Date.now() - lastHeartbeat >= this.env.CHAT_HEARTBEAT_MS;
+        const query = renew
+          ? this.db
+              .update(chat_runs)
+              .set({
+                heartbeat_at: sql`clock_timestamp()`,
+                lease_expires_at: sql`clock_timestamp() + ${this.env.CHAT_LEASE_MS} * interval '1 millisecond'`,
+              })
+              .where(this.fence(run))
+              .returning({ status: chat_runs.status })
+          : this.db.select({ status: chat_runs.status }).from(chat_runs).where(this.fence(run));
+        void query
+          .then((rows) => {
+            if (renew) lastHeartbeat = Date.now();
+            if (!rows[0]) stop("PROCESS_INTERRUPTED");
+            else if (rows[0].status === "cancelling") stop("USER_CANCELLED");
+          })
+          .catch(() => stop("PROCESS_INTERRUPTED"))
+          .finally(() => {
+            heartbeatBusy = false;
+          });
+      },
+      Math.min(this.env.CHAT_HEARTBEAT_MS, this.env.CHAT_CANCEL_POLL_MS),
+    );
+    let savedText = "";
+    let saving = Promise.resolve();
+    const save = () => {
+      saving = saving.then(async () => {
+        assertActive();
+        const snapshotText = text;
+        if (!(await this.persist(run, assistantId, snapshotText, calls))) {
+          stop("PROCESS_INTERRUPTED");
+          assertActive();
+        }
+        savedText = snapshotText;
+        lastSnapshot = Date.now();
+      });
+      return saving;
+    };
+    const budget = new ChatExecutionBudget(this.ai, this.env, {
+      calls,
+      deadlineAt: run.deadline_at,
+      signal: abort.signal,
+      assertActive,
+      save,
+    });
+    let snapshotBusy = false;
+    const snapshotTimer = setInterval(() => {
+      if (snapshotBusy || finished || abort.signal.aborted || text === savedText) return;
+      snapshotBusy = true;
+      void save()
+        .catch(() => stop("PROCESS_INTERRUPTED"))
         .finally(() => {
-          heartbeatBusy = false;
+          snapshotBusy = false;
         });
-    }, this.env.CHAT_HEARTBEAT_MS);
-    try {
+    }, this.env.CHAT_SNAPSHOT_INTERVAL_MS);
+    const work = async () => {
       const [thread] = await this.db
         .select()
         .from(chat_threads)
@@ -734,14 +969,16 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
         .limit(1);
       if (!thread || thread.deleted_at) throw new Error("Thread unavailable");
       await this.modules.validateChatScope(thread.user_id, thread.module_id);
-      await this.db.transaction(async (tx) => {
+      assertActive();
+      const initial = await this.db.transaction(async (tx) => {
         const [current] = await tx
           .select()
           .from(chat_runs)
           .where(this.fence(run))
           .for("update")
           .limit(1);
-        if (!current) throw new Error("Lease lost");
+        if (!current || current.status === "cancelling")
+          throw new LearningRunError("USER_CANCELLED");
         const [user] = await tx
           .select({ sequence: chat_messages.sequence })
           .from(chat_messages)
@@ -755,85 +992,73 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
           sequence: user.sequence + 1,
           role: "assistant",
         });
-        await tx
+        const [updated] = await tx
           .update(chat_runs)
-          .set({ assistant_message_id: assistantId })
-          .where(eq(chat_runs.id, run.id));
+          .set({
+            assistant_message_id: assistantId,
+            snapshot_sequence: sql`${chat_runs.snapshot_sequence}+1`,
+          })
+          .where(eq(chat_runs.id, run.id))
+          .returning();
+        if (!updated) throw new Error("Missing run");
+        return this.snapshot(updated, "");
       });
+      await this.publish(initial);
+      assertActive();
       const model = this.ai.createChatModel();
       const messages = await this.promptMessages(run, model);
-      const agent = createLearningAgent(model);
+      const agent = createLearningAgent(model, budget);
       const stream = await agent.stream(
         { messages },
         {
           signal: abort.signal,
           streamMode: ["values", "messages", "tools"],
-          callbacks: [
-            {
-              handleLLMStart: () => {
-                callCount += 1;
-              },
-              handleToolStart: () => {
-                toolCount += 1;
-              },
-              handleLLMEnd: (output) => {
-                for (const generation of output.generations.flat()) {
-                  if ("message" in generation) {
-                    const message = generation.message as {
-                      usage_metadata?: unknown;
-                      response_metadata?: Record<string, unknown>;
-                    };
-                    usage = this.ai.normalizeUsage(message.usage_metadata);
-                    const metadata = message.response_metadata;
-                    outputLimited =
-                      metadata?.finish_reason === "length" || metadata?.status === "incomplete";
-                  }
-                }
-              },
-            },
-          ],
+          recursionLimit: this.env.CHAT_AGENT_MAX_STEPS * 4 + 10,
         },
       );
       const reader = toUIMessageStream(stream).getReader();
       try {
         while (true) {
           const { done, value } = await reader.read();
+          assertActive();
           if (done) break;
-          // M1 allowlist: never persist provider metadata, reasoning, or raw tool output.
+          // Only public text is persisted; provider metadata and reasoning never enter UI frames.
           if (value.type === "error") throw new Error("Provider stream error");
           if (value.type === "text-delta") {
             text += value.delta;
-            if (Date.now() - lastSnapshot >= this.env.CHAT_SNAPSHOT_INTERVAL_MS) {
-              if (!(await this.persist(run, assistantId, text))) {
-                abort.abort();
-                throw new Error("Lease lost");
-              }
-              lastSnapshot = Date.now();
-            }
+            if (Date.now() - lastSnapshot >= this.env.CHAT_SNAPSHOT_INTERVAL_MS) await save();
           }
         }
       } finally {
         reader.releaseLock();
       }
-      if (abort.signal.aborted) throw new Error("Run aborted");
-      await this.persist(run, assistantId, text, {
+      assertActive();
+    };
+    try {
+      await withAbortGrace(work(), abort.signal, this.env.CHAT_CANCEL_GRACE_MS);
+      finished = true;
+      const usage = this.ai.aggregateUsage([...calls.values()]);
+      const outputLimited =
+        budget.outputLimited || (usage.outputTokens ?? 0) >= this.env.CHAT_OUTPUT_MAX_TOKENS;
+      await this.persist(run, assistantId, text, calls, {
         status: outputLimited ? "failed" : "completed",
         errorCode: outputLimited ? "OUTPUT_LIMIT" : null,
-        usage,
       });
-    } catch {
-      const timedOut = Date.now() >= run.deadline_at.getTime();
-      await this.persist(run, assistantId, text, {
-        status: this.stopping ? "interrupted" : timedOut ? "timed_out" : "failed",
-        errorCode: this.stopping
-          ? "PROCESS_INTERRUPTED"
-          : timedOut
-            ? "RUN_TIMEOUT"
-            : "PROVIDER_ERROR",
-        usage,
+    } catch (error) {
+      finished = true; // Late provider callbacks cannot change snapshots or usage.
+      const code =
+        abort.signal.aborted && abort.signal.reason instanceof LearningRunError
+          ? abort.signal.reason.code
+          : (budget.failure ??
+            (error instanceof LearningRunError ? error.code : this.ai.normalizeChatError(error)));
+      await this.persist(run, assistantId, text, calls, {
+        status: chatFailureStatus(code),
+        errorCode: code,
       });
     } finally {
+      finished = true;
       clearInterval(heartbeat);
+      clearInterval(snapshotTimer);
       clearTimeout(deadline);
       const [finalRun] = await this.db
         .select({ status: chat_runs.status, errorCode: chat_runs.error_code })
@@ -846,23 +1071,47 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
         durationMs: Math.round(performance.now() - startedAt),
         runId: run.id,
         threadId: run.thread_id,
-        modelCallCount: callCount,
-        toolCallCount: toolCount,
-        usageCoverage: usage.coverage,
+        modelCallCount: budget.modelCallCount,
+        toolCallCount: budget.toolCallCount,
+        usageCoverage: this.ai.aggregateUsage([...calls.values()]).coverage,
       });
     }
   }
 
-  /** M1: serve committed text snapshots as UI deltas. Pub/sub delivery is hardened in M2. */
   async streamSnapshot(userId: string, moduleId: string, threadId: string, runId: string) {
-    const run = await this.getRun(userId, moduleId, threadId, runId);
-    const [message] = run.assistantMessageId
-      ? await this.db
-          .select()
-          .from(chat_messages)
-          .where(eq(chat_messages.id, run.assistantMessageId))
-          .limit(1)
-      : [];
-    return { run, text: message ? textOf(message.parts_json) : "" };
+    await this.ownedThread(userId, moduleId, threadId);
+    // One SQL statement: text, status and sequence can never come from different commits.
+    const [row] = await this.db
+      .select({ run: chat_runs, message: chat_messages })
+      .from(chat_runs)
+      .leftJoin(chat_messages, eq(chat_messages.id, chat_runs.assistant_message_id))
+      .where(and(eq(chat_runs.id, runId), eq(chat_runs.thread_id, threadId)))
+      .limit(1);
+    if (!row) this.notFound();
+    return this.snapshot(row.run, row.message ? textOf(row.message.parts_json) : "");
+  }
+  async stream(
+    userId: string,
+    moduleId: string,
+    threadId: string,
+    runId: string,
+    res: ChatEventResponse,
+  ) {
+    const read = () => this.streamSnapshot(userId, moduleId, threadId, runId);
+    const initial = await read(); // Authorize before subscribing to an internal channel.
+    await streamChatSnapshots(
+      res,
+      read,
+      async (receive, lost) => {
+        if (!isChatRunActive(initial.run.status)) return () => {};
+        try {
+          return await this.pubsub.subscribe(runId, receive, lost);
+        } catch {
+          this.unavailable();
+        }
+      },
+      this.env.CHAT_STREAM_BUFFER_MAX_BYTES,
+      this.env.CHAT_SWEEP_INTERVAL_MS,
+    );
   }
 }

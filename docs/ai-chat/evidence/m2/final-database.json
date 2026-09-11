@@ -1,0 +1,26 @@
+{
+  "activeRuns": 0,
+  "counts": [
+    {
+      "status": "completed",
+      "count": 21
+    },
+    {
+      "status": "failed",
+      "count": 7
+    },
+    {
+      "status": "cancelled",
+      "count": 16
+    },
+    {
+      "status": "timed_out",
+      "count": 6
+    },
+    {
+      "status": "interrupted",
+      "count": 2
+    }
+  ],
+  "providerUsageMatches": true
+}

@@ -36,7 +36,7 @@ import { IdempotencyKeyPipe } from "../http/idempotency-key.pipe.js";
 import { getLocalUserId, type ProductRequest } from "../http/request-context.js";
 import { ZodValidationPipe } from "../http/zod-validation.pipe.js";
 import { ChatService } from "./chat.service.js";
-import { type ChatEventResponse, streamChatSnapshots } from "./chat.stream.js";
+import type { ChatEventResponse } from "./chat.stream.js";
 
 type ThreadParams = { moduleId: string; threadId: string };
 type RunParams = ThreadParams & { runId: string };
@@ -146,7 +146,6 @@ export class ChatController {
     @Res() res: ChatEventResponse,
   ) {
     const userId = getLocalUserId(req);
-    const read = () => this.chat.streamSnapshot(userId, p.moduleId, p.threadId, p.runId);
-    await streamChatSnapshots(res, read);
+    await this.chat.stream(userId, p.moduleId, p.threadId, p.runId, res);
   }
 }
