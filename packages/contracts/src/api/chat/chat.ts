@@ -47,6 +47,61 @@ export const chatContextReferenceSchema = z
       .strict(),
   ])
   .refine((value) => value.endCodePoint > value.startCodePoint, "Invalid reference range");
+export type ChatContextReference = z.infer<typeof chatContextReferenceSchema>;
+export const chatMaterialTargetSchema = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("activity"), nodeId: uuidSchema, activityId: uuidSchema }).strict(),
+  z
+    .object({ kind: z.literal("source"), sourceId: uuidSchema, sourceContentId: uuidSchema })
+    .strict(),
+]);
+export type ChatMaterialTarget = z.infer<typeof chatMaterialTargetSchema>;
+export const chatCitationSchema = z.object({
+  id: uuidSchema,
+  origin: z.enum(["generated_material", "original_source"]),
+  title: z.string(),
+  reference: chatContextReferenceSchema,
+  excerpt: z.string(),
+  pageNumber: z.number().int().positive().nullable(),
+  sectionTitle: z.string().nullable(),
+});
+export type ChatCitation = z.infer<typeof chatCitationSchema>;
+export const chatCitationSnapshotSchema = z.object({
+  citation: chatCitationSchema,
+  text: z.string(),
+  startCodePoint: z.number().int().nonnegative(),
+  capturedAt: timestampSchema,
+});
+export type ChatCitationSnapshot = z.infer<typeof chatCitationSnapshotSchema>;
+export const chatCitationResponseSchema = successEnvelopeSchema(chatCitationSnapshotSchema);
+export const chatMaterialsQuerySchema = z.object({
+  nodeId: uuidSchema.optional(),
+  after: uuidSchema.optional(),
+});
+export const chatMaterialSchema = z.object({
+  target: chatMaterialTargetSchema,
+  title: z.string(),
+  pageNumber: z.number().int().positive().nullable(),
+  sectionTitle: z.string().nullable(),
+});
+export const chatMaterialsResponseSchema = successEnvelopeSchema(
+  z.object({
+    items: z.array(chatMaterialSchema),
+    nextCursor: uuidSchema.nullable(),
+  }),
+);
+export const chatMaterialPreviewInputSchema = z
+  .object({
+    target: chatMaterialTargetSchema,
+    startCodePoint: z.number().int().nonnegative().default(0),
+  })
+  .strict();
+export const chatMaterialPreviewSchema = chatMaterialSchema.extend({
+  text: z.string(),
+  reference: chatContextReferenceSchema,
+  totalCodePoints: z.number().int().positive(),
+});
+export type ChatMaterialPreview = z.infer<typeof chatMaterialPreviewSchema>;
+export const chatMaterialPreviewResponseSchema = successEnvelopeSchema(chatMaterialPreviewSchema);
 export const chatTitleSchema = z
   .string()
   .trim()
@@ -80,9 +135,10 @@ export const chatRunDataSchema = z.object({
   status: chatRunStatusSchema,
   errorCode: chatRunErrorSchema.nullable(),
 });
-// M1 exposes text and terminal status only. Material/tool parts are added with M3.
+// Public parts are persisted before they are streamed.
 export const chatPartSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("text"), text: z.string() }),
+  z.object({ type: z.literal("data-citation"), id: uuidSchema, data: chatCitationSchema }),
   z.object({ type: z.literal("data-run-status"), data: chatRunDataSchema }),
 ]);
 export const chatThreadSchema = z.object({
@@ -101,6 +157,7 @@ export const chatMessageSchema = z.object({
   role: z.enum(["user", "assistant"]),
   parts: z.array(chatPartSchema),
   contexts: z.array(chatPageContextSchema),
+  references: z.array(chatContextReferenceSchema).default([]),
   createdAt: timestampSchema,
   availability: z.enum(["available", "unavailable"]),
 });

@@ -1,4 +1,9 @@
-import { type ChatRunError, type ChatRunStatus, isChatRunActive } from "@ngertiin/contracts/api";
+import {
+  type ChatCitation,
+  type ChatRunError,
+  type ChatRunStatus,
+  isChatRunActive,
+} from "@ngertiin/contracts/api";
 import type { UIMessageChunk } from "ai";
 import type { ChatStreamEvent, ChatSubscription } from "./chat.pubsub.js";
 
@@ -10,6 +15,7 @@ export type ChatSnapshot = {
     errorCode: ChatRunError | null;
   };
   text: string;
+  citations?: ChatCitation[];
   sequence: number;
 };
 export type ChatEventResponse = {
@@ -40,6 +46,18 @@ export function chatSnapshotFrames(
   }
   const delta = snapshot.text.slice(previous?.text.length ?? 0);
   if (delta) frames.push({ type: "text-delta", id: "answer", delta });
+  for (const citation of snapshot.citations ?? []) {
+    if (!previous?.citations?.some((item) => item.id === citation.id))
+      frames.push(
+        {
+          type: "source-document",
+          sourceId: citation.id,
+          mediaType: "text/plain",
+          title: citation.title,
+        },
+        { type: "data-citation", id: citation.id, data: citation },
+      );
+  }
   if (!isChatRunActive(run.status)) {
     frames.push(
       { type: "text-end", id: "answer" },
@@ -59,6 +77,7 @@ export async function streamChatSnapshots(
   subscribe: ChatSubscription,
   maxBufferBytes: number,
   checkIntervalMs: number,
+  authorize?: () => Promise<void>,
 ): Promise<void> {
   let closed = false;
   let ready = false;
@@ -93,18 +112,41 @@ export async function streamChatSnapshots(
       }
     }
   };
-  const receive = (event: ChatStreamEvent) => {
-    if (closed) return;
-    if (!ready) {
-      bufferedBytes += Buffer.byteLength(JSON.stringify(event));
-      if (bufferedBytes > maxBufferBytes) return close();
-      pending.push(event);
-      return;
+  let delivering = false;
+  const drain = async () => {
+    if (delivering || !ready || closed) return;
+    delivering = true;
+    try {
+      while (pending.length && !closed) {
+        const event = pending.shift();
+        if (!event) break;
+        const eventBytes = Buffer.byteLength(JSON.stringify(event));
+        if (event.sequence <= sequence) {
+          bufferedBytes -= eventBytes;
+          continue;
+        }
+        if (event.sequence !== sequence + 1) {
+          close();
+          break;
+        }
+        await authorize?.();
+        if (closed) break;
+        sequence = event.sequence;
+        emit(event.frames);
+        bufferedBytes -= eventBytes;
+      }
+    } catch {
+      close();
+    } finally {
+      delivering = false;
     }
-    if (event.sequence <= sequence) return;
-    if (event.sequence !== sequence + 1) return close();
-    sequence = event.sequence;
-    emit(event.frames);
+  };
+  const receive = (event: ChatStreamEvent) => {
+    if (closed || event.sequence <= sequence) return;
+    bufferedBytes += Buffer.byteLength(JSON.stringify(event));
+    if (bufferedBytes > maxBufferBytes) return close();
+    pending.push(event);
+    void drain();
   };
   try {
     unsubscribe = await subscribe(receive, () => {
@@ -127,16 +169,16 @@ export async function streamChatSnapshots(
     sequence = initial.sequence;
     emit(chatSnapshotFrames(initial));
     ready = true;
-    for (const event of pending) receive(event);
-    pending.length = 0;
+    await drain();
     if (closed) return;
     let checking = false;
     timer = setInterval(() => {
-      if (checking || closed) return;
+      if (checking || closed || delivering) return;
       checking = true;
       // Detect a lost final publication even when there is no next delta to expose a gap.
       void read()
         .then((snapshot) => {
+          if (closed || delivering) return;
           if (snapshot.sequence > sequence || !isChatRunActive(snapshot.run.status)) close();
           else write(": keepalive\n\n");
         })

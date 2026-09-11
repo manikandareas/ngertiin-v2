@@ -1,0 +1,11 @@
+{
+  "checks": [
+    "Unicode excerpt highlight",
+    "reader navigates to next source",
+    "reader restores trigger focus",
+    "picker attaches selected text",
+    "mobile has no horizontal overflow",
+    "no browser runtime errors"
+  ],
+  "errors": []
+}

@@ -1,4 +1,5 @@
 import type { AIMessage, BaseMessage } from "@langchain/core/messages";
+import type { StructuredToolInterface } from "@langchain/core/tools";
 import type { ChatOpenAI } from "@langchain/openai";
 import type { ChatRunError } from "@ngertiin/contracts/api";
 import { createAgent, createMiddleware } from "langchain";
@@ -17,10 +18,14 @@ export type ExecutionBudget = {
   onCallError(error: unknown): void;
 };
 
-export function createLearningAgent(model: ChatOpenAI, budget: ExecutionBudget) {
+export function createLearningAgent(
+  model: ChatOpenAI,
+  budget: ExecutionBudget,
+  tools: StructuredToolInterface[] = [],
+) {
   return createAgent({
     model,
-    tools: [],
+    tools,
     systemPrompt: learningPrompt,
     middleware: [
       createMiddleware({

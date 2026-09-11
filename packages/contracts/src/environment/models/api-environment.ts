@@ -17,6 +17,8 @@ export const apiEnvSchema = infrastructureEnvSchema
       (value) => (value === "" ? undefined : value),
       z.string().min(1).optional(),
     ),
+    CHAT_CONTEXT_MAX_REFERENCES: z.coerce.number().int().positive().default(5),
+    CHAT_CONTEXT_MAX_CODE_POINTS: z.coerce.number().int().min(1000).default(12000),
     CHAT_INPUT_MAX_CODE_POINTS: z.coerce.number().int().positive().default(8000),
     CHAT_PROMPT_MAX_TOKENS: z.coerce.number().int().positive().default(16000),
     CHAT_OUTPUT_MAX_TOKENS: z.coerce.number().int().positive().default(2048),

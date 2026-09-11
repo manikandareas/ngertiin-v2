@@ -1,6 +1,6 @@
 # Kontrak AI Chat
 
-Status: **kontrak target; subset M1 sudah diimplementasikan**. Lihat [verifikasi M1](./m1-verification.md) untuk batas dan bukti. Lifecycle lintas instance penuh, material context, dan retrieval tetap milestone berikutnya.
+Status: **M1–M3 diimplementasikan; retrieval/indexing tetap target M4**. Lihat [verifikasi M3](./m3-verification.md) untuk bukti dan batas pengujian.
 
 Dokumen ini otoritatif untuk DTO, persistence, streaming, lifecycle, dan konfigurasi chat. Perilaku/otorisasi agent mengikuti [README](./README.md#batas-akses-dan-assessment); urutan delivery dan bukti ada di [implementation](./implementation.md). Konvensi existing dirujuk dari [API Contract §3](../API_CONTRACT.md#3-protocol-conventions), tanpa mendefinisikan ulang envelope/auth/error umum.
 
@@ -10,6 +10,9 @@ Semua path di bawah relatif terhadap `/api/v1/modules/:moduleId/chat`. `:threadI
 
 | Method/path | Input | Hasil |
 | --- | --- | --- |
+| `GET /materials` | `nodeId?`, `after?` UUID | `200`, `{data:{items,nextCursor}}`; 20 materi per halaman; tanpa nodeId menampilkan sumber terkait |
+| `POST /materials/preview` | `{target,startCodePoint?}` | `200`, proyeksi teks aman maksimal 12000 code points, revision dan total panjang |
+| `GET /threads/:threadId/messages/:messageId/citations/:citationId` | — | `200`, envelope snapshot yang tersimpan; akses pesan dan semua dependensinya diperiksa ulang |
 | `POST /threads` | `{title?}` | `201`, envelope `Thread` |
 | `GET /threads` | `cursor?`, `limit?` | `200`, halaman `Thread` |
 | `GET /threads/:threadId` | — | `200`, envelope `Thread` |
@@ -27,14 +30,14 @@ Thread yang dihapus tidak terlihat lagi. DELETE ulang pada tombstone milik pengg
 
 `Thread = {id,moduleId,title,createdAt,updatedAt,activeRunId}`; `activeRunId` nullable. Title default `Percakapan baru`, trim, panjang 1–120 Unicode code points, tanpa pemanggilan model untuk judul otomatis.
 
-`Message = {id,threadId,runId,sequence,role,parts,contexts,createdAt,availability}`. `runId` selalu ada; role `user | assistant`; `availability = available | unavailable`. `parts` adalah subset `UIMessage.parts`: text, tool parts aman, source-document, dan data-citation. System prompt/raw provider transcript tidak dikirim ke browser. `unavailable` memberi `parts: []` dan konteks tanpa body/rentang sensitif, sesuai kebijakan README. Metadata `runId` dan status dipasang saat DTO dikonversi menjadi `UIMessage`.
+`Message = {id,threadId,runId,sequence,role,parts,contexts,references,createdAt,availability}`. `runId` selalu ada; role `user | assistant`; `availability = available | unavailable`. `parts` adalah subset `UIMessage.parts`: text, tool parts aman, source-document, dan data-citation. System prompt/raw provider transcript tidak dikirim ke browser. `references` memuat referensi eksplisit pesan user, untuk retry dengan konteks asal. `unavailable` memberi `parts: []`, `references: []` dan konteks tanpa body/rentang sensitif, sesuai kebijakan README. Metadata `runId` dan status dipasang saat DTO dikonversi menjadi `UIMessage`.
 
 `ContextReference` memakai discriminated union:
 
 - `{kind:"activity",nodeId,activityId,contentRevision,startCodePoint,endCodePoint}` untuk materi belajar yang diizinkan.
 - `{kind:"source",sourceId,sourceContentId,contentRevision,startCodePoint,endCodePoint}` untuk sumber terkait.
 
-Rentang `[startCodePoint,endCodePoint)` terhadap teks normalisasi server, bukan offset HTML/UTF-16. `contentRevision` adalah hash SHA-256 teks normalisasi beserta versi normalizer. Server memastikan revision dan rentang masih cocok; mismatch `409 CONTEXT_STALE`. Page/section diambil dari server, tidak dipercaya dari client.
+Rentang `[startCodePoint,endCodePoint)` terhadap teks normalisasi server, bukan offset HTML/UTF-16. `contentRevision` adalah hash SHA-256 teks normalisasi beserta versi normalizer. Normalizer M3 mengganti CRLF/CR menjadi LF lalu NFC, dengan hash `SHA256("chat-material-v1\n" + text)`. Server memastikan revision dan rentang untuk pembacaan baru masih cocok; mismatch `409 CONTEXT_STALE`. Pembukaan citation lama membaca snapshot, bukan memvalidasi revision terhadap materi terbaru. Page/section diambil dari server, tidak dipercaya dari client.
 
 `SendMessage` berisi `text` nonempty setelah trim, `pageContext?` berupa `{surface:"journey"}` atau `{surface:"node",nodeId}`, `references?` berupa array `ContextReference`, dan `retryOfRunId?`. Page context hanya metadata; node identifier diverifikasi tanpa memuat isi otomatis. Retry eksplisit terminal run membuat pesan/run baru dengan key baru, menyertakan `retryOfRunId`; tidak melanjutkan checkpoint lama. Target retry harus pada thread yang sama dan terminal selain `completed`.
 
@@ -119,7 +122,16 @@ Wire mengikuti [AI SDK UI stream protocol](https://ai-sdk.dev/docs/ai-sdk-ui/str
 | Rujukan | `source-document` untuk identitas sumber dan `data-citation` untuk lokasi internal |
 | Status terminal | `data-run-status` tersimpan, lalu `finish`; error juga mengirim `error` tersanitasi |
 
-`Citation = {id,origin,title,reference,excerpt}`; reference mengikuti ContextReference, lokasi tambahan server `pageNumber?`, `sectionTitle?`. ID citation diberikan server dari referensi yang benar-benar dibaca, bukan URL atau ID rekaan model. UI menavigasi menggunakan identifier dan route reader existing dengan pemeriksaan akses kembali. `sourceId` pada frame UI adalah citation ID, bukan otomatis `sources.id` database. Semua dependensi baca disimpan meski tidak ditampilkan sebagai citation.
+`Citation = {id,origin,title,reference,excerpt,pageNumber,sectionTitle}`; lokasi nullable dan berasal dari server. ID citation diberikan server dari referensi yang benar-benar dibaca. Model hanya boleh menggunakan marker `[[cite:UUID]]`; backend menerbitkan card hanya untuk ID yang ada dalam evidence ledger dan digunakan di teks. UI mengubah marker valid menjadi tombol angka; marker rekaan tidak menghasilkan card.
+
+`CitationSnapshot = {citation,text,startCodePoint,capturedAt}` menyimpan teks yang diberikan kepada model: kutipan ditambah maksimal 400 code points sebelum/sesudahnya. Sorotan dihitung dari rentang citation relatif ke `startCodePoint` snapshot. Reader bukan preview PDF biner: teks ekstraksi dan nomor halaman tetap tersedia. Snapshot berada di `chat_message_contexts.reference_json` (`kind=material`), dengan snapshot_text/content_revision dan ID row deterministik per pesan/citation. Tidak memerlukan schema atau migrasi baru di M3. Snapshot hanya diinsert, tidak diperbarui; bukti yang diwarisi dapat disalin ke pesan berikutnya dengan citation ID yang sama.
+
+Selected context disimpan atomik saat admission dengan `dependency_only=false`. Seluruh materi yang dibaca tool atau diwarisi dari pasangan history yang dimasukkan ke prompt disimpan pada assistant dengan `dependency_only=true`, meski tidak menjadi card. Snapshot/evidence dan parts di-commit di bawah fence run sebelum publikasi. Checkpoint sebelum model call berikutnya menyimpan hasil tool. History mengeluarkan kedua pesan satu run jika salah satu dependensi tidak dapat diakses; pasangan itu tidak masuk prompt berikutnya. Stream memeriksa akses sebelum setiap batch dengan buffer terbatas.
+
+Arsip sumber/modul tidak mencabut akses pemilik. Update materi tidak mengubah reader lama; dialog menampilkan “Materi saat jawaban dibuat”. Kehilangan akses sungguhan menyembunyikan pesan/card dan menolak reader. Gangguan memuat tetap memiliki aksi coba lagi. Referensi baru yang stale harus dipilih ulang; replay idempotency yang telah committed tetap mengembalikan ID lama tanpa rehydration.
+
+M3 menyimpan `text`, `data-citation`, dan `data-run-status` sebagai parts publik. SSE dan history mapper menyintesis `source-document` dari citation yang sama. Raw tool transcript, input scope, dan provider metadata tidak dikirim ke UI; tools M3 bekerja di agent dengan usage/call count untuk observability.
+
 
 Contoh stream jawaban langsung (baris kosong adalah pemisah SSE):
 

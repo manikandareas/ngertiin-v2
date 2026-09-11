@@ -1,6 +1,6 @@
 # Implementasi AI Chat
 
-Status: **M1–M2 diimplementasikan; verifikasi lokal tercatat di [bukti M1](./m1-verification.md) dan [bukti M2](./m2-verification.md). M3–M5 belum dimulai.**
+Status: **M1–M3 diimplementasikan; verifikasi lokal tercatat di [bukti M1](./m1-verification.md) dan [bukti M2](./m2-verification.md). M3 memakai [bukti M3](./m3-verification.md). M4–M5 belum dimulai.**
 
 Dokumen ini otoritatif untuk delivery dan verifikasi. Keputusan produk/domain berada di [README](./README.md); payload, schema dan angka operasional berada di [contracts](./contracts.md). Status tiap milestone mengikuti bukti delivery di bawah. Penyusunan blueprint tidak menambahkan test suite.
 
@@ -47,13 +47,15 @@ M1 telah memverifikasi peer dependency adapter serta `createAgent` + Responses A
 
 ## M3 — Konteks belajar
 
+**Delivery:** implementasi context, tools read-only, pemilih kutipan, citation card, dan reader snapshot selesai. Snapshot immutable menggunakan tabel konteks M1, tanpa migrasi baru. Update/arsip tidak mengubah reader lama; kehilangan akses menyembunyikan pesan dan dependensinya. [Verifikasi M3](./m3-verification.md) memisahkan bukti provider/database/browser fixture dari Clerk dan deployment.
+
 **Prasyarat:** M2; aturan akses/progres existing; DTO proyeksi materi aman.
 
 **Deliverable:** runtime context, direct excerpt hydration, `read_excerpt`, `read_progress`, message references/dependencies, citation reader, kebijakan prompt assessment. Search tool belum diaktifkan hingga M4. Penambahan read method ModulesService mengikuti batas tanggung jawab README, tanpa callback ke ChatService.
 
-**Acceptance:** selected excerpt dijelaskan tanpa vector search; mengganti halaman tidak mengubah konteks pesan lama; scope lintas user/module, revision stale, node locked dan referensi assessment ditolak. Prompt/tool/history tidak memuat evaluation config atau kunci jawaban. Hak akses yang dicabut menyembunyikan pesan bergantung materi tersebut. Pertanyaan assessment mendapat petunjuk konsep; chat tidak menulis attempt, progres, mastery, atau XP.
+**Acceptance:** selected excerpt dijelaskan tanpa vector search; mengganti halaman tidak mengubah konteks pesan lama; scope lintas user/module, revision stale pada referensi baru, node locked dan referensi assessment ditolak. Citation lama tetap membuka snapshot yang sama setelah update/arsip. Prompt/tool/history tidak memuat evaluation config atau kunci jawaban. Hak akses yang dicabut menyembunyikan pesan bergantung materi tersebut. Pertanyaan assessment mendapat petunjuk konsep; chat tidak menulis attempt, progres, mastery, atau XP.
 
-**Bukti yang harus dicatat:** inspeksi proyeksi allowlist; request negatif lintas user; snapshot prompt/tool yang disunting rahasianya; tampilan citation menuju rentang asal; pembandingan tabel progression/XP sebelum/sesudah. Status: **NOT RUN**.
+**Bukti yang harus dicatat:** inspeksi proyeksi allowlist; request negatif lintas user; snapshot prompt/tool yang disunting rahasianya; tampilan citation menuju rentang asal; pembandingan tabel progression/XP sebelum/sesudah. Status: **PASS lokal sesuai [bukti M3](./m3-verification.md)**; Clerk nyata dan deployment **NOT RUN**.
 
 ## M4 — Knowledge retrieval
 
@@ -100,12 +102,12 @@ Tabel berikut mempertahankan gate rilis lintas milestone; bukti lokal parsial M1
 | Skenario wajib | Jenis bukti | Milestone | Status |
 | --- | --- | --- | --- |
 | “Hi” singkat, nol tool call | Provider + browser + log | M1 | PASS lokal; browser fixture |
-| Follow-up memakai riwayat tanpa retrieval tidak perlu | Provider + browser | M1/M3 | NOT RUN |
+| Follow-up memakai riwayat tanpa retrieval tidak perlu | Provider + browser | M1/M3 | PASS provider lokal; browser full conversation NOT RUN |
 | Thread bersama Journey/Node, CRUD, pagination | Browser + database | M1 | PASS service/layout fixture; Clerk NOT RUN |
 | Dua pengguna/scope silang ditolak | HTTP authenticated + database | M1/M3 | NOT RUN |
-| Node locked, assessment config/kunci tidak tersedia | Static proyeksi + provider + database | M3/M4 | NOT RUN |
-| Konteks pilihan, stale revision, akses history dicabut | HTTP + browser + database | M3 | NOT RUN |
-| Tidak ada perubahan progres atau XP | Database sebelum/sesudah | M3 | NOT RUN |
+| Node locked, assessment config/kunci tidak tersedia | Static proyeksi + provider + database | M3/M4 | PASS proyeksi dan sampel provider M3; indexing M4 NOT RUN |
+| Konteks pilihan, stale revision, akses history dicabut | HTTP + browser + database | M3 | PASS service/database/provider dan browser komponen; HTTP Clerk NOT RUN |
+| Tidak ada perubahan progres atau XP | Database sebelum/sesudah | M3 | PASS database fixture |
 | Lintas materi dengan citation/origin/lokasi benar | Provider + browser + database | M4 | NOT RUN |
 | Idempotency dan dua pesan bersamaan lintas instance | HTTP race + database | M2 | PASS lokal; lihat bukti M2 |
 | Disconnect tetap berjalan; reconnect mendapat hasil | Browser + provider + database | M2 | PASS lokal; lihat bukti M2 |
@@ -115,7 +117,7 @@ Tabel berikut mempertahankan gate rilis lintas milestone; bukti lokal parsial M1
 | Reindex tidak membaca chunk lama/duplikasi embedding row | Worker + provider + database | M4 | NOT RUN |
 | Indeks belum siap dan lexical fallback | Provider fault + browser | M4 | NOT RUN |
 | Batas rate/context/token/konkurensi dan feature off | HTTP + provider + database | M5 | NOT RUN |
-| Build/typecheck dependency chat implementasi | Static | M1–M5 | PASS M1–M2; M3–M5 NOT RUN |
+| Build/typecheck dependency chat implementasi | Static | M1–M5 | PASS M1–M3; M4–M5 NOT RUN |
 | SSE proxy, graceful drain, rollout dan rollback | Deployment | M5 | NOT RUN |
 
 Evaluasi kualitas memakai kumpulan contoh Bahasa Indonesia yang mencakup sapaan, follow-up, kutipan, lintas sumber, bukti kurang, prompt injection dalam materi, assessment aktif, dan akses tercabut. Reviewer mencatat apakah tool diperlukan, bukti mendukung klaim, lokasi citation benar, dan jawaban membantu belajar. Larangan akses merupakan gate tanpa toleransi kebocoran; skor kualitas, latency, token dan biaya harus dilaporkan dari sampel nyata sebelum menetapkan target operasional.

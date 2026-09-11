@@ -1,4 +1,8 @@
-import { chatRunDataSchema, chatRunStatusSchema } from "@ngertiin/contracts/api";
+import {
+  chatCitationSchema,
+  chatRunDataSchema,
+  chatRunStatusSchema,
+} from "@ngertiin/contracts/api";
 import type { UIMessageChunk } from "ai";
 import { Redis } from "ioredis";
 import { z } from "zod";
@@ -14,6 +18,13 @@ const frameSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("text-delta"), id: z.string(), delta: z.string() }),
   z.object({ type: z.literal("text-end"), id: z.string() }),
   z.object({ type: z.literal("data-run-status"), data: chatRunDataSchema }),
+  z.object({
+    type: z.literal("source-document"),
+    sourceId: z.uuid(),
+    mediaType: z.literal("text/plain"),
+    title: z.string(),
+  }),
+  z.object({ type: z.literal("data-citation"), id: z.uuid(), data: chatCitationSchema }),
   z.object({ type: z.literal("error"), errorText: z.string().max(200) }),
   z.object({ type: z.literal("finish"), messageMetadata: metadataSchema.optional() }),
 ]);

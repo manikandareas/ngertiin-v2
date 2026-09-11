@@ -15,7 +15,13 @@ import {
   UseGuards,
 } from "@nestjs/common";
 import {
+  type ChatMaterialTarget,
   type ChatPagination,
+  chatCitationResponseSchema,
+  chatMaterialPreviewInputSchema,
+  chatMaterialPreviewResponseSchema,
+  chatMaterialsQuerySchema,
+  chatMaterialsResponseSchema,
   chatMessagesResponseSchema,
   chatPaginationSchema,
   chatRunParamsSchema,
@@ -29,6 +35,7 @@ import {
   patchChatThreadSchema,
   type SendChatMessage,
   sendChatMessageSchema,
+  uuidSchema,
 } from "@ngertiin/contracts/api";
 import { z } from "zod";
 import { ClerkAuthGuard } from "../auth/clerk-auth.guard.js";
@@ -44,6 +51,58 @@ type RunParams = ThreadParams & { runId: string };
 @UseGuards(ClerkAuthGuard)
 export class ChatController {
   constructor(@Inject(ChatService) private readonly chat: ChatService) {}
+  @Get("materials")
+  async materials(
+    @Req() req: ProductRequest,
+    @Param(new ZodValidationPipe(moduleParamsSchema)) p: { moduleId: string },
+    @Query(new ZodValidationPipe(chatMaterialsQuerySchema)) query: {
+      nodeId?: string;
+      after?: string;
+    },
+  ) {
+    return chatMaterialsResponseSchema.parse({
+      data: await this.chat.listMaterials(getLocalUserId(req), p.moduleId, query),
+    });
+  }
+  @Post("materials/preview")
+  @HttpCode(200)
+  async preview(
+    @Req() req: ProductRequest,
+    @Param(new ZodValidationPipe(moduleParamsSchema)) p: { moduleId: string },
+    @Body(new ZodValidationPipe(chatMaterialPreviewInputSchema)) body: {
+      target: ChatMaterialTarget;
+      startCodePoint: number;
+    },
+  ) {
+    return chatMaterialPreviewResponseSchema.parse({
+      data: await this.chat.previewMaterial(
+        getLocalUserId(req),
+        p.moduleId,
+        body.target,
+        body.startCodePoint,
+      ),
+    });
+  }
+  @Get("threads/:threadId/messages/:messageId/citations/:citationId")
+  async citation(
+    @Req() req: ProductRequest,
+    @Param(
+      new ZodValidationPipe(
+        chatThreadParamsSchema.extend({ messageId: uuidSchema, citationId: uuidSchema }),
+      ),
+    )
+    p: ThreadParams & { messageId: string; citationId: string },
+  ) {
+    return chatCitationResponseSchema.parse({
+      data: await this.chat.getCitation(
+        getLocalUserId(req),
+        p.moduleId,
+        p.threadId,
+        p.messageId,
+        p.citationId,
+      ),
+    });
+  }
   @Post("threads")
   async create(
     @Req() req: ProductRequest,

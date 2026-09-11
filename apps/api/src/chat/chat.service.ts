@@ -10,13 +10,17 @@ import {
 import {
   activeChatStatuses,
   type ChatAcknowledgment,
+  type ChatCitationSnapshot,
+  type ChatMaterialTarget,
   type ChatMessage,
   type ChatPagination,
   type ChatPart,
   type ChatRunError,
   type ChatRunStatus,
   type ChatUsage,
+  chatCitationSnapshotSchema,
   chatMessageSchema,
+  chatPageContextSchema,
   chatPartSchema,
   chatRunSchema,
   chatThreadSchema,
@@ -51,6 +55,7 @@ import { API_ENV } from "../config.js";
 import { ProductError } from "../http/product-error.js";
 import { IdempotencyService } from "../idempotency/idempotency.service.js";
 import { InfrastructureService } from "../infrastructure/infrastructure.service.js";
+import { KnowledgeService } from "../knowledge/knowledge.service.js";
 import { ModulesService } from "../modules/modules.service.js";
 import { ChatExecutionBudget } from "./chat.budget.js";
 import { chatFailureStatus, withAbortGrace } from "./chat.execution.js";
@@ -63,7 +68,10 @@ import {
   streamChatSnapshots,
 } from "./chat.stream.js";
 import { createLearningAgent, LearningRunError } from "./learning.agent.js";
+import { LearningEvidence, materialPrompt } from "./learning.context.js";
 import { learningPrompt } from "./prompts/learning.prompt.js";
+import { readExcerptTool } from "./tools/read-excerpt.tool.js";
+import { readProgressTool } from "./tools/read-progress.tool.js";
 
 type RunRow = typeof chat_runs.$inferSelect;
 const textOf = (parts: unknown): string =>
@@ -90,6 +98,7 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
   constructor(
     @Inject(InfrastructureService) private readonly infrastructure: InfrastructureService,
     @Inject(ModulesService) private readonly modules: ModulesService,
+    @Inject(KnowledgeService) private readonly knowledge: KnowledgeService,
     @Inject(IdempotencyService) private readonly idempotency: IdempotencyService,
     @Inject(AiService) private readonly ai: AiService,
     @Inject(API_ENV) private readonly env: ApiEnvironment,
@@ -281,6 +290,97 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
         .where(eq(chat_threads.id, threadId));
     });
   }
+  listMaterials(userId: string, moduleId: string, query: { nodeId?: string; after?: string }) {
+    return this.modules.listChatMaterials(userId, moduleId, query);
+  }
+  previewMaterial(userId: string, moduleId: string, target: ChatMaterialTarget, start: number) {
+    return this.knowledge.preview(userId, moduleId, target, start);
+  }
+  private async runEvidence(runId: string) {
+    const rows = await this.db
+      .select({ snapshot: chat_message_contexts.reference_json })
+      .from(chat_message_contexts)
+      .innerJoin(chat_messages, eq(chat_messages.id, chat_message_contexts.message_id))
+      .where(and(eq(chat_messages.run_id, runId), eq(chat_message_contexts.kind, "material")));
+    return [
+      ...new Map(
+        rows.map((row) => {
+          const snapshot = chatCitationSnapshotSchema.parse(row.snapshot);
+          return [snapshot.citation.id, snapshot] as const;
+        }),
+      ).values(),
+    ];
+  }
+  private async canReadEvidence(
+    userId: string,
+    moduleId: string,
+    snapshots: ChatCitationSnapshot[],
+  ) {
+    try {
+      const authorized = new Set<string>();
+      for (const snapshot of snapshots) {
+        const reference = snapshot.citation.reference;
+        const key =
+          reference.kind === "activity"
+            ? `activity:${reference.nodeId}:${reference.activityId}`
+            : `source:${reference.sourceId}`;
+        if (authorized.has(key)) continue;
+        await this.modules.validateChatMaterial(userId, moduleId, reference);
+        authorized.add(key);
+      }
+      return true;
+    } catch (error) {
+      if (error instanceof ProductError) return false;
+      throw error;
+    }
+  }
+  async getCitation(
+    userId: string,
+    moduleId: string,
+    threadId: string,
+    messageId: string,
+    citationId: string,
+  ) {
+    await this.ownedThread(userId, moduleId, threadId);
+    const [message] = await this.db
+      .select()
+      .from(chat_messages)
+      .where(and(eq(chat_messages.id, messageId), eq(chat_messages.thread_id, threadId)))
+      .limit(1);
+    if (
+      !message ||
+      !chatMessageParts(message.parts_json).some(
+        (part) => part.type === "data-citation" && part.data.id === citationId,
+      )
+    )
+      this.notFound();
+    const evidence = await this.runEvidence(message.run_id);
+    if (!(await this.canReadEvidence(userId, moduleId, evidence))) this.notFound();
+    const snapshot = evidence.find((item) => item.citation.id === citationId);
+    if (!snapshot) this.notFound();
+    return snapshot;
+  }
+  private evidenceRows(
+    messageId: string,
+    snapshots: ChatCitationSnapshot[],
+    dependencyOnly: boolean,
+  ) {
+    return snapshots.map((snapshot) => {
+      const hash = createHash("sha256")
+        .update(`${messageId}:${snapshot.citation.id}`)
+        .digest("hex");
+      const id = `${hash.slice(0, 8)}-${hash.slice(8, 12)}-${hash.slice(12, 16)}-${hash.slice(16, 20)}-${hash.slice(20, 32)}`;
+      return {
+        id,
+        message_id: messageId,
+        kind: "material",
+        reference_json: snapshot,
+        snapshot_text: snapshot.text,
+        content_revision: snapshot.citation.reference.contentRevision,
+        dependency_only: dependencyOnly,
+      };
+    });
+  }
   private async messageDtos(
     rows: (typeof chat_messages.$inferSelect & {
       runStatus: ChatRunStatus;
@@ -320,6 +420,9 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
         contexts: contexts
           .filter((c) => c.message_id === row.id && c.kind === "page")
           .map((c) => c.reference_json),
+        references: contexts
+          .filter((c) => c.message_id === row.id && c.kind === "material" && !c.dependency_only)
+          .map((c) => chatCitationSnapshotSchema.parse(c.reference_json).citation.reference),
         createdAt: row.created_at.toISOString(),
         availability: "available",
       }),
@@ -357,7 +460,29 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
       .orderBy(desc(chat_messages.sequence), desc(chat_messages.id))
       .limit(query.limit + 1);
     const page = chatPage(rows, query.limit, scope, (row) => ({ id: row.id, order: row.sequence }));
-    return { ...page, data: await this.messageDtos(page.data) };
+    const availability = new Map<string, boolean>();
+    for (const row of page.data) {
+      if (!availability.has(row.run_id))
+        availability.set(
+          row.run_id,
+          await this.canReadEvidence(userId, moduleId, await this.runEvidence(row.run_id)),
+        );
+    }
+    const data = await this.messageDtos(page.data);
+    return {
+      ...page,
+      data: data.map((message) =>
+        availability.get(message.runId)
+          ? message
+          : {
+              ...message,
+              parts: [],
+              contexts: [],
+              references: [],
+              availability: "unavailable" as const,
+            },
+      ),
+    };
   }
   async getRun(userId: string, moduleId: string, threadId: string, runId: string) {
     await this.ownedThread(userId, moduleId, threadId);
@@ -412,12 +537,12 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
         "Input too long",
         "Pesan melebihi batas panjang.",
       );
-    if (input.references.length)
+    if (input.references.length > this.env.CHAT_CONTEXT_MAX_REFERENCES)
       throw new ProductError(
-        403,
-        "CHAT_CONTEXT_FORBIDDEN",
-        "References unavailable",
-        "Kutipan materi belum tersedia pada chat ini.",
+        422,
+        "VALIDATION_ERROR",
+        "Too many references",
+        "Terlalu banyak kutipan.",
       );
     if (input.retryOfRunId) {
       const run = await this.getRun(userId, moduleId, threadId, input.retryOfRunId);
@@ -444,10 +569,29 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
         async (tx) => {
           if (!this.env.CHAT_ENABLED || this.stopping) this.unavailable();
           // Reject oversized mandatory prompt before admitting a run/provider invocation.
+          const evidence: ChatCitationSnapshot[] = [];
+          let remaining = this.env.CHAT_CONTEXT_MAX_CODE_POINTS;
+          for (const reference of input.references) {
+            const snapshot = await this.knowledge.readExcerpt(
+              userId,
+              moduleId,
+              reference,
+              Math.max(0, remaining),
+            );
+            remaining -= [...snapshot.text].length;
+            if (remaining < 0)
+              throw new ProductError(
+                422,
+                "VALIDATION_ERROR",
+                "Context too large",
+                "Kutipan terlalu panjang.",
+              );
+            evidence.push(snapshot);
+          }
           const model = this.ai.createChatModel();
           const mandatory = await model.getNumTokensFromMessages([
             new SystemMessage(learningPrompt),
-            new HumanMessage(input.text),
+            new HumanMessage(input.text + materialPrompt(evidence)),
           ]);
           if (mandatory.totalCount > this.env.CHAT_PROMPT_MAX_TOKENS)
             throw new ProductError(
@@ -532,6 +676,10 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
             role: "user",
             parts_json: [{ type: "text", text: input.text }],
           });
+          if (evidence.length)
+            await tx
+              .insert(chat_message_contexts)
+              .values(this.evidenceRows(messageId, evidence, false));
           if (input.pageContext)
             await tx
               .insert(chat_message_contexts)
@@ -666,14 +814,36 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
       sql`${chat_runs.lease_expires_at} > clock_timestamp()`,
     );
   }
-  private async promptMessages(run: RunRow, model: ReturnType<AiService["createChatModel"]>) {
+  private async promptMessages(
+    run: RunRow,
+    model: ReturnType<AiService["createChatModel"]>,
+    scope: { userId: string; moduleId: string },
+    evidence: LearningEvidence,
+  ) {
     const [user] = await this.db
       .select()
       .from(chat_messages)
       .where(eq(chat_messages.id, run.user_message_id ?? ""))
       .limit(1);
     if (!user) throw new Error("Missing user message");
-    const messages: BaseMessage[] = [new HumanMessage(textOf(user.parts_json))];
+    const currentEvidence = await this.runEvidence(run.id);
+    if (!(await this.canReadEvidence(scope.userId, scope.moduleId, currentEvidence)))
+      this.notFound();
+    for (const snapshot of currentEvidence) evidence.add(snapshot);
+    const pageRows = await this.db
+      .select()
+      .from(chat_message_contexts)
+      .where(
+        and(eq(chat_message_contexts.message_id, user.id), eq(chat_message_contexts.kind, "page")),
+      );
+    const page = pageRows[0] ? chatPageContextSchema.parse(pageRows[0].reference_json) : undefined;
+    const messages: BaseMessage[] = [
+      new HumanMessage(
+        textOf(user.parts_json) +
+          materialPrompt(currentEvidence) +
+          (page ? `\nMetadata halaman saat pesan dikirim: ${JSON.stringify(page)}` : ""),
+      ),
+    ];
     let beforeSequence = user.sequence;
     // Read recent completed pairs incrementally; never materialize an entire long thread.
     while (true) {
@@ -701,8 +871,10 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
           assistant.run_id !== previous.run_id
         )
           continue;
+        const dependencies = await this.runEvidence(previous.run_id);
+        if (!(await this.canReadEvidence(scope.userId, scope.moduleId, dependencies))) continue;
         const pair = [
-          new HumanMessage(textOf(previous.parts_json)),
+          new HumanMessage(textOf(previous.parts_json) + materialPrompt(dependencies)),
           new AIMessage(textOf(assistant.parts_json)),
         ];
         const budget = await model.getNumTokensFromMessages([
@@ -711,6 +883,7 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
           ...messages,
         ]);
         if (budget.totalCount > this.env.CHAT_PROMPT_MAX_TOKENS) return messages;
+        for (const snapshot of dependencies) evidence.add(snapshot);
         messages.unshift(...pair);
       }
       const last = rows.at(-1);
@@ -742,6 +915,7 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
     text: string,
     calls: Map<string, ChatUsage>,
     terminal?: { status: ChatRunStatus; errorCode: ChatRunError | null },
+    evidence: ChatCitationSnapshot[] = [],
   ) {
     const committed = await this.db.transaction(async (tx) => {
       const [locked] = await tx
@@ -760,11 +934,30 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
         .select()
         .from(chat_messages)
         .where(eq(chat_messages.id, assistantId));
-      const previous = this.snapshot(current, message ? textOf(message.parts_json) : "");
+      const previous = {
+        ...this.snapshot(current, message ? textOf(message.parts_json) : ""),
+        citations: message
+          ? chatMessageParts(message.parts_json).flatMap((part) =>
+              part.type === "data-citation" ? [part.data] : [],
+            )
+          : [],
+      };
       let status = current.status;
       if (terminal) status = current.status === "cancelling" ? "cancelled" : terminal.status;
       const errorCode = status === "cancelled" ? "USER_CANCELLED" : (terminal?.errorCode ?? null);
-      const parts: ChatPart[] = [{ type: "text", text }];
+      if (message && evidence.length)
+        await tx
+          .insert(chat_message_contexts)
+          .values(this.evidenceRows(assistantId, evidence, true))
+          .onConflictDoNothing();
+      const citations: ChatPart[] = evidence
+        .filter((snapshot) => text.includes(`[[cite:${snapshot.citation.id}]]`))
+        .map((snapshot) => ({
+          type: "data-citation",
+          id: snapshot.citation.id,
+          data: snapshot.citation,
+        }));
+      const parts: ChatPart[] = [{ type: "text", text }, ...citations];
       if (terminal) parts.push({ type: "data-run-status", data: { status, errorCode } });
       if (message)
         await tx
@@ -805,7 +998,17 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
             set: values,
           });
       }
-      return updated ? { snapshot: this.snapshot(updated, text), previous } : undefined;
+      return updated
+        ? {
+            snapshot: {
+              ...this.snapshot(updated, text),
+              citations: citations.flatMap((part) =>
+                part.type === "data-citation" ? [part.data] : [],
+              ),
+            },
+            previous,
+          }
+        : undefined;
     });
     if (!committed) return false;
     await this.publish(committed.snapshot, committed.previous);
@@ -860,7 +1063,9 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
             .update(chat_messages)
             .set({
               parts_json: [
-                { type: "text", text },
+                ...chatMessageParts(message.parts_json).filter(
+                  (part) => part.type !== "data-run-status",
+                ),
                 {
                   type: "data-run-status",
                   data: { status: updated.status, errorCode: updated.error_code },
@@ -885,6 +1090,7 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
     const startedAt = performance.now();
     const assistantId = randomUUID();
     const calls = new Map<string, ChatUsage>();
+    const evidence = new LearningEvidence();
     let text = "";
     let lastSnapshot = 0;
     let heartbeatBusy = false,
@@ -929,13 +1135,27 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
       },
       Math.min(this.env.CHAT_HEARTBEAT_MS, this.env.CHAT_CANCEL_POLL_MS),
     );
+    let executionScope: { userId: string; moduleId: string } | undefined;
     let savedText = "";
     let saving = Promise.resolve();
     const save = () => {
       saving = saving.then(async () => {
         assertActive();
         const snapshotText = text;
-        if (!(await this.persist(run, assistantId, snapshotText, calls))) {
+        if (executionScope) {
+          await this.modules.validateChatScope(executionScope.userId, executionScope.moduleId);
+          if (
+            !(await this.canReadEvidence(
+              executionScope.userId,
+              executionScope.moduleId,
+              evidence.values(),
+            ))
+          )
+            this.notFound();
+        }
+        if (
+          !(await this.persist(run, assistantId, snapshotText, calls, undefined, evidence.values()))
+        ) {
           stop("PROCESS_INTERRUPTED");
           assertActive();
         }
@@ -1006,8 +1226,18 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
       await this.publish(initial);
       assertActive();
       const model = this.ai.createChatModel();
-      const messages = await this.promptMessages(run, model);
-      const agent = createLearningAgent(model, budget);
+      const context = Object.freeze({
+        userId: thread.user_id,
+        moduleId: thread.module_id,
+        maxContextCodePoints: this.env.CHAT_CONTEXT_MAX_CODE_POINTS,
+      });
+      executionScope = context;
+      const messages = await this.promptMessages(run, model, context, evidence);
+      await save(); // Commit inherited dependencies before the first provider call.
+      const agent = createLearningAgent(model, budget, [
+        readExcerptTool(this.knowledge, context, evidence),
+        readProgressTool(this.modules, context),
+      ]);
       const stream = await agent.stream(
         { messages },
         {
@@ -1040,10 +1270,17 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
       const usage = this.ai.aggregateUsage([...calls.values()]);
       const outputLimited =
         budget.outputLimited || (usage.outputTokens ?? 0) >= this.env.CHAT_OUTPUT_MAX_TOKENS;
-      await this.persist(run, assistantId, text, calls, {
-        status: outputLimited ? "failed" : "completed",
-        errorCode: outputLimited ? "OUTPUT_LIMIT" : null,
-      });
+      await this.persist(
+        run,
+        assistantId,
+        text,
+        calls,
+        {
+          status: outputLimited ? "failed" : "completed",
+          errorCode: outputLimited ? "OUTPUT_LIMIT" : null,
+        },
+        evidence.values(),
+      );
     } catch (error) {
       finished = true; // Late provider callbacks cannot change snapshots or usage.
       const code =
@@ -1051,10 +1288,17 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
           ? abort.signal.reason.code
           : (budget.failure ??
             (error instanceof LearningRunError ? error.code : this.ai.normalizeChatError(error)));
-      await this.persist(run, assistantId, text, calls, {
-        status: chatFailureStatus(code),
-        errorCode: code,
-      });
+      await this.persist(
+        run,
+        assistantId,
+        text,
+        calls,
+        {
+          status: chatFailureStatus(code),
+          errorCode: code,
+        },
+        evidence.values(),
+      );
     } finally {
       finished = true;
       clearInterval(heartbeat);
@@ -1088,7 +1332,16 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
       .where(and(eq(chat_runs.id, runId), eq(chat_runs.thread_id, threadId)))
       .limit(1);
     if (!row) this.notFound();
-    return this.snapshot(row.run, row.message ? textOf(row.message.parts_json) : "");
+    if (!(await this.canReadEvidence(userId, moduleId, await this.runEvidence(runId))))
+      this.notFound();
+    return {
+      ...this.snapshot(row.run, row.message ? textOf(row.message.parts_json) : ""),
+      citations: row.message
+        ? chatMessageParts(row.message.parts_json).flatMap((part) =>
+            part.type === "data-citation" ? [part.data] : [],
+          )
+        : [],
+    };
   }
   async stream(
     userId: string,
@@ -1112,6 +1365,9 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
       },
       this.env.CHAT_STREAM_BUFFER_MAX_BYTES,
       this.env.CHAT_SWEEP_INTERVAL_MS,
+      async () => {
+        await read();
+      },
     );
   }
 }

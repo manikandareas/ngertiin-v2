@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { Inject, Injectable } from "@nestjs/common";
 import type {
+  ChatMaterialTarget,
   CompleteNodeResult,
   CreateModuleBody,
   CreateModuleResponse,
@@ -38,6 +39,7 @@ import {
   module_nodes,
   modules,
   node_progress,
+  source_contents,
   sources,
   user_module_progress,
 } from "@ngertiin/database";
@@ -751,6 +753,218 @@ export class ModulesService {
     if (!node) this.notFound();
     if (!node.status || node.status === "locked")
       throw new ProductError(403, "NODE_LOCKED", "Node locked", "Node ini belum dapat diakses.");
+  }
+
+  /** Read-only authorization. Archiving never revokes the owner's citation access. */
+  async validateChatMaterial(userId: string, moduleId: string, target: ChatMaterialTarget) {
+    await this.validateChatScope(
+      userId,
+      moduleId,
+      target.kind === "activity" ? target.nodeId : undefined,
+    );
+    const db = this.infrastructure.database.db;
+    if (target.kind === "activity") {
+      const [row] = await db
+        .select({ type: activities.type })
+        .from(activities)
+        .where(and(eq(activities.id, target.activityId), eq(activities.node_id, target.nodeId)))
+        .limit(1);
+      if (!row) this.notFound();
+      if (row.type !== "lesson" && row.type !== "flashcard")
+        throw new ProductError(
+          403,
+          "CHAT_CONTEXT_FORBIDDEN",
+          "Assessment unavailable",
+          "Referensi assessment tidak dapat digunakan.",
+        );
+    } else {
+      const [row] = await db
+        .select({ id: sources.id })
+        .from(sources)
+        .innerJoin(generation_request_sources, eq(generation_request_sources.source_id, sources.id))
+        .innerJoin(
+          modules,
+          eq(modules.generation_request_id, generation_request_sources.generation_request_id),
+        )
+        .where(
+          and(
+            eq(modules.id, moduleId),
+            eq(sources.id, target.sourceId),
+            eq(sources.user_id, userId),
+          ),
+        )
+        .limit(1);
+      if (!row) this.notFound();
+    }
+  }
+
+  async listChatMaterials(
+    userId: string,
+    moduleId: string,
+    query: { nodeId?: string; after?: string },
+  ) {
+    await this.validateChatScope(userId, moduleId, query.nodeId);
+    const db = this.infrastructure.database.db;
+    if (query.nodeId) {
+      const rows = await db
+        .select({ id: activities.id, position: activities.position, title: module_nodes.title })
+        .from(activities)
+        .innerJoin(module_nodes, eq(module_nodes.id, activities.node_id))
+        .where(
+          and(
+            eq(activities.node_id, query.nodeId),
+            inArray(activities.type, ["lesson", "flashcard"]),
+            query.after ? sql`${activities.id} > ${query.after}` : undefined,
+          ),
+        )
+        .orderBy(asc(activities.id))
+        .limit(21);
+      return {
+        items: rows.slice(0, 20).map((row) => ({
+          target: { kind: "activity" as const, nodeId: query.nodeId as string, activityId: row.id },
+          title: row.title,
+          sectionTitle: `Aktivitas ${row.position}`,
+          pageNumber: null,
+        })),
+        nextCursor: rows.length > 20 ? (rows[19]?.id ?? null) : null,
+      };
+    }
+    const rows = await db
+      .select({
+        id: source_contents.id,
+        sourceId: sources.id,
+        title: sources.title,
+        heading: source_contents.heading,
+        pageNumber: source_contents.page_number,
+      })
+      .from(source_contents)
+      .innerJoin(sources, eq(sources.id, source_contents.source_id))
+      .innerJoin(generation_request_sources, eq(generation_request_sources.source_id, sources.id))
+      .innerJoin(
+        modules,
+        eq(modules.generation_request_id, generation_request_sources.generation_request_id),
+      )
+      .where(
+        and(
+          eq(modules.id, moduleId),
+          eq(sources.user_id, userId),
+          eq(sources.status, "ready"),
+          query.after ? sql`${source_contents.id} > ${query.after}` : undefined,
+        ),
+      )
+      .orderBy(asc(source_contents.id))
+      .limit(21);
+    return {
+      items: rows.slice(0, 20).map((row) => ({
+        target: { kind: "source" as const, sourceId: row.sourceId, sourceContentId: row.id },
+        title: row.title ?? "Sumber belajar",
+        sectionTitle: row.heading,
+        pageNumber: row.pageNumber,
+      })),
+      nextCursor: rows.length > 20 ? (rows[19]?.id ?? null) : null,
+    };
+  }
+
+  /** SQL and Zod allowlists: evaluation_config and assessment content never enter this projection. */
+  async readChatMaterial(userId: string, moduleId: string, target: ChatMaterialTarget) {
+    await this.validateChatMaterial(userId, moduleId, target);
+    const db = this.infrastructure.database.db;
+    if (target.kind === "source") {
+      const [row] = await db
+        .select({
+          text: source_contents.content,
+          title: sources.title,
+          pageNumber: source_contents.page_number,
+          sectionTitle: source_contents.heading,
+        })
+        .from(source_contents)
+        .innerJoin(sources, eq(sources.id, source_contents.source_id))
+        .where(
+          and(
+            eq(source_contents.id, target.sourceContentId),
+            eq(sources.id, target.sourceId),
+            eq(sources.status, "ready"),
+          ),
+        )
+        .limit(1);
+      if (!row) this.notFound();
+      return { ...row, title: row.title ?? "Sumber belajar", target };
+    }
+    const [row] = await db
+      .select({
+        type: activities.type,
+        content: activities.content,
+        title: module_nodes.title,
+        position: activities.position,
+      })
+      .from(activities)
+      .innerJoin(module_nodes, eq(module_nodes.id, activities.node_id))
+      .where(
+        and(
+          eq(activities.id, target.activityId),
+          eq(activities.node_id, target.nodeId),
+          inArray(activities.type, ["lesson", "flashcard"]),
+        ),
+      )
+      .limit(1);
+    if (!row) this.notFound();
+    let text: string;
+    if (row.type === "flashcard") {
+      const content = z
+        .object({ cards: z.array(z.object({ front: z.string(), back: z.string() })) })
+        .parse(row.content);
+      text = content.cards.map((card) => `${card.front}\n${card.back}`).join("\n\n");
+    } else {
+      const content = z
+        .union([
+          z.object({ format: z.literal("markdown"), title: z.string(), body: z.string() }),
+          z.object({
+            introduction: z.string().optional(),
+            explanation: z.string(),
+            keyPoints: z.array(z.string()),
+            examples: z.array(z.string()).optional(),
+            summary: z.string().optional(),
+          }),
+        ])
+        .parse(row.content);
+      text =
+        "body" in content
+          ? `${content.title}\n\n${content.body}`
+          : [
+              content.introduction,
+              content.explanation,
+              ...content.keyPoints,
+              ...(content.examples ?? []),
+              content.summary,
+            ]
+              .filter(Boolean)
+              .join("\n\n");
+    }
+    return {
+      target,
+      title: row.title,
+      text,
+      pageNumber: null,
+      sectionTitle: `Aktivitas ${row.position}`,
+    };
+  }
+
+  async readChatProgress(userId: string, moduleId: string) {
+    await this.validateChatScope(userId, moduleId);
+    const rows = await this.infrastructure.database.db
+      .select({ nodeId: module_nodes.id, status: node_progress.status })
+      .from(module_nodes)
+      .leftJoin(
+        node_progress,
+        and(eq(node_progress.node_id, module_nodes.id), eq(node_progress.user_id, userId)),
+      )
+      .where(eq(module_nodes.module_id, moduleId))
+      .orderBy(asc(module_nodes.id));
+    return {
+      totalNodes: rows.length,
+      completedNodes: rows.filter((row) => row.status === "completed").length,
+      nodes: rows.map((row) => ({ nodeId: row.nodeId, status: row.status ?? "locked" })),
+    };
   }
 
   async getNode(userId: string, moduleId: string, nodeId: string): Promise<NodeDetail> {

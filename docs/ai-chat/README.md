@@ -1,7 +1,7 @@
 # Blueprint AI Chat Ngerti.in
 
-Status: **M1–M2 diimplementasikan; M3–M5 tetap blueprint**. Diperbarui 11 September 2026.
-Batas implementasi dan bukti aktual berada di [verifikasi M1](./m1-verification.md) dan [verifikasi M2](./m2-verification.md). Deployment belum dijalankan.
+Status: **M1–M3 diimplementasikan; M4–M5 tetap blueprint**. Diperbarui 12 September 2026.
+Batas implementasi dan bukti aktual berada di [verifikasi M1](./m1-verification.md) [verifikasi M2](./m2-verification.md), dan [verifikasi M3](./m3-verification.md). Deployment belum dijalankan.
 
 ## Otoritas dokumen
 
@@ -11,7 +11,7 @@ Batas implementasi dan bukti aktual berada di [verifikasi M1](./m1-verification.
 | [contracts.md](./contracts.md) | Endpoint, payload, persistence, lifecycle run, streaming, konfigurasi dan default numerik |
 | [implementation.md](./implementation.md) | Urutan implementasi, dependency, migrasi, rollout, rollback, acceptance dan bukti |
 
-Konvensi HTTP, autentikasi, envelope, error, identifier, dan idempotency umum mengikuti [API Contract §3](../API_CONTRACT.md#3-protocol-conventions). Schema executable chat berada di `packages/contracts/src/api/chat`; konteks materi, tools, dan retrieval mengikuti milestone berikutnya.
+Konvensi HTTP, autentikasi, envelope, error, identifier, dan idempotency umum mengikuti [API Contract §3](../API_CONTRACT.md#3-protocol-conventions). Schema executable chat berada di `packages/contracts/src/api/chat`; konteks materi dan tools read-only tersedia di M3; retrieval mengikuti M4.
 **Keputusan final** adalah aturan normatif di blueprint. **Default operasional** diberi label di kontrak dan dapat dituning. Kualitas retrieval, latency, throughput, dan biaya adalah **belum diukur**, bukan janji produk.
 
 ## Perilaku produk dan konteks
@@ -34,7 +34,9 @@ Semua jalur baca menerapkan identitas server, kepemilikan modul, relasi materi, 
 - Sumber asli terkait tetap dapat dicari untuk menjelaskan konsep walaupun node turunannya terkunci. Larangan isi node tidak menjadi larangan konsep pada sumber asli.
 - Chat hanya membaca; tidak menyelesaikan node, mengirim attempt, mengubah mastery/progres, atau memberikan XP.
 
-Materi dan teks pengguna adalah data tidak tepercaya: instruksi di dalamnya tidak boleh mengganti system prompt, memperluas scope, atau membuka tool baru. History lama diperiksa kembali; konten yang hak aksesnya dicabut ditampilkan sebagai bagian tidak tersedia dan dikeluarkan dari prompt. Karena jawaban dapat memparafrasekan materi, jika dependensi materi sebuah pesan tidak lagi sah, seluruh pesan assistant terkait disembunyikan dari konteks model dan body history, sambil mempertahankan ID/status. Versi awal menyimpan seluruh referensi yang dibaca run sebagai dependensi jawabannya, bukan hanya yang akhirnya dikutip.
+Materi dan teks pengguna adalah data tidak tepercaya: instruksi di dalamnya tidak boleh mengganti system prompt, memperluas scope, atau membuka tool baru. Citation memakai snapshot immutable dari materi yang benar-benar diberikan kepada AI, termasuk konteks sekitar kutipan. Perubahan materi tidak mengganti isi reader jawaban lama; arsip tidak mencabut akses pemilik. Referensi baru tetap wajib cocok dengan revision terkini. Dialog diberi label “Materi saat jawaban dibuat”. Card hanya diterbitkan setelah snapshot tersimpan.
+
+History lama diperiksa kembali; pesan yang hak akses materinya dicabut tidak dirender di UI dan dikeluarkan dari prompt. Karena jawaban dapat memparafrasekan materi, jika dependensi materi sebuah pesan tidak lagi sah, pasangan pesan user/assistant terkait disembunyikan dari konteks model dan body history, sambil mempertahankan ID/status. Versi awal menyimpan seluruh referensi yang dibaca run sebagai dependensi jawabannya, bukan hanya yang akhirnya dikutip.
 
 ## Arsitektur dan batas tanggung jawab
 

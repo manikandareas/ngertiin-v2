@@ -3,17 +3,21 @@ import {
   type ChatAcknowledgment,
   type ChatPageContext,
   type ChatThread,
+  chatCitationSchema,
   chatRunDataSchema,
   isChatRunActive,
 } from "@ngertiin/contracts/api";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowUp, Sparkles } from "lucide-react";
+import { ArrowUp, Paperclip, Sparkles, X } from "lucide-react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Button } from "../../../components/ui/button";
 import { Textarea } from "../../../components/ui/textarea";
 import { ApiProblemError, type TokenResolver } from "../../../lib/api";
 import type { chatApi } from "../api/chat-api";
 import { createChatTransport, type LearningMessage, toUIMessage } from "../api/chat-transport";
+
+import { ChatCitedAnswer } from "./chat-citation";
+import { ChatContextPicker, type SelectedChatExcerpt } from "./chat-context-picker";
 
 export function ChatConversation({
   thread,
@@ -32,6 +36,9 @@ export function ChatConversation({
 }) {
   const client = useQueryClient();
   const [draft, setDraft] = useState("");
+  const [excerpts, setExcerpts] = useState<SelectedChatExcerpt[]>([]);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const attachButton = useRef<HTMLSpanElement>(null);
   const [ack, setAck] = useState<ChatAcknowledgment | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
@@ -40,6 +47,7 @@ export function ChatConversation({
     text: string;
     pageContext: ChatPageContext;
     retryOfRunId?: string;
+    references: SelectedChatExcerpt["reference"][];
   } | null>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   const followBottom = useRef(true);
@@ -51,6 +59,7 @@ export function ChatConversation({
       setAck(value);
       setObservedRunId(value.runId);
       setDraft((current) => (current.trim() === pending.current?.text ? "" : current));
+      setExcerpts([]);
       refresh();
     },
     [refresh],
@@ -62,7 +71,7 @@ export function ChatConversation({
   const chat = useChat<LearningMessage>({
     id: thread.id,
     transport,
-    dataPartSchemas: { "run-status": chatRunDataSchema },
+    dataPartSchemas: { "run-status": chatRunDataSchema, citation: chatCitationSchema },
     onFinish: refresh,
     onError: refresh,
   });
@@ -158,10 +167,16 @@ export function ChatConversation({
     },
     [chat.stop],
   );
-  const rendered = new Map(saved.map((m) => [m.id, toUIMessage(m)]));
+  const unavailableRuns = new Set(
+    saved.filter((m) => m.availability === "unavailable").map((m) => m.runId),
+  );
+  const rendered = new Map(
+    saved.filter((m) => m.availability === "available").map((m) => [m.id, toUIMessage(m)]),
+  );
   const latestUserMessage = chat.messages.filter((message) => message.role === "user").at(-1);
-  if (showStream)
+  if (showStream && !(ack && unavailableRuns.has(ack.runId)))
     for (const message of chat.messages) {
+      if (message.metadata?.runId && unavailableRuns.has(message.metadata.runId)) continue;
       if (message.role === "assistant") rendered.set(message.id, message);
       else if (message === latestUserMessage && (!ack || !rendered.has(ack.messageId)))
         rendered.set(ack?.messageId ?? message.id, message);
@@ -193,7 +208,12 @@ export function ChatConversation({
       : chat.error
         ? "Koneksi terputus. Periksa status dan riwayat sebelum mengirim lagi."
         : null);
-  async function send(retryOfRunId?: string, text = draft) {
+  async function send(
+    retryOfRunId?: string,
+    text = draft,
+    references = excerpts.map((item) => item.reference),
+    sentPageContext = pageContext,
+  ) {
     const trimmed = text.trim();
     if (!trimmed || active || history.isPending || history.isError) return;
     setActionError(null);
@@ -202,16 +222,30 @@ export function ChatConversation({
     if (
       !pending.current ||
       pending.current.text !== trimmed ||
-      JSON.stringify(pending.current.pageContext) !== JSON.stringify(pageContext) ||
+      JSON.stringify(pending.current.pageContext) !== JSON.stringify(sentPageContext) ||
       pending.current.retryOfRunId !== retryOfRunId ||
+      JSON.stringify(pending.current.references) !== JSON.stringify(references) ||
       ack
     ) {
-      pending.current = { key: crypto.randomUUID(), text: trimmed, pageContext, retryOfRunId };
+      pending.current = {
+        key: crypto.randomUUID(),
+        text: trimmed,
+        pageContext: sentPageContext,
+        retryOfRunId,
+        references,
+      };
     }
     setAck(null);
     await chat.sendMessage(
       { text: trimmed },
-      { body: { pageContext, retryOfRunId, idempotencyKey: pending.current.key } },
+      {
+        body: {
+          pageContext: sentPageContext,
+          retryOfRunId,
+          references: pending.current.references,
+          idempotencyKey: pending.current.key,
+        },
+      },
     );
   }
   async function cancel() {
@@ -226,7 +260,9 @@ export function ChatConversation({
       setCancelling(false);
     }
   }
-  const retryMessage = terminal ? saved.find((m) => m.id === terminal.messageId) : undefined;
+  const retryMessage = terminal
+    ? saved.find((m) => m.id === terminal.messageId && m.availability === "available")
+    : undefined;
   return (
     <>
       <div
@@ -316,12 +352,27 @@ export function ChatConversation({
                 Teman belajar
               </div>
             ) : null}
-            <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
-              {message.parts
-                .filter((p) => p.type === "text")
-                .map((p) => p.text)
-                .join("")}
-            </p>
+            {message.role === "assistant" ? (
+              <ChatCitedAnswer
+                text={message.parts
+                  .filter((p) => p.type === "text")
+                  .map((p) => p.text)
+                  .join("")}
+                citations={message.parts.flatMap((p) =>
+                  p.type === "data-citation" ? [p.data] : [],
+                )}
+                messageId={message.id}
+                threadId={thread.id}
+                api={api}
+              />
+            ) : (
+              <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+                {message.parts
+                  .filter((p) => p.type === "text")
+                  .map((p) => p.text)
+                  .join("")}
+              </p>
+            )}
             {message.parts.some(
               (p) =>
                 p.type === "data-run-status" &&
@@ -360,6 +411,8 @@ export function ChatConversation({
                       .filter((p) => p.type === "text")
                       .map((p) => p.text)
                       .join(""),
+                    retryMessage.references,
+                    retryMessage.contexts[0] ?? pageContext,
                   )
                 }
                 disabled={active}
@@ -397,6 +450,32 @@ export function ChatConversation({
           {pageContext.surface === "journey" ? "Dari Journey" : "Dari halaman Node"} · percakapan
           dalam modul ini
         </p>
+        {excerpts.length ? (
+          <div className="mb-3 space-y-2">
+            {excerpts.map((item, index) => (
+              <div
+                key={JSON.stringify(item.reference)}
+                className="flex items-start gap-2 rounded-xl bg-accent/50 p-3 text-xs"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-semibold">{item.title}</p>
+                  <p className="mt-1 line-clamp-2 text-muted-foreground">{item.excerpt}</p>
+                </div>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  className="size-6"
+                  aria-label="Hapus kutipan"
+                  disabled={active}
+                  onClick={() => setExcerpts((items) => items.filter((_, i) => i !== index))}
+                >
+                  <X />
+                </Button>
+              </div>
+            ))}
+          </div>
+        ) : null}
         <div className="rounded-2xl border bg-background p-2 focus-within:ring-2 focus-within:ring-ring">
           <Textarea
             aria-label="Pesan untuk teman belajar"
@@ -413,8 +492,18 @@ export function ChatConversation({
             className="min-h-16 resize-none border-0 p-2 shadow-none focus-visible:ring-0"
           />
           <div className="flex items-center justify-between px-1 pb-1">
-            <span className="text-[10px] text-muted-foreground">
-              Enter kirim · Shift + Enter baris baru
+            <span ref={attachButton}>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="h-8 text-xs"
+                disabled={active}
+                onClick={() => setPickerOpen(true)}
+              >
+                <Paperclip />
+                Kutip materi
+              </Button>
             </span>
             {active ? (
               <Button
@@ -444,6 +533,24 @@ export function ChatConversation({
           AI bisa keliru. Periksa kembali hal penting.
         </p>
       </form>
+      {pickerOpen ? (
+        <ChatContextPicker
+          api={api}
+          root={root}
+          pageContext={pageContext}
+          onClose={() => setPickerOpen(false)}
+          returnFocus={() => attachButton.current?.querySelector("button")?.focus()}
+          onSelect={(excerpt) => {
+            setExcerpts((items) => [
+              ...items.filter(
+                (item) => JSON.stringify(item.reference) !== JSON.stringify(excerpt.reference),
+              ),
+              excerpt,
+            ]);
+            setPickerOpen(false);
+          }}
+        />
+      ) : null}
     </>
   );
 }
