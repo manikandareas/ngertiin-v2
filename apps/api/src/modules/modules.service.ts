@@ -730,6 +730,29 @@ export class ModulesService {
     };
   }
 
+  /** Validate chat page metadata without loading activity bodies or assessment config. */
+  async validateChatScope(userId: string, moduleId: string, nodeId?: string): Promise<void> {
+    const [module] = await this.infrastructure.database.db
+      .select({ id: modules.id })
+      .from(modules)
+      .where(and(eq(modules.id, moduleId), eq(modules.owner_id, userId)))
+      .limit(1);
+    if (!module) this.notFound();
+    if (!nodeId) return;
+    const [node] = await this.infrastructure.database.db
+      .select({ status: node_progress.status })
+      .from(module_nodes)
+      .leftJoin(
+        node_progress,
+        and(eq(node_progress.node_id, module_nodes.id), eq(node_progress.user_id, userId)),
+      )
+      .where(and(eq(module_nodes.id, nodeId), eq(module_nodes.module_id, moduleId)))
+      .limit(1);
+    if (!node) this.notFound();
+    if (!node.status || node.status === "locked")
+      throw new ProductError(403, "NODE_LOCKED", "Node locked", "Node ini belum dapat diakses.");
+  }
+
   async getNode(userId: string, moduleId: string, nodeId: string): Promise<NodeDetail> {
     const journey = await this.getJourney(userId, moduleId);
     const node = journey.nodes.find((candidate) => candidate.id === nodeId);

@@ -2,6 +2,7 @@ import { Archive } from "lucide-react";
 import { useParams } from "react-router-dom";
 import { AppShell } from "../components/app-shell";
 import { Button } from "../components/ui/button";
+import { ChatSidebar } from "../features/chat/components/chat-sidebar";
 import { useArchiveModule, useJourney, useModule } from "../features/modules/api/use-modules";
 import { JourneySummary } from "../features/modules/components/journey-summary";
 import { JourneyTrack } from "../features/modules/components/journey-track";
@@ -50,7 +51,13 @@ export default function ModuleJourneyPage() {
   }
 
   return (
-    <AppShell>
+    <AppShell
+      rightSidebar={
+        moduleId ? (
+          <ChatSidebar moduleId={moduleId} pageContext={{ surface: "journey" }} />
+        ) : undefined
+      }
+    >
       <div className="mx-auto flex max-w-2xl flex-col">
         <JourneySummary data={journey.data} status={moduleQuery.data.status} />
         <JourneyTrack data={journey.data} canLearn={moduleQuery.data.status === "ready"} />

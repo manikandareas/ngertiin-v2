@@ -1,0 +1,29 @@
+[
+  {
+    "case": "reject client identity/history",
+    "pass": true
+  },
+  {
+    "case": "Unicode title boundaries",
+    "pass": true
+  },
+  {
+    "case": "locked page",
+    "pass": true,
+    "code": "NODE_LOCKED"
+  },
+  {
+    "case": "material references withheld",
+    "pass": true,
+    "code": "CHAT_CONTEXT_FORBIDDEN"
+  },
+  {
+    "case": "input limit",
+    "pass": true,
+    "code": "VALIDATION_ERROR"
+  },
+  {
+    "case": "cross-scope cursor",
+    "pass": true
+  }
+]

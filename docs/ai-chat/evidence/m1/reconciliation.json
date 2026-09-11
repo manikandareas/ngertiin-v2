@@ -1,0 +1,12 @@
+{
+  "scenario": "Thread polling clears activeRunId before the run polling observes completion",
+  "environment": "Production ChatConversation component in temporary browser fixture",
+  "threadClearedAfterMs": 200,
+  "terminalAvailableAfterMs": 500,
+  "result": {
+    "finalVisible": true,
+    "partialGone": true,
+    "busyGone": true
+  },
+  "browserErrors": []
+}

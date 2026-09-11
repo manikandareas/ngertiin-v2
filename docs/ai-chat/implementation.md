@@ -1,12 +1,12 @@
 # Implementasi AI Chat
 
-Status: **blueprint pengembangan, belum diimplementasikan**.
+Status: **M1 diimplementasikan; verifikasi lokal tercatat di [bukti M1](./m1-verification.md). M2–M5 belum dimulai.**
 
-Dokumen ini otoritatif untuk delivery dan verifikasi. Keputusan produk/domain berada di [README](./README.md); payload, schema dan angka operasional berada di [contracts](./contracts.md). Seluruh milestone di bawah berstatus **belum dimulai**. Penyusunan blueprint tidak menambahkan test suite.
+Dokumen ini otoritatif untuk delivery dan verifikasi. Keputusan produk/domain berada di [README](./README.md); payload, schema dan angka operasional berada di [contracts](./contracts.md). Status tiap milestone mengikuti bukti delivery di bawah. Penyusunan blueprint tidak menambahkan test suite.
 
 ## Dependency dan kesiapan awal
 
-Checkout memiliki Bun workspaces, NestJS/Express, Drizzle/PostgreSQL, Redis, BullMQ pada worker, React/Vite, serta LangGraph dan `@langchain/openai` pada worker. Belum ada `langchain`, `@ai-sdk/langchain`, `ai`, atau `@ai-sdk/react` di package aplikasi yang diperiksa. Ini baseline file, bukan hasil runtime.
+Checkout memiliki Bun workspaces, NestJS/Express, Drizzle/PostgreSQL, Redis, BullMQ pada worker, React/Vite, serta LangGraph dan `@langchain/openai` pada worker. M1 memasang `langchain@1.5.11`, `@langchain/core@1.2.10`, `@langchain/langgraph@1.4.14`, `@langchain/openai@1.5.12`, `@ai-sdk/langchain@2.0.288`, `ai@6.0.280`, dan `@ai-sdk/react@3.0.283`. Versi API/web dipin; worker tidak diubah.
 
 | Area | Perubahan saat implementasi |
 | --- | --- |
@@ -17,17 +17,21 @@ Checkout memiliki Bun workspaces, NestJS/Express, Drizzle/PostgreSQL, Redis, Bul
 | Database | Tambah schema dan migrasi additive sesuai model persistence kontrak; siapkan extension pgvector sebelum migrasi vector |
 | Infrastruktur | Redis untuk pub/sub dan rate limit; PostgreSQL untuk antrean/lease/status; proxy mendukung SSE tanpa buffering |
 
-Saat M1, resolve dan pin versi yang kompatibel dalam lockfile, periksa peer dependency adapter, `createAgent`, Responses API dan format stream bersama. Nomor versi library baru tidak dikarang dalam blueprint. Validasi melalui [adapter resmi](https://ai-sdk.dev/providers/adapters/langchain) dan [ChatTransport AI SDK](https://ai-sdk.dev/docs/ai-sdk-ui/transport). Tidak memakai LangSmith Deployment/Agent Server; deployment library OSS dan tanggung jawab aplikasi dijelaskan di [README](./README.md#dasar-repo-dan-sumber-resmi).
+M1 telah memverifikasi peer dependency adapter serta `createAgent` + Responses API + UI stream melalui provider lokal. AI SDK 6 dipilih untuk format `data-*` dalam kontrak; peningkatan major berikutnya memerlukan review protokol. Nomor versi library baru tidak dikarang dalam blueprint. Validasi melalui [adapter resmi](https://ai-sdk.dev/providers/adapters/langchain) dan [ChatTransport AI SDK](https://ai-sdk.dev/docs/ai-sdk-ui/transport). Tidak memakai LangSmith Deployment/Agent Server; deployment library OSS dan tanggung jawab aplikasi dijelaskan di [README](./README.md#dasar-repo-dan-sumber-resmi).
 
 ## M1 — Fondasi percakapan
+
+**Delivery:** kode selesai, migrasi `0017_broken_venom` diterapkan di PostgreSQL lokal. Sidebar kedua di kanan mengikuti [prototype pilihan](../prototype/ai-chat-m1-prototype.html); Journey dan Node memakai komponen yang sama. [Catatan verifikasi](./m1-verification.md) memisahkan bukti browser fixture, provider, database, dan autentikasi nyata.
+
+**Batas M1:** hanya teks dan metadata halaman; referensi materi ditolak sampai M3. Executor mengonsumsi adapter lalu menyimpan snapshot teks; SSE menyintesis frame dari snapshot database yang sudah committed. Redis Pub/Sub, admission user/global, cancellation grace, dan verifikasi fault/race lintas instance tetap M2. Claim/lease/sweep dasar sudah tersedia untuk menghindari thread terkunci selamanya setelah restart lokal, tetapi bukan bukti acceptance M2.
 
 **Prasyarat:** autentikasi dan modul existing tersedia; dependency kompatibel; `OPENAI_CHAT_MODEL` dipilih eksplisit; secret API tersedia di environment pengujian.
 
 **Deliverable:** migrasi thread/message/context/run dasar; CRUD dan pagination; akses server; agent dengan tools kosong; konsumsi stream API independen socket, snapshot final durable; web custom transport dan shared thread selection Journey/Node. Endpoint send mengembalikan acknowledgment dan stream dibaca terpisah sesuai kontrak sejak awal.
 
-**Acceptance:** membuat dua thread dalam modul yang sama, mengganti judul dan membaca ulang; thread yang sama tersedia setelah navigasi Journey→Node; sapaan dijawab singkat dengan nol tool call; pertanyaan lanjutan menggunakan history; akses thread pengguna lain ditolak; pagination tidak menggandakan pesan. Hasil tersimpan tersedia meski halaman ditutup. Tidak ada kewajiban tampilan panel tertentu.
+**Acceptance:** membuat dua thread dalam modul yang sama, mengganti judul dan membaca ulang; thread yang sama tersedia setelah navigasi Journey→Node; sapaan dijawab singkat dengan nol tool call; pertanyaan lanjutan menggunakan history; akses thread pengguna lain ditolak; pagination tidak menggandakan pesan. Hasil tersimpan tersedia meski halaman ditutup. Visual yang dipilih: sidebar kedua di kanan, composer di bawah, scroll terpisah; pada mobile memakai dialog samping.
 
-**Bukti yang harus dicatat:** typecheck paket tersentuh dan schema DTO; log call/tool count provider tersanitasi; rekaman browser navigasi dan streaming; query read-only pasangan user/assistant dan ID run. Status bukti runtime: **NOT RUN**.
+**Bukti yang harus dicatat:** typecheck paket tersentuh dan schema DTO; log call/tool count provider tersanitasi; rekaman browser navigasi dan streaming; query read-only pasangan user/assistant dan ID run. Bukti provider/database dan browser fixture: **PASS lokal**, lihat [bukti M1](./m1-verification.md). Browser Clerk/authenticated lintas pengguna dan deployment: **NOT RUN**.
 
 ## M2 — Ketahanan run
 
@@ -89,13 +93,13 @@ Rollback: matikan retrieval untuk gangguan indeks sambil mempertahankan jawaban 
 
 ## Acceptance checklist dan status bukti
 
-Semua pemeriksaan runtime berikut **NOT RUN** pada tahap dokumentasi. Implementasi kelak mencatat tanggal, commit, environment, langkah, hasil aktual, dan lokasi bukti per baris. Static pass tidak mengubah status browser/provider/database/deployment.
+Tabel berikut mempertahankan gate rilis lintas milestone; bukti lokal parsial M1 dirinci di [catatan verifikasi](./m1-verification.md). Pemeriksaan tanpa bukti tetap **NOT RUN**. Implementasi kelak mencatat tanggal, commit, environment, langkah, hasil aktual, dan lokasi bukti per baris. Static pass tidak mengubah status browser/provider/database/deployment.
 
 | Skenario wajib | Jenis bukti | Milestone | Status |
 | --- | --- | --- | --- |
-| “Hi” singkat, nol tool call | Provider + browser + log | M1 | NOT RUN |
+| “Hi” singkat, nol tool call | Provider + browser + log | M1 | PASS lokal; browser fixture |
 | Follow-up memakai riwayat tanpa retrieval tidak perlu | Provider + browser | M1/M3 | NOT RUN |
-| Thread bersama Journey/Node, CRUD, pagination | Browser + database | M1 | NOT RUN |
+| Thread bersama Journey/Node, CRUD, pagination | Browser + database | M1 | PASS service/layout fixture; Clerk NOT RUN |
 | Dua pengguna/scope silang ditolak | HTTP authenticated + database | M1/M3 | NOT RUN |
 | Node locked, assessment config/kunci tidak tersedia | Static proyeksi + provider + database | M3/M4 | NOT RUN |
 | Konteks pilihan, stale revision, akses history dicabut | HTTP + browser + database | M3 | NOT RUN |
@@ -109,7 +113,7 @@ Semua pemeriksaan runtime berikut **NOT RUN** pada tahap dokumentasi. Implementa
 | Reindex tidak membaca chunk lama/duplikasi embedding row | Worker + provider + database | M4 | NOT RUN |
 | Indeks belum siap dan lexical fallback | Provider fault + browser | M4 | NOT RUN |
 | Batas rate/context/token/konkurensi dan feature off | HTTP + provider + database | M5 | NOT RUN |
-| Build/typecheck dependency chat implementasi | Static | M1–M5 | NOT RUN |
+| Build/typecheck dependency chat implementasi | Static | M1–M5 | PASS M1; M2–M5 NOT RUN |
 | SSE proxy, graceful drain, rollout dan rollback | Deployment | M5 | NOT RUN |
 
 Evaluasi kualitas memakai kumpulan contoh Bahasa Indonesia yang mencakup sapaan, follow-up, kutipan, lintas sumber, bukti kurang, prompt injection dalam materi, assessment aktif, dan akses tercabut. Reviewer mencatat apakah tool diperlukan, bukti mendukung klaim, lokasi citation benar, dan jawaban membantu belajar. Larangan akses merupakan gate tanpa toleransi kebocoran; skor kualitas, latency, token dan biaya harus dilaporkan dari sampel nyata sebelum menetapkan target operasional.

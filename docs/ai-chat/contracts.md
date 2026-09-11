@@ -1,6 +1,6 @@
 # Kontrak AI Chat
 
-Status: **blueprint pengembangan, belum diimplementasikan**.
+Status: **kontrak target; subset M1 sudah diimplementasikan**. Lihat [verifikasi M1](./m1-verification.md) untuk batas dan bukti. Lifecycle lintas instance penuh, material context, dan retrieval tetap milestone berikutnya.
 
 Dokumen ini otoritatif untuk DTO, persistence, streaming, lifecycle, dan konfigurasi chat. Perilaku/otorisasi agent mengikuti [README](./README.md#batas-akses-dan-assessment); urutan delivery dan bukti ada di [implementation](./implementation.md). Konvensi existing dirujuk dari [API Contract §3](../API_CONTRACT.md#3-protocol-conventions), tanpa mendefinisikan ulang envelope/auth/error umum.
 
@@ -103,7 +103,9 @@ Gunakan `useChat` dari `@ai-sdk/react` dengan custom `ChatTransport`: `sendMessa
 
 API executor mengubah stream LangGraph melalui `toUIMessageStream` dari `@ai-sdk/langchain` (mode `['values','messages','tools']` sesuai contoh agent pada adapter). Normalisasi metadata, sanitasi tool dan persistence ada di ChatService. Adapter bukan penyimpan run. Scope/rahasia tidak boleh dimasukkan ke input tool yang tampil di UI.
 
-Untuk delivery lintas instance, executor menerbitkan frame UI tervalidasi ke Redis Pub/Sub setelah menyimpan snapshot; endpoint SSE di instance mana pun dapat subscribe. Subscriber dibuka lalu memuat snapshot durable. Snapshot memuat revision/frame sequence internal; buang frame sampai sequence snapshot, kemudian teruskan delta baru. Pakai snapshot awal hanya untuk state yang sudah dikomit. Redis subscription terputus atau ada gap sequence menutup SSE agar client beralih ke status/history; tidak membatalkan run. Jika snapshot sudah terminal, endpoint menyintesis satu stream hasil tersimpan lalu menutupnya. Kanal/transient buffer tidak menjadi replay log. Slow client diputus setelah buffer terbatas; tidak memberikan backpressure kepada executor.
+M1 mengirim frame teks dari snapshot PostgreSQL committed melalui polling SSE 500 ms; tidak memiliki Redis replay log atau Pub/Sub. Run tetap independen dari socket. Pembatasan client lambat pada M1 langsung menutup subscriber saat write buffer penuh.
+
+Untuk delivery lintas instance M2, executor menerbitkan frame UI tervalidasi ke Redis Pub/Sub setelah menyimpan snapshot; endpoint SSE di instance mana pun dapat subscribe. Subscriber dibuka lalu memuat snapshot durable. Snapshot memuat revision/frame sequence internal; buang frame sampai sequence snapshot, kemudian teruskan delta baru. Pakai snapshot awal hanya untuk state yang sudah dikomit. Redis subscription terputus atau ada gap sequence menutup SSE agar client beralih ke status/history; tidak membatalkan run. Jika snapshot sudah terminal, endpoint menyintesis satu stream hasil tersimpan lalu menutupnya. Kanal/transient buffer tidak menjadi replay log. Slow client diputus setelah buffer terbatas; tidak memberikan backpressure kepada executor.
 
 Snapshot disintesis menjadi rangkaian UI start/text/tool/source yang valid sebelum delta lanjutan; block text yang masih aktif mempertahankan ID sehingga delta tidak digandakan. Frame sebelum snapshot yang belum committed tidak boleh mengalahkan snapshot. M2 wajib memverifikasi race ini. Reconnect produk memakai history/polling, bukan janji replay semua token.
 
@@ -141,7 +143,7 @@ Contoh frame tambahan: `{"type":"tool-input-available","toolCallId":"call-1","to
 
 ## Model persistence
 
-Semua tabel berikut **usulan baru**, bukan schema existing. UUID FK mengikuti tabel pengguna/modul existing; timestamps memakai waktu database. DTO tidak mengekspos row internal.
+Tabel conversation `chat_threads`, `chat_messages`, `chat_message_contexts`, `chat_runs`, dan `chat_run_usage` sudah ditambahkan pada M1. `chat_admission_slots` dan tabel knowledge masih usulan untuk milestone berikutnya. UUID FK mengikuti tabel pengguna/modul existing; timestamps memakai waktu database. DTO tidak mengekspos row internal.
 
 | Tabel | Kolom inti dan constraint |
 | --- | --- |

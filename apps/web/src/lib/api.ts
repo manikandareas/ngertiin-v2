@@ -79,7 +79,7 @@ async function readJson(response: Response): Promise<unknown> {
   }
 }
 
-async function requestApi<Value>(
+export async function requestApi<Value>(
   path: string,
   tokenResolver: TokenResolver,
   schema: ResponseSchema<Value>,

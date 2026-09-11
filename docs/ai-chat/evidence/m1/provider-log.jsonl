@@ -1,0 +1,2 @@
+{"level":"log","event":"chat.run_finished","status":"completed","errorCode":null,"durationMs":1852,"runId":"ae3ede79-649b-40e1-a44e-c00dff012df1","threadId":"e31d3a6d-a09b-4ef3-9c18-b3a2dbee3203","modelCallCount":1,"toolCallCount":0,"usageCoverage":"complete"}
+{"level":"log","event":"chat.run_finished","status":"completed","errorCode":null,"durationMs":2171,"runId":"0d05716f-4bb5-4921-b3b7-ee9ca75851be","threadId":"e31d3a6d-a09b-4ef3-9c18-b3a2dbee3203","modelCallCount":1,"toolCallCount":0,"usageCoverage":"complete"}

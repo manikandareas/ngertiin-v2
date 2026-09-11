@@ -15,6 +15,7 @@ type IdempotencyScope = {
   payloadHash: string;
   payloadConflictError?: ProductError;
   replayStatus?: number;
+  retentionMilliseconds?: number;
 };
 
 export type IdempotentResponse<Value> = {
@@ -51,7 +52,9 @@ export class IdempotencyService {
           route: scope.route,
           key: scope.key,
           payload_hash: scope.payloadHash,
-          expires_at: new Date(now.getTime() + RETENTION_MILLISECONDS),
+          expires_at: new Date(
+            now.getTime() + (scope.retentionMilliseconds ?? RETENTION_MILLISECONDS),
+          ),
         })
         .onConflictDoNothing({
           target: [

@@ -4,6 +4,7 @@ import type { AssessmentAnswer } from "@ngertiin/contracts/api";
 import { type JSX, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Button } from "../components/ui/button";
+import { ChatSidebar } from "../features/chat/components/chat-sidebar";
 import {
   useAttempt,
   useCompleteNode,
@@ -137,7 +138,7 @@ function NodePlayer({ moduleId, nodeId }: NodePlayerProps): JSX.Element {
   }
 
   function resetContentPosition(): void {
-    window.scrollTo({ top: 0 });
+    contentRef.current?.scrollIntoView({ block: "start" });
     requestAnimationFrame(() => contentRef.current?.focus({ preventScroll: true }));
   }
 
@@ -268,6 +269,7 @@ function NodePlayer({ moduleId, nodeId }: NodePlayerProps): JSX.Element {
 
   return (
     <NodePlayerLayout
+      rightSidebar={<ChatSidebar moduleId={moduleId} pageContext={{ surface: "node", nodeId }} />}
       moduleId={moduleId}
       title={data.node.title}
       activities={data.activities}

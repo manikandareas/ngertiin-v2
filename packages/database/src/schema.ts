@@ -1077,3 +1077,126 @@ export const xpEventsRelations = relations(xp_events, ({ one }) => ({
     references: [modules.id],
   }),
 }));
+
+// Chat conversation persistence; knowledge indexing is a later additive migration.
+export const chat_run_status = pgEnum("chat_run_status", [
+  "queued",
+  "running",
+  "cancelling",
+  "completed",
+  "failed",
+  "cancelled",
+  "timed_out",
+  "interrupted",
+]);
+export const chat_threads = pgTable(
+  "chat_threads",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    user_id: uuid()
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    module_id: uuid()
+      .notNull()
+      .references(() => modules.id, { onDelete: "restrict" }),
+    title: text().notNull().default("Percakapan baru"),
+    next_sequence: integer().notNull().default(1),
+    // Millisecond precision matches the public cursor representation.
+    created_at: timestamp({ withTimezone: true, precision: 3 }).notNull().defaultNow(),
+    updated_at: updatedAt(),
+    deleted_at: optionalTimestamp(),
+  },
+  (t) => [
+    index("chat_threads_owner_page_idx").on(t.user_id, t.module_id, t.created_at, t.id),
+    check("chat_thread_title_length", sql`char_length(${t.title}) between 1 and 120`),
+  ],
+);
+export const chat_runs = pgTable(
+  "chat_runs",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    thread_id: uuid()
+      .notNull()
+      .references(() => chat_threads.id, { onDelete: "cascade" }),
+    user_message_id: uuid().references((): AnyPgColumn => chat_messages.id, {
+      onDelete: "no action",
+    }),
+    assistant_message_id: uuid().references((): AnyPgColumn => chat_messages.id, {
+      onDelete: "no action",
+    }),
+    retry_of_run_id: uuid().references((): AnyPgColumn => chat_runs.id),
+    status: chat_run_status().notNull().default("queued"),
+    error_code: text(),
+    executor_id: uuid(),
+    lease_epoch: integer().notNull().default(0),
+    lease_expires_at: optionalTimestamp(),
+    heartbeat_at: optionalTimestamp(),
+    cancel_requested_at: optionalTimestamp(),
+    deadline_at: timestamp({ withTimezone: true }).notNull(),
+    started_at: optionalTimestamp(),
+    finished_at: optionalTimestamp(),
+    created_at: createdAt(),
+    snapshot_sequence: integer().notNull().default(0),
+  },
+  (t) => [
+    uniqueIndex("chat_one_active_run_per_thread")
+      .on(t.thread_id)
+      .where(sql`${t.status} in ('queued', 'running', 'cancelling')`),
+    index("chat_runs_lease_idx").on(t.status, t.lease_expires_at),
+    index("chat_runs_queue_idx").on(t.status, t.created_at),
+  ],
+);
+export const chat_messages = pgTable(
+  "chat_messages",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    thread_id: uuid()
+      .notNull()
+      .references(() => chat_threads.id, { onDelete: "cascade" }),
+    run_id: uuid()
+      .notNull()
+      .references((): AnyPgColumn => chat_runs.id, { onDelete: "cascade" }),
+    sequence: integer().notNull(),
+    role: text().notNull(),
+    parts_json: jsonb().notNull().default([]),
+    content_revision: integer().notNull().default(0),
+    created_at: createdAt(),
+  },
+  (t) => [
+    uniqueIndex("chat_messages_sequence_unique").on(t.thread_id, t.sequence),
+    uniqueIndex("chat_messages_run_role_unique").on(t.run_id, t.role),
+    check("chat_messages_role_check", sql`${t.role} in ('user','assistant')`),
+    check("chat_messages_sequence_positive", sql`${t.sequence} > 0`),
+  ],
+);
+export const chat_message_contexts = pgTable(
+  "chat_message_contexts",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    message_id: uuid()
+      .notNull()
+      .references(() => chat_messages.id, { onDelete: "cascade" }),
+    kind: text().notNull(),
+    reference_json: jsonb().notNull(),
+    snapshot_text: text(),
+    content_revision: text(),
+    dependency_only: boolean().notNull().default(false),
+  },
+  (t) => [index("chat_context_message_idx").on(t.message_id)],
+);
+export const chat_run_usage = pgTable(
+  "chat_run_usage",
+  {
+    run_id: uuid()
+      .notNull()
+      .references(() => chat_runs.id, { onDelete: "cascade" }),
+    call_id: text().notNull(),
+    provider: text().notNull(),
+    model: text().notNull(),
+    input_tokens: integer(),
+    output_tokens: integer(),
+    total_tokens: integer(),
+    coverage: text().notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.run_id, t.call_id] })],
+);

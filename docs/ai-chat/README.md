@@ -1,7 +1,7 @@
 # Blueprint AI Chat Ngerti.in
 
-Status: **blueprint pengembangan, belum diimplementasikan**. Disusun 11 September 2026.
-Pekerjaan ini hanya dokumentasi; tidak memasang dependency, membuat migrasi, atau mengaktifkan fitur.
+Status: **M1 diimplementasikan; M2–M5 tetap blueprint**. Diperbarui 11 September 2026.
+Batas implementasi dan bukti aktual berada di [verifikasi M1](./m1-verification.md). Deployment belum dijalankan.
 
 ## Otoritas dokumen
 
@@ -11,12 +11,12 @@ Pekerjaan ini hanya dokumentasi; tidak memasang dependency, membuat migrasi, ata
 | [contracts.md](./contracts.md) | Endpoint, payload, persistence, lifecycle run, streaming, konfigurasi dan default numerik |
 | [implementation.md](./implementation.md) | Urutan implementasi, dependency, migrasi, rollout, rollback, acceptance dan bukti |
 
-Konvensi HTTP, autentikasi, envelope, error, identifier, dan idempotency umum mengikuti [API Contract §3](../API_CONTRACT.md#3-protocol-conventions). Blueprint ini menambahkan rancangan chat; belum mengubah baseline executable di `packages/contracts`.
+Konvensi HTTP, autentikasi, envelope, error, identifier, dan idempotency umum mengikuti [API Contract §3](../API_CONTRACT.md#3-protocol-conventions). Schema executable M1 berada di `packages/contracts/src/api/chat`; konteks materi, tools, retrieval, dan ketahanan lanjutan tetap mengikuti milestone berikutnya.
 **Keputusan final** adalah aturan normatif di blueprint. **Default operasional** diberi label di kontrak dan dapat dituning. Kualitas retrieval, latency, throughput, dan biaya adalah **belum diukur**, bukan janji produk.
 
 ## Perilaku produk dan konteks
 
-Chat berada dalam satu modul, dengan banyak thread untuk setiap pasangan pengguna/modul. Journey dan Node membaca daftar serta pesan thread yang sama. Pemilihan thread dipertahankan ketika berpindah antara keduanya; layout panel, drawer, atau halaman tidak dikunci. Tidak ada thread lintas modul pada versi awal.
+Chat berada dalam satu modul, dengan banyak thread untuk setiap pasangan pengguna/modul. Journey dan Node membaca daftar serta pesan thread yang sama. Pemilihan thread dipertahankan ketika berpindah antara keduanya; visual M1 memakai sidebar kedua di sebelah kanan sesuai [prototype pilihan](../prototype/ai-chat-m1-prototype.html). Tidak ada thread lintas modul pada versi awal.
 
 Konteks halaman bersifat sementara: halaman Journey atau Node yang sedang dibuka tidak otomatis menambahkan seluruh isinya ke prompt. Konteks percakapan berasal dari pesan tersimpan dan referensi yang dipilih untuk pesan tersebut. Saat mengirim, server menyimpan snapshot konteks halaman yang telah divalidasi sebagai metadata pesan; konten pilihan dan kutipan terikat pada pesan pemakainya. Pindah halaman tidak menulis ulang konteks pesan lama. Client mengirim identifier dan rentang, bukan isi node atau objek riwayat yang dipercaya server.
 
@@ -107,7 +107,7 @@ Pemotongan mengikuti paragraph/section, tidak mencampur dokumen atau origin. Ren
 
 ## Dasar repo dan sumber resmi
 
-Pemeriksaan checkout menemukan NestJS/Express di [API package](../../apps/api/package.json), `ChatOpenAI` dan `useResponsesApi` di [worker AiService](../../apps/worker/src/ai/ai.service.ts), model generation di [worker environment](../../packages/contracts/src/environment/models/worker-environment.ts), serta tabel materi/progres di [schema](../../packages/database/src/schema.ts). Dependency chat baru belum terpasang. [Request policy](../../apps/api/src/http/request-policy.interceptor.ts) perlu mengenali route chat; SSE generation existing bukan wire protocol chat.
+Pemeriksaan checkout menemukan NestJS/Express di [API package](../../apps/api/package.json), `ChatOpenAI` dan `useResponsesApi` di [worker AiService](../../apps/worker/src/ai/ai.service.ts), model generation di [worker environment](../../packages/contracts/src/environment/models/worker-environment.ts), serta tabel materi/progres di [schema](../../packages/database/src/schema.ts). Dependency chat M1 sudah terpasang dan dipin. [Request policy](../../apps/api/src/http/request-policy.interceptor.ts) perlu mengenali route chat; SSE generation existing bukan wire protocol chat.
 
 Sumber resmi diakses saat penyusunan; dukungan dokumentasi bukan hasil uji integrasi:
 

@@ -1,23 +1,66 @@
 import { z } from "zod";
 import { infrastructureEnvSchema } from "./infrastructure-environment.js";
 
-export const apiEnvSchema = infrastructureEnvSchema.extend({
-  USAGE_MODULES_WEEKLY_LIMIT: z.coerce.number().int().positive().default(10),
-  USAGE_SOURCES_WEEKLY_LIMIT: z.coerce.number().int().positive().default(40),
-  API_PORT: z.coerce.number().int().min(1).max(65_535).default(3000),
-  WEB_ORIGIN: z.string().url(),
-  CLERK_SECRET_KEY: z.string().min(1),
-  SOURCE_PDF_MAX_BYTES: z.coerce
-    .number()
-    .int()
-    .positive()
-    .max(25 * 1024 * 1024)
-    .default(25 * 1024 * 1024),
-  RATE_LIMIT_WINDOW_SECONDS: z.coerce.number().int().positive().default(60),
-  RATE_LIMIT_READ_MAX: z.coerce.number().int().positive().default(120),
-  RATE_LIMIT_MUTATION_MAX: z.coerce.number().int().positive().default(60),
-  RATE_LIMIT_EXPENSIVE_MAX: z.coerce.number().int().positive().default(10),
-  RATE_LIMIT_STREAM_MAX: z.coerce.number().int().positive().default(10),
-});
+export const apiEnvSchema = infrastructureEnvSchema
+  .extend({
+    USAGE_MODULES_WEEKLY_LIMIT: z.coerce.number().int().positive().default(10),
+    USAGE_SOURCES_WEEKLY_LIMIT: z.coerce.number().int().positive().default(40),
+    CHAT_ENABLED: z
+      .enum(["true", "false"])
+      .default("false")
+      .transform((value) => value === "true"),
+    OPENAI_API_KEY: z.preprocess(
+      (value) => (value === "" ? undefined : value),
+      z.string().min(1).optional(),
+    ),
+    OPENAI_CHAT_MODEL: z.preprocess(
+      (value) => (value === "" ? undefined : value),
+      z.string().min(1).optional(),
+    ),
+    CHAT_INPUT_MAX_CODE_POINTS: z.coerce.number().int().positive().default(8000),
+    CHAT_PROMPT_MAX_TOKENS: z.coerce.number().int().positive().default(16000),
+    CHAT_OUTPUT_MAX_TOKENS: z.coerce.number().int().positive().default(2048),
+    CHAT_RUN_TIMEOUT_MS: z.coerce.number().int().positive().default(120000),
+    CHAT_PROVIDER_TIMEOUT_MS: z.coerce.number().int().positive().default(60000),
+    CHAT_PROVIDER_MAX_RETRIES: z.coerce.number().int().min(0).max(1).default(1),
+    CHAT_MAX_EXECUTING_RUNS_PER_INSTANCE: z.coerce.number().int().positive().default(4),
+    CHAT_LEASE_MS: z.coerce.number().int().positive().default(30000),
+    CHAT_HEARTBEAT_MS: z.coerce.number().int().positive().default(5000),
+    CHAT_SWEEP_INTERVAL_MS: z.coerce.number().int().positive().default(5000),
+    CHAT_SNAPSHOT_INTERVAL_MS: z.coerce.number().int().positive().default(500),
+    CHAT_IDEMPOTENCY_RETENTION_HOURS: z.coerce.number().int().positive().default(168),
+    API_PORT: z.coerce.number().int().min(1).max(65_535).default(3000),
+    WEB_ORIGIN: z.string().url(),
+    CLERK_SECRET_KEY: z.string().min(1),
+    SOURCE_PDF_MAX_BYTES: z.coerce
+      .number()
+      .int()
+      .positive()
+      .max(25 * 1024 * 1024)
+      .default(25 * 1024 * 1024),
+    RATE_LIMIT_WINDOW_SECONDS: z.coerce.number().int().positive().default(60),
+    RATE_LIMIT_READ_MAX: z.coerce.number().int().positive().default(120),
+    RATE_LIMIT_MUTATION_MAX: z.coerce.number().int().positive().default(60),
+    RATE_LIMIT_EXPENSIVE_MAX: z.coerce.number().int().positive().default(10),
+    RATE_LIMIT_STREAM_MAX: z.coerce.number().int().positive().default(10),
+  })
+  .superRefine((value, context) => {
+    if (value.CHAT_ENABLED) {
+      for (const key of ["OPENAI_API_KEY", "OPENAI_CHAT_MODEL"] as const) {
+        if (!value[key])
+          context.addIssue({
+            code: "custom",
+            path: [key],
+            message: `${key} is required when chat is enabled.`,
+          });
+      }
+    }
+    if (value.CHAT_HEARTBEAT_MS >= value.CHAT_LEASE_MS / 3)
+      context.addIssue({
+        code: "custom",
+        path: ["CHAT_HEARTBEAT_MS"],
+        message: "Heartbeat must be less than lease / 3.",
+      });
+  });
 
 export type ApiEnvironment = z.infer<typeof apiEnvSchema>;

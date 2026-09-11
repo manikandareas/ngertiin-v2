@@ -1622,3 +1622,7 @@ Migration 0015 fills avatars for all existing users. Pending users initialize th
 their next API request, with failed reads eligible for retry after five minutes. Migration 0016 adds
 user generation defaults and an optional internal avatar key without changing module settings.
 The sidebar, settings profile, and leaderboard share the resolved local avatar.
+
+## AI chat M1
+
+Module-scoped conversation endpoints are defined in [AI chat contracts](./ai-chat/contracts.md) and exported from `@ngertiin/contracts/api`. M1 provides thread CRUD, cursor-paginated history, durable send acknowledgment (`202`), run status/cancel, and a separate AI SDK UI SSE endpoint. Authentication and problem envelopes use the conventions in this document. Material references/tools and distributed hardening remain later milestones; see [M1 verification](./ai-chat/m1-verification.md).

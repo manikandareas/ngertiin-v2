@@ -40,7 +40,15 @@ export class RequestPolicyInterceptor implements NestInterceptor {
     const response = http.getResponse<HttpResponse>();
     const userId = request.requestContext?.localUserId;
     const resourceIds: Record<string, string> = {};
-    for (const key of ["sourceId", "moduleId", "nodeId", "attemptId", "interventionId"] as const) {
+    for (const key of [
+      "sourceId",
+      "moduleId",
+      "nodeId",
+      "attemptId",
+      "interventionId",
+      "threadId",
+      "runId",
+    ] as const) {
       const value = request.params?.[key];
       if (value) resourceIds[key] = value;
     }
@@ -52,7 +60,11 @@ export class RequestPolicyInterceptor implements NestInterceptor {
     if (userId) {
       const path = (request.route?.path ?? request.path).replace(/\/+$/, "").toLowerCase();
       let category: RateLimitCategory = "mutation";
-      if (path.endsWith("/generation/events")) category = "stream";
+      if (
+        path.endsWith("/generation/events") ||
+        (path.includes("/chat/") && path.endsWith("/events"))
+      )
+        category = "stream";
       else if (request.method === "GET" || request.method === "HEAD") category = "read";
       else if (expensiveRoutes.some((route) => route.test(path))) category = "expensive";
       const limit = await this.infrastructure.consumeRateLimit(userId, category);

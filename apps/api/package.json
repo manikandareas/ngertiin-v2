@@ -10,7 +10,11 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@ai-sdk/langchain": "2.0.288",
     "@clerk/backend": "3.17.1",
+    "@langchain/core": "1.2.10",
+    "@langchain/langgraph": "1.4.14",
+    "@langchain/openai": "1.5.12",
     "@nestjs/common": "12.0.1",
     "@nestjs/core": "12.0.1",
     "@nestjs/platform-express": "12.0.1",
@@ -18,8 +22,10 @@
     "@ngertiin/database": "workspace:*",
     "@ngertiin/shared": "workspace:*",
     "@ngertiin/storage": "workspace:*",
+    "ai": "6.0.280",
     "drizzle-orm": "0.45.2",
     "ioredis": "6.0.0",
+    "langchain": "1.5.11",
     "reflect-metadata": "0.2.2",
     "rxjs": "7.8.2",
     "sharp": "0.35.4",

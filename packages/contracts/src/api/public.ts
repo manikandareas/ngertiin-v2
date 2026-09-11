@@ -43,6 +43,7 @@ export {
   submitAttemptResponseSchema,
   trueFalseAnswerSchema,
 } from "./attempts/attempt.js";
+export * from "./chat/chat.js";
 export {
   type ApiErrorCode,
   apiErrorCodeSchema,
