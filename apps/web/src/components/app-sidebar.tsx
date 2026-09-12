@@ -22,15 +22,17 @@ import { useUsageSync } from "../features/usage/use-usage-sync";
 import { NavUser, type NavUserProps } from "./nav-user";
 
 const navigation = [
-  { to: "/dashboard", label: "Beranda", icon: Home01Icon },
-  { to: "/leaderboard", label: "Leaderboard", icon: ChampionIcon },
   { to: "/modules/new", label: "Buat modul", icon: AddCircleHalfDotIcon },
+  { to: "/dashboard", label: "Beranda", icon: Home01Icon },
   { to: "/modules", label: "Modul belajar", icon: BookOpen01Icon },
   { to: "/chat", label: "Chat", icon: Chat01Icon },
   { to: "/sources", label: "Pustaka saya", icon: LibraryIcon },
+  { to: "/leaderboard", label: "Leaderboard", icon: ChampionIcon },
 ];
 const focus = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
-const navItemClass = `flex min-h-11 min-w-0 items-center gap-3 rounded-lg px-3 text-sm font-medium text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-sidebar-foreground aria-[current=page]:bg-sidebar-accent aria-[current=page]:font-semibold aria-[current=page]:text-sidebar-accent-foreground motion-reduce:transition-none ${focus}`;
+const navItemBaseClass = `flex min-h-11 min-w-0 items-center gap-2.5 rounded-lg px-2.5 text-sm transition-colors duration-150 motion-reduce:transition-none xl:min-h-9 ${focus}`;
+const navItemClass = `${navItemBaseClass} font-medium text-muted-foreground hover:bg-muted hover:text-sidebar-foreground aria-[current=page]:bg-muted aria-[current=page]:font-semibold aria-[current=page]:text-sidebar-foreground`;
+const createModuleClass = `${navItemBaseClass} font-semibold text-sidebar-accent-foreground hover:bg-sidebar-accent/80 aria-[current=page]:ring-1 aria-[current=page]:ring-inset aria-[current=page]:ring-sidebar-accent-foreground/30`;
 
 export function ConnectedAppSidebar({ unsavedChanges = false }: { unsavedChanges?: boolean }) {
   useUsageSync();
@@ -96,7 +98,7 @@ export function AppSidebar({
         aria-label="Sidebar"
         className={`sticky top-0 hidden h-dvh shrink-0 flex-col border-r bg-sidebar text-sidebar-foreground xl:flex ${isChatPage ? "overflow-hidden" : "overflow-y-auto"} ${collapsed ? "xl:w-16" : "xl:w-64"}`}
       >
-        <div className={`flex items-center gap-2.5 py-5 ${collapsed ? "flex-col px-2" : "px-3"}`}>
+        <div className={`flex items-center gap-2.5 py-3 ${collapsed ? "flex-col px-2" : "px-3"}`}>
           <Link
             to="/dashboard"
             aria-label="ngerti.in — Beranda"
@@ -133,7 +135,7 @@ export function AppSidebar({
         </div>
         <nav
           aria-label="Navigasi utama"
-          className={`flex shrink-0 flex-col gap-1 ${collapsed ? "px-2" : "px-3"}`}
+          className={`flex shrink-0 flex-col gap-0.5 ${collapsed ? "px-2" : "px-3"}`}
         >
           {navigation.map(({ to, label, icon }) => {
             const active = activeRoute === to;
@@ -143,11 +145,11 @@ export function AppSidebar({
                 to={to}
                 aria-current={active ? "page" : undefined}
                 title={collapsed ? label : undefined}
-                className={`${navItemClass} ${collapsed ? "justify-center" : ""}`}
+                className={`${to === "/modules/new" ? createModuleClass : navItemClass} ${collapsed ? "justify-center" : ""}`}
               >
                 <HugeiconsIcon
                   icon={icon}
-                  size={20}
+                  size={18}
                   strokeWidth={1.5}
                   aria-hidden="true"
                   className="shrink-0"
@@ -198,7 +200,7 @@ export function AppSidebar({
               aria-describedby={undefined}
               className={`fixed inset-y-0 left-0 z-50 flex w-80 max-w-[calc(100%-2rem)] flex-col ${isChatPage ? "overflow-hidden" : "overflow-y-auto"} border-r bg-background p-5 shadow-xl data-[state=open]:animate-in data-[state=open]:slide-in-from-left duration-200 motion-reduce:animate-none`}
             >
-              <div className="mb-6 flex items-center justify-between">
+              <div className="mb-4 flex items-center justify-between">
                 <Dialog.Title className="flex items-center gap-2 font-display text-xl font-black">
                   <img
                     src="/ngertiin-mascot.webp"
@@ -221,7 +223,7 @@ export function AppSidebar({
                   </button>
                 </Dialog.Close>
               </div>
-              <nav aria-label="Navigasi utama" className="flex flex-col gap-1">
+              <nav aria-label="Navigasi utama" className="flex shrink-0 flex-col gap-0.5">
                 {navigation.map(({ to, label, icon }) => {
                   const active = activeRoute === to;
                   return (
@@ -230,11 +232,11 @@ export function AppSidebar({
                       to={to}
                       onClick={() => setMenuOpen(false)}
                       aria-current={active ? "page" : undefined}
-                      className={navItemClass}
+                      className={to === "/modules/new" ? createModuleClass : navItemClass}
                     >
                       <HugeiconsIcon
                         icon={icon}
-                        size={20}
+                        size={18}
                         strokeWidth={1.5}
                         aria-hidden="true"
                         className="shrink-0"
