@@ -3,6 +3,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import type { ReactNode } from "react";
 import { Button } from "../../../components/ui/button";
 import { Textarea } from "../../../components/ui/textarea";
+import { CHAT_AGENT_NAME } from "../constants";
 
 type ChatComposerProps = {
   draft: string;
@@ -55,7 +56,7 @@ export function ChatComposer({
         </div>
         {attachments}
         <Textarea
-          aria-label="Pesan untuk teman belajar"
+          aria-label={`Pesan untuk ${CHAT_AGENT_NAME}`}
           placeholder="Tanyakan yang belum kamu pahami…"
           value={draft}
           onChange={(event) => onDraftChange(event.target.value)}

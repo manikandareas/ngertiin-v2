@@ -1,7 +1,16 @@
 import { Dialog } from "radix-ui";
-import { Activity, type CSSProperties, type ReactNode, useEffect, useRef, useState } from "react";
+import {
+  Activity,
+  type CSSProperties,
+  type ReactNode,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+} from "react";
 import { Button } from "../../../components/ui/button";
 import { cn } from "../../../lib/utils";
+import { CHAT_AGENT_NAME } from "../constants";
 import type { ChatLayout } from "../use-module-chat";
 import { ChatMascot } from "./chat-mascot";
 
@@ -16,6 +25,7 @@ type ChatPanelProps = {
 
 export function ChatPanel({ open, onOpenChange, layout, children }: ChatPanelProps) {
   const panel = useRef<HTMLDivElement>(null);
+  const triggerId = useId();
   const [width, setWidth] = useState(420);
   const [maxWidth, setMaxWidth] = useState(720);
   const [resizing, setResizing] = useState(false);
@@ -37,16 +47,17 @@ export function ChatPanel({ open, onOpenChange, layout, children }: ChatPanelPro
     <Dialog.Root open={open} onOpenChange={onOpenChange} modal={false}>
       {!open ? (
         <Button
+          id={triggerId}
           type="button"
           variant="outline"
           size="icon"
           className="group/chat-trigger fixed bottom-[max(1.25rem,env(safe-area-inset-bottom))] right-5 z-30 size-16 rounded-full border bg-card text-foreground shadow-[0_4px_0_var(--border),0_10px_25px_#00000012] hover:bg-card motion-safe:hover:-translate-y-1"
-          aria-label="Buka teman belajar"
+          aria-label={`Buka ${CHAT_AGENT_NAME}`}
           aria-expanded={false}
           aria-controls="learning-chat-panel"
           onClick={() => onOpenChange(true)}
         >
-          <ChatMascot className="size-12 [&_svg]:size-full" />
+          <ChatMascot className="size-16" />
           <span className="pointer-events-none absolute right-19 whitespace-nowrap rounded-xl border bg-popover px-3 py-2 text-xs font-semibold normal-case text-popover-foreground opacity-0 shadow-sm group-hover/chat-trigger:opacity-100 group-focus-visible/chat-trigger:opacity-100">
             Ada yang bikin penasaran?
           </span>
@@ -68,7 +79,7 @@ export function ChatPanel({ open, onOpenChange, layout, children }: ChatPanelPro
           }}
           onCloseAutoFocus={(event) => {
             event.preventDefault();
-            document.querySelector<HTMLButtonElement>('[aria-label="Buka teman belajar"]')?.focus();
+            document.getElementById(triggerId)?.focus();
           }}
           className={cn(
             "z-40 flex min-h-0 shrink-0 flex-col bg-background text-foreground outline-none",
@@ -77,7 +88,7 @@ export function ChatPanel({ open, onOpenChange, layout, children }: ChatPanelPro
               : "fixed bottom-[max(.75rem,env(safe-area-inset-bottom))] right-3 h-[min(680px,calc(100dvh-2rem))] w-[calc(100vw-1.5rem)] max-w-[440px] rounded-3xl border bg-card shadow-[0_8px_24px_#00000012] sm:bottom-6 sm:right-6",
           )}
         >
-          <Dialog.Title className="sr-only">Teman belajar</Dialog.Title>
+          <Dialog.Title className="sr-only">{CHAT_AGENT_NAME}</Dialog.Title>
           {layout === "sidebar" ? (
             // biome-ignore lint/a11y/useSemanticElements: This focusable window splitter is interactive, not a thematic hr.
             <div

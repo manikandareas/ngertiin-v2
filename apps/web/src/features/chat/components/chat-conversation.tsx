@@ -23,6 +23,7 @@ import { Button } from "../../../components/ui/button";
 import { ApiProblemError, type TokenResolver } from "../../../lib/api";
 import type { chatApi } from "../api/chat-api";
 import { createChatTransport, type LearningMessage, toUIMessage } from "../api/chat-transport";
+import { CHAT_AGENT_NAME } from "../constants";
 import { ChatCitedAnswer } from "./chat-citation";
 import { ChatComposer } from "./chat-composer";
 import { ChatContextPicker, type SelectedChatExcerpt } from "./chat-context-picker";
@@ -199,6 +200,17 @@ export function ChatConversation({
         rendered.set(ack?.messageId ?? message.id, message);
     }
   const messages = [...rendered.values()];
+  const activeAssistant = active
+    ? messages.find((message) => message.role === "assistant" && message.metadata?.runId === runId)
+    : undefined;
+  const loadingIndicator = (
+    <p role="status" className="flex items-center gap-2 text-xs text-muted-foreground">
+      <ChatMascot className="size-7" thinking />
+      {run.data?.status === "cancelling"
+        ? "Menghentikan jawaban…"
+        : `${CHAT_AGENT_NAME} sedang menjawab…`}
+    </p>
+  );
   const textSize = messages.reduce(
     (n, m) =>
       n + m.parts.filter((p) => p.type === "text").reduce((size, p) => size + p.text.length, 0),
@@ -353,15 +365,16 @@ export function ChatConversation({
                 : "mb-7 text-sm leading-7"
             }
           >
-            {message.role === "assistant" ? (
+            {message === activeAssistant ? <div className="mb-3">{loadingIndicator}</div> : null}
+            {message.role === "assistant" && message !== activeAssistant ? (
               <div className="mb-3 flex items-center gap-2 text-xs font-bold">
                 <ChatMascot className="size-7" />
-                Teman belajar
+                {CHAT_AGENT_NAME}
               </div>
             ) : null}
             {message.role === "assistant" ? (
               <ChatCitedAnswer
-                isAnimating={active && message.metadata?.runId === runId}
+                isAnimating={message === activeAssistant}
                 text={message.parts
                   .filter((p) => p.type === "text")
                   .map((p) => p.text)
@@ -393,14 +406,7 @@ export function ChatConversation({
             ) : null}
           </div>
         ))}
-        {active ? (
-          <p role="status" className="flex items-center gap-2 text-xs text-muted-foreground">
-            <ChatMascot className="size-7" thinking />
-            {run.data?.status === "cancelling"
-              ? "Menghentikan jawaban…"
-              : "Teman belajar sedang menjawab…"}
-          </p>
-        ) : null}
+        {active && !activeAssistant ? loadingIndicator : null}
         {terminal ? (
           <div className="rounded-xl border p-3 text-xs text-muted-foreground">
             <p>
