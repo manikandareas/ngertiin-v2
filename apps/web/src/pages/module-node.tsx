@@ -293,7 +293,7 @@ function NodePlayer({ moduleId, nodeId }: NodePlayerProps): JSX.Element {
           >
             <Button
               aria-label="Aktivitas sebelumnya"
-              variant="ghost"
+              variant="secondary"
               size="icon"
               disabled={slide === 0}
               onClick={() => moveTo(slide - 1)}
