@@ -6,6 +6,19 @@ import { chatApi } from "./api/chat-api";
 export type ChatLayout = "sidebar" | "floating";
 type ChatSelection = { threadId: string | null; open: boolean; layout: ChatLayout };
 const initialSelection: ChatSelection = { threadId: null, open: false, layout: "sidebar" };
+const layoutStorageKey = "ngertiin:chat-layout:v1";
+
+function getInitialSelection(): ChatSelection {
+  try {
+    const layout = localStorage.getItem(layoutStorageKey);
+    if (layout === "sidebar" || layout === "floating") {
+      return { ...initialSelection, layout };
+    }
+  } catch {
+    // Keep the default when browser storage is unavailable.
+  }
+  return initialSelection;
+}
 
 export function useModuleChat(moduleId: string) {
   const { getToken, userId } = useAuth();
@@ -14,8 +27,8 @@ export function useModuleChat(moduleId: string) {
   const selectionKey = [...root, "selection"] as const;
   const { data: selection } = useQuery({
     queryKey: selectionKey,
-    queryFn: () => initialSelection,
-    initialData: initialSelection,
+    queryFn: getInitialSelection,
+    initialData: getInitialSelection,
     enabled: false,
     staleTime: Infinity,
     gcTime: Infinity,
@@ -39,7 +52,14 @@ export function useModuleChat(moduleId: string) {
       ...patch,
     }));
   const select = (threadId: string | null) => updateSelection({ threadId });
-  const setLayout = (layout: ChatSelection["layout"]) => updateSelection({ layout });
+  const setLayout = (layout: ChatLayout) => {
+    updateSelection({ layout });
+    try {
+      localStorage.setItem(layoutStorageKey, layout);
+    } catch {
+      // Layout changes still work when browser storage is unavailable.
+    }
+  };
   const toggle = (open: boolean) => updateSelection({ open });
   const refresh = () => client.invalidateQueries({ queryKey: root });
   return {
