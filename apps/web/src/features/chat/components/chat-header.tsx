@@ -2,15 +2,12 @@ import {
   ArrowDown01Icon,
   ArrowRightDoubleIcon,
   ChatAdd01Icon,
-  Delete02Icon,
-  Edit02Icon,
   MinusSignIcon,
   SidebarRightIcon,
   SquareArrowUpRightIcon,
   Tick02Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import type { ChatThread } from "@ngertiin/contracts/api";
 import { DropdownMenu as Menu, Popover } from "radix-ui";
 import { useState } from "react";
 import { Button } from "../../../components/ui/button";
@@ -21,16 +18,17 @@ import {
 } from "../../../components/ui/dropdown-menu";
 import { menuContentClassName, menuItemClassName } from "../../../components/ui/menu-styles";
 import type { useModuleChat } from "../use-module-chat";
+import { ChatThreadActions } from "./chat-thread-actions";
 
 type ChatHeaderProps = {
   chat: ReturnType<typeof useModuleChat>;
   title: string;
   busy: boolean;
   onCreate: () => void;
-  onEdit: (thread: ChatThread, action: "rename" | "delete") => void;
+  onFullScreen: () => void;
 };
 
-export function ChatHeader({ chat, title, busy, onCreate, onEdit }: ChatHeaderProps) {
+export function ChatHeader({ chat, title, busy, onCreate, onFullScreen }: ChatHeaderProps) {
   const [listOpen, setListOpen] = useState(false);
   return (
     <header className="flex shrink-0 items-center gap-0.5 px-3 py-2">
@@ -75,28 +73,14 @@ export function ChatHeader({ chat, title, busy, onCreate, onEdit }: ChatHeaderPr
                 >
                   {thread.title}
                 </button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="size-8"
-                  aria-label={`Ubah judul ${thread.title}`}
-                  onClick={() => {
-                    onEdit(thread, "rename");
+                <ChatThreadActions
+                  thread={thread}
+                  api={chat.api}
+                  root={chat.root}
+                  onDeleted={() => {
+                    if (thread.id === chat.selectedId) chat.select(null);
                   }}
-                >
-                  <HugeiconsIcon icon={Edit02Icon} strokeWidth={1.5} aria-hidden="true" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="size-8"
-                  aria-label={`Hapus ${thread.title}`}
-                  onClick={() => onEdit(thread, "delete")}
-                >
-                  <HugeiconsIcon icon={Delete02Icon} strokeWidth={1.5} aria-hidden="true" />
-                </Button>
+                />
               </div>
             ))}
             {!chat.list.length ? (
@@ -153,7 +137,7 @@ export function ChatHeader({ chat, title, busy, onCreate, onEdit }: ChatHeaderPr
           >
             {[
               { value: "sidebar", label: "Sidebar", icon: SidebarRightIcon },
-              { value: "floating", label: "Floating", icon: SquareArrowUpRightIcon },
+              { value: "floating", label: "Overlay", icon: SquareArrowUpRightIcon },
             ].map(({ value, label, icon }) => (
               <Menu.RadioItem key={value} value={value} className={menuItemClassName}>
                 <HugeiconsIcon icon={icon} size={16} strokeWidth={1.5} aria-hidden="true" />
@@ -164,6 +148,16 @@ export function ChatHeader({ chat, title, busy, onCreate, onEdit }: ChatHeaderPr
               </Menu.RadioItem>
             ))}
           </Menu.RadioGroup>
+          <Menu.Separator className="my-1 h-px bg-border" />
+          <Menu.Item disabled={busy} onSelect={onFullScreen} className={menuItemClassName}>
+            <HugeiconsIcon
+              icon={SquareArrowUpRightIcon}
+              size={16}
+              strokeWidth={1.5}
+              aria-hidden="true"
+            />
+            Full Screen
+          </Menu.Item>
         </DropdownMenuContent>
       </DropdownMenu>
       <Button

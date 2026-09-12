@@ -10,24 +10,38 @@ import {
   chatThreadsResponseSchema,
 } from "@ngertiin/contracts/api";
 import { requestApi, type TokenResolver } from "../../../lib/api";
-export const chatRoot = (moduleId: string) => `/modules/${encodeURIComponent(moduleId)}/chat`;
-export function chatApi(token: TokenResolver, moduleId: string) {
-  const root = chatRoot(moduleId);
+export const chatRoot = () => "/chat";
+export function chatApi(token: TokenResolver, moduleId?: string | null) {
+  const root = chatRoot();
+  const materialsRoot = () => {
+    if (!moduleId) throw new Error("Pilih modul untuk membaca materi.");
+    return `/modules/${encodeURIComponent(moduleId)}/chat`;
+  };
   const thread = (id: string) => `${root}/threads/${encodeURIComponent(id)}`;
   return {
     materials: async (nodeId?: string, after?: string) => {
       const query = new URLSearchParams();
       if (nodeId) query.set("nodeId", nodeId);
       if (after) query.set("after", after);
-      return (await requestApi(`${root}/materials?${query}`, token, chatMaterialsResponseSchema))
-        .data;
+      return (
+        await requestApi(
+          `${materialsRoot()}/materials?${query}`,
+          token,
+          chatMaterialsResponseSchema,
+        )
+      ).data;
     },
     preview: async (target: ChatMaterialTarget, startCodePoint = 0) =>
       (
-        await requestApi(`${root}/materials/preview`, token, chatMaterialPreviewResponseSchema, {
-          method: "POST",
-          body: JSON.stringify({ target, startCodePoint }),
-        })
+        await requestApi(
+          `${materialsRoot()}/materials/preview`,
+          token,
+          chatMaterialPreviewResponseSchema,
+          {
+            method: "POST",
+            body: JSON.stringify({ target, startCodePoint }),
+          },
+        )
       ).data,
     citation: async (threadId: string, messageId: string, citationId: string) =>
       (
@@ -39,16 +53,16 @@ export function chatApi(token: TokenResolver, moduleId: string) {
       ).data,
     list: (cursor?: string) =>
       requestApi(
-        `${root}/threads${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`,
+        `${root}/threads?${new URLSearchParams({ ...(moduleId ? { moduleId } : {}), ...(cursor ? { cursor } : {}) })}`,
         token,
         chatThreadsResponseSchema,
       ),
     get: async (id: string) => (await requestApi(thread(id), token, chatThreadResponseSchema)).data,
-    create: async (): Promise<ChatThread> =>
+    create: async (title?: string): Promise<ChatThread> =>
       (
         await requestApi(`${root}/threads`, token, chatThreadResponseSchema, {
           method: "POST",
-          body: "{}",
+          body: JSON.stringify({ moduleId: moduleId ?? null, title }),
         })
       ).data,
     rename: async (id: string, title: string) =>

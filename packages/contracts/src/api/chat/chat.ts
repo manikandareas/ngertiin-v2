@@ -109,9 +109,14 @@ export const chatTitleSchema = z
     (value) => [...value].length >= 1 && [...value].length <= 120,
     "Judul harus berisi 1–120 karakter.",
   );
-export const createChatThreadSchema = z.object({ title: chatTitleSchema.optional() }).strict();
+export const createChatThreadSchema = z
+  .object({ title: chatTitleSchema.optional(), moduleId: uuidSchema.nullable().optional() })
+  .strict();
 export const patchChatThreadSchema = z.object({ title: chatTitleSchema }).strict();
-export const chatThreadParamsSchema = z.object({ moduleId: uuidSchema, threadId: uuidSchema });
+export const chatThreadParamsSchema = z.object({
+  moduleId: uuidSchema.optional(),
+  threadId: uuidSchema,
+});
 export const chatRunParamsSchema = chatThreadParamsSchema.extend({ runId: uuidSchema });
 export const chatPaginationSchema = z.object({
   cursor: z.string().max(2048).optional(),
@@ -143,7 +148,8 @@ export const chatPartSchema = z.discriminatedUnion("type", [
 ]);
 export const chatThreadSchema = z.object({
   id: uuidSchema,
-  moduleId: uuidSchema,
+  moduleId: uuidSchema.nullable(),
+  moduleTitle: z.string().nullable().optional(),
   title: chatTitleSchema,
   createdAt: timestampSchema,
   updatedAt: timestampSchema,
@@ -177,7 +183,11 @@ export const chatAcknowledgmentSchema = z.object({
   messageId: uuidSchema,
   runId: uuidSchema,
   status: z.literal("queued"),
-  eventsUrl: z.string().startsWith("/api/v1/modules/"),
+  eventsUrl: z
+    .string()
+    .regex(
+      /^\/api\/v1\/(?:modules\/[0-9a-f-]{36}\/)?chat\/threads\/[0-9a-f-]{36}\/runs\/[0-9a-f-]{36}\/events$/i,
+    ),
 });
 export const chatThreadResponseSchema = successEnvelopeSchema(chatThreadSchema);
 export const chatThreadsResponseSchema = paginatedSuccessEnvelopeSchema(chatThreadSchema);

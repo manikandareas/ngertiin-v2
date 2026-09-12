@@ -15,13 +15,8 @@ import {
   UseGuards,
 } from "@nestjs/common";
 import {
-  type ChatMaterialTarget,
   type ChatPagination,
   chatCitationResponseSchema,
-  chatMaterialPreviewInputSchema,
-  chatMaterialPreviewResponseSchema,
-  chatMaterialsQuerySchema,
-  chatMaterialsResponseSchema,
   chatMessagesResponseSchema,
   chatPaginationSchema,
   chatRunParamsSchema,
@@ -31,7 +26,6 @@ import {
   chatThreadResponseSchema,
   chatThreadsResponseSchema,
   createChatThreadSchema,
-  moduleParamsSchema,
   patchChatThreadSchema,
   type SendChatMessage,
   sendChatMessageSchema,
@@ -45,44 +39,14 @@ import { ZodValidationPipe } from "../http/zod-validation.pipe.js";
 import { ChatService } from "./chat.service.js";
 import type { ChatEventResponse } from "./chat.stream.js";
 
-type ThreadParams = { moduleId: string; threadId: string };
-type RunParams = ThreadParams & { runId: string };
-@Controller("modules/:moduleId/chat")
+const chatScopeParamsSchema = chatThreadParamsSchema.pick({ moduleId: true });
+const chatThreadsQuerySchema = chatPaginationSchema.extend({ moduleId: uuidSchema.optional() });
+type ThreadParams = z.infer<typeof chatThreadParamsSchema>;
+type RunParams = z.infer<typeof chatRunParamsSchema>;
+@Controller(["chat", "modules/:moduleId/chat"])
 @UseGuards(ClerkAuthGuard)
 export class ChatController {
   constructor(@Inject(ChatService) private readonly chat: ChatService) {}
-  @Get("materials")
-  async materials(
-    @Req() req: ProductRequest,
-    @Param(new ZodValidationPipe(moduleParamsSchema)) p: { moduleId: string },
-    @Query(new ZodValidationPipe(chatMaterialsQuerySchema)) query: {
-      nodeId?: string;
-      after?: string;
-    },
-  ) {
-    return chatMaterialsResponseSchema.parse({
-      data: await this.chat.listMaterials(getLocalUserId(req), p.moduleId, query),
-    });
-  }
-  @Post("materials/preview")
-  @HttpCode(200)
-  async preview(
-    @Req() req: ProductRequest,
-    @Param(new ZodValidationPipe(moduleParamsSchema)) p: { moduleId: string },
-    @Body(new ZodValidationPipe(chatMaterialPreviewInputSchema)) body: {
-      target: ChatMaterialTarget;
-      startCodePoint: number;
-    },
-  ) {
-    return chatMaterialPreviewResponseSchema.parse({
-      data: await this.chat.previewMaterial(
-        getLocalUserId(req),
-        p.moduleId,
-        body.target,
-        body.startCodePoint,
-      ),
-    });
-  }
   @Get("threads/:threadId/messages/:messageId/citations/:citationId")
   async citation(
     @Req() req: ProductRequest,
@@ -96,7 +60,7 @@ export class ChatController {
     return chatCitationResponseSchema.parse({
       data: await this.chat.getCitation(
         getLocalUserId(req),
-        p.moduleId,
+        await this.chat.resolveThreadModuleId(getLocalUserId(req), p.threadId, p.moduleId),
         p.threadId,
         p.messageId,
         p.citationId,
@@ -106,21 +70,38 @@ export class ChatController {
   @Post("threads")
   async create(
     @Req() req: ProductRequest,
-    @Param(new ZodValidationPipe(moduleParamsSchema)) p: { moduleId: string },
-    @Body(new ZodValidationPipe(createChatThreadSchema)) body: { title?: string },
+    @Param(new ZodValidationPipe(chatScopeParamsSchema)) p: {
+      moduleId?: string;
+    },
+    @Body(new ZodValidationPipe(createChatThreadSchema)) body: z.infer<
+      typeof createChatThreadSchema
+    >,
   ) {
+    // The legacy route owns its module; the canonical route accepts an optional module.
     return chatThreadResponseSchema.parse({
-      data: await this.chat.createThread(getLocalUserId(req), p.moduleId, body.title),
+      data: await this.chat.createThread(
+        getLocalUserId(req),
+        p.moduleId ?? body.moduleId ?? null,
+        body.title,
+      ),
     });
   }
   @Get("threads")
   async list(
     @Req() req: ProductRequest,
-    @Param(new ZodValidationPipe(moduleParamsSchema)) p: { moduleId: string },
-    @Query(new ZodValidationPipe(chatPaginationSchema)) query: ChatPagination,
+    @Param(new ZodValidationPipe(chatScopeParamsSchema)) p: {
+      moduleId?: string;
+    },
+    @Query(new ZodValidationPipe(chatThreadsQuerySchema))
+    query: z.infer<typeof chatThreadsQuerySchema>,
   ) {
     return chatThreadsResponseSchema.parse(
-      await this.chat.listThreads(getLocalUserId(req), p.moduleId, query),
+      await this.chat.listThreads(
+        getLocalUserId(req),
+        p.moduleId ?? query.moduleId,
+        query,
+        !p.moduleId,
+      ),
     );
   }
   @Get("threads/:threadId")
@@ -129,7 +110,11 @@ export class ChatController {
     @Param(new ZodValidationPipe(chatThreadParamsSchema)) p: ThreadParams,
   ) {
     return chatThreadResponseSchema.parse({
-      data: await this.chat.getThread(getLocalUserId(req), p.moduleId, p.threadId),
+      data: await this.chat.getThread(
+        getLocalUserId(req),
+        await this.chat.resolveThreadModuleId(getLocalUserId(req), p.threadId, p.moduleId),
+        p.threadId,
+      ),
     });
   }
   @Patch("threads/:threadId")
@@ -139,7 +124,12 @@ export class ChatController {
     @Body(new ZodValidationPipe(patchChatThreadSchema)) body: { title: string },
   ) {
     return chatThreadResponseSchema.parse({
-      data: await this.chat.renameThread(getLocalUserId(req), p.moduleId, p.threadId, body.title),
+      data: await this.chat.renameThread(
+        getLocalUserId(req),
+        await this.chat.resolveThreadModuleId(getLocalUserId(req), p.threadId, p.moduleId),
+        p.threadId,
+        body.title,
+      ),
     });
   }
   @Delete("threads/:threadId")
@@ -148,7 +138,11 @@ export class ChatController {
     @Req() req: ProductRequest,
     @Param(new ZodValidationPipe(chatThreadParamsSchema)) p: ThreadParams,
   ) {
-    await this.chat.deleteThread(getLocalUserId(req), p.moduleId, p.threadId);
+    await this.chat.deleteThread(
+      getLocalUserId(req),
+      await this.chat.resolveThreadModuleId(getLocalUserId(req), p.threadId, p.moduleId),
+      p.threadId,
+    );
   }
   @Get("threads/:threadId/messages")
   async messages(
@@ -157,7 +151,12 @@ export class ChatController {
     @Query(new ZodValidationPipe(chatPaginationSchema)) query: ChatPagination,
   ) {
     return chatMessagesResponseSchema.parse(
-      await this.chat.listMessages(getLocalUserId(req), p.moduleId, p.threadId, query),
+      await this.chat.listMessages(
+        getLocalUserId(req),
+        await this.chat.resolveThreadModuleId(getLocalUserId(req), p.threadId, p.moduleId),
+        p.threadId,
+        query,
+      ),
     );
   }
   @Post("threads/:threadId/messages")
@@ -168,15 +167,23 @@ export class ChatController {
     @Headers("idempotency-key") key: unknown,
     @Body(new ZodValidationPipe(sendChatMessageSchema)) body: SendChatMessage,
   ) {
-    return chatSendResponseSchema.parse(
+    const response = chatSendResponseSchema.parse(
       await this.chat.send(
         getLocalUserId(req),
-        p.moduleId,
+        await this.chat.resolveThreadModuleId(getLocalUserId(req), p.threadId, p.moduleId),
         p.threadId,
         new IdempotencyKeyPipe().transform(key),
         body,
       ),
     );
+    const route = p.moduleId ? `/modules/${p.moduleId}/chat` : "/chat";
+    return chatSendResponseSchema.parse({
+      ...response,
+      data: {
+        ...response.data,
+        eventsUrl: `/api/v1${route}/threads/${p.threadId}/runs/${response.data.runId}/events`,
+      },
+    });
   }
   @Get("threads/:threadId/runs/:runId")
   async run(
@@ -184,7 +191,12 @@ export class ChatController {
     @Param(new ZodValidationPipe(chatRunParamsSchema)) p: RunParams,
   ) {
     return chatRunResponseSchema.parse({
-      data: await this.chat.getRun(getLocalUserId(req), p.moduleId, p.threadId, p.runId),
+      data: await this.chat.getRun(
+        getLocalUserId(req),
+        await this.chat.resolveThreadModuleId(getLocalUserId(req), p.threadId, p.moduleId),
+        p.threadId,
+        p.runId,
+      ),
     });
   }
   @Post("threads/:threadId/runs/:runId/cancel")
@@ -195,7 +207,12 @@ export class ChatController {
     @Body(new ZodValidationPipe(z.object({}).strict())) _body: Record<string, never>,
   ) {
     return chatRunResponseSchema.parse({
-      data: await this.chat.cancel(getLocalUserId(req), p.moduleId, p.threadId, p.runId),
+      data: await this.chat.cancel(
+        getLocalUserId(req),
+        await this.chat.resolveThreadModuleId(getLocalUserId(req), p.threadId, p.moduleId),
+        p.threadId,
+        p.runId,
+      ),
     });
   }
   @Get("threads/:threadId/runs/:runId/events")
@@ -205,6 +222,12 @@ export class ChatController {
     @Res() res: ChatEventResponse,
   ) {
     const userId = getLocalUserId(req);
-    await this.chat.stream(userId, p.moduleId, p.threadId, p.runId, res);
+    await this.chat.stream(
+      userId,
+      await this.chat.resolveThreadModuleId(userId, p.threadId, p.moduleId),
+      p.threadId,
+      p.runId,
+      res,
+    );
   }
 }

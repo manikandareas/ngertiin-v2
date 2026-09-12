@@ -23,12 +23,26 @@ import { Button } from "../../../components/ui/button";
 import { ApiProblemError, type TokenResolver } from "../../../lib/api";
 import type { chatApi } from "../api/chat-api";
 import { createChatTransport, type LearningMessage, toUIMessage } from "../api/chat-transport";
+import { useChatSession } from "../chat-session";
 import { CHAT_AGENT_NAME } from "../constants";
-import { ChatCitedAnswer } from "./chat-citation";
+import { type ChatCitationSelection, ChatCitedAnswer } from "./chat-citation";
 import { ChatComposer } from "./chat-composer";
-import { ChatContextPicker, type SelectedChatExcerpt } from "./chat-context-picker";
+import { ChatContextPicker } from "./chat-context-picker";
 import { ChatMascot } from "./chat-mascot";
 import { ChatWelcome } from "./chat-welcome";
+
+type ChatConversationProps = {
+  thread: ChatThread;
+  api: ReturnType<typeof chatApi>;
+  root: readonly unknown[];
+  getToken: TokenResolver;
+  moduleId: string | null;
+  pageContext?: ChatPageContext;
+  contextLabel?: string;
+  onChooseModule?: () => void;
+  fullPage?: boolean;
+  onOpenCitation?: (selection: ChatCitationSelection) => void;
+};
 
 export function ChatConversation({
   thread,
@@ -37,36 +51,20 @@ export function ChatConversation({
   getToken,
   moduleId,
   pageContext,
-  contextLabel = "Modul ini",
-  initialMessage,
-  onInitialMessageConsumed,
-}: {
-  thread: ChatThread;
-  api: ReturnType<typeof chatApi>;
-  root: readonly unknown[];
-  getToken: TokenResolver;
-  moduleId: string;
-  pageContext: ChatPageContext;
-  contextLabel?: string;
-  initialMessage?: string;
-  onInitialMessageConsumed?: () => void;
-}) {
+  contextLabel,
+  onChooseModule,
+  fullPage = false,
+  onOpenCitation,
+}: ChatConversationProps) {
   const client = useQueryClient();
-  const [draft, setDraft] = useState(initialMessage ?? "");
+  const { session, patch, setDraft, setExcerpts } = useChatSession(root, thread.id);
+  const { draft, excerpts, pending, ack } = session;
+  const setAck = useCallback((value: ChatAcknowledgment | null) => patch({ ack: value }), [patch]);
   const initialSent = useRef(false);
-  const [excerpts, setExcerpts] = useState<SelectedChatExcerpt[]>([]);
   const [pickerOpen, setPickerOpen] = useState(false);
   const attachButton = useRef<HTMLSpanElement>(null);
-  const [ack, setAck] = useState<ChatAcknowledgment | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
-  const pending = useRef<{
-    key: string;
-    text: string;
-    pageContext: ChatPageContext;
-    retryOfRunId?: string;
-    references: SelectedChatExcerpt["reference"][];
-  } | null>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   const followBottom = useRef(true);
   const refresh = useCallback(() => {
@@ -80,11 +78,11 @@ export function ChatConversation({
       setExcerpts([]);
       refresh();
     },
-    [refresh],
+    [refresh, setAck, setDraft, setExcerpts, pending],
   );
   const transport = useMemo(
-    () => createChatTransport({ moduleId, threadId: thread.id, token: getToken, onAccepted }),
-    [moduleId, thread.id, getToken, onAccepted],
+    () => createChatTransport({ threadId: thread.id, token: getToken, onAccepted }),
+    [thread.id, getToken, onAccepted],
   );
   const chat = useChat<LearningMessage>({
     id: thread.id,
@@ -146,7 +144,10 @@ export function ChatConversation({
     refetchInterval: (query) =>
       !query.state.data || isChatRunActive(query.state.data.status) ? 2000 : false,
   });
-  const active = streaming || Boolean(runId && (!run.data || isChatRunActive(run.data.status)));
+  const active =
+    session.sending ||
+    streaming ||
+    Boolean(runId && (!run.data || isChatRunActive(run.data.status)));
   const savedAssistant = saved.find(
     (message) => message.role === "assistant" && message.runId === ack?.runId,
   );
@@ -265,17 +266,22 @@ export function ChatConversation({
       };
     }
     setAck(null);
-    await chat.sendMessage(
-      { text: trimmed },
-      {
-        body: {
-          pageContext: sentPageContext,
-          retryOfRunId,
-          references: pending.current.references,
-          idempotencyKey: pending.current.key,
+    patch({ sending: true });
+    try {
+      await chat.sendMessage(
+        { text: trimmed },
+        {
+          body: {
+            pageContext: sentPageContext,
+            retryOfRunId,
+            references: pending.current.references,
+            idempotencyKey: pending.current.key,
+          },
         },
-      },
-    );
+      );
+    } finally {
+      patch({ sending: false });
+    }
   }
   async function cancel() {
     if (!runId) return;
@@ -290,15 +296,15 @@ export function ChatConversation({
     }
   }
   const sendInitial = useEffectEvent(() => {
-    onInitialMessageConsumed?.();
+    patch({ autoSend: false });
     void send();
   });
   useEffect(() => {
-    if (initialMessage && history.isSuccess && !initialSent.current) {
+    if (session.autoSend && history.isSuccess && !initialSent.current) {
       initialSent.current = true;
       sendInitial();
     }
-  }, [initialMessage, history.isSuccess]);
+  }, [session.autoSend, history.isSuccess]);
   const retryMessage = terminal
     ? saved.find((m) => m.id === terminal.messageId && m.availability === "available")
     : undefined;
@@ -324,6 +330,7 @@ export function ChatConversation({
             followBottom.current = true;
         }}
         className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-6 pb-4 pt-5 [&>*]:shrink-0"
+        style={fullPage ? { paddingInline: "max(1.5rem, calc((100% - 48rem) / 2))" } : undefined}
         role="log"
         aria-label="Pesan percakapan"
         aria-live="off"
@@ -349,6 +356,7 @@ export function ChatConversation({
         ) : null}
         {!history.isPending && !history.isError && !messages.length ? (
           <ChatWelcome
+            standalone={!moduleId}
             disabled={active}
             onSuggest={(text) => {
               setDraft(text);
@@ -374,6 +382,7 @@ export function ChatConversation({
             ) : null}
             {message.role === "assistant" ? (
               <ChatCitedAnswer
+                onOpenCitation={onOpenCitation}
                 isAnimating={message === activeAssistant}
                 text={message.parts
                   .filter((p) => p.type === "text")
@@ -459,6 +468,7 @@ export function ChatConversation({
         onDraftChange={setDraft}
         onSend={() => void send()}
         contextLabel={contextLabel}
+        className={fullPage ? "mx-auto w-full max-w-3xl" : undefined}
         disabled={history.isPending || history.isError}
         active={active}
         cancelling={cancelling || !runId}
@@ -492,26 +502,39 @@ export function ChatConversation({
           ) : null
         }
         attachAction={
-          <span ref={attachButton}>
+          moduleId ? (
+            <span ref={attachButton}>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="h-8 px-1 text-xs font-semibold normal-case text-muted-foreground"
+                disabled={active}
+                onClick={() => setPickerOpen(true)}
+              >
+                <HugeiconsIcon icon={Attachment01Icon} strokeWidth={1.5} aria-hidden="true" />
+                Kutip materi
+              </Button>
+            </span>
+          ) : onChooseModule ? (
             <Button
               type="button"
               size="sm"
               variant="ghost"
-              className="h-8 px-1 text-xs font-semibold normal-case text-muted-foreground"
-              disabled={active}
-              onClick={() => setPickerOpen(true)}
+              className="h-8 px-2 text-xs normal-case"
+              onClick={onChooseModule}
             >
-              <HugeiconsIcon icon={Attachment01Icon} strokeWidth={1.5} aria-hidden="true" />
-              Kutip materi
+              Tambahkan konteks
             </Button>
-          </span>
+          ) : undefined
         }
       />
-      {pickerOpen ? (
+      {pickerOpen && moduleId ? (
         <ChatContextPicker
+          moduleId={moduleId}
           api={api}
           root={root}
-          pageContext={pageContext}
+          pageContext={pageContext ?? { surface: "journey" }}
           onClose={() => setPickerOpen(false)}
           returnFocus={() => attachButton.current?.querySelector("button")?.focus()}
           onSelect={(excerpt) => {

@@ -5,9 +5,10 @@ import { ChatMascot } from "./chat-mascot";
 type ChatWelcomeProps = {
   onSuggest: (text: string) => void;
   disabled?: boolean;
+  standalone?: boolean;
 };
 
-export function ChatWelcome({ onSuggest, disabled = false }: ChatWelcomeProps) {
+export function ChatWelcome({ onSuggest, disabled = false, standalone = false }: ChatWelcomeProps) {
   return (
     <div className="mt-auto pb-3 pt-8">
       <ChatMascot className="-ml-1 size-18" />
@@ -23,18 +24,22 @@ export function ChatWelcome({ onSuggest, disabled = false }: ChatWelcomeProps) {
         {[
           {
             icon: BulbIcon,
-            text: "Jelaskan dengan lebih sederhana",
-            prompt: "Jelaskan materi ini dengan lebih sederhana",
+            text: standalone ? "Kenapa langit berwarna biru?" : "Jelaskan dengan lebih sederhana",
+            prompt: standalone
+              ? "Kenapa langit berwarna biru?"
+              : "Jelaskan materi ini dengan lebih sederhana",
           },
           {
             icon: Chat01Icon,
-            text: "Beri contoh sehari-hari",
-            prompt: "Beri aku contoh dari kehidupan sehari-hari",
+            text: standalone ? "Apa itu berpikir kritis?" : "Beri contoh sehari-hari",
+            prompt: standalone
+              ? "Jelaskan berpikir kritis dengan contoh sehari-hari"
+              : "Beri aku contoh dari kehidupan sehari-hari",
           },
           {
             icon: TextAlignLeftIcon,
-            text: "Temukan inti materi ini",
-            prompt: "Apa inti dari materi ini?",
+            text: standalone ? "Bantu aku mulai belajar topik baru" : "Temukan inti materi ini",
+            prompt: standalone ? "Bantu aku mulai belajar topik baru" : "Apa inti dari materi ini?",
           },
         ].map(({ icon, text, prompt }) => (
           <button

@@ -1,0 +1,38 @@
+[
+  {
+    "level": "log",
+    "event": "chat.run_finished",
+    "status": "completed",
+    "errorCode": null,
+    "durationMs": 2230,
+    "runId": "19f841ba-cba7-412b-a3e2-f6bffd14eb89",
+    "threadId": "72e9c86d-9736-444c-8f67-232fe50a1c07",
+    "modelCallCount": 1,
+    "toolCallCount": 0,
+    "usageCoverage": "complete"
+  },
+  {
+    "level": "log",
+    "event": "chat.run_finished",
+    "status": "completed",
+    "errorCode": null,
+    "durationMs": 2581,
+    "runId": "5fbb35f8-3c0c-4408-bc5a-c207cef20bd5",
+    "threadId": "82024093-884d-4f00-bb00-e7806ee7e4be",
+    "modelCallCount": 1,
+    "toolCallCount": 0,
+    "usageCoverage": "complete"
+  },
+  {
+    "level": "log",
+    "event": "chat.run_finished",
+    "status": "cancelled",
+    "errorCode": "USER_CANCELLED",
+    "durationMs": 47,
+    "runId": "2a8cbaf0-97f9-48bb-bf41-1f5915eef272",
+    "threadId": "f6a14172-5f87-431c-876b-672157d3aa81",
+    "modelCallCount": 0,
+    "toolCallCount": 0,
+    "usageCoverage": "unavailable"
+  }
+]

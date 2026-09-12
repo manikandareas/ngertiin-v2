@@ -13,7 +13,15 @@ import { Button } from "../../../components/ui/button";
 import { DialogFrame } from "../../../components/ui/dialog-frame";
 import type { chatApi } from "../api/chat-api";
 
+import { ChatCitationFrame } from "./chat-citation-frame";
 import { ChatMarkdown } from "./chat-markdown";
+
+export type ChatCitationSelection = {
+  citation: ChatCitation;
+  citations: ChatCitation[];
+  messageId: string;
+  threadId: string;
+};
 
 function citationLocation(citation: ChatCitation): string {
   if (citation.pageNumber) return ` · Halaman ${citation.pageNumber}`;
@@ -28,8 +36,10 @@ export function ChatCitedAnswer({
   threadId,
   api,
   isAnimating = false,
+  onOpenCitation,
 }: {
   isAnimating?: boolean;
+  onOpenCitation?: (selection: ChatCitationSelection) => void;
   text: string;
   citations: ChatCitation[];
   messageId: string;
@@ -40,7 +50,8 @@ export function ChatCitedAnswer({
   const trigger = useRef<HTMLElement | null>(null);
   function open(citation: ChatCitation) {
     trigger.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    setSelected(citation);
+    if (onOpenCitation) onOpenCitation({ citation, citations, messageId, threadId });
+    else setSelected(citation);
   }
   return (
     <>
@@ -90,7 +101,7 @@ export function ChatCitedAnswer({
   );
 }
 
-function ChatCitationReader({
+export function ChatCitationReader({
   citation,
   citations,
   threadId,
@@ -99,6 +110,7 @@ function ChatCitationReader({
   onSelect,
   onClose,
   returnFocus,
+  panel = false,
 }: {
   citation: ChatCitation;
   citations: ChatCitation[];
@@ -108,6 +120,7 @@ function ChatCitationReader({
   onSelect: (citation: ChatCitation) => void;
   onClose: () => void;
   returnFocus: () => void;
+  panel?: boolean;
 }) {
   const excerpt = useRef<HTMLElement>(null);
   const reader = useQuery({
@@ -122,8 +135,9 @@ function ChatCitationReader({
   const start = data ? data.citation.reference.startCodePoint - data.startCodePoint : 0;
   const end = data ? data.citation.reference.endCodePoint - data.startCodePoint : 0;
   const index = citations.findIndex((item) => item.id === citation.id);
+  const Frame = panel ? ChatCitationFrame : DialogFrame;
   return (
-    <DialogFrame
+    <Frame
       open
       title={citation.title}
       description="Materi saat jawaban dibuat · bagian yang digunakan disorot."
@@ -202,12 +216,18 @@ function ChatCitationReader({
               <HugeiconsIcon icon={QuoteUpIcon} strokeWidth={1.5} aria-hidden="true" />
               Ke kutipan
             </Button>
-            <Button size="sm" onClick={onClose}>
+            <Button
+              size="sm"
+              onClick={() => {
+                onClose();
+                if (panel) returnFocus();
+              }}
+            >
               Kembali ke jawaban
             </Button>
           </div>
         </>
       ) : null}
-    </DialogFrame>
+    </Frame>
   );
 }

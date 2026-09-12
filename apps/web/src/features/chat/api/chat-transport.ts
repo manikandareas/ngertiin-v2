@@ -46,7 +46,6 @@ export function toUIMessage(message: ChatMessage): LearningMessage {
   };
 }
 export function createChatTransport(options: {
-  moduleId: string;
   threadId: string;
   token: TokenResolver;
   onAccepted: (ack: ChatAcknowledgment) => void;
@@ -67,7 +66,7 @@ export function createChatTransport(options: {
       const key =
         typeof body?.idempotencyKey === "string" ? body.idempotencyKey : crypto.randomUUID();
       const response = await requestApi(
-        `${chatRoot(options.moduleId)}/threads/${options.threadId}/messages`,
+        `${chatRoot()}/threads/${options.threadId}/messages`,
         options.token,
         chatSendResponseSchema,
         {
@@ -79,7 +78,7 @@ export function createChatTransport(options: {
       options.onAccepted(response.data);
       const token = await options.token();
       if (!token) throw new Error("Sesi berakhir. Masuk kembali untuk membaca jawaban.");
-      const expected = `/api/v1${chatRoot(options.moduleId)}/threads/${options.threadId}/runs/${response.data.runId}/events`;
+      const expected = `/api/v1${chatRoot()}/threads/${options.threadId}/runs/${response.data.runId}/events`;
       if (response.data.eventsUrl !== expected) throw new Error("Alamat stream tidak valid.");
       const stream = await fetch(`${webEnvironment.VITE_API_URL}${expected}`, {
         headers: { Authorization: `Bearer ${token}`, Accept: "text/event-stream" },

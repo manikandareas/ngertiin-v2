@@ -7,6 +7,7 @@ import { KnowledgeModule } from "../knowledge/knowledge.module.js";
 import { ModulesModule } from "../modules/modules.module.js";
 import { ChatController } from "./chat.controller.js";
 import { ChatService } from "./chat.service.js";
+import { ChatMaterialsController } from "./chat-materials.controller.js";
 @Module({
   imports: [
     KnowledgeModule,
@@ -16,7 +17,7 @@ import { ChatService } from "./chat.service.js";
     InfrastructureModule,
     ModulesModule,
   ],
-  controllers: [ChatController],
+  controllers: [ChatController, ChatMaterialsController],
   providers: [ChatService],
 })
 export class ChatModule {}

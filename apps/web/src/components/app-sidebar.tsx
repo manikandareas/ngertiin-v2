@@ -3,6 +3,7 @@ import {
   AddCircleHalfDotIcon,
   BookOpen01Icon,
   ChampionIcon,
+  Chat01Icon,
   Home01Icon,
   LibraryIcon,
   SidebarLeftIcon,
@@ -13,6 +14,8 @@ import { Menu, X } from "lucide-react";
 import { Dialog } from "radix-ui";
 import { type ReactNode, useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { isClerkConfigured } from "../config";
+import { ChatSidebarSection } from "../features/chat/components/chat-sidebar-section";
 import { useCurrentUser } from "../features/current-user/api/use-current-user";
 import { UsageBanner } from "../features/usage/usage-banner";
 import { useUsageSync } from "../features/usage/use-usage-sync";
@@ -23,6 +26,7 @@ const navigation = [
   { to: "/leaderboard", label: "Leaderboard", icon: ChampionIcon },
   { to: "/modules/new", label: "Buat modul", icon: AddCircleHalfDotIcon },
   { to: "/modules", label: "Modul belajar", icon: BookOpen01Icon },
+  { to: "/chat", label: "Chat", icon: Chat01Icon },
   { to: "/sources", label: "Pustaka saya", icon: LibraryIcon },
 ];
 const focus = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
@@ -54,8 +58,9 @@ export function AppSidebar({
   user?: Omit<NavUserProps, "collapsed" | "side">;
   usageBanner?: ReactNode;
 }) {
-  const [collapsed, setCollapsed] = useState(true);
   const location = useLocation();
+  const isChatPage = location.pathname === "/chat" || location.pathname.startsWith("/chat/");
+  const [collapsed, setCollapsed] = useState(!isChatPage);
   const [menuOpen, setMenuOpen] = useState(false);
   useEffect(() => {
     if (location.key) setMenuOpen(false);
@@ -68,6 +73,17 @@ export function AppSidebar({
     desktop.addEventListener("change", closeOnDesktop);
     return () => desktop.removeEventListener("change", closeOnDesktop);
   }, []);
+  const usage =
+    usageBanner && isChatPage ? (
+      <details className="text-xs text-muted-foreground">
+        <summary className="cursor-pointer rounded-lg px-2 py-2 font-medium hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring">
+          Usage minggu ini
+        </summary>
+        <div className="mt-2">{usageBanner}</div>
+      </details>
+    ) : (
+      usageBanner
+    );
   const activeRoute = navigation.find(({ to }) =>
     to === "/modules"
       ? (location.pathname === to || location.pathname.startsWith(`${to}/`)) &&
@@ -78,7 +94,7 @@ export function AppSidebar({
     <>
       <aside
         aria-label="Sidebar"
-        className={`sticky top-0 hidden h-dvh shrink-0 flex-col overflow-y-auto border-r bg-sidebar text-sidebar-foreground xl:flex ${collapsed ? "xl:w-16" : "xl:w-64"}`}
+        className={`sticky top-0 hidden h-dvh shrink-0 flex-col border-r bg-sidebar text-sidebar-foreground xl:flex ${isChatPage ? "overflow-hidden" : "overflow-y-auto"} ${collapsed ? "xl:w-16" : "xl:w-64"}`}
       >
         <div className={`flex items-center gap-2.5 py-5 ${collapsed ? "flex-col px-2" : "px-3"}`}>
           <Link
@@ -117,7 +133,7 @@ export function AppSidebar({
         </div>
         <nav
           aria-label="Navigasi utama"
-          className={`flex flex-col gap-1 ${collapsed ? "px-2" : "px-3"}`}
+          className={`flex shrink-0 flex-col gap-1 ${collapsed ? "px-2" : "px-3"}`}
         >
           {navigation.map(({ to, label, icon }) => {
             const active = activeRoute === to;
@@ -141,8 +157,9 @@ export function AppSidebar({
             );
           })}
         </nav>
-        <div className="mt-auto">
-          {!collapsed && usageBanner ? <div className="px-3 pb-4 pt-8">{usageBanner}</div> : null}
+        {isChatPage && isClerkConfigured ? <ChatSidebarSection collapsed={collapsed} /> : null}
+        <div className="mt-auto shrink-0">
+          {!collapsed && usage ? <div className="px-3 pb-4 pt-4">{usage}</div> : null}
           <div className="border-t p-2">
             <NavUser {...user} collapsed={collapsed} />
           </div>
@@ -179,7 +196,7 @@ export function AppSidebar({
             <Dialog.Overlay className="fixed inset-0 z-50 bg-black/40" />
             <Dialog.Content
               aria-describedby={undefined}
-              className="fixed inset-y-0 left-0 z-50 flex w-80 max-w-[calc(100%-2rem)] flex-col overflow-y-auto border-r bg-background p-5 shadow-xl data-[state=open]:animate-in data-[state=open]:slide-in-from-left duration-200 motion-reduce:animate-none"
+              className={`fixed inset-y-0 left-0 z-50 flex w-80 max-w-[calc(100%-2rem)] flex-col ${isChatPage ? "overflow-hidden" : "overflow-y-auto"} border-r bg-background p-5 shadow-xl data-[state=open]:animate-in data-[state=open]:slide-in-from-left duration-200 motion-reduce:animate-none`}
             >
               <div className="mb-6 flex items-center justify-between">
                 <Dialog.Title className="flex items-center gap-2 font-display text-xl font-black">
@@ -227,8 +244,9 @@ export function AppSidebar({
                   );
                 })}
               </nav>
-              <div className="mt-auto">
-                {usageBanner ? <div className="pb-4 pt-8">{usageBanner}</div> : null}
+              {isChatPage && isClerkConfigured ? <ChatSidebarSection /> : null}
+              <div className="mt-auto shrink-0">
+                {usage ? <div className="pb-4 pt-4">{usage}</div> : null}
                 <div className="border-t pt-3">
                   <NavUser {...user} side="top" />
                 </div>

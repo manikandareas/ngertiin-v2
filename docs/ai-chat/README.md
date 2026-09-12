@@ -16,7 +16,11 @@ Konvensi HTTP, autentikasi, envelope, error, identifier, dan idempotency umum me
 
 ## Perilaku produk dan konteks
 
-Chat berada dalam satu modul, dengan banyak thread untuk setiap pasangan pengguna/modul. Journey dan Node membaca daftar serta pesan thread yang sama. Pemilihan thread dipertahankan ketika berpindah antara keduanya; visual M1 memakai sidebar kedua di sebelah kanan sesuai [prototype pilihan](../prototype/ai-chat-m1-prototype.html). Tidak ada thread lintas modul pada versi awal.
+Chat dapat berdiri sendiri tanpa modul, atau terikat pada satu modul. Menu Chat selalu tersedia; `/chat` menampilkan chat baru dan `/chat/:threadId` menampilkan detail. Tombol Chat baru dan daftar seluruh thread pengguna hanya muncul pada sidebar aplikasi di halaman Chat. Thread baru dibuat saat pesan pertama dikirim; module bisa dipilih/dihapus sebelum itu. Mengubah konteks module setelah thread dibuat membuka chat baru, tanpa memindahkan pesan lama.
+
+Journey dan Node tetap memakai panel kanan dengan mode Sidebar/Overlay. Full Screen pada dropdown panel membuka detail thread yang sama; detail Chat tidak memiliki dropdown mode dan header module tidak memiliki tombol Buka Chat. Draft, cuplikan, serta pending acknowledgment berada dalam cache sesi pengguna, sehingga navigasi tidak mengirim ulang pesan atau membatalkan run. Pesan/run pulih dari database setelah refresh; draft belum dijamin bertahan setelah refresh. Kutipan di dedicated page memakai panel kanan desktop dan drawer mobile; panel module tetap memakai reader dialog.
+
+Chat mandiri menggunakan pengetahuan umum tanpa tools materi/progress. Thread dengan module dapat memakai tools existing dan materi dalam scope tersebut. Tidak ada pencarian web, upload langsung, atau thread lintas module pada versi ini. Detail implementasi dan bukti ada di [Dedicated Chat](./dedicated-chat-verification.md).
 
 Konteks halaman bersifat sementara: halaman Journey atau Node yang sedang dibuka tidak otomatis menambahkan seluruh isinya ke prompt. Konteks percakapan berasal dari pesan tersimpan dan referensi yang dipilih untuk pesan tersebut. Saat mengirim, server menyimpan snapshot konteks halaman yang telah divalidasi sebagai metadata pesan; konten pilihan dan kutipan terikat pada pesan pemakainya. Pindah halaman tidak menulis ulang konteks pesan lama. Client mengirim identifier dan rentang, bukan isi node atau objek riwayat yang dipercaya server.
 
@@ -26,7 +30,7 @@ Riwayat disimpan sebagai pesan, tanpa vectorization. Pemilihan riwayat mengikuti
 
 ## Batas akses dan assessment
 
-Semua jalur baca menerapkan identitas server, kepemilikan modul, relasi materi, dan akses terkini: pengambilan konteks, history, tool, retrieval, dan pembukaan kutipan. Identifier dalam tool tidak boleh mengubah user/module scope. Status node diperiksa melalui aturan domain progression existing, bukan keputusan model.
+Semua jalur baca menerapkan identitas server dan kepemilikan thread. Untuk thread dengan module, kepemilikan modul, relasi materi, dan akses terkini juga diperiksa: pengambilan konteks, history, tool, retrieval, dan pembukaan kutipan. Identifier dalam tool tidak boleh mengubah user/module scope. Status node diperiksa melalui aturan domain progression existing, bukan keputusan model.
 
 - Isi node `locked` tidak boleh masuk prompt, hasil tool, chunk yang dikembalikan, atau snapshot history yang ditampilkan. Metadata progres aman boleh menyebut status terkunci tanpa isi aktivitas.
 - `activities.evaluation_config`, kunci jawaban, rubrik privat, dan konfigurasi penilaian tidak pernah diindeks atau diteruskan kepada agent. Proyeksi data menggunakan allowlist, bukan menyerialisasikan row database.

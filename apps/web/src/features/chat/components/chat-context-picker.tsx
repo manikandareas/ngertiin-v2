@@ -8,6 +8,7 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useRef, useState } from "react";
 import { Button } from "../../../components/ui/button";
 import { DialogFrame } from "../../../components/ui/dialog-frame";
+import { useJourney } from "../../modules/api/use-modules";
 import type { chatApi } from "../api/chat-api";
 
 export type SelectedChatExcerpt = {
@@ -19,6 +20,7 @@ export function ChatContextPicker({
   api,
   root,
   pageContext,
+  moduleId,
   onClose,
   onSelect,
   returnFocus,
@@ -26,25 +28,26 @@ export function ChatContextPicker({
   api: ReturnType<typeof chatApi>;
   root: readonly unknown[];
   pageContext: ChatPageContext;
+  moduleId: string;
   onClose: () => void;
   onSelect: (excerpt: SelectedChatExcerpt) => void;
   returnFocus: () => void;
 }) {
-  const [origin, setOrigin] = useState<"node" | "source">(
-    pageContext.surface === "node" ? "node" : "source",
+  const journey = useJourney(moduleId);
+  const [selectedNode, setSelectedNode] = useState(
+    pageContext.surface === "node" ? pageContext.nodeId : "",
   );
   const [target, setTarget] = useState<ChatMaterialTarget | null>(null);
   const [start, setStart] = useState(0);
-  const nodeId =
-    origin === "node" && pageContext.surface === "node" ? pageContext.nodeId : undefined;
+  const nodeId = selectedNode || undefined;
   const materials = useInfiniteQuery({
-    queryKey: [...root, "materials", nodeId],
+    queryKey: [...root, "materials", moduleId, nodeId],
     queryFn: ({ pageParam }) => api.materials(nodeId, pageParam),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (page) => page.nextCursor ?? undefined,
   });
   const preview = useQuery({
-    queryKey: [...root, "preview", target, start],
+    queryKey: [...root, "preview", moduleId, target, start],
     queryFn: () => api.preview(target as ChatMaterialTarget, start),
     enabled: Boolean(target),
     staleTime: 0,
@@ -92,24 +95,38 @@ export function ChatContextPicker({
         </>
       ) : (
         <>
-          <div className="mb-5 flex gap-2">
-            {pageContext.surface === "node" ? (
-              <Button
-                size="sm"
-                variant={origin === "node" ? "default" : "outline"}
-                onClick={() => setOrigin("node")}
-              >
-                Materi node ini
-              </Button>
-            ) : null}
-            <Button
-              size="sm"
-              variant={origin === "source" ? "default" : "outline"}
-              onClick={() => setOrigin("source")}
+          <label className="mb-5 block text-xs font-medium text-muted-foreground">
+            Materi dalam modul
+            <select
+              aria-label="Materi dalam modul"
+              className="mt-2 h-11 w-full rounded-xl border bg-background px-3 text-sm text-foreground"
+              value={selectedNode}
+              onChange={(event) => setSelectedNode(event.target.value)}
             >
-              Sumber modul
+              <option value="">Sumber modul</option>
+              {journey.data?.nodes
+                .filter(
+                  (node) =>
+                    node.progress.status !== "locked" &&
+                    ["lesson", "flashcard", "review"].includes(node.type),
+                )
+                .map((node) => (
+                  <option key={node.id} value={node.id}>
+                    {node.title}
+                  </option>
+                ))}
+            </select>
+          </label>
+          {journey.isPending ? (
+            <p role="status" className="mb-3 text-xs text-muted-foreground">
+              Memuat daftar materi belajar…
+            </p>
+          ) : null}
+          {journey.isError ? (
+            <Button variant="link" onClick={() => void journey.refetch()}>
+              Coba muat materi belajar lagi
             </Button>
-          </div>
+          ) : null}
           <div className="max-h-[50dvh] space-y-2 overflow-y-auto">
             {materials.data?.pages
               .flatMap((page) => page.items)

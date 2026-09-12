@@ -35,6 +35,7 @@ import {
   chat_run_usage,
   chat_runs,
   chat_threads,
+  modules as modulesTable,
   users,
 } from "@ngertiin/database";
 import {
@@ -155,20 +156,33 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
       "Tunggu jawaban selesai sebelum melanjutkan.",
     );
   }
-  private scope(userId: string, moduleId: string, threadId: string) {
+  async resolveThreadModuleId(
+    userId: string,
+    threadId: string,
+    expectedModuleId?: string,
+  ): Promise<string | null> {
+    const [thread] = await this.db
+      .select({ moduleId: chat_threads.module_id })
+      .from(chat_threads)
+      .where(and(eq(chat_threads.id, threadId), eq(chat_threads.user_id, userId)))
+      .limit(1);
+    if (!thread || (expectedModuleId && thread.moduleId !== expectedModuleId)) this.notFound();
+    return thread.moduleId;
+  }
+  private scope(userId: string, moduleId: string | null, threadId: string) {
     return and(
       eq(chat_threads.id, threadId),
       eq(chat_threads.user_id, userId),
-      eq(chat_threads.module_id, moduleId),
+      moduleId === null ? isNull(chat_threads.module_id) : eq(chat_threads.module_id, moduleId),
     );
   }
   private async ownedThread(
     userId: string,
-    moduleId: string,
+    moduleId: string | null,
     threadId: string,
     includeDeleted = false,
   ) {
-    await this.modules.validateChatScope(userId, moduleId);
+    if (moduleId) await this.modules.validateChatScope(userId, moduleId);
     const [thread] = await this.db
       .select()
       .from(chat_threads)
@@ -183,7 +197,8 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
     return thread;
   }
   private async threadDtos(threads: (typeof chat_threads.$inferSelect)[]) {
-    if (!threads.length) return [];
+    const ownerId = threads[0]?.user_id;
+    if (!ownerId) return [];
     const activeRuns = await this.db
       .select({ id: chat_runs.id, threadId: chat_runs.thread_id })
       .from(chat_runs)
@@ -196,11 +211,20 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
           inArray(chat_runs.status, [...activeChatStatuses]),
         ),
       );
+    const moduleIds = [...new Set(threads.flatMap((t) => (t.module_id ? [t.module_id] : [])))];
+    const moduleRows = moduleIds.length
+      ? await this.db
+          .select({ id: modulesTable.id, title: modulesTable.title })
+          .from(modulesTable)
+          .where(and(inArray(modulesTable.id, moduleIds), eq(modulesTable.owner_id, ownerId)))
+      : [];
+    const moduleTitles = new Map(moduleRows.map((m) => [m.id, m.title]));
     const activeByThread = new Map(activeRuns.map((run) => [run.threadId, run.id]));
     return threads.map((thread) =>
       chatThreadSchema.parse({
         id: thread.id,
         moduleId: thread.module_id,
+        moduleTitle: thread.module_id ? (moduleTitles.get(thread.module_id) ?? null) : null,
         title: thread.title,
         createdAt: thread.created_at.toISOString(),
         updatedAt: thread.updated_at.toISOString(),
@@ -213,8 +237,8 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
     if (!dto) this.notFound();
     return dto;
   }
-  async createThread(userId: string, moduleId: string, title = "Percakapan baru") {
-    await this.modules.validateChatScope(userId, moduleId);
+  async createThread(userId: string, moduleId: string | null, title = "Percakapan baru") {
+    if (moduleId) await this.modules.validateChatScope(userId, moduleId);
     const [thread] = await this.db
       .insert(chat_threads)
       .values({ user_id: userId, module_id: moduleId, title })
@@ -222,9 +246,17 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
     if (!thread) this.unavailable();
     return this.threadDto(thread);
   }
-  async listThreads(userId: string, moduleId: string, query: ChatPagination) {
-    await this.modules.validateChatScope(userId, moduleId);
-    const scope = `threads:${userId}:${moduleId}`;
+  async listThreads(
+    userId: string,
+    moduleId: string | undefined,
+    query: ChatPagination,
+    recent = true,
+  ) {
+    if (moduleId) await this.modules.validateChatScope(userId, moduleId);
+    const scope = recent
+      ? `threads-recent:${userId}:${moduleId ?? "all"}`
+      : `threads:${userId}:${moduleId}`;
+    const orderColumn = recent ? chat_threads.updated_at : chat_threads.created_at;
     const cursor = readChatCursor(query.cursor, scope);
     if (cursor && typeof cursor.order !== "string")
       throw new ProductError(422, "VALIDATION_ERROR", "Invalid cursor", "Cursor tidak valid.");
@@ -235,28 +267,25 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
       .where(
         and(
           eq(chat_threads.user_id, userId),
-          eq(chat_threads.module_id, moduleId),
+          moduleId ? eq(chat_threads.module_id, moduleId) : undefined,
           isNull(chat_threads.deleted_at),
           cursor && date
-            ? or(
-                lt(chat_threads.created_at, date),
-                and(eq(chat_threads.created_at, date), lt(chat_threads.id, cursor.id)),
-              )
+            ? or(lt(orderColumn, date), and(eq(orderColumn, date), lt(chat_threads.id, cursor.id)))
             : undefined,
         ),
       )
-      .orderBy(desc(chat_threads.created_at), desc(chat_threads.id))
+      .orderBy(desc(orderColumn), desc(chat_threads.id))
       .limit(query.limit + 1);
     const page = chatPage(rows, query.limit, scope, (row) => ({
       id: row.id,
-      order: row.created_at.toISOString(),
+      order: (recent ? row.updated_at : row.created_at).toISOString(),
     }));
     return { ...page, data: await this.threadDtos(page.data) };
   }
-  async getThread(userId: string, moduleId: string, threadId: string) {
+  async getThread(userId: string, moduleId: string | null, threadId: string) {
     return this.threadDto(await this.ownedThread(userId, moduleId, threadId));
   }
-  async renameThread(userId: string, moduleId: string, threadId: string, title: string) {
+  async renameThread(userId: string, moduleId: string | null, threadId: string, title: string) {
     await this.ownedThread(userId, moduleId, threadId);
     const [thread] = await this.db
       .update(chat_threads)
@@ -266,7 +295,7 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
     if (!thread) this.notFound();
     return this.threadDto(thread);
   }
-  async deleteThread(userId: string, moduleId: string, threadId: string) {
+  async deleteThread(userId: string, moduleId: string | null, threadId: string) {
     await this.ownedThread(userId, moduleId, threadId, true);
     await this.db.transaction(async (tx) => {
       await tx
@@ -314,9 +343,10 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
   }
   private async canReadEvidence(
     userId: string,
-    moduleId: string,
+    moduleId: string | null,
     snapshots: ChatCitationSnapshot[],
   ) {
+    if (!moduleId) return snapshots.length === 0;
     try {
       const authorized = new Set<string>();
       for (const snapshot of snapshots) {
@@ -337,7 +367,7 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
   }
   async getCitation(
     userId: string,
-    moduleId: string,
+    moduleId: string | null,
     threadId: string,
     messageId: string,
     citationId: string,
@@ -429,7 +459,12 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
       }),
     );
   }
-  async listMessages(userId: string, moduleId: string, threadId: string, query: ChatPagination) {
+  async listMessages(
+    userId: string,
+    moduleId: string | null,
+    threadId: string,
+    query: ChatPagination,
+  ) {
     await this.ownedThread(userId, moduleId, threadId);
     const scope = `messages:${userId}:${moduleId}:${threadId}`,
       cursor = readChatCursor(query.cursor, scope);
@@ -485,7 +520,7 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
       ),
     };
   }
-  async getRun(userId: string, moduleId: string, threadId: string, runId: string) {
+  async getRun(userId: string, moduleId: string | null, threadId: string, runId: string) {
     await this.ownedThread(userId, moduleId, threadId);
     const [row] = await this.db
       .select()
@@ -520,17 +555,25 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
   }
   async send(
     userId: string,
-    moduleId: string,
+    moduleId: string | null,
     threadId: string,
     key: string,
     input: SendChatMessage,
   ) {
     await this.ownedThread(userId, moduleId, threadId);
-    await this.modules.validateChatScope(
-      userId,
-      moduleId,
-      input.pageContext?.surface === "node" ? input.pageContext.nodeId : undefined,
-    );
+    if (!moduleId && (input.pageContext || input.references.length))
+      throw new ProductError(
+        422,
+        "VALIDATION_ERROR",
+        "Module context required",
+        "Mulai percakapan dengan modul untuk menggunakan materi.",
+      );
+    if (moduleId)
+      await this.modules.validateChatScope(
+        userId,
+        moduleId,
+        input.pageContext?.surface === "node" ? input.pageContext.nodeId : undefined,
+      );
     if ([...input.text].length > this.env.CHAT_INPUT_MAX_CODE_POINTS)
       throw new ProductError(
         422,
@@ -556,7 +599,10 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
         );
     }
     let reservation: string | undefined;
-    const route = `/api/v1/modules/${moduleId}/chat/threads/${threadId}/messages`;
+    // Retain the identity of existing module sends across both route aliases.
+    const route = moduleId
+      ? `/api/v1/modules/${moduleId}/chat/threads/${threadId}/messages`
+      : `/api/v1/chat/threads/${threadId}/messages`;
     const result = await this.idempotency
       .execute<{ data: ChatAcknowledgment }>(
         {
@@ -573,6 +619,7 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
           const evidence: ChatCitationSnapshot[] = [];
           let remaining = this.env.CHAT_CONTEXT_MAX_CODE_POINTS;
           for (const reference of input.references) {
+            if (!moduleId) this.notFound();
             const snapshot = await this.knowledge.readExcerpt(
               userId,
               moduleId,
@@ -700,7 +747,7 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
                 messageId,
                 runId,
                 status: "queued",
-                eventsUrl: `/api/v1/modules/${moduleId}/chat/threads/${threadId}/runs/${runId}/events`,
+                eventsUrl: `/api/v1/chat/threads/${threadId}/runs/${runId}/events`,
               },
             },
           };
@@ -718,7 +765,7 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
     void this.tick().catch(() => this.log("chat.scheduler_failed"));
     return result.body;
   }
-  async cancel(userId: string, moduleId: string, threadId: string, runId: string) {
+  async cancel(userId: string, moduleId: string | null, threadId: string, runId: string) {
     await this.getRun(userId, moduleId, threadId, runId);
     const committed = await this.db.transaction(async (tx) => {
       const [run] = await tx
@@ -818,7 +865,7 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
   private async promptMessages(
     run: RunRow,
     model: ReturnType<AiService["createChatModel"]>,
-    scope: { userId: string; moduleId: string },
+    scope: { userId: string; moduleId: string | null },
     evidence: LearningEvidence,
   ) {
     const [user] = await this.db
@@ -1136,7 +1183,7 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
       },
       Math.min(this.env.CHAT_HEARTBEAT_MS, this.env.CHAT_CANCEL_POLL_MS),
     );
-    let executionScope: { userId: string; moduleId: string } | undefined;
+    let executionScope: { userId: string; moduleId: string | null } | undefined;
     let savedText = "";
     let saving = Promise.resolve();
     const save = () => {
@@ -1144,7 +1191,8 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
         assertActive();
         const snapshotText = text;
         if (executionScope) {
-          await this.modules.validateChatScope(executionScope.userId, executionScope.moduleId);
+          if (executionScope.moduleId)
+            await this.modules.validateChatScope(executionScope.userId, executionScope.moduleId);
           if (
             !(await this.canReadEvidence(
               executionScope.userId,
@@ -1189,7 +1237,7 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
         .where(eq(chat_threads.id, run.thread_id))
         .limit(1);
       if (!thread || thread.deleted_at) throw new Error("Thread unavailable");
-      await this.modules.validateChatScope(thread.user_id, thread.module_id);
+      if (thread.module_id) await this.modules.validateChatScope(thread.user_id, thread.module_id);
       assertActive();
       const initial = await this.db.transaction(async (tx) => {
         const [current] = await tx
@@ -1235,16 +1283,21 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
       executionScope = context;
       const messages = await this.promptMessages(run, model, context, evidence);
       await save(); // Commit inherited dependencies before the first provider call.
-      const agent = createLearningAgent(model, budget, [
-        readExcerptTool(this.knowledge, context, evidence),
-        readProgressTool(this.modules, context),
-        searchModuleMaterialsTool(
-          this.knowledge,
-          context,
-          evidence,
-          this.env.CHAT_INPUT_MAX_CODE_POINTS,
-        ),
-      ]);
+      const tools: Parameters<typeof createLearningAgent>[2] = [];
+      if (context.moduleId) {
+        const moduleContext = { ...context, moduleId: context.moduleId };
+        tools.push(
+          readExcerptTool(this.knowledge, moduleContext, evidence),
+          readProgressTool(this.modules, moduleContext),
+          searchModuleMaterialsTool(
+            this.knowledge,
+            moduleContext,
+            evidence,
+            this.env.CHAT_INPUT_MAX_CODE_POINTS,
+          ),
+        );
+      }
+      const agent = createLearningAgent(model, budget, tools);
       const stream = await agent.stream(
         { messages },
         {
@@ -1329,7 +1382,7 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
     }
   }
 
-  async streamSnapshot(userId: string, moduleId: string, threadId: string, runId: string) {
+  async streamSnapshot(userId: string, moduleId: string | null, threadId: string, runId: string) {
     await this.ownedThread(userId, moduleId, threadId);
     // One SQL statement: text, status and sequence can never come from different commits.
     const [row] = await this.db
@@ -1352,7 +1405,7 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
   }
   async stream(
     userId: string,
-    moduleId: string,
+    moduleId: string | null,
     threadId: string,
     runId: string,
     res: ChatEventResponse,

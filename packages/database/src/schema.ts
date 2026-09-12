@@ -1098,17 +1098,20 @@ export const chat_threads = pgTable(
     user_id: uuid()
       .notNull()
       .references(() => users.id, { onDelete: "restrict" }),
-    module_id: uuid()
-      .notNull()
-      .references(() => modules.id, { onDelete: "restrict" }),
+    module_id: uuid().references(() => modules.id, { onDelete: "restrict" }),
     title: text().notNull().default("Percakapan baru"),
     next_sequence: integer().notNull().default(1),
     // Millisecond precision matches the public cursor representation.
     created_at: timestamp({ withTimezone: true, precision: 3 }).notNull().defaultNow(),
-    updated_at: updatedAt(),
+    updated_at: timestamp({ withTimezone: true, precision: 3 })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
     deleted_at: optionalTimestamp(),
   },
   (t) => [
+    index("chat_threads_owner_recent_idx").on(t.user_id, t.updated_at, t.id),
+    index("chat_threads_module_recent_idx").on(t.user_id, t.module_id, t.updated_at, t.id),
     index("chat_threads_owner_page_idx").on(t.user_id, t.module_id, t.created_at, t.id),
     check("chat_thread_title_length", sql`char_length(${t.title}) between 1 and 120`),
   ],

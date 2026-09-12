@@ -9,7 +9,8 @@ type ChatComposerProps = {
   draft: string;
   onDraftChange: (value: string) => void;
   onSend: () => void;
-  contextLabel: string;
+  contextLabel?: string;
+  className?: string;
   disabled?: boolean;
   active?: boolean;
   cancelling?: boolean;
@@ -23,6 +24,7 @@ export function ChatComposer({
   onDraftChange,
   onSend,
   contextLabel,
+  className,
   disabled,
   active = false,
   cancelling = false,
@@ -34,26 +36,28 @@ export function ChatComposer({
 
   return (
     <form
-      className="shrink-0 px-4 pb-[max(.75rem,env(safe-area-inset-bottom))] pt-2"
+      className={`shrink-0 px-4 pb-[max(.75rem,env(safe-area-inset-bottom))] pt-2 ${className ?? ""}`}
       onSubmit={(event) => {
         event.preventDefault();
         if (canSend) onSend();
       }}
     >
       <div className="rounded-card border bg-muted p-2.5 focus-within:border-input">
-        <div
-          className="inline-flex max-w-[min(75%,15rem)] items-center gap-1.5 rounded-full bg-foreground/5 px-2.5 py-1 text-[11px] text-muted-foreground"
-          title={contextLabel}
-        >
-          <HugeiconsIcon
-            icon={Book02Icon}
-            size={14}
-            strokeWidth={1.5}
-            className="shrink-0 text-muted-foreground"
-            aria-hidden="true"
-          />
-          <span className="truncate">{contextLabel}</span>
-        </div>
+        {contextLabel ? (
+          <div
+            className="inline-flex max-w-[min(75%,15rem)] items-center gap-1.5 rounded-full bg-foreground/5 px-2.5 py-1 text-[11px] text-muted-foreground"
+            title={contextLabel}
+          >
+            <HugeiconsIcon
+              icon={Book02Icon}
+              size={14}
+              strokeWidth={1.5}
+              className="shrink-0 text-muted-foreground"
+              aria-hidden="true"
+            />
+            <span className="truncate">{contextLabel}</span>
+          </div>
+        ) : null}
         {attachments}
         <Textarea
           aria-label={`Pesan untuk ${CHAT_AGENT_NAME}`}
@@ -71,7 +75,9 @@ export function ChatComposer({
         />
         <div className="flex items-center justify-between gap-2">
           {attachAction ?? (
-            <span className="text-[10px] text-muted-foreground">Percakapan dalam modul ini</span>
+            <span className="text-[10px] text-muted-foreground">
+              {contextLabel ? "Percakapan dalam modul ini" : "Tanyakan apa yang ingin kamu pahami"}
+            </span>
           )}
           {active ? (
             <Button

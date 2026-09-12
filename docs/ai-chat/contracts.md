@@ -6,15 +6,15 @@ Dokumen ini otoritatif untuk DTO, persistence, streaming, lifecycle, dan konfigu
 
 ## Endpoint
 
-Semua path di bawah relatif terhadap `/api/v1/modules/:moduleId/chat`. `:threadId` dan `:runId` wajib berada dalam scope path dan pengguna yang terautentikasi. Body tidak menerima `userId`, `role`, system prompt, model, atau riwayat lengkap dari client.
+Path thread di bawah relatif terhadap `/api/v1/chat`. `:threadId` dan `:runId` wajib milik pengguna yang terautentikasi; module diambil server dari record thread. Endpoint materi tetap relatif terhadap `/api/v1/modules/:moduleId/chat`. Route thread lama di prefix module tetap tersedia sebagai adapter dengan pemeriksaan kecocokan module. Body tidak menerima `userId`, `role`, system prompt, model, atau riwayat lengkap dari client.
 
 | Method/path | Input | Hasil |
 | --- | --- | --- |
 | `GET /materials` | `nodeId?`, `after?` UUID | `200`, `{data:{items,nextCursor}}`; 20 materi per halaman; tanpa nodeId menampilkan sumber terkait |
 | `POST /materials/preview` | `{target,startCodePoint?}` | `200`, proyeksi teks aman maksimal 12000 code points, revision dan total panjang |
 | `GET /threads/:threadId/messages/:messageId/citations/:citationId` | — | `200`, envelope snapshot yang tersimpan; akses pesan dan semua dependensinya diperiksa ulang |
-| `POST /threads` | `{title?}` | `201`, envelope `Thread` |
-| `GET /threads` | `cursor?`, `limit?` | `200`, halaman `Thread` |
+| `POST /threads` | `{title?,moduleId?: UUID \| null}` | `201`, envelope `Thread` |
+| `GET /threads` | `cursor?`, `limit?`, `moduleId?` (tanpa filter: semua thread pengguna) | `200`, halaman `Thread` |
 | `GET /threads/:threadId` | — | `200`, envelope `Thread` |
 | `PATCH /threads/:threadId` | `{title}` | `200`, envelope `Thread` |
 | `DELETE /threads/:threadId` | — | `204`, tanpa body; `409 CHAT_RUN_ACTIVE` jika masih aktif |
@@ -24,11 +24,13 @@ Semua path di bawah relatif terhadap `/api/v1/modules/:moduleId/chat`. `:threadI
 | `POST /threads/:threadId/runs/:runId/cancel` | `{}` | `200`, envelope `Run`; idempotent |
 | `GET /threads/:threadId/runs/:runId/events` | Tidak ada cursor token | `200`, AI SDK UI SSE; jalur observasi opsional |
 
+Acknowledgment memakai eventsUrl sesuai route yang dipanggil. Replay antara route canonical dan adapter module berbagi identitas idempotency yang sama; URL respons dinormalisasi setelah replay.
+
 Thread yang dihapus tidak terlihat lagi. DELETE ulang pada tombstone milik pengguna mengembalikan `204`; ID tidak dikenal mengikuti baseline not-found. Penghapusan modul/pengguna harus mengoordinasikan cancellation sebelum purge pesan dan run. Tombstone thread mempertahankan kunci idempotency sampai masa deduplikasi berakhir; retry send ke thread terhapus tidak menghidupkan thread kembali.
 
 ## Payload dan pagination
 
-`Thread = {id,moduleId,title,createdAt,updatedAt,activeRunId}`; `activeRunId` nullable. Title default `Percakapan baru`, trim, panjang 1–120 Unicode code points, tanpa pemanggilan model untuk judul otomatis.
+`Thread = {id,moduleId,moduleTitle?,title,createdAt,updatedAt,activeRunId}`; `moduleId`, `moduleTitle`, dan `activeRunId` nullable. Module thread tetap setelah dibuat; PATCH hanya menerima title. Tanpa module, server menolak pageContext/references dan tidak memasang tools module. UI membuat thread saat pesan pertama dikirim, dengan judul dari 80 code points pertama pesan. Title default `Percakapan baru`, trim, panjang 1–120 Unicode code points, tanpa pemanggilan model untuk judul otomatis.
 
 `Message = {id,threadId,runId,sequence,role,parts,contexts,references,createdAt,availability}`. `runId` selalu ada; role `user | assistant`; `availability = available | unavailable`. `parts` adalah subset `UIMessage.parts`: text, tool parts aman, source-document, dan data-citation. System prompt/raw provider transcript tidak dikirim ke browser. `references` memuat referensi eksplisit pesan user, untuk retry dengan konteks asal. `unavailable` memberi `parts: []`, `references: []` dan konteks tanpa body/rentang sensitif, sesuai kebijakan README. Metadata `runId` dan status dipasang saat DTO dikonversi menjadi `UIMessage`.
 
@@ -57,14 +59,14 @@ Contoh response send (UUID ilustratif):
     "messageId": "11111111-1111-4111-8111-111111111111",
     "runId": "22222222-2222-4222-8222-222222222222",
     "status": "queued",
-    "eventsUrl": "/api/v1/modules/33333333-3333-4333-8333-333333333333/chat/threads/44444444-4444-4444-8444-444444444444/runs/22222222-2222-4222-8222-222222222222/events"
+    "eventsUrl": "/api/v1/chat/threads/44444444-4444-4444-8444-444444444444/runs/22222222-2222-4222-8222-222222222222/events"
   }
 }
 ```
 
 `Run = {id,threadId,messageId,assistantMessageId,status,createdAt,startedAt,finishedAt,errorCode,usage}`. `assistantMessageId`, `startedAt`, `finishedAt`, `errorCode` nullable. `usage = {inputTokens,outputTokens,totalTokens,coverage}`; hitungan nullable bila tidak diketahui, `coverage = complete | partial | unavailable`. Tidak ada estimasi token yang dilaporkan sebagai usage aktual. Model/provider metadata hanya internal.
 
-Daftar thread diurutkan `(createdAt DESC,id DESC)` agar rename/send tidak memindahkan posisi cursor; pesan `(sequence DESC,id DESC)`, ditampilkan frontend dalam urutan kronologis. Limit default 20, maksimum 100; cursor opaque mengikat scope dan pasangan urutan terakhir. Halaman pertama history memuat pesan terbaru. Contoh response kosong: `{"data":[],"pageInfo":{"nextCursor":null,"hasNextPage":false}}`. Cursor invalid atau scope berbeda menghasilkan validation error baseline. Snapshot pagination tidak dijanjikan; pesan baru diambil dengan refetch halaman pertama dan deduplikasi ID.
+Daftar thread canonical diurutkan `(updatedAt DESC,id DESC)`, dengan precision millisecond dan index pengguna/module. Client melakukan deduplikasi berdasarkan ID setelah refetch ketika urutan berubah. Adapter route module lama mempertahankan `(createdAt DESC,id DESC)` dan scope cursor lama; pesan `(sequence DESC,id DESC)`, ditampilkan frontend dalam urutan kronologis. Limit default 20, maksimum 100; cursor opaque mengikat scope dan pasangan urutan terakhir. Halaman pertama history memuat pesan terbaru. Contoh response kosong: `{"data":[],"pageInfo":{"nextCursor":null,"hasNextPage":false}}`. Cursor invalid atau scope berbeda menghasilkan validation error baseline. Snapshot pagination tidak dijanjikan; pesan baru diambil dengan refetch halaman pertama dan deduplikasi ID.
 
 ## Admission dan error
 
@@ -155,11 +157,11 @@ Contoh frame tambahan: `{"type":"tool-input-available","toolCallId":"call-1","to
 
 ## Model persistence
 
-Tabel conversation `chat_threads`, `chat_messages`, `chat_message_contexts`, `chat_runs`, dan `chat_run_usage` sudah ditambahkan pada M1. `chat_admission_slots` ditambahkan pada M2; tabel knowledge ditambahkan pada M4 melalui `0019_slim_nextwave`. UUID FK mengikuti tabel pengguna/modul existing; timestamps memakai waktu database. DTO tidak mengekspos row internal.
+Tabel conversation `chat_threads`, `chat_messages`, `chat_message_contexts`, `chat_runs`, dan `chat_run_usage` sudah ditambahkan pada M1. `chat_admission_slots` ditambahkan pada M2; tabel knowledge ditambahkan pada M4 melalui `0019_slim_nextwave`. Dedicated Chat memakai migrasi `0020_confused_newton_destine`: module nullable dan index daftar terbaru. UUID FK mengikuti tabel pengguna/modul existing; timestamps memakai waktu database. DTO tidak mengekspos row internal.
 
 | Tabel | Kolom inti dan constraint |
 | --- | --- |
-| `chat_threads` | `id,user_id,module_id,title,next_sequence,created_at,updated_at,deleted_at`; index user/module/created/id |
+| `chat_threads` | `id,user_id,module_id,title,next_sequence,created_at,updated_at,deleted_at`; module_id nullable; index user/updated/id dan user/module/updated/id, index created lama dipertahankan |
 | `chat_messages` | `id,thread_id,run_id,sequence,role,parts_json,content_revision,created_at`; unique thread/sequence; satu user dan maksimum satu assistant per run |
 | `chat_message_contexts` | `id,message_id,kind,reference_json,snapshot_text,content_revision,dependency_only`; page metadata tanpa isi, selected context dan semua dependensi baca; snapshot tetap tunduk revalidasi akses |
 | `chat_runs` | `id,thread_id,user_message_id,assistant_message_id,status,error_code,executor_id,lease_epoch,lease_expires_at,heartbeat_at,cancel_requested_at,deadline_at,started_at,finished_at,created_at,snapshot_sequence`; partial unique thread untuk status aktif; index status/lease dan status/created |

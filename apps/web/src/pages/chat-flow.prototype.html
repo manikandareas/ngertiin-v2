@@ -1,0 +1,921 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ngerti.in — Prototype flow Chat</title>
+<style>
+:root {
+  --ink: #252a24;
+  --muted: #7a8075;
+  --line: #e5e8df;
+  --paper: #fff;
+  --bg: #f8f9f5;
+  --accent: #d9ef83;
+  --green: #425b23;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  font:
+    14px / 1.6 -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+}
+button,
+input,
+textarea {
+  font: inherit;
+}
+button {
+  cursor: pointer;
+  color: inherit;
+  background: none;
+  border: 0;
+}
+button:hover {
+  background: #eef1e6;
+}
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 3px;
+}
+button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+h1,
+h2,
+h3,
+p {
+  margin-top: 0;
+}
+h1 {
+  font-size: 36px;
+  letter-spacing: -1.4px;
+  line-height: 1.2;
+  font-weight: 550;
+}
+h2 {
+  font-size: 22px;
+  letter-spacing: -0.5px;
+}
+small,
+.muted {
+  color: var(--muted);
+}
+.demo {
+  min-height: 56px;
+  background: #252e23;
+  color: #f1f5e7;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 10px 22px;
+  font-size: 12px;
+}
+.demo strong {
+  color: var(--accent);
+  white-space: nowrap;
+}
+.demo .scenarios {
+  margin-left: auto;
+  display: flex;
+  gap: 5px;
+}
+.demo button {
+  color: #fff;
+  border: 1px solid #526049;
+  border-radius: 7px;
+  padding: 5px 10px;
+}
+.demo button:hover {
+  background: #425039;
+}
+.shell {
+  display: flex;
+  height: calc(100dvh - 90px);
+  min-height: 520px;
+}
+.rail {
+  width: 228px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--line);
+  background: #f2f4ec;
+  padding: 27px 16px;
+  display: flex;
+  flex-direction: column;
+}
+.brand {
+  font-size: 23px;
+  font-weight: 750;
+  letter-spacing: -1px;
+  padding: 0 12px 30px;
+}
+.brand span {
+  color: #859a48;
+}
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  padding: 10px 13px;
+  border-radius: 9px;
+  margin-bottom: 5px;
+}
+.nav.active {
+  background: #e4eacb;
+  font-weight: 600;
+}
+.new {
+  border: 1px solid #d9dfce;
+  margin: 25px 0 22px;
+  background: #fff;
+}
+.caption {
+  text-transform: uppercase;
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 1.4px;
+  color: var(--muted);
+  padding: 0 13px;
+  margin-bottom: 10px;
+}
+.history {
+  overflow: auto;
+  flex: 1;
+}
+.history button {
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 8px;
+  margin-bottom: 5px;
+}
+.history button.selected {
+  background: #e8ecdf;
+}
+.history span {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 3px;
+}
+.profile {
+  border-top: 1px solid var(--line);
+  padding: 17px 9px 0;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.avatar {
+  background: #e1e7d2;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+}
+.workspace {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  position: relative;
+  background: #fff;
+}
+.chat {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  background: #fff;
+}
+.top {
+  height: 76px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--line);
+  padding: 16px 28px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.top .title {
+  flex: 1;
+  min-width: 0;
+}
+.top strong {
+  font-size: 14px;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.top small {
+  font-size: 11px;
+}
+.mode {
+  position: relative;
+}
+.mode summary {
+  cursor: pointer;
+  list-style: none;
+  border: 1px solid var(--line);
+  padding: 7px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.menu {
+  position: absolute;
+  right: 0;
+  top: 42px;
+  width: 228px;
+  padding: 6px;
+  background: #fff;
+  box-shadow: 0 12px 36px #25302320;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  z-index: 20;
+}
+.menu button {
+  display: block;
+  text-align: left;
+  width: 100%;
+  padding: 10px;
+  border-radius: 7px;
+}
+.menu small {
+  display: block;
+  font-size: 11px;
+}
+.scroll {
+  flex: 1;
+  overflow: auto;
+  padding: 30px 32px;
+}
+.empty {
+  max-width: 660px;
+  margin: clamp(15px, 5vh, 60px) auto 30px;
+}
+.symbol {
+  height: 46px;
+  width: 46px;
+  background: var(--accent);
+  border-radius: 15px;
+  display: grid;
+  place-items: center;
+  font-size: 26px;
+  margin-bottom: 24px;
+}
+.empty p {
+  color: var(--muted);
+  font-size: 15px;
+  max-width: 480px;
+}
+.suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 30px;
+}
+.suggestions button {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 12px;
+  text-align: left;
+}
+.messages {
+  max-width: 730px;
+  margin: auto;
+}
+.msg {
+  margin: 0 0 28px;
+  line-height: 1.85;
+}
+.msg.user {
+  margin-left: auto;
+  background: #f0f3e8;
+  padding: 12px 18px;
+  border-radius: 16px 16px 4px 16px;
+  width: fit-content;
+  max-width: 85%;
+  white-space: pre-wrap;
+}
+.by {
+  font-size: 11px;
+  font-weight: 650;
+  color: var(--green);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 9px;
+}
+.dot {
+  height: 21px;
+  width: 21px;
+  display: inline-grid;
+  place-items: center;
+  background: var(--accent);
+  border-radius: 7px;
+}
+.cite {
+  display: inline-block;
+  padding: 5px 9px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  color: var(--green);
+  font-size: 11px;
+  margin-top: 12px;
+}
+.compose-wrap {
+  padding: 12px 32px 20px;
+}
+.compose {
+  max-width: 730px;
+  margin: auto;
+  border: 1px solid #dce2cf;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 5px 18px #202a1406;
+  padding: 12px;
+}
+.context {
+  border-radius: 6px;
+  background: #f0f4e5;
+  padding: 4px 9px;
+  font-size: 11px;
+  color: var(--green);
+  display: inline-flex;
+  gap: 12px;
+  margin-bottom: 5px;
+}
+.compose textarea {
+  width: 100%;
+  resize: none;
+  outline: none;
+  border: 0;
+  padding: 8px 3px;
+  background: none;
+  min-height: 62px;
+  max-height: 150px;
+}
+.compose-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.context-btn {
+  font-size: 12px;
+  color: #747c66;
+  padding: 7px;
+  border-radius: 7px;
+}
+.send {
+  width: 33px;
+  height: 33px;
+  background: var(--accent);
+  border-radius: 9px;
+  font-size: 20px;
+}
+.footnote {
+  text-align: center;
+  font-size: 10px;
+  color: #929889;
+  margin-top: 9px;
+}
+.lesson {
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  background: #fafbf7;
+}
+.lesson article {
+  max-width: 750px;
+  padding: 48px 45px;
+  margin: auto;
+}
+.crumb {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 35px;
+}
+.lesson h1 {
+  font-size: 38px;
+}
+.lesson .lead {
+  font-size: 18px;
+  color: #747d66;
+}
+.illustration {
+  background: #edf1e0;
+  border: 1px solid #e0e7cf;
+  border-radius: 15px;
+  padding: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 25px;
+  margin: 30px 0;
+}
+.cell {
+  width: 130px;
+  height: 100px;
+  border: 9px double #93ad56;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #dbe8b8;
+}
+.nucleus {
+  height: 37px;
+  width: 45px;
+  border-radius: 50%;
+  background: #83995c;
+}
+.lesson p {
+  line-height: 1.9;
+}
+.primary {
+  background: var(--accent);
+  border: 1px solid #cadea0;
+  padding: 9px 16px;
+  border-radius: 9px;
+  font-weight: 550;
+}
+.sidebar-chat {
+  width: 410px;
+  flex: none;
+  border-left: 1px solid var(--line);
+}
+.overlay-chat {
+  position: absolute;
+  right: 22px;
+  bottom: 20px;
+  width: 420px;
+  height: min(650px, calc(100% - 40px));
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: 0 18px 60px #25302326;
+  overflow: visible;
+  z-index: 5;
+}
+.overlay-chat .top {
+  border-radius: 18px 18px 0 0;
+}
+.sidebar-chat .top,
+.overlay-chat .top {
+  padding: 13px 17px;
+}
+.sidebar-chat .scroll,
+.overlay-chat .scroll {
+  padding: 23px 20px;
+}
+.sidebar-chat .compose-wrap,
+.overlay-chat .compose-wrap {
+  padding: 10px 15px 15px;
+}
+.sidebar-chat h1,
+.overlay-chat h1 {
+  font-size: 27px;
+}
+.sidebar-chat .empty,
+.overlay-chat .empty {
+  margin: 20px 0;
+}
+.reader {
+  width: 345px;
+  flex-shrink: 0;
+  border-left: 1px solid var(--line);
+  background: #fbfcf8;
+  overflow: auto;
+}
+.reader-body {
+  padding: 25px;
+}
+.reader mark {
+  background: #e4efbd;
+  color: inherit;
+  padding: 2px;
+}
+.reader h2 {
+  margin-top: 20px;
+}
+.close {
+  font-size: 21px;
+  border-radius: 6px;
+  padding: 2px 8px;
+}
+.status {
+  height: 34px;
+  border-top: 1px solid var(--line);
+  padding: 7px 20px;
+  font-size: 10px;
+  color: #727a68;
+  display: flex;
+  gap: 18px;
+  background: #f5f7ef;
+}
+.status span:last-child {
+  margin-left: auto;
+}
+.modal {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  width: min(460px, 90vw);
+  padding: 24px;
+  box-shadow: 0 20px 90px #0002;
+}
+.modal::backdrop {
+  background: #20281950;
+}
+.modal input {
+  width: 100%;
+  padding: 11px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  margin: 10px 0 18px;
+}
+.option {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 9px;
+}
+.option small {
+  display: block;
+}
+.modal-head {
+  display: flex;
+  justify-content: space-between;
+}
+.return {
+  font-size: 11px;
+  color: var(--green);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 5px 8px;
+}
+.float-open {
+  position: absolute;
+  right: 25px;
+  bottom: 25px;
+}
+.mobile-history {
+  display: none;
+}
+@media (max-width: 1050px) {
+  .rail {
+    width: 190px;
+  }
+  .reader {
+    width: 290px;
+  }
+  .sidebar-chat {
+    width: 360px;
+  }
+  .top {
+    padding: 16px;
+  }
+  .reader ~ * {
+    display: none;
+  }
+}
+@media (max-width: 760px) {
+  .demo {
+    flex-wrap: wrap;
+    gap: 5px;
+    padding: 8px 12px;
+  }
+  .demo .description {
+    display: none;
+  }
+  .demo .scenarios {
+    margin-left: auto;
+  }
+  .shell {
+    height: calc(100dvh - 95px);
+  }
+  .rail {
+    display: none;
+  }
+  .rail.mobile-open {
+    display: flex;
+    position: absolute;
+    top: 61px;
+    bottom: 34px;
+    left: 0;
+    z-index: 30;
+    width: 240px;
+    box-shadow: 10px 0 30px #0002;
+  }
+  .mobile-history {
+    display: block;
+  }
+  .top {
+    gap: 7px;
+    height: 68px;
+    padding: 12px;
+  }
+  .top .return {
+    max-width: 105px;
+  }
+  .scroll {
+    padding: 25px 20px;
+  }
+  .compose-wrap {
+    padding: 10px 15px 15px;
+  }
+  .empty {
+    margin: 40px 0 20px;
+  }
+  .empty h1 {
+    font-size: 30px;
+  }
+  .reader {
+    position: absolute;
+    inset: 0 0 0 auto;
+    width: min(100%, 380px);
+    z-index: 25;
+    box-shadow: -15px 0 30px #0001;
+  }
+  .sidebar-chat {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    z-index: 10;
+  }
+  .overlay-chat {
+    width: calc(100% - 24px);
+    right: 12px;
+    bottom: 12px;
+    height: calc(100% - 24px);
+  }
+  .lesson article {
+    padding: 30px 23px;
+  }
+  .status {
+    gap: 8px;
+    font-size: 9px;
+  }
+  .status span:last-child {
+    display: none;
+  }
+  .mode summary {
+    padding: 6px;
+  }
+  .illustration {
+    gap: 15px;
+  }
+}
+</style>
+</head>
+<body>
+<div class="demo"><strong>FLOW PROTOTYPE</strong><span class="description">Eksplorasi chat mandiri dan perpindahan mode, tanpa kehilangan percakapan.</span><div class="scenarios"><button type="button" onclick="scenario('free')">1 · Chat mandiri</button><button type="button" onclick="scenario('module')">2 · Dari module</button><button type="button" onclick="scenario('citation')">3 · Baca kutipan</button></div></div>
+<div class="shell"><aside class="rail" id="rail"></aside><main class="workspace" id="workspace"></main></div><footer class="status" id="status" aria-live="polite"></footer>
+<dialog id="picker" class="modal"><div class="modal-head"><h2>Tambahkan konteks</h2><button type="button" class="close" onclick="document.querySelector('#picker').close()" aria-label="Tutup pemilih konteks">×</button></div><p class="muted" id="picker-description">Pilih satu module sebagai bahan percakapan ini.</p><input id="search" placeholder="Cari module…" aria-label="Cari module" oninput="renderOptions(this.value)"><div id="options"></div><small>Setelah pesan pertama dikirim, module tetap. Mulai chat baru untuk membahas module lain.</small></dialog>
+<script>
+// THROWAWAY PROTOTYPE. All conversation state is in memory. AI responses are scripted.
+const modules = ["Biologi Sel", "Dasar Ekonomi", "Pengantar Statistik"];
+let serial = 2;
+const state = {
+  learningModule: "Biologi Sel",
+  page: "chat",
+  mode: "full",
+  open: true,
+  reader: false,
+  active: "chat-1",
+  threads: [
+    { id: "chat-1", title: "Chat baru", module: null, draft: "", messages: [] },
+    {
+      id: "chat-2",
+      title: "Memahami biaya peluang",
+      module: "Dasar Ekonomi",
+      draft: "",
+      messages: [
+        { role: "user", text: "Apa itu biaya peluang?" },
+        {
+          role: "assistant",
+          text: "Biaya peluang adalah nilai dari pilihan terbaik yang kamu lewatkan. Kalau kamu memilih belajar selama satu jam, misalnya, kesempatan menggunakan jam itu untuk bekerja menjadi biaya peluangmu.",
+          citation: false,
+        },
+      ],
+    },
+  ],
+};
+const current = () => state.threads.find((t) => t.id === state.active);
+const esc = (s) =>
+  String(s).replace(
+    /[&<>"']/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c],
+  );
+function newChat(module = null) {
+  const t = { id: `chat-${++serial}`, title: "Chat baru", module, draft: "", messages: [] };
+  state.threads.unshift(t);
+  state.active = t.id;
+  state.reader = false;
+  state.open = true;
+  return t;
+}
+function chooseThread(id) {
+  state.active = id;
+  state.page = "chat";
+  state.mode = "full";
+  state.reader = false;
+  document.querySelector("#rail").classList.remove("mobile-open");
+  render();
+}
+function fresh() {
+  newChat();
+  state.page = "chat";
+  state.mode = "full";
+  render();
+}
+function goModule() {
+  state.learningModule = "Biologi Sel";
+  state.page = "module";
+  state.reader = false;
+  state.open = false;
+  render();
+}
+function moduleChat() {
+  let t = state.threads.find((t) => t.module === state.learningModule);
+  if (!t) t = newChat(state.learningModule);
+  state.active = t.id;
+  state.page = "module";
+  state.mode = "sidebar";
+  state.open = true;
+  state.reader = false;
+  render();
+}
+function setMode(mode) {
+  if (mode !== "full" && !current().module) return;
+  if (current().module) state.learningModule = current().module;
+  state.mode = mode;
+  state.page = mode === "full" ? "chat" : "module";
+  state.open = true;
+  state.reader = false;
+  render();
+}
+function scenario(which) {
+  if (which === "free") {
+    fresh();
+    return;
+  }
+  newChat("Biologi Sel");
+  state.learningModule = "Biologi Sel";
+  state.page = "module";
+  state.mode = "sidebar";
+  state.open = true;
+  if (which === "citation") {
+    current().draft = "Kenapa membran sel disebut selektif permeabel?";
+    send();
+    setMode("full");
+    state.reader = true;
+  }
+  render();
+}
+function renderRail() {
+  document.querySelector("#rail").innerHTML =
+    `<div class="brand">ngerti<span>.in</span></div><button type="button" class="nav ${state.page === "module" ? "active" : ""}" onclick="goModule()">▤ <span>Module</span></button><button type="button" class="nav ${state.page === "chat" ? "active" : ""}" onclick="chooseThread(state.active)">◌ <span>Chat</span></button>${state.page === "chat" ? `<button type="button" class="nav new" onclick="fresh()">＋ <span>Chat baru</span></button><div class="caption">Percakapan</div><div class="history">${state.threads.map((t) => `<button type="button" class="${t.id === state.active ? "selected" : ""}" onclick="chooseThread('${t.id}')">${esc(t.title)}<span>${esc(t.module || "Tanpa module")}</span></button>`).join("")}</div>` : '<div style="flex:1"></div>'}<div class="profile"><div class="avatar">VA</div><div>Vito<small style="display:block">Ruang belajarmu</small></div></div>`;
+}
+function lesson() {
+  if (state.learningModule !== "Biologi Sel")
+    return `<section class="lesson"><div class="top"><strong>${esc(state.learningModule)}</strong></div><article><div class="crumb">Module / Materi belajar</div><h1>${esc(state.learningModule)}</h1><p class="lead">Mari memahami konsep melalui contoh sehari-hari.</p><p>Ini adalah halaman materi contoh untuk mencoba perpindahan chat. Percakapan dan draft tetap terhubung dengan module ini.</p><button type="button" class="primary" onclick="moduleChat()">◌ Tanyakan materi ini</button></article></section>`;
+  return `<section class="lesson"><div class="top"><button type="button" class="mobile-history" onclick="toggleRail()" aria-label="Buka navigasi">☰</button><div class="title"><strong>Biologi Sel</strong><small>Journey belajar · 3 dari 8 materi</small></div></div><article><div class="crumb">Biologi Sel / Struktur & fungsi / Materi 03</div><div class="caption" style="padding:0">KENALI BATAS SEBUAH SEL</div><h1>Membran sel</h1><p class="lead">Batas yang melindungi, sekaligus menghubungkan.</p><div class="illustration"><div class="cell"><div class="nucleus"></div></div><div><strong>Membran plasma</strong><br><small>Mengatur apa yang masuk<br>dan keluar dari sel.</small></div></div><h2>Lebih dari sekadar pembungkus</h2><p>Membran sel memisahkan bagian dalam sel dari lingkungan sekitarnya. Lapisan ini tersusun atas dua lapis fosfolipid dengan protein yang membantu berbagai fungsi sel.</p><p>Membran bersifat <strong>selektif permeabel</strong>: beberapa zat dapat melintas dengan mudah, sementara zat lain memerlukan bantuan protein transpor.</p><button type="button" class="primary" onclick="moduleChat()">◌ Tanyakan materi ini</button><hr style="border:0;border-top:1px solid var(--line);margin:35px 0"><h2>Bayangkan sebuah pintu masuk</h2><p>Seperti pintu yang mengatur siapa yang boleh masuk, membran membantu sel menjaga kondisi di dalamnya agar tetap seimbang.</p></article></section>`;
+}
+function chat() {
+  const t = current(),
+    full = state.mode === "full";
+  return `<section class="chat ${full ? "" : state.mode === "sidebar" ? "sidebar-chat" : "overlay-chat"}"><header class="top"><button type="button" class="mobile-history" onclick="toggleRail()" aria-label="Buka riwayat">☰</button><div class="title"><strong>${esc(t.title)}</strong><small>${t.module ? esc(t.module) : "Percakapan mandiri"}</small></div>${full && t.module ? `<button type="button" class="return" onclick="setMode('sidebar')">Kembali ke module ↗</button>` : ""}${
+    !full
+      ? `<details class="mode"><summary>${full ? "Full Screen" : state.mode === "sidebar" ? "Sidebar" : "Overlay"} ⌄</summary><div class="menu">${[
+          ["sidebar", "◧", "Sidebar", "Belajar sambil berdiskusi"],
+          ["overlay", "▣", "Overlay", "Jendela kecil di atas materi"],
+          ["full", "⛶", "Full Screen", "Buka detail di halaman Chat"],
+        ]
+          .map(
+            ([mode, icon, label, desc]) =>
+              `<button type="button" onclick="setMode('${mode}')" ${!t.module && mode !== "full" ? "disabled" : ""}>${icon} &nbsp; ${label} ${state.mode === mode ? "✓" : ""}<small>${!t.module && mode !== "full" ? "Tambahkan konteks module dahulu" : desc}</small></button>`,
+          )
+          .join("")}</div></details>`
+      : ""
+  }${!full ? '<button type="button" class="close" onclick="state.open=false;render()" aria-label="Tutup chat">×</button>' : ""}</header><div class="scroll" id="scroll">${t.messages.length ? `<div class="messages">${t.messages.map((m) => (m.role === "user" ? `<div class="msg user">${esc(m.text)}</div>` : `<div class="msg"><div class="by"><span class="dot">✳</span> Teman belajar</div><div>${esc(m.text).replace(/\n/g, "<br>")}</div>${m.citation ? `<button type="button" class="cite" onclick="state.reader=true;render()">▤ &nbsp; 1 · ${t.module === "Biologi Sel" ? "Membran sel" : esc(t.module)} ↗</button>` : ""}</div>`)).join("")}</div>` : `<div class="empty"><div class="symbol">✳</div><h1>${t.module ? `Kita bahas ${esc(t.module)}?` : "Mau memahami apa<br>hari ini?"}</h1><p>${t.module ? "Tanyakan bagian yang belum jelas. Kita pelajari pelan-pelan, bersama." : "Mulai dari rasa penasaranmu. Kamu bisa langsung bertanya, atau tambahkan module sebagai bahan diskusi."}</p><div class="suggestions">${(t.module ? ["Jelaskan dengan analogi sederhana", "Bantu aku menguji pemahaman"] : ["Kenapa langit berwarna biru?", "Bantu aku memahami topik baru"]).map((q) => `<button type="button" onclick="suggest(this.textContent)">${q} ↗</button>`).join("")}</div></div>`}</div><div class="compose-wrap"><div class="compose">${t.module ? `<div class="context">▤ ${esc(t.module)} ${!t.messages.length ? '<button type="button" onclick="current().module=null;render()" aria-label="Hapus konteks">×</button>' : '<span title="Konteks tetap untuk percakapan ini">· Konteks aktif</span>'}</div>` : ""}<textarea id="draft" placeholder="Tanyakan apa saja…" aria-label="Pesan chat" oninput="current().draft=this.value;document.querySelector('#send').disabled=!this.value.trim()" onkeydown="if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();send()}">${esc(t.draft)}</textarea><div class="compose-bottom"><button type="button" class="context-btn" onclick="openPicker()">${t.module ? `▤ ${t.messages.length ? "Lihat konteks" : "Ubah konteks"}` : "＋ Tambahkan konteks"}</button><button type="button" id="send" class="send" onclick="send()" aria-label="Kirim pesan" ${!t.draft.trim() ? "disabled" : ""}>↑</button></div></div><div class="footnote">Jawaban simulasi · Enter untuk kirim · Shift + Enter untuk baris baru</div></div></section>`;
+}
+function reader() {
+  const bio = current().module === "Biologi Sel";
+  return `<aside class="reader"><div class="top"><div class="title"><strong>Materi rujukan</strong><small>Materi saat jawaban dibuat</small></div><button type="button" class="close" onclick="state.reader=false;render()" aria-label="Tutup materi">×</button></div><div class="reader-body"><div class="caption" style="padding:0">${esc(current().module)}</div><h2>${bio ? "Membran sel" : esc(current().module)}</h2><p class="muted">${bio ? "Struktur & fungsi · Materi 03" : "Catatan materi · Contoh prototype"}</p><p>${bio ? "Membran sel tersusun atas dua lapis fosfolipid dan protein." : ""}</p><p><mark>${bio ? "Membran bersifat selektif permeabel: beberapa zat dapat melintas dengan mudah, sementara zat lain memerlukan bantuan protein transpor." : "Memahami konsep dimulai dengan mengenali definisinya, melihat contoh, lalu menggunakannya untuk menjelaskan situasi sehari-hari."}</mark></p><p>${bio ? "Sifat ini membantu sel mengatur pertukaran zat dan menjaga kondisi internalnya." : "Gunakan pertanyaan dan latihan untuk memeriksa kembali pemahamanmu."}</p><small>Rujukan 1 · Cuplikan yang dipakai pada jawaban ini.</small>${bio ? '<p style="margin-top:30px"><button type="button" class="primary" onclick="setMode(\'sidebar\')">Buka materi lengkap ↗</button></p>' : ""}</div></aside>`;
+}
+function render() {
+  renderRail();
+  document.querySelector("#workspace").innerHTML =
+    (state.page === "module" ? lesson() : "") +
+    (state.page === "chat" || state.open
+      ? chat()
+      : '<button type="button" class="primary float-open" onclick="moduleChat()">◌ Tanya AI</button>') +
+    (state.reader ? reader() : "");
+  const t = current();
+  document.querySelector("#status").innerHTML =
+    `<span>${state.page === "chat" ? `/chat/${t.id}` : `/modules/${state.learningModule.toLowerCase().replaceAll(" ", "-")}`}</span><span>Thread: ${t.id}</span><span>${t.module ? esc(t.module) : "Tanpa module"} · ${t.messages.length} pesan</span><span>Prototype sementara · Data hilang saat reload</span>`;
+  const scroll = document.querySelector("#scroll");
+  if (scroll && t.messages.length) scroll.scrollTop = scroll.scrollHeight;
+}
+function toggleRail() {
+  document.querySelector("#rail").classList.toggle("mobile-open");
+}
+function suggest(q) {
+  current().draft = q;
+  send();
+}
+function send() {
+  const t = current(),
+    q = t.draft.trim();
+  if (!q) return;
+  t.messages.push({ role: "user", text: q });
+  if (t.messages.length === 1) t.title = q.length > 38 ? `${q.slice(0, 38)}…` : q;
+  t.draft = "";
+  let answer;
+  if (t.module === "Biologi Sel")
+    answer =
+      "Bayangkan membran sel sebagai pintu masuk dengan penjaga. Tidak semua zat bisa lewat dengan cara yang sama.\n\nMolekul kecil seperti oksigen bisa melewati lapisan membran, sedangkan ion memerlukan jalur khusus berupa protein transpor. Itulah arti selektif permeabel: ada pengaturan, bukan sekadar terbuka atau tertutup.\n\nMenurutmu, kenapa sel perlu mengatur zat yang masuk?";
+  else if (t.module)
+    answer =
+      "Kita bisa mulai dari definisi, lalu menghubungkannya dengan contoh sehari-hari. Setelah itu, coba jelaskan kembali dengan kata-katamu sendiri.\n\nBagian mana dari " +
+      t.module +
+      " yang paling ingin kamu pahami?";
+  else if (/langit/i.test(q))
+    answer =
+      "Cahaya Matahari terlihat putih, tetapi terdiri dari banyak warna. Saat melewati atmosfer, cahaya biru lebih banyak dihamburkan oleh molekul udara dibandingkan cahaya merah.\n\nCahaya biru yang tersebar dari berbagai arah itulah yang membuat langit tampak biru. Mau kita lanjut membahas kenapa saat senja warnanya berubah?";
+  else
+    answer =
+      "Boleh, kita bahas bersama. Coba ceritakan topik atau bagian yang membuatmu penasaran, lalu kita uraikan lewat contoh sederhana.\n\nKamu juga bisa menambahkan module kalau ingin diskusi mengacu pada bahan belajarmu.";
+  t.messages.push({ role: "assistant", text: answer, citation: !!t.module });
+  render();
+  document.querySelector("#draft")?.focus();
+}
+function openPicker() {
+  if (current().module && current().messages.length) {
+    state.reader = true;
+    render();
+    return;
+  }
+  document.querySelector("#picker-description").textContent = current().messages.length
+    ? "Pesan yang sudah terkirim tetap disimpan. Memilih module akan memulai percakapan baru dengan konteks tersebut."
+    : "Pilih satu module sebagai bahan percakapan ini.";
+  document.querySelector("#search").value = "";
+  renderOptions("");
+  document.querySelector("#picker").showModal();
+}
+function renderOptions(q) {
+  document.querySelector("#options").innerHTML =
+    modules
+      .filter((m) => m.toLowerCase().includes(q.toLowerCase()))
+      .map(
+        (m) =>
+          `<button type="button" class="option" onclick="pick('${m}')">▤ &nbsp; ${m}<small>${m === "Biologi Sel" ? "8 materi · Struktur, membran, dan fungsi sel" : m === "Dasar Ekonomi" ? "6 materi · Pilihan dan kehidupan sehari-hari" : "7 materi · Memahami data"}</small></button>`,
+      )
+      .join("") || '<p class="muted">Module tidak ditemukan.</p>';
+}
+function pick(m) {
+  const t = current();
+  if (t.messages.length) {
+    newChat(m);
+  } else t.module = m;
+  document.querySelector("#picker").close();
+  state.page = "chat";
+  state.mode = "full";
+  render();
+}
+// Inline prototype event handlers call these browser globals.
+Object.assign(window, {
+  goModule,
+  current,
+  chooseThread,
+  fresh,
+  scenario,
+  setMode,
+  moduleChat,
+  toggleRail,
+  suggest,
+  send,
+  openPicker,
+  renderOptions,
+  pick,
+  render,
+  state,
+});
+render();
+</script>
+</body>
+</html>
