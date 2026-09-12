@@ -51,7 +51,7 @@ export function ChatPanel({ open, onOpenChange, layout, children }: ChatPanelPro
           type="button"
           variant="outline"
           size="icon"
-          className="group/chat-trigger fixed bottom-[max(1.25rem,env(safe-area-inset-bottom))] right-5 z-30 size-16 rounded-full border bg-card text-foreground shadow-[0_4px_0_var(--border),0_10px_25px_#00000012] hover:bg-card motion-safe:hover:-translate-y-1"
+          className="group/chat-trigger fixed bottom-[max(1.25rem,env(safe-area-inset-bottom))] right-5 z-30 size-16 rounded-full border bg-card text-foreground shadow-[0_4px_0_var(--border),0_10px_25px_#00000012] hover:bg-card motion-safe:hover:-translate-y-1 [&_svg]:size-full"
           aria-label={`Buka ${CHAT_AGENT_NAME}`}
           aria-expanded={false}
           aria-controls="learning-chat-panel"
