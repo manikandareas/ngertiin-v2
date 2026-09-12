@@ -1,6 +1,5 @@
 import type { PublicActivity } from "@ngertiin/contracts/api";
 import { type JSX, useEffect, useId, useRef, useState } from "react";
-import styles from "./node-player.module.css";
 
 interface NodePlayerSidebarProps {
   title: string;
@@ -52,7 +51,7 @@ export function NodePlayerSidebar({
   return (
     <aside
       aria-label="Ringkasan node"
-      className={`${styles.sidebar} flex min-h-0 min-w-0 flex-col self-start md:sticky md:top-24 md:max-h-[calc(100dvh-8rem)]`}
+      className="group/node-sidebar node-compact:z-30 flex min-h-0 min-w-0 flex-col self-start md:sticky md:top-24 md:max-h-[calc(100dvh-8rem)]"
       data-open={isContentsOpen}
       onMouseEnter={() => setContentsOpen(true)}
       onMouseLeave={() => setContentsOpen(false)}
@@ -69,22 +68,32 @@ export function NodePlayerSidebar({
     >
       <button
         type="button"
-        className={styles.trigger}
+        className="hidden w-10 max-h-[calc(100dvh-8rem)] cursor-pointer flex-col items-start gap-5 overflow-y-auto rounded-lg px-1 py-4 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring node-compact:flex"
         aria-label={`Daftar isi: ${title}`}
         aria-expanded={isContentsOpen}
         aria-controls={contentsId}
         onClick={() => setContentsOpen(true)}
       >
         {showResult ? (
-          <span className={styles.line} data-active="true" />
+          <span
+            className="h-[3px] w-5 shrink-0 rounded-full bg-border data-[active=true]:w-8 data-[active=true]:bg-foreground"
+            data-active="true"
+          />
         ) : (
           activities.map((activity, index) => (
-            <span key={activity.id} className={styles.line} data-active={index === slide} />
+            <span
+              key={activity.id}
+              className="h-[3px] w-5 shrink-0 rounded-full bg-border data-[active=true]:w-8 data-[active=true]:bg-foreground"
+              data-active={index === slide}
+            />
           ))
         )}
       </button>
-      <div id={contentsId} className={`${styles.contents} gap-5 md:gap-9`}>
-        <h1 className="shrink-0 break-words font-display text-xl font-extrabold leading-tight tracking-tight md:text-3xl">
+      <div
+        id={contentsId}
+        className="flex min-h-0 flex-col gap-5 md:gap-9 node-compact:absolute node-compact:top-0 node-compact:left-full node-compact:hidden node-compact:w-[min(22rem,calc(100cqw-2.5rem))] node-compact:max-h-[calc(100dvh-8rem)] node-compact:gap-5 node-compact:overflow-y-auto node-compact:rounded-card node-compact:border node-compact:border-border node-compact:bg-popover node-compact:p-6 node-compact:text-popover-foreground node-compact:shadow-[0_12px_32px_#00000012] node-compact:group-data-[open=true]/node-sidebar:flex"
+      >
+        <h1 className="shrink-0 break-words font-display text-xl font-extrabold leading-tight tracking-tight md:text-3xl node-compact:text-base">
           {title}
         </h1>
         {showResult ? (
