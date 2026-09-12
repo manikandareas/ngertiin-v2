@@ -1,22 +1,14 @@
 import { z } from "zod";
 import { infrastructureEnvSchema } from "./infrastructure-environment.js";
+import { knowledgeEnvironment } from "./knowledge-environment.js";
 
 export const apiEnvSchema = infrastructureEnvSchema
   .extend({
+    ...knowledgeEnvironment,
     USAGE_MODULES_WEEKLY_LIMIT: z.coerce.number().int().positive().default(10),
     USAGE_SOURCES_WEEKLY_LIMIT: z.coerce.number().int().positive().default(40),
-    CHAT_ENABLED: z
-      .enum(["true", "false"])
-      .default("false")
-      .transform((value) => value === "true"),
-    OPENAI_API_KEY: z.preprocess(
-      (value) => (value === "" ? undefined : value),
-      z.string().min(1).optional(),
-    ),
-    OPENAI_CHAT_MODEL: z.preprocess(
-      (value) => (value === "" ? undefined : value),
-      z.string().min(1).optional(),
-    ),
+    OPENAI_API_KEY: z.string().trim().min(1),
+    OPENAI_CHAT_MODEL: z.string().trim().min(1),
     CHAT_CONTEXT_MAX_REFERENCES: z.coerce.number().int().positive().default(5),
     CHAT_CONTEXT_MAX_CODE_POINTS: z.coerce.number().int().min(1000).default(12000),
     CHAT_INPUT_MAX_CODE_POINTS: z.coerce.number().int().positive().default(8000),
@@ -55,16 +47,6 @@ export const apiEnvSchema = infrastructureEnvSchema
     RATE_LIMIT_STREAM_MAX: z.coerce.number().int().positive().default(10),
   })
   .superRefine((value, context) => {
-    if (value.CHAT_ENABLED) {
-      for (const key of ["OPENAI_API_KEY", "OPENAI_CHAT_MODEL"] as const) {
-        if (!value[key])
-          context.addIssue({
-            code: "custom",
-            path: [key],
-            message: `${key} is required when chat is enabled.`,
-          });
-      }
-    }
     if (value.CHAT_HEARTBEAT_MS >= value.CHAT_LEASE_MS / 3)
       context.addIssue({
         code: "custom",

@@ -134,6 +134,13 @@
       "when": 1789123787481,
       "tag": "0018_stale_havok",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1789146316077,
+      "tag": "0019_slim_nextwave",
+      "breakpoints": true
     }
   ]
 }

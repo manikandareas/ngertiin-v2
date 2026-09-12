@@ -1,7 +1,7 @@
 # Blueprint AI Chat Ngerti.in
 
-Status: **M1–M3 diimplementasikan; M4–M5 tetap blueprint**. Diperbarui 12 September 2026.
-Batas implementasi dan bukti aktual berada di [verifikasi M1](./m1-verification.md) [verifikasi M2](./m2-verification.md), dan [verifikasi M3](./m3-verification.md). Deployment belum dijalankan.
+Status: **M1–M4 diimplementasikan; M5 tetap blueprint**. Diperbarui 12 September 2026.
+Batas implementasi dan bukti aktual berada di [verifikasi M1](./m1-verification.md) [verifikasi M2](./m2-verification.md), [verifikasi M3](./m3-verification.md), dan [verifikasi M4](./m4-verification.md). Chat, retrieval, dan indexing selalu aktif tanpa feature flag. Deployment production belum dijalankan.
 
 ## Otoritas dokumen
 

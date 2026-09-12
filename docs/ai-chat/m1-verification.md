@@ -66,3 +66,5 @@ Frontend memulihkan run terakhir dari history untuk retry setelah remount, mempe
 Verifikasi cleanup: frozen install, typecheck workspace (web diulang setelah koreksi target JavaScript), build API/web, `db:check`, dan Biome kode TypeScript/JSON yang berubah PASS. Lint seluruh repo PASS tanpa error, dengan warning/info pada prototype. Smoke check helper SSE untuk completed/failed/cancelled dan replay idempotency tanpa model dengan dependency stub PASS; ini bukan pengujian database/provider atau suite integration.
 
 Browser, Clerk, provider, migrasi database runtime, dan deployment **NOT RUN ulang pada cleanup**. Bukti sebelumnya di atas tetap bukti implementasi awal, bukan verifikasi runtime atas perubahan cleanup. Build web tetap memberi peringatan chunk di atas 500 kB.
+
+Catatan setelah M4: gate environment chat telah dihapus atas instruksi pengguna. Kebutuhan `CHAT_ENABLED` di catatan historis di atas tidak berlaku lagi; API selalu mengaktifkan chat dan memvalidasi key/model saat startup.

@@ -48,6 +48,7 @@ import {
   finalizeCoreNodeProgress,
   selectLearningAction,
 } from "@ngertiin/shared";
+import { learningMaterialText } from "@ngertiin/shared/knowledge";
 import { and, asc, desc, eq, ilike, inArray, lt, or, type SQL, sql } from "drizzle-orm";
 import { z } from "zod";
 import { ProductError } from "../http/product-error.js";
@@ -798,6 +799,38 @@ export class ModulesService {
     }
   }
 
+  /** Access is filtered before either retrieval ranking path, including original sources of locked nodes. */
+  async chatSearchDocuments(userId: string, moduleId: string) {
+    await this.validateChatScope(userId, moduleId);
+    return this.infrastructure.database.db.execute<{
+      id: string | null;
+      source_id: string | null;
+      source_content_id: string | null;
+      node_id: string | null;
+      activity_id: string | null;
+      current_content_revision: string | null;
+    }>(sql`
+      with eligible as (
+        select sc.source_id, sc.id as source_content_id, null::uuid as node_id, null::uuid as activity_id
+        from source_contents sc join sources s on s.id = sc.source_id
+        join generation_request_sources grs on grs.source_id = s.id
+        join modules m on m.generation_request_id = grs.generation_request_id
+        where m.id = ${moduleId} and m.owner_id = ${userId} and s.user_id = ${userId}
+        and m.status in ('ready','archived') and s.status = 'ready'
+        union all
+        select null::uuid, null::uuid, n.id, a.id from activities a
+        join module_nodes n on n.id = a.node_id join modules m on m.id = n.module_id
+        join node_progress p on p.node_id = n.id and p.user_id = ${userId}
+        where m.id = ${moduleId} and m.owner_id = ${userId} and m.status in ('ready','archived')
+        and a.type in ('lesson','flashcard') and p.status <> 'locked'
+      )
+      select d.id, e.source_id, e.source_content_id, e.node_id, e.activity_id, d.current_content_revision
+      from eligible e left join knowledge_documents d on d.module_id = ${moduleId}
+      and d.deleted_at is null and (d.source_content_id = e.source_content_id or
+        (d.activity_id = e.activity_id and d.node_id = e.node_id))
+      order by d.id nulls last`);
+  }
+
   async listChatMaterials(
     userId: string,
     moduleId: string,
@@ -908,38 +941,7 @@ export class ModulesService {
       )
       .limit(1);
     if (!row) this.notFound();
-    let text: string;
-    if (row.type === "flashcard") {
-      const content = z
-        .object({ cards: z.array(z.object({ front: z.string(), back: z.string() })) })
-        .parse(row.content);
-      text = content.cards.map((card) => `${card.front}\n${card.back}`).join("\n\n");
-    } else {
-      const content = z
-        .union([
-          z.object({ format: z.literal("markdown"), title: z.string(), body: z.string() }),
-          z.object({
-            introduction: z.string().optional(),
-            explanation: z.string(),
-            keyPoints: z.array(z.string()),
-            examples: z.array(z.string()).optional(),
-            summary: z.string().optional(),
-          }),
-        ])
-        .parse(row.content);
-      text =
-        "body" in content
-          ? `${content.title}\n\n${content.body}`
-          : [
-              content.introduction,
-              content.explanation,
-              ...content.keyPoints,
-              ...(content.examples ?? []),
-              content.summary,
-            ]
-              .filter(Boolean)
-              .join("\n\n");
-    }
+    const text = learningMaterialText(row.type, row.content);
     return {
       target,
       title: row.title,

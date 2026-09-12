@@ -1,13 +1,26 @@
-import { ChatOpenAI } from "@langchain/openai";
+import { ChatOpenAI, OpenAIEmbeddings } from "@langchain/openai";
 import { Inject, Injectable } from "@nestjs/common";
 import type { ChatRunError, ChatUsage } from "@ngertiin/contracts/api";
 import type { ApiEnvironment } from "@ngertiin/contracts/environment";
+import { validateEmbeddings } from "@ngertiin/shared/knowledge";
 import { API_ENV } from "../config.js";
 import { ProductError } from "../http/product-error.js";
 
 @Injectable()
 export class AiService {
   constructor(@Inject(API_ENV) private readonly env: ApiEnvironment) {}
+
+  async embedMaterials(texts: string[], model: string, dimensions: number): Promise<number[][]> {
+    const client = new OpenAIEmbeddings({
+      apiKey: this.env.OPENAI_API_KEY,
+      model,
+      dimensions,
+      timeout: 60000,
+      maxRetries: 1,
+      batchSize: this.env.KNOWLEDGE_EMBEDDING_BATCH_SIZE,
+    });
+    return validateEmbeddings(await client.embedDocuments(texts), texts.length, dimensions);
+  }
 
   createChatModel(options?: { maxTokens: number; timeout: number }) {
     if (!this.env.OPENAI_API_KEY || !this.env.OPENAI_CHAT_MODEL) {

@@ -72,6 +72,7 @@ import { LearningEvidence, materialPrompt } from "./learning.context.js";
 import { learningPrompt } from "./prompts/learning.prompt.js";
 import { readExcerptTool } from "./tools/read-excerpt.tool.js";
 import { readProgressTool } from "./tools/read-progress.tool.js";
+import { searchModuleMaterialsTool } from "./tools/search-module-materials.tool.js";
 
 type RunRow = typeof chat_runs.$inferSelect;
 const textOf = (parts: unknown): string =>
@@ -567,7 +568,7 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
           retentionMilliseconds: this.env.CHAT_IDEMPOTENCY_RETENTION_HOURS * 3600000,
         },
         async (tx) => {
-          if (!this.env.CHAT_ENABLED || this.stopping) this.unavailable();
+          if (this.stopping) this.unavailable();
           // Reject oversized mandatory prompt before admitting a run/provider invocation.
           const evidence: ChatCitationSnapshot[] = [];
           let remaining = this.env.CHAT_CONTEXT_MAX_CODE_POINTS;
@@ -1237,6 +1238,12 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
       const agent = createLearningAgent(model, budget, [
         readExcerptTool(this.knowledge, context, evidence),
         readProgressTool(this.modules, context),
+        searchModuleMaterialsTool(
+          this.knowledge,
+          context,
+          evidence,
+          this.env.CHAT_INPUT_MAX_CODE_POINTS,
+        ),
       ]);
       const stream = await agent.stream(
         { messages },

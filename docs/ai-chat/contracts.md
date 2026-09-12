@@ -1,6 +1,6 @@
 # Kontrak AI Chat
 
-Status: **M1–M3 diimplementasikan; retrieval/indexing tetap target M4**. Lihat [verifikasi M3](./m3-verification.md) untuk bukti dan batas pengujian.
+Status: **M1–M4 diimplementasikan; chat/retrieval/indexing selalu aktif**. Lihat [verifikasi M4](./m4-verification.md) untuk bukti retrieval dan batas pengujian.
 
 Dokumen ini otoritatif untuk DTO, persistence, streaming, lifecycle, dan konfigurasi chat. Perilaku/otorisasi agent mengikuti [README](./README.md#batas-akses-dan-assessment); urutan delivery dan bukti ada di [implementation](./implementation.md). Konvensi existing dirujuk dari [API Contract §3](../API_CONTRACT.md#3-protocol-conventions), tanpa mendefinisikan ulang envelope/auth/error umum.
 
@@ -155,7 +155,7 @@ Contoh frame tambahan: `{"type":"tool-input-available","toolCallId":"call-1","to
 
 ## Model persistence
 
-Tabel conversation `chat_threads`, `chat_messages`, `chat_message_contexts`, `chat_runs`, dan `chat_run_usage` sudah ditambahkan pada M1. `chat_admission_slots` ditambahkan pada M2; tabel knowledge masih usulan untuk M4. UUID FK mengikuti tabel pengguna/modul existing; timestamps memakai waktu database. DTO tidak mengekspos row internal.
+Tabel conversation `chat_threads`, `chat_messages`, `chat_message_contexts`, `chat_runs`, dan `chat_run_usage` sudah ditambahkan pada M1. `chat_admission_slots` ditambahkan pada M2; tabel knowledge ditambahkan pada M4 melalui `0019_slim_nextwave`. UUID FK mengikuti tabel pengguna/modul existing; timestamps memakai waktu database. DTO tidak mengekspos row internal.
 
 | Tabel | Kolom inti dan constraint |
 | --- | --- |
@@ -174,14 +174,20 @@ Send memakai `idempotency_records` existing dengan scope chat; retention khusus 
 
 Indexing job memakai `{documentId,indexVersionId,contentRevision}` dan key deterministik gabungannya pada BullMQ worker. Worker memastikan sumber masih sama sebelum dan sesudah embedding; upsert chunk dalam staging revision, kemudian atomik tandai ready. Retrieval hanya revision ready yang cocok dengan current_content_revision dan versi indeks aktif. Duplicate delivery tidak membuat embedding ulang jika revision ready; kegagalan sebelum commit mungkin memanggil provider ulang, tanpa menduplikasi row. Sweep merekonsiliasi konten/hash dan job hilang sehingga tidak bergantung sekali publish event. Cutover versi global hanya setelah coverage semua dokumen eligible terpenuhi; query embedding memakai versi aktif yang sama. Chunk lama dibersihkan setelah grace period dan tidak pernah ikut hasil pencarian revision baru.
 
+M4 memakai trigger invalidasi pada perubahan activity/source content, metadata lokasi, kepemilikan, status, relasi sumber, dan scope node/modul. `current_content_revision` nullable selama invalidasi; chunk lama langsung tidak memenuhi filter pencarian. FK cascade menghapus dokumen/revision/chunk bila materi fisik dihapus. Pembacaan bukti tetap memvalidasi revision dan akses melalui ModulesService setelah ranking.
+
+Chunker `paragraph-utf8-v1-{budget}-{overlap}` memakai jumlah byte UTF-8 sebagai batas atas token konservatif: default **maksimal 600 byte per chunk dan 80 byte overlap**, bukan klaim 600 token tokenizer aktual. Paragraf menjadi batas pilihan ketika cukup panjang; paragraf panjang dipotong tanpa merusak code point. Normalizer/proyeksi kutipan dan indexing berbagi utilitas server-only `@ngertiin/shared/knowledge`. Perubahan anggaran chunk mengubah identitas chunker dan memerlukan versi indeks baru.
+
+Rekonsiliasi melakukan scan modul secara keyset, menyimpan dokumen/revision, memublikasikan job setelah commit, dan otomatis mengaktifkan versi building bila coverage lengkap. Scan diserialisasi dengan advisory lock dan SHARE lock tabel materi agar cutover tidak melewatkan perubahan concurrent; tidak ada provider call selama scan. Lock timeout 2 detik dan statement timeout 30 detik membatasi antrean lock/query; kegagalan scan diulang pada interval berikutnya. Indexing mengambil advisory lock per key job, memeriksa materi sebelum/sesudah embedding, dan menulis chunk + status ready secara atomik. Proyeksi rusak ditandai `MATERIAL_INVALID` tanpa menghambat indexing dokumen lain. Semantik ini perlu pengukuran lock/scan pada ukuran staging sebelum rollout besar.
+
 ## Konfigurasi
+
+Chat, retrieval, dan indexing selalu aktif; tidak ada feature flag/cohort gate. API wajib memiliki `OPENAI_API_KEY` dan `OPENAI_CHAT_MODEL` saat startup. Indeks tetap memerlukan revision ready yang valid sebelum dapat dipakai sebagai bukti; status pending/failed memakai degradasi terstruktur. Migrasi database dijalankan sebelum service dimulai.
 
 Nilai berikut **default operasional awal**, bukan hasil benchmark. Validasi environment fail-fast; batas token juga tidak boleh melebihi context window model. Chat hanya memakai rate limit, tanpa kuota harian/subscription dan tanpa memakai accounting kuota generation existing.
 
 | Identifier | Default | Alasan / semantik |
 | --- | --- | --- |
-| `CHAT_ENABLED` | `false` | Rollout eksplisit; menolak run baru saat off, drain run aktif |
-| `CHAT_RETRIEVAL_ENABLED` | `false` | Diaktifkan setelah indeks siap |
 | `OPENAI_API_KEY` | Secret existing, wajib pada API/worker terkait | Integrasi OpenAI server-side |
 | `OPENAI_CHAT_MODEL` | Wajib eksplisit, tanpa default | Model chat independen dari `OPENAI_MODEL` generation; dipilih operator dan diverifikasi kemampuan tools/stream pada M1 |
 | `OPENAI_EMBEDDING_MODEL` | `text-embedding-3-small` | Keputusan model embedding versi pertama |

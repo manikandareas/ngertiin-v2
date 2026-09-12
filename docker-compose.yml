@@ -2,7 +2,9 @@ name: ngertiin
 
 services:
   postgres:
-    image: postgres:17-alpine
+    build:
+      context: ./infra/postgres
+    image: ngertiin-postgres:17-vector
     environment:
       POSTGRES_DB: ngertiin
       POSTGRES_USER: ngertiin

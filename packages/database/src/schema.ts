@@ -3,6 +3,7 @@ import {
   type AnyPgColumn,
   boolean,
   check,
+  customType,
   date,
   index,
   integer,
@@ -17,6 +18,7 @@ import {
   uniqueIndex,
   uuid,
   varchar,
+  vector,
 } from "drizzle-orm/pg-core";
 
 export const source_type = pgEnum("source_type", ["pdf", "url", "text"]);
@@ -1205,4 +1207,93 @@ export const chat_run_usage = pgTable(
     coverage: text().notNull(),
   },
   (t) => [primaryKey({ columns: [t.run_id, t.call_id] })],
+);
+
+const tsvector = customType<{ data: string }>({ dataType: () => "tsvector" });
+export const knowledge_index_versions = pgTable(
+  "knowledge_index_versions",
+  {
+    id: integer().primaryKey(),
+    embedding_model: text().notNull(),
+    dimensions: integer().notNull(),
+    normalizer_version: text().notNull(),
+    chunker_version: text().notNull(),
+    status: text().notNull().default("building"),
+    created_at: createdAt(),
+  },
+  (t) => [
+    uniqueIndex("knowledge_one_active_idx").on(t.status).where(sql`${t.status} = 'active'`),
+    check("knowledge_version_status", sql`${t.status} in ('building','active','retired')`),
+    check("knowledge_dimensions", sql`${t.dimensions} = 1536`),
+  ],
+);
+export const knowledge_documents = pgTable(
+  "knowledge_documents",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    module_id: uuid()
+      .notNull()
+      .references(() => modules.id, { onDelete: "cascade" }),
+    origin: text().notNull(),
+    source_content_id: uuid().references(() => source_contents.id, { onDelete: "cascade" }),
+    node_id: uuid().references(() => module_nodes.id, { onDelete: "cascade" }),
+    activity_id: uuid().references(() => activities.id, { onDelete: "cascade" }),
+    current_content_revision: text(),
+    deleted_at: optionalTimestamp(),
+  },
+  (t) => [
+    uniqueIndex("knowledge_document_source_idx").on(t.module_id, t.source_content_id),
+    uniqueIndex("knowledge_document_activity_idx").on(t.module_id, t.activity_id),
+    check(
+      "knowledge_document_origin",
+      sql`(${t.origin} = 'original_source' and ${t.source_content_id} is not null and ${t.node_id} is null and ${t.activity_id} is null) or (${t.origin} = 'generated_material' and ${t.source_content_id} is null and ${t.node_id} is not null and ${t.activity_id} is not null)`,
+    ),
+  ],
+);
+export const knowledge_document_revisions = pgTable(
+  "knowledge_document_revisions",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    document_id: uuid()
+      .notNull()
+      .references(() => knowledge_documents.id, { onDelete: "cascade" }),
+    index_version_id: integer()
+      .notNull()
+      .references(() => knowledge_index_versions.id),
+    content_revision: text().notNull(),
+    status: text().notNull().default("pending"),
+    error_code: text(),
+    created_at: createdAt(),
+    activated_at: optionalTimestamp(),
+  },
+  (t) => [
+    uniqueIndex("knowledge_revision_identity_idx").on(
+      t.document_id,
+      t.index_version_id,
+      t.content_revision,
+    ),
+    check(
+      "knowledge_revision_status",
+      sql`${t.status} in ('pending','indexing','ready','failed','obsolete')`,
+    ),
+  ],
+);
+export const knowledge_chunks = pgTable(
+  "knowledge_chunks",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    document_revision_id: uuid()
+      .notNull()
+      .references(() => knowledge_document_revisions.id, { onDelete: "cascade" }),
+    ordinal: integer().notNull(),
+    text: text().notNull(),
+    location_json: jsonb().notNull(),
+    content_hash: text().notNull(),
+    search_vector: tsvector().generatedAlwaysAs(sql`to_tsvector('simple', text)`),
+    embedding: vector({ dimensions: 1536 }).notNull(),
+  },
+  (t) => [
+    uniqueIndex("knowledge_chunk_ordinal_idx").on(t.document_revision_id, t.ordinal),
+    index("knowledge_chunk_search_idx").using("gin", t.search_vector),
+  ],
 );

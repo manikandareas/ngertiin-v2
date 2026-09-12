@@ -1,6 +1,6 @@
 # Implementasi AI Chat
 
-Status: **M1–M3 diimplementasikan; verifikasi lokal tercatat di [bukti M1](./m1-verification.md) dan [bukti M2](./m2-verification.md). M3 memakai [bukti M3](./m3-verification.md). M4–M5 belum dimulai.**
+Status: **M1–M4 diimplementasikan; bukti lokal: [M1](./m1-verification.md), [M2](./m2-verification.md), [M3](./m3-verification.md), dan [M4](./m4-verification.md). M5 belum dimulai.**
 
 Dokumen ini otoritatif untuk delivery dan verifikasi. Keputusan produk/domain berada di [README](./README.md); payload, schema dan angka operasional berada di [contracts](./contracts.md). Status tiap milestone mengikuti bukti delivery di bawah. Penyusunan blueprint tidak menambahkan test suite.
 
@@ -59,41 +59,43 @@ M1 telah memverifikasi peer dependency adapter serta `createAgent` + Responses A
 
 ## M4 — Knowledge retrieval
 
+**Delivery:** schema/migrasi `0019_slim_nextwave`, worker indexing/reconciliation, hybrid search, tool dan citation selesai. Migrasi serta runtime diverifikasi pada database pgvector terisolasi. Chat, retrieval, dan indexing selalu aktif tanpa feature flag. Target staging dan deployment production **NOT RUN**; detail di [verifikasi M4](./m4-verification.md).
+
 **Prasyarat:** M3; extension pgvector pada target staging; model/dimensi embedding kontrak tersedia; migrasi dan indexing worker terpasang.
 
 **Deliverable:** schema indeks, lexical + vector + fusion, tool `search_module_materials`, job dedup/reconciliation, initial indexing dan backfill, invalidation/revision cutover, citation origin/location, degradasi saat indeks pending/failed. Materi existing ditelusuri lewat relasi schema yang disebut README.
 
 **Acceptance:** pertanyaan lintas materi menemukan bukti dengan origin dan rujukan benar; sumber asli boleh menjelaskan konsep ketika node hasil generasinya locked; isi node locked tetap tidak muncul. Material assessment/kunci tidak masuk embedding request. Duplicate job tidak membuat row ganda; perubahan konten meniadakan revision lama dari hasil segera; index version baru tidak bercampur dengan embedding query lama. Indeks belum siap menghasilkan keterangan terbatas tanpa citation rekaan. Kegagalan embedding query dapat memakai lexical search dengan label degradasi.
 
-**Bukti yang harus dicatat:** extension/version database, dimensi vector, hasil query dan rencana query pada data representatif, coverage backfill, row count per revision, log embedding tersanitasi, contoh rujukan browser dan uji stale/deleted content. Latency dan biaya baru dicatat sebagai hasil pengukuran ini. Status: **NOT RUN**.
+**Bukti yang harus dicatat:** extension/version database, dimensi vector, hasil query dan rencana query pada data representatif, coverage backfill, row count per revision, log embedding tersanitasi, contoh rujukan browser dan uji stale/deleted content. Latency query/provider lokal tercatat; biaya aktual belum diukur. Status: **PASS lokal sesuai [verifikasi M4](./m4-verification.md)**; staging/Clerk/deployment NOT RUN.
 
 ## M5 — Kesiapan rilis
 
 **Prasyarat:** M1–M4 memenuhi acceptance; staging menyerupai deployment; seluruh default dapat dikonfigurasi.
 
-**Deliverable:** rate policy route chat, feature flags, metrik/log, evaluasi kualitas, rehearsal deploy/drain/rollback, dokumentasi operator dan bukti release. Tidak menambahkan kuota harian atau subscription.
+**Deliverable:** rate policy route chat, metrik/log, evaluasi kualitas, rehearsal deploy/drain/rollback, dokumentasi operator dan bukti release. Tidak menambahkan kuota harian atau subscription.
 
-**Acceptance:** semua batas kontrak diuji pada boundary; limit lintas instance bekerja; logs tidak membocorkan prompt/kunci/konten pribadi; cancellation dan disconnect tidak disalahklasifikasikan; feature off menolak admission baru dan run aktif tetap difinalisasi. Semua skenario wajib di tabel berikut memiliki bukti sebelum perluasan rollout; kegagalan akses/assessment leakage menghalangi rilis.
+**Acceptance:** semua batas kontrak diuji pada boundary; limit lintas instance bekerja; logs tidak membocorkan prompt/kunci/konten pribadi; cancellation dan disconnect tidak disalahklasifikasikan; graceful shutdown menolak admission baru pada instance yang berhenti dan run aktif tetap difinalisasi. Semua skenario wajib di tabel berikut memiliki bukti sebelum perluasan rollout; kegagalan akses/assessment leakage menghalangi rilis.
 
 **Bukti yang harus dicatat:** konfigurasi nonsecret, build/typecheck, hasil evaluasi manual berlabel, dashboard status/latency/tool count/usage/queue age/lease expired/index coverage, browser authenticated, provider dan database staging, serta deployment rollback rehearsal. Status: **NOT RUN**.
 
 ## Migrasi dan backfill
 
 1. Tambah migrasi conversation secara additive sesuai kontrak, termasuk FK/unique/index. Terapkan dan verifikasi pada target **sebelum** API baru menulis kolom tersebut. Tidak mengubah tabel assessment atau progression demi chat.
-2. Verifikasi build/image PostgreSQL target menyediakan pgvector; backup dan rehearsal restore. Jalankan `CREATE EXTENSION IF NOT EXISTS vector` dengan role migrasi berwenang, kemudian migrasi index version/revision/chunk. Ketersediaan extension pada host saat ini belum diverifikasi.
-3. Deploy worker knowledge dengan feature retrieval mati. Daftarkan versi pertama; enumerasi modul dan sumber siap beserta materi belajar eligible, paginasi keyset dan job key deterministik. Persist status/revision sehingga backfill dapat dilanjutkan; reconcile menutup gap event selama scan.
+2. Verifikasi build/image PostgreSQL target menyediakan pgvector; backup dan rehearsal restore. Jalankan `CREATE EXTENSION IF NOT EXISTS vector` dengan role migrasi berwenang, kemudian migrasi index version/revision/chunk. Extension pgvector 0.8.2 diverifikasi pada container fixture PostgreSQL 17. Compose lokal membangun `ngertiin-postgres:17-vector` dari PostgreSQL 17 Alpine dengan pgvector; host staging/production belum diverifikasi.
+3. Setelah migrasi, jalankan API dan worker; startup worker mendaftarkan versi pertama secara otomatis; enumerasi modul dan sumber siap beserta materi belajar eligible, paginasi keyset dan job key deterministik. Persist status/revision sehingga backfill dapat dilanjutkan; reconcile menutup gap event selama scan.
 4. Catat coverage eligible/ready/failed serta error tersanitasi. Jangan aktifkan versi sampai semua dokumen eligible pada cutover ready; bila konten berubah saat scan, ulangi rekonsiliasi hingga cutover konsisten. Dokumen baru setelah aktivasi tetap dapat pending tanpa menghalangi chat langsung.
-5. Aktifkan pointer versi secara atomik, lalu retrieval untuk cohort awal. Reindex berikutnya membangun versi baru terpisah; perubahan model/dimensi mengikuti kontrak. Cleanup obsolete sesudah grace period; snapshot citation pesan tidak memerlukan chunk lama untuk ditampilkan, tetapi akses/revision tetap divalidasi.
+5. Worker mengaktifkan pointer versi secara atomik setelah coverage lengkap; retrieval otomatis memakai versi tersebut. Reindex berikutnya membangun versi baru terpisah; perubahan model/dimensi mengikuti kontrak. Cleanup obsolete sesudah grace period; snapshot citation pesan tidak memerlukan chunk lama untuk ditampilkan, tetapi akses/revision tetap divalidasi.
 
 ## Rollout, observability, dan rollback
 
-Rilis bertahap: staging → allowlist pengguna internal → cohort terbatas yang ditentukan operator → semua pengguna setelah review bukti. Allowlist/cohort adalah konfigurasi deployment, bukan hak subscription. Pada tiap tahap periksa correctness akses/citation, status terminal, queue age, error provider, timeout dan feedback kualitas. Tidak mengklaim target throughput/biaya sebelum pengukuran; operator mencatat baseline dan ambang alert hasil staging sebelum memperbesar cohort.
+Chat, retrieval, dan indexing tersedia untuk seluruh pengguna yang berhak mengakses modul, tanpa allowlist/cohort atau feature flag. Pada deployment periksa correctness akses/citation, status terminal, queue age, error provider, timeout, dan feedback kualitas. Target throughput/biaya mengikuti hasil pengukuran staging.
 
 Log terstruktur menggunakan requestId, runId, threadId, status, duration, jumlah model/tool call, usage coverage, errorCode dan indexVersion. Konten pesan, tool body, token Clerk, API key, dan chain-of-thought tidak dicatat secara default. Penggunaan token untuk observability, bukan penagihan atau kuota pengguna. Rate limiter existing perlu klasifikasi khusus chat; cancellation tetap tersedia ketika send admission ditutup.
 
 API di-deploy dengan scheduler in-process dan graceful shutdown: berhenti claim/admission lokal, drain hingga deadline; run yang tidak selesai dipulihkan lewat lease/sweep. Proxy SSE dan Redis harus diuji pada jalur production. Frontend memakai workflow manual [frontend-deploy.yml](../../.github/workflows/frontend-deploy.yml), bukan asumsi push otomatis deploy; API/worker mengikuti [compose production](../../compose.production.yml). Dokumen ini tidak menjalankan deployment.
 
-Rollback: matikan retrieval untuk gangguan indeks sambil mempertahankan jawaban langsung; matikan admission chat untuk masalah run/akses, lakukan cancellation/drain melalui versi yang masih memahami tabel chat. Kembalikan aplikasi setelah semua run terminal atau lease disapu; jangan meninggalkan executor tanpa reaper. Pertahankan migrasi additive dan data, jangan drop tabel atau extension sebagai rollback rutin. Pointer index hanya boleh kembali ke versi lama bila model query tersedia dan revision kontennya masih cocok; bila tidak, retrieval tetap off sampai rebuild. Rehearsal restore adalah bukti tersendiri, bukan bukti migrasi production telah diterapkan.
+Rollback dilakukan melalui deploy versi aplikasi yang kompatibel setelah drain; tidak ada toggle fitur. Untuk gangguan indeks, respons `INDEX_NOT_READY` atau lexical fallback tetap membatasi bukti yang belum tersedia. Pertahankan migrasi additive, data, dan snapshot citation. Jangan mengembalikan pointer indeks ke versi yang revision/model-nya tidak lagi cocok; perbaiki atau rebuild indeks. Rehearsal restore merupakan bukti tersendiri.
 
 ## Acceptance checklist dan status bukti
 
@@ -105,19 +107,19 @@ Tabel berikut mempertahankan gate rilis lintas milestone; bukti lokal parsial M1
 | Follow-up memakai riwayat tanpa retrieval tidak perlu | Provider + browser | M1/M3 | PASS provider lokal; browser full conversation NOT RUN |
 | Thread bersama Journey/Node, CRUD, pagination | Browser + database | M1 | PASS service/layout fixture; Clerk NOT RUN |
 | Dua pengguna/scope silang ditolak | HTTP authenticated + database | M1/M3 | NOT RUN |
-| Node locked, assessment config/kunci tidak tersedia | Static proyeksi + provider + database | M3/M4 | PASS proyeksi dan sampel provider M3; indexing M4 NOT RUN |
+| Node locked, assessment config/kunci tidak tersedia | Static proyeksi + provider + database | M3/M4 | PASS proyeksi M3 dan embedding fixture M4 |
 | Konteks pilihan, stale revision, akses history dicabut | HTTP + browser + database | M3 | PASS service/database/provider dan browser komponen; HTTP Clerk NOT RUN |
 | Tidak ada perubahan progres atau XP | Database sebelum/sesudah | M3 | PASS database fixture |
-| Lintas materi dengan citation/origin/lokasi benar | Provider + browser + database | M4 | NOT RUN |
+| Lintas materi dengan citation/origin/lokasi benar | Provider + browser + database | M4 | PASS lokal; browser komponen fixture |
 | Idempotency dan dua pesan bersamaan lintas instance | HTTP race + database | M2 | PASS lokal; lihat bukti M2 |
 | Disconnect tetap berjalan; reconnect mendapat hasil | Browser + provider + database | M2 | PASS lokal; lihat bukti M2 |
 | Provider error, step/output limit, timeout, cancel terminal | Fault injection + provider + database | M2 | PASS lokal; lihat bukti M2 |
 | Restart/fencing tidak meninggalkan run aktif | Deployment fault + database | M2 | PASS lokal; lihat bukti M2 |
 | Subscriber terlambat/gap/slow client tidak menggandakan teks | Browser + Redis fault + database | M2 | PASS lokal; lihat bukti M2 |
-| Reindex tidak membaca chunk lama/duplikasi embedding row | Worker + provider + database | M4 | NOT RUN |
-| Indeks belum siap dan lexical fallback | Provider fault + browser | M4 | NOT RUN |
-| Batas rate/context/token/konkurensi dan feature off | HTTP + provider + database | M5 | NOT RUN |
-| Build/typecheck dependency chat implementasi | Static | M1–M5 | PASS M1–M3; M4–M5 NOT RUN |
+| Reindex tidak membaca chunk lama/duplikasi embedding row | Worker + provider + database | M4 | PASS lokal; race dan BullMQ fixture |
+| Indeks belum siap dan lexical fallback | Provider fault + browser | M4 | PASS tool/service; browser pesan degradasi NOT RUN |
+| Batas rate/context/token/konkurensi dan graceful shutdown | HTTP + provider + database | M5 | NOT RUN |
+| Build/typecheck dependency chat implementasi | Static | M1–M5 | PASS M1–M4; M5 NOT RUN |
 | SSE proxy, graceful drain, rollout dan rollback | Deployment | M5 | NOT RUN |
 
 Evaluasi kualitas memakai kumpulan contoh Bahasa Indonesia yang mencakup sapaan, follow-up, kutipan, lintas sumber, bukti kurang, prompt injection dalam materi, assessment aktif, dan akses tercabut. Reviewer mencatat apakah tool diperlukan, bukti mendukung klaim, lokasi citation benar, dan jawaban membantu belajar. Larangan akses merupakan gate tanpa toleransi kebocoran; skor kualitas, latency, token dan biaya harus dilaporkan dari sampel nyata sebelum menetapkan target operasional.
