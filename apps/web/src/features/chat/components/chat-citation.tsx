@@ -1,10 +1,19 @@
+import {
+  ArrowLeft01Icon,
+  ArrowRight01Icon,
+  Book02Icon,
+  File01Icon,
+  QuoteUpIcon,
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import type { ChatCitation } from "@ngertiin/contracts/api";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowUpRight, ChevronLeft, ChevronRight, Quote } from "lucide-react";
 import { useRef, useState } from "react";
 import { Button } from "../../../components/ui/button";
 import { DialogFrame } from "../../../components/ui/dialog-frame";
 import type { chatApi } from "../api/chat-api";
+
+import { ChatMarkdown } from "./chat-markdown";
 
 function citationLocation(citation: ChatCitation): string {
   if (citation.pageNumber) return ` · Halaman ${citation.pageNumber}`;
@@ -18,7 +27,9 @@ export function ChatCitedAnswer({
   messageId,
   threadId,
   api,
+  isAnimating = false,
 }: {
+  isAnimating?: boolean;
   text: string;
   citations: ChatCitation[];
   messageId: string;
@@ -31,55 +42,33 @@ export function ChatCitedAnswer({
     trigger.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     setSelected(citation);
   }
-  // Do not expose internal IDs or incomplete markers during streaming.
-  const fragments = text.replace(/\[\[cite:[^\]]*\]?$/, "").split(/(\[\[cite:[^\]]*\]\])/g);
-  let offset = 0;
   return (
     <>
-      <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
-        {fragments.map((fragment) => {
-          offset += fragment.length;
-          if (!fragment.startsWith("[[cite:")) return fragment;
-          const citation = citations.find((item) => `[[cite:${item.id}]]` === fragment);
-          return citation ? (
-            <button
-              key={`${offset}:${citation.id}`}
-              type="button"
-              onClick={() => open(citation)}
-              className="mx-1 rounded bg-accent px-1.5 align-super text-[10px] font-bold text-link hover:bg-primary/15"
-              aria-label={`Buka rujukan ${citations.indexOf(citation) + 1}`}
-            >
-              {citations.indexOf(citation) + 1}
-            </button>
-          ) : null;
-        })}
-      </p>
+      <ChatMarkdown text={text} citations={citations} onCitation={open} isAnimating={isAnimating} />
       {citations.length ? (
-        <div className="mt-4 space-y-2">
+        <div className="mt-4 flex flex-wrap gap-2">
           {citations.map((citation, index) => (
             <button
               type="button"
               key={citation.id}
               onClick={() => open(citation)}
-              className="flex w-full gap-3 rounded-xl border p-3 text-left hover:bg-accent/50"
+              className="flex h-[42px] min-w-0 max-w-full items-center gap-2 rounded-xl border bg-muted px-3 text-left hover:bg-accent/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              title={`${citation.title} · ${citation.origin === "original_source" ? "Sumber asli" : "Materi pelajaran"}${citationLocation(citation)}`}
+              aria-label={`Buka rujukan ${index + 1}: ${citation.title}`}
             >
-              <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-accent text-xs font-bold text-link">
-                {index + 1}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-xs font-semibold">{citation.title}</span>
-                <span className="mt-1 block line-clamp-2 text-xs leading-5 text-muted-foreground">
-                  “{citation.excerpt}”
-                </span>
-                <span className="mt-2 block text-[10px] text-muted-foreground">
-                  {citation.origin === "original_source" ? "Sumber asli" : "Materi pelajaran"}
-                  {citationLocation(citation)}
-                </span>
-              </span>
-              <ArrowUpRight
-                className="size-3.5 shrink-0 text-muted-foreground"
+              <HugeiconsIcon
+                icon={citation.origin === "original_source" ? File01Icon : Book02Icon}
+                size={16}
+                strokeWidth={1.5}
+                className="shrink-0 text-adaptive-foreground"
                 aria-hidden="true"
               />
+              <span className="min-w-0 max-w-[155px] truncate text-[11px] font-semibold">
+                {citation.title}
+              </span>
+              <span className="shrink-0 border-l pl-2 text-[10px] font-bold text-muted-foreground">
+                {index + 1}
+              </span>
             </button>
           ))}
         </div>
@@ -158,7 +147,7 @@ function ChatCitationReader({
               if (next) onSelect(next);
             }}
           >
-            <ChevronLeft />
+            <HugeiconsIcon icon={ArrowLeft01Icon} strokeWidth={1.5} aria-hidden="true" />
           </Button>
           <Button
             size="icon"
@@ -170,7 +159,7 @@ function ChatCitationReader({
               if (next) onSelect(next);
             }}
           >
-            <ChevronRight />
+            <HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={1.5} aria-hidden="true" />
           </Button>
         </div>
       </div>
@@ -210,7 +199,7 @@ function ChatCitationReader({
                 excerpt.current?.scrollIntoView({ block: "center", behavior: "smooth" })
               }
             >
-              <Quote />
+              <HugeiconsIcon icon={QuoteUpIcon} strokeWidth={1.5} aria-hidden="true" />
               Ke kutipan
             </Button>
             <Button size="sm" onClick={onClose}>

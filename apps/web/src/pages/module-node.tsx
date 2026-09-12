@@ -269,7 +269,13 @@ function NodePlayer({ moduleId, nodeId }: NodePlayerProps): JSX.Element {
 
   return (
     <NodePlayerLayout
-      rightSidebar={<ChatSidebar moduleId={moduleId} pageContext={{ surface: "node", nodeId }} />}
+      rightSidebar={
+        <ChatSidebar
+          moduleId={moduleId}
+          pageContext={{ surface: "node", nodeId }}
+          contextLabel={data.node.title}
+        />
+      }
       moduleId={moduleId}
       title={data.node.title}
       activities={data.activities}

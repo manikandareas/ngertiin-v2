@@ -1,5 +1,5 @@
 import type { JourneySummary } from "@ngertiin/contracts/api";
-import { ArrowRight, ChevronUp } from "lucide-react";
+import { ArrowRight, ChevronUp, Play } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "../../../components/ui/button";
@@ -60,14 +60,33 @@ export function JourneyTrack({ data, canLearn }: { data: JourneySummary; canLear
         </p>
       ) : null}
       {activeNode && destination && canLearn ? (
-        <div className="pointer-events-none sticky bottom-[max(20px,env(safe-area-inset-bottom))] z-10 flex h-0 items-end md:bottom-6 [&>*]:pointer-events-auto">
+        <div className="pointer-events-none sticky bottom-[max(20px,env(safe-area-inset-bottom))] z-10 flex h-0 items-end justify-center md:bottom-6 [&>*]:pointer-events-auto">
           {activeVisible ? (
             <section
-              className="w-full rounded-[28px] border-2 border-input bg-card px-4 py-5 shadow-[0_18px_60px_color-mix(in_srgb,var(--primary)_18%,transparent)] motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-180 md:rounded-[36px] md:px-5 md:pt-7 md:pb-6"
+              className="relative isolate flex w-full max-w-lg items-center gap-3 rounded-2xl border border-primary/30 bg-card px-3 py-2.5 shadow-[0_8px_28px_color-mix(in_srgb,var(--primary)_18%,transparent)] motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-180"
               aria-label="Belajar berikutnya"
             >
-              <p className="mb-5 text-center text-xl font-extrabold">{activeNode.title}</p>
-              <Button asChild className="w-full rounded-full" size="lg">
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 -z-10 rounded-[inherit] bg-primary/5"
+              />
+              <span
+                aria-hidden="true"
+                className="relative grid size-9 shrink-0 -rotate-6 place-items-center rounded-xl border border-primary/20 bg-accent text-link shadow-[0_2px_0_var(--primary-edge)]"
+              >
+                <Play className="ml-0.5 size-4 fill-current" />
+              </span>
+              <p
+                className="min-w-0 flex-1 line-clamp-2 text-sm font-bold leading-5"
+                title={activeNode.title}
+              >
+                {activeNode.title}
+              </p>
+              <Button
+                asChild
+                className="h-9 shrink-0 rounded-full px-3 text-xs normal-case shadow-none [&_svg]:size-3.5"
+                size="sm"
+              >
                 <Link to={destination}>
                   {resume ? "Lanjutkan" : "Mulai"}
                   <ArrowRight aria-hidden="true" />

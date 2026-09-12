@@ -54,7 +54,11 @@ export default function ModuleJourneyPage() {
     <AppShell
       rightSidebar={
         moduleId ? (
-          <ChatSidebar moduleId={moduleId} pageContext={{ surface: "journey" }} />
+          <ChatSidebar
+            moduleId={moduleId}
+            pageContext={{ surface: "journey" }}
+            contextLabel={moduleQuery.data.title ?? "Modul ini"}
+          />
         ) : undefined
       }
     >

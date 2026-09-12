@@ -2,6 +2,8 @@
 
 Status: **M1–M4 diimplementasikan; bukti lokal: [M1](./m1-verification.md), [M2](./m2-verification.md), [M3](./m3-verification.md), dan [M4](./m4-verification.md). M5 belum dimulai.**
 
+UI/UX: arah prototype sidebar/floating dan maskot **Kumo primary** dipilih pengguna. Redesign diterapkan pada web; review hasil integrasi masih pending. Lihat [verifikasi UI](./ui-redesign-verification.md).
+
 Dokumen ini otoritatif untuk delivery dan verifikasi. Keputusan produk/domain berada di [README](./README.md); payload, schema dan angka operasional berada di [contracts](./contracts.md). Status tiap milestone mengikuti bukti delivery di bawah. Penyusunan blueprint tidak menambahkan test suite.
 
 ## Dependency dan kesiapan awal

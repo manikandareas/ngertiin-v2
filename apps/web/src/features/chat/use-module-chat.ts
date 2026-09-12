@@ -2,6 +2,11 @@ import { useAuth } from "@clerk/react";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { chatApi } from "./api/chat-api";
+
+export type ChatLayout = "sidebar" | "floating";
+type ChatSelection = { threadId: string | null; open: boolean; layout: ChatLayout };
+const initialSelection: ChatSelection = { threadId: null, open: false, layout: "sidebar" };
+
 export function useModuleChat(moduleId: string) {
   const { getToken, userId } = useAuth();
   const client = useQueryClient();
@@ -9,8 +14,8 @@ export function useModuleChat(moduleId: string) {
   const selectionKey = [...root, "selection"] as const;
   const { data: selection } = useQuery({
     queryKey: selectionKey,
-    queryFn: () => ({ threadId: null as string | null, open: true }),
-    initialData: { threadId: null as string | null, open: true },
+    queryFn: () => initialSelection,
+    initialData: initialSelection,
     enabled: false,
     staleTime: Infinity,
     gcTime: Infinity,
@@ -27,9 +32,15 @@ export function useModuleChat(moduleId: string) {
     ...new Map(threads.data?.pages.flatMap((p) => p.data).map((t) => [t.id, t])).values(),
   ];
   const selectedId = selection.threadId ?? list[0]?.id ?? null;
-  const select = (threadId: string | null) =>
-    client.setQueryData(selectionKey, { ...selection, threadId });
-  const toggle = (open: boolean) => client.setQueryData(selectionKey, { ...selection, open });
+  const updateSelection = (patch: Partial<ChatSelection>) =>
+    client.setQueryData<ChatSelection>(selectionKey, (current) => ({
+      ...initialSelection,
+      ...current,
+      ...patch,
+    }));
+  const select = (threadId: string | null) => updateSelection({ threadId });
+  const setLayout = (layout: ChatSelection["layout"]) => updateSelection({ layout });
+  const toggle = (open: boolean) => updateSelection({ open });
   const refresh = () => client.invalidateQueries({ queryKey: root });
   return {
     api,
@@ -40,6 +51,8 @@ export function useModuleChat(moduleId: string) {
     selectedId,
     select,
     open: selection.open,
+    layout: selection.layout,
+    setLayout,
     toggle,
     refresh,
   };

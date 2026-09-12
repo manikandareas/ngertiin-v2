@@ -1,0 +1,145 @@
+import type { ChatCitation } from "@ngertiin/contracts/api";
+import { code } from "@streamdown/code";
+import { createMathPlugin } from "@streamdown/math";
+import { useMemo } from "react";
+import {
+  type Components,
+  defaultRemarkPlugins,
+  Streamdown,
+  type StreamdownProps,
+} from "streamdown";
+import "katex/dist/katex.min.css";
+
+const math = createMathPlugin({ singleDollarTextMath: true });
+const plugins = { code, math };
+const citationPrefix = "#chat-citation-";
+type MarkdownNode = {
+  type: string;
+  value?: string;
+  url?: string;
+  children?: MarkdownNode[];
+};
+
+// Transform text nodes, not Markdown fragments: a citation inside a list or
+// emphasis must not split the surrounding Markdown into separate documents.
+function remarkChatCitations({ ids }: { ids: string[] }) {
+  const numbers = new Map(ids.map((id, index) => [id, index + 1]));
+  function visit(node: MarkdownNode, insideLink = false): void {
+    if (node.type === "code" || node.type === "inlineCode") {
+      node.value = node.value?.replace(/\[\[cite:([^\]]*)\]\]/g, (_, id: string) => {
+        const number = numbers.get(id);
+        return number ? `[${number}]` : "";
+      });
+    }
+    if (!node.children) return;
+    node.children = node.children.flatMap((child): MarkdownNode[] => {
+      if (child.type === "html") return [];
+      if (child.type !== "text" || !child.value) {
+        visit(child, insideLink || child.type === "link");
+        return [child];
+      }
+      const parts: MarkdownNode[] = [];
+      let start = 0;
+      for (const match of child.value.matchAll(/\[\[cite:([^\]]*)\]\]/g)) {
+        if (match.index > start)
+          parts.push({ type: "text", value: child.value.slice(start, match.index) });
+        const number = numbers.get(match[1]);
+        if (number) {
+          parts.push(
+            insideLink
+              ? { type: "text", value: `[${number}]` }
+              : {
+                  type: "link",
+                  url: `${citationPrefix}${number}`,
+                  children: [{ type: "text", value: String(number) }],
+                },
+          );
+        }
+        start = match.index + match[0].length;
+      }
+      if (start < child.value.length) parts.push({ type: "text", value: child.value.slice(start) });
+      return parts;
+    });
+  }
+  return (tree: MarkdownNode) => visit(tree);
+}
+
+type ChatMarkdownProps = {
+  text: string;
+  citations: ChatCitation[];
+  onCitation: (citation: ChatCitation) => void;
+  isAnimating: boolean;
+};
+
+export function ChatMarkdown({ text, citations, onCitation, isAnimating }: ChatMarkdownProps) {
+  const remarkPlugins = useMemo<StreamdownProps["remarkPlugins"]>(
+    () => [
+      ...Object.values(defaultRemarkPlugins),
+      [remarkChatCitations, { ids: citations.map((citation) => citation.id) }],
+    ],
+    [citations],
+  );
+  const components = useMemo<Components>(
+    () => ({
+      a: ({ href, children }) => {
+        if (href?.startsWith(citationPrefix)) {
+          const number = Number(href.slice(citationPrefix.length));
+          const citation = Number.isInteger(number) ? citations[number - 1] : undefined;
+          return citation ? (
+            <button
+              type="button"
+              onClick={() => onCitation(citation)}
+              className="mx-1 rounded bg-accent px-1.5 align-super text-[10px] font-bold text-link hover:bg-primary/15"
+              aria-label={`Buka rujukan ${number}`}
+            >
+              {number}
+            </button>
+          ) : null;
+        }
+        if (!href) return <span>{children}</span>;
+        return (
+          <a
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-link underline underline-offset-2"
+          >
+            {children}
+          </a>
+        );
+      },
+      img: () => null,
+    }),
+    [citations, onCitation],
+  );
+  return (
+    <div className="lesson-markdown min-w-0 max-w-full text-sm leading-7 [&_h1]:text-xl [&_h2]:text-lg [&_h3]:text-base">
+      {/* Streamdown 2.6 memoizes without components/remarkPlugins. Refresh when
+          citation data arrives separately from the unchanged text chunk. */}
+      <Streamdown
+        key={citations.map((citation) => citation.id).join(",")}
+        mode="streaming"
+        isAnimating={isAnimating}
+        plugins={plugins}
+        components={components}
+        remarkPlugins={remarkPlugins}
+        rehypePlugins={[]}
+        skipHtml
+        urlTransform={(url) => {
+          try {
+            return ["https:", "http:", "mailto:"].includes(
+              new URL(url, "https://ngerti.in").protocol,
+            )
+              ? url
+              : undefined;
+          } catch {
+            return undefined;
+          }
+        }}
+        controls={{ code: true, table: false }}
+      >
+        {text.replace(/\[\[cite:[^\]]*\]?$/, "")}
+      </Streamdown>
+    </div>
+  );
+}

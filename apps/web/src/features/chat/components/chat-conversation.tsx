@@ -1,4 +1,6 @@
 import { useChat } from "@ai-sdk/react";
+import { Attachment01Icon, Cancel01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import {
   type ChatAcknowledgment,
   type ChatPageContext,
@@ -8,16 +10,24 @@ import {
   isChatRunActive,
 } from "@ngertiin/contracts/api";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowUp, Paperclip, Sparkles, X } from "lucide-react";
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useEffectEvent,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Button } from "../../../components/ui/button";
-import { Textarea } from "../../../components/ui/textarea";
 import { ApiProblemError, type TokenResolver } from "../../../lib/api";
 import type { chatApi } from "../api/chat-api";
 import { createChatTransport, type LearningMessage, toUIMessage } from "../api/chat-transport";
-
 import { ChatCitedAnswer } from "./chat-citation";
+import { ChatComposer } from "./chat-composer";
 import { ChatContextPicker, type SelectedChatExcerpt } from "./chat-context-picker";
+import { ChatMascot } from "./chat-mascot";
+import { ChatWelcome } from "./chat-welcome";
 
 export function ChatConversation({
   thread,
@@ -26,6 +36,9 @@ export function ChatConversation({
   getToken,
   moduleId,
   pageContext,
+  contextLabel = "Modul ini",
+  initialMessage,
+  onInitialMessageConsumed,
 }: {
   thread: ChatThread;
   api: ReturnType<typeof chatApi>;
@@ -33,9 +46,13 @@ export function ChatConversation({
   getToken: TokenResolver;
   moduleId: string;
   pageContext: ChatPageContext;
+  contextLabel?: string;
+  initialMessage?: string;
+  onInitialMessageConsumed?: () => void;
 }) {
   const client = useQueryClient();
-  const [draft, setDraft] = useState("");
+  const [draft, setDraft] = useState(initialMessage ?? "");
+  const initialSent = useRef(false);
   const [excerpts, setExcerpts] = useState<SelectedChatExcerpt[]>([]);
   const [pickerOpen, setPickerOpen] = useState(false);
   const attachButton = useRef<HTMLSpanElement>(null);
@@ -260,6 +277,16 @@ export function ChatConversation({
       setCancelling(false);
     }
   }
+  const sendInitial = useEffectEvent(() => {
+    onInitialMessageConsumed?.();
+    void send();
+  });
+  useEffect(() => {
+    if (initialMessage && history.isSuccess && !initialSent.current) {
+      initialSent.current = true;
+      sendInitial();
+    }
+  }, [initialMessage, history.isSuccess]);
   const retryMessage = terminal
     ? saved.find((m) => m.id === terminal.messageId && m.availability === "available")
     : undefined;
@@ -284,7 +311,7 @@ export function ChatConversation({
           if (body && body.scrollHeight - body.scrollTop - body.clientHeight < 40)
             followBottom.current = true;
         }}
-        className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-7"
+        className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-6 pb-4 pt-5 [&>*]:shrink-0"
         role="log"
         aria-label="Pesan percakapan"
         aria-live="off"
@@ -309,51 +336,32 @@ export function ChatConversation({
           </p>
         ) : null}
         {!history.isPending && !history.isError && !messages.length ? (
-          <div className="py-8">
-            <Sparkles className="mb-7 size-9 text-primary" aria-hidden="true" />
-            <h3 className="font-display text-2xl font-bold leading-tight">
-              Penasaran itu awal
-              <br />
-              dari paham.
-            </h3>
-            <p className="mt-4 text-sm leading-7 text-muted-foreground">
-              Tanya, diskusi, atau uraikan pikiranmu. Percakapan ini ikut bersamamu saat berpindah
-              halaman.
-            </p>
-            <div className="mt-7 space-y-2">
-              {["Hai, teman belajar!", "Bantu aku menyusun cara belajar"].map((text) => (
-                <button
-                  type="button"
-                  key={text}
-                  onClick={() => setDraft(text)}
-                  className="w-full rounded-xl border px-4 py-3 text-left text-xs hover:bg-accent"
-                >
-                  {text}
-                  <span aria-hidden="true" className="float-right text-link">
-                    ↗
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
+          <ChatWelcome
+            disabled={active}
+            onSuggest={(text) => {
+              setDraft(text);
+              void send(undefined, text);
+            }}
+          />
         ) : null}
         {messages.map((message) => (
           <div
             key={message.id}
             className={
               message.role === "user"
-                ? "mb-6 ml-auto max-w-[90%] rounded-2xl rounded-br-sm bg-accent px-4 py-3 text-sm leading-7"
+                ? "mb-6 ml-auto max-w-[90%] rounded-2xl rounded-br-sm bg-muted px-4 py-3 text-sm leading-7"
                 : "mb-7 text-sm leading-7"
             }
           >
             {message.role === "assistant" ? (
-              <div className="mb-2 flex items-center gap-2 text-xs font-bold text-link">
-                <Sparkles className="size-3" aria-hidden="true" />
+              <div className="mb-3 flex items-center gap-2 text-xs font-bold">
+                <ChatMascot className="size-7" />
                 Teman belajar
               </div>
             ) : null}
             {message.role === "assistant" ? (
               <ChatCitedAnswer
+                isAnimating={active && message.metadata?.runId === runId}
                 text={message.parts
                   .filter((p) => p.type === "text")
                   .map((p) => p.text)
@@ -386,7 +394,8 @@ export function ChatConversation({
           </div>
         ))}
         {active ? (
-          <p role="status" className="text-xs text-muted-foreground">
+          <p role="status" className="flex items-center gap-2 text-xs text-muted-foreground">
+            <ChatMascot className="size-7" thinking />
             {run.data?.status === "cancelling"
               ? "Menghentikan jawaban…"
               : "Teman belajar sedang menjawab…"}
@@ -439,100 +448,59 @@ export function ChatConversation({
           </div>
         ) : null}
       </div>
-      <form
-        className="shrink-0 border-t p-4"
-        onSubmit={(event) => {
-          event.preventDefault();
-          void send();
-        }}
-      >
-        <p className="mb-3 text-xs text-muted-foreground">
-          {pageContext.surface === "journey" ? "Dari Journey" : "Dari halaman Node"} · percakapan
-          dalam modul ini
-        </p>
-        {excerpts.length ? (
-          <div className="mb-3 space-y-2">
-            {excerpts.map((item, index) => (
-              <div
-                key={JSON.stringify(item.reference)}
-                className="flex items-start gap-2 rounded-xl bg-accent/50 p-3 text-xs"
-              >
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-semibold">{item.title}</p>
-                  <p className="mt-1 line-clamp-2 text-muted-foreground">{item.excerpt}</p>
-                </div>
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="ghost"
-                  className="size-6"
-                  aria-label="Hapus kutipan"
-                  disabled={active}
-                  onClick={() => setExcerpts((items) => items.filter((_, i) => i !== index))}
+      <ChatComposer
+        draft={draft}
+        onDraftChange={setDraft}
+        onSend={() => void send()}
+        contextLabel={contextLabel}
+        disabled={history.isPending || history.isError}
+        active={active}
+        cancelling={cancelling || !runId}
+        onCancel={() => void cancel()}
+        attachments={
+          excerpts.length ? (
+            <div className="mt-3 max-h-32 space-y-2 overflow-y-auto">
+              {excerpts.map((item, index) => (
+                <div
+                  key={JSON.stringify(item.reference)}
+                  className="flex items-start gap-2 rounded-xl bg-accent/50 p-3 text-xs"
                 >
-                  <X />
-                </Button>
-              </div>
-            ))}
-          </div>
-        ) : null}
-        <div className="rounded-2xl border bg-background p-2 focus-within:ring-2 focus-within:ring-ring">
-          <Textarea
-            aria-label="Pesan untuk teman belajar"
-            placeholder="Ada yang ingin kamu pahami?"
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
-                event.preventDefault();
-                void send();
-              }
-            }}
-            rows={2}
-            className="min-h-16 resize-none border-0 p-2 shadow-none focus-visible:ring-0"
-          />
-          <div className="flex items-center justify-between px-1 pb-1">
-            <span ref={attachButton}>
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                className="h-8 text-xs"
-                disabled={active}
-                onClick={() => setPickerOpen(true)}
-              >
-                <Paperclip />
-                Kutip materi
-              </Button>
-            </span>
-            {active ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="h-8 text-xs normal-case"
-                onClick={() => void cancel()}
-                disabled={cancelling || !runId}
-              >
-                Hentikan
-              </Button>
-            ) : (
-              <Button
-                type="submit"
-                size="icon"
-                className="size-8 rounded-lg"
-                aria-label="Kirim pesan"
-                disabled={!draft.trim() || history.isPending || history.isError}
-              >
-                <ArrowUp aria-hidden="true" />
-              </Button>
-            )}
-          </div>
-        </div>
-        <p className="mt-3 text-center text-[10px] leading-5 text-muted-foreground">
-          AI bisa keliru. Periksa kembali hal penting.
-        </p>
-      </form>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-semibold">{item.title}</p>
+                    <p className="mt-1 line-clamp-2 text-muted-foreground">{item.excerpt}</p>
+                  </div>
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    className="size-6"
+                    aria-label="Hapus kutipan"
+                    disabled={active}
+                    onClick={() => setExcerpts((items) => items.filter((_, i) => i !== index))}
+                  >
+                    <HugeiconsIcon icon={Cancel01Icon} aria-hidden="true" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          ) : null
+        }
+        attachAction={
+          <span ref={attachButton}>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="h-8 px-1 text-xs font-semibold normal-case text-muted-foreground"
+              disabled={active}
+              onClick={() => setPickerOpen(true)}
+            >
+              <HugeiconsIcon icon={Attachment01Icon} strokeWidth={1.5} aria-hidden="true" />
+              Kutip materi
+            </Button>
+          </span>
+        }
+      />
       {pickerOpen ? (
         <ChatContextPicker
           api={api}

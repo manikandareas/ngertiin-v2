@@ -43,7 +43,7 @@
   --success: #58cc02;
   --success-foreground: #234700;
   --success-subtle: #d7ffb8;
-  --border: #e5e5e5;
+  --border: #eeeeee;
   --input: #afafaf;
   --ring: #0077ad;
   --radius: 0.75rem;
@@ -165,7 +165,7 @@
   --popover-foreground: #f2f2f2;
   --muted: #262626;
   --muted-foreground: #a3a3a3;
-  --border: #3c3c3c;
+  --border: #282828;
   --input: #595959;
   --accent: #202a30;
   --accent-foreground: #83d4ff;
@@ -191,7 +191,7 @@
     --popover-foreground: #f2f2f2;
     --muted: #262626;
     --muted-foreground: #a3a3a3;
-    --border: #3c3c3c;
+    --border: #282828;
     --input: #595959;
     --accent: #202a30;
     --accent-foreground: #83d4ff;
@@ -554,5 +554,54 @@
   to {
     opacity: 0;
     transform: translate(var(--confetti-x), var(--confetti-y)) rotate(var(--confetti-rotation));
+  }
+}
+
+/* Shared keyframes; mascot layout and interaction styles use Tailwind utilities. */
+@keyframes chat-mascot-breathe {
+  0%,
+  100% {
+    transform: translateY(0) scale(1, 1);
+  }
+  50% {
+    transform: translateY(-3px) scale(1.025, 0.98);
+  }
+}
+@keyframes chat-mascot-blink {
+  0%,
+  40%,
+  44%,
+  74%,
+  78%,
+  100% {
+    transform: scaleY(1);
+  }
+  42%,
+  76% {
+    transform: scaleY(0.08);
+  }
+}
+@keyframes chat-mascot-look {
+  0%,
+  18%,
+  42%,
+  100% {
+    transform: translate(0, 0);
+  }
+  23%,
+  35% {
+    transform: translate(4px, -2px);
+  }
+  65%,
+  78% {
+    transform: translate(-3px, 1px);
+  }
+}
+@keyframes chat-mascot-hello {
+  from {
+    transform: translateY(-3px) rotate(-7deg) scale(1.03, 0.97);
+  }
+  to {
+    transform: translateY(-6px) rotate(5deg) scale(0.98, 1.02);
   }
 }
