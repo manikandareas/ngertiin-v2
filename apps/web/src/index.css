@@ -684,3 +684,8 @@
     transform: translateY(-4px) scale(1.03);
   }
 }
+
+::highlight(ngertiin-citation) {
+  background-color: var(--accent);
+  color: var(--accent-foreground);
+}

@@ -67,11 +67,11 @@ function remarkChatCitations({ ids }: { ids: string[] }) {
 type ChatMarkdownProps = {
   text: string;
   citations: ChatCitation[];
-  onCitation: (citation: ChatCitation) => void;
+  citationHref: (citation: ChatCitation) => string;
   isAnimating: boolean;
 };
 
-export function ChatMarkdown({ text, citations, onCitation, isAnimating }: ChatMarkdownProps) {
+export function ChatMarkdown({ text, citations, citationHref, isAnimating }: ChatMarkdownProps) {
   const remarkPlugins = useMemo<StreamdownProps["remarkPlugins"]>(
     () => [
       ...Object.values(defaultRemarkPlugins),
@@ -86,14 +86,15 @@ export function ChatMarkdown({ text, citations, onCitation, isAnimating }: ChatM
           const number = Number(href.slice(citationPrefix.length));
           const citation = Number.isInteger(number) ? citations[number - 1] : undefined;
           return citation ? (
-            <button
-              type="button"
-              onClick={() => onCitation(citation)}
+            <a
+              href={citationHref(citation)}
+              target="_blank"
+              rel="noopener noreferrer"
               className="mx-1 rounded bg-accent px-1.5 align-super text-[10px] font-bold text-link hover:bg-primary/15"
-              aria-label={`Buka rujukan ${number}`}
+              aria-label={`Buka rujukan ${number} di tab baru`}
             >
               {number}
-            </button>
+            </a>
           ) : null;
         }
         if (!href) return <span>{children}</span>;
@@ -110,7 +111,7 @@ export function ChatMarkdown({ text, citations, onCitation, isAnimating }: ChatM
       },
       img: () => null,
     }),
-    [citations, onCitation],
+    [citations, citationHref],
   );
   return (
     <div className="lesson-markdown min-w-0 max-w-full text-sm leading-7 [&_h1]:text-xl [&_h2]:text-lg [&_h3]:text-base">

@@ -391,10 +391,9 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
     )
       this.notFound();
     const evidence = await this.runEvidence(message.run_id);
-    if (!(await this.canReadEvidence(userId, moduleId, evidence))) this.notFound();
     const snapshot = evidence.find((item) => item.citation.id === citationId);
-    if (!snapshot) this.notFound();
-    return snapshot;
+    if (!snapshot || !(await this.canReadEvidence(userId, moduleId, [snapshot]))) this.notFound();
+    return { ...snapshot, moduleId: snapshot.moduleId ?? moduleId ?? undefined };
   }
   private evidenceRows(
     messageId: string,

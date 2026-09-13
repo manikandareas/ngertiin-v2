@@ -16,9 +16,29 @@ const badgeClassName =
 
 interface FlashcardsProps {
   activity: Extract<PublicActivity, { type: "flashcard" }>;
+  reading?: boolean;
 }
 
-export function Flashcards({ activity }: FlashcardsProps): JSX.Element | null {
+export function Flashcards({ activity, reading = false }: FlashcardsProps): JSX.Element | null {
+  if (reading)
+    return (
+      <article className="space-y-4">
+        {activity.content.cards.map((card, index) => (
+          <section
+            // biome-ignore lint/suspicious/noArrayIndexKey: Immutable, stateless reading list; repeated cards are valid.
+            key={index}
+            className="overflow-hidden rounded-2xl border bg-background"
+          >
+            <p className="whitespace-pre-wrap p-5 font-semibold leading-7">{card.front}</p>
+            <p className="whitespace-pre-wrap border-t bg-muted/30 p-5 leading-7">{card.back}</p>
+          </section>
+        ))}
+      </article>
+    );
+  return <FlashcardPlayer activity={activity} />;
+}
+
+function FlashcardPlayer({ activity }: FlashcardsProps): JSX.Element | null {
   const cardRef = useRef<HTMLButtonElement>(null);
   const [index, setIndex] = useState(0);
   const [showBack, setShowBack] = useState(false);

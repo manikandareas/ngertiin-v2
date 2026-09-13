@@ -5,6 +5,8 @@ import { type JSX, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import { ChatSidebar } from "../features/chat/components/chat-sidebar";
+import { CitationContent } from "../features/chat/components/citation-content";
+import { useCitationLocation } from "../features/chat/use-citation-location";
 import {
   useAttempt,
   useCompleteNode,
@@ -33,7 +35,14 @@ function isAnswered(answer: AssessmentAnswer | undefined): boolean {
 
 export default function ModuleNodePage(): JSX.Element {
   const { moduleId = "", nodeId = "" } = useParams();
-  return <NodePlayer key={`${moduleId}:${nodeId}`} moduleId={moduleId} nodeId={nodeId} />;
+  const [params] = useSearchParams();
+  return (
+    <NodePlayer
+      key={`${moduleId}:${nodeId}:${params.get("citationId") ?? ""}`}
+      moduleId={moduleId}
+      nodeId={nodeId}
+    />
+  );
 }
 
 interface NodePlayerProps {
@@ -43,6 +52,19 @@ interface NodePlayerProps {
 
 function NodePlayer({ moduleId, nodeId }: NodePlayerProps): JSX.Element {
   const navigate = useNavigate();
+  const citation = useCitationLocation();
+  const reference = citation.data?.citation.reference;
+  const snapshot =
+    reference?.kind === "activity" &&
+    reference.nodeId === nodeId &&
+    citation.data?.moduleId === moduleId
+      ? citation.data
+      : undefined;
+  const citedActivityId =
+    snapshot?.citation.reference.kind === "activity"
+      ? snapshot.citation.reference.activityId
+      : undefined;
+  const openedCitation = useRef<string | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const [retrying, setRetrying] = useState(false);
   const moduleQuery = useModule(moduleId);
@@ -64,6 +86,7 @@ function NodePlayer({ moduleId, nodeId }: NodePlayerProps): JSX.Element {
 
   useEffect(() => {
     if (
+      citation.requested ||
       moduleQuery.data?.status !== "ready" ||
       nodeQuery.data?.node.progress.status !== "available" ||
       startedNodeId.current === nodeId
@@ -71,10 +94,34 @@ function NodePlayer({ moduleId, nodeId }: NodePlayerProps): JSX.Element {
       return;
     startedNodeId.current = nodeId;
     start.mutate();
-  }, [moduleQuery.data?.status, nodeId, nodeQuery.data?.node.progress.status, start.mutate]);
+  }, [
+    citation.requested,
+    moduleQuery.data?.status,
+    nodeId,
+    nodeQuery.data?.node.progress.status,
+    start.mutate,
+  ]);
+
+  useEffect(() => {
+    if (
+      !snapshot ||
+      !citedActivityId ||
+      !nodeQuery.data ||
+      openedCitation.current === snapshot.citation.id
+    )
+      return;
+    const index = nodeQuery.data.activities.findIndex(
+      (item) =>
+        item.id === citedActivityId && (item.type === "lesson" || item.type === "flashcard"),
+    );
+    if (index < 0) return;
+    openedCitation.current = snapshot.citation.id;
+    setSlide(index);
+    setReviewing(true);
+  }, [snapshot, citedActivityId, nodeQuery.data]);
 
   const attemptResult = attemptQuery.data ?? submit.data;
-  const showResult = Boolean((attemptResult || attemptId) && !reviewing);
+  const showResult = Boolean((attemptResult || attemptId) && !reviewing && !citation.requested);
   const resultEffects = useAttemptEffects(attemptResult, showResult);
   const resultTone =
     showResult && attemptResult?.attempt.evaluationStatus === "completed"
@@ -185,7 +232,12 @@ function NodePlayer({ moduleId, nodeId }: NodePlayerProps): JSX.Element {
   }
 
   const activity = data.activities[slide];
-  const locked = readOnly || completed || Boolean(attemptResult || attemptId) || submit.isPending;
+  const locked =
+    citation.requested ||
+    readOnly ||
+    completed ||
+    Boolean(attemptResult || attemptId) ||
+    submit.isPending;
   const activityResult =
     activity && attemptResult?.attempt.evaluationStatus === "completed"
       ? attemptResult.attempt.activityResults.find((item) => item.activityId === activity.id)
@@ -201,6 +253,12 @@ function NodePlayer({ moduleId, nodeId }: NodePlayerProps): JSX.Element {
   }
 
   function renderPrimaryAction(): JSX.Element | null {
+    if (citation.requested)
+      return (
+        <Button asChild className={primaryActionClassName}>
+          <Link to={`/modules/${moduleId}/nodes/${nodeId}`}>Buka mode belajar</Link>
+        </Button>
+      );
     if (!activity) {
       return (
         <Button asChild>
@@ -267,6 +325,20 @@ function NodePlayer({ moduleId, nodeId }: NodePlayerProps): JSX.Element {
     return null;
   }
 
+  const activityContent = activity ? (
+    <NodeActivity
+      key={activity.id}
+      activity={activity}
+      readOnly={readOnly}
+      completed={completed}
+      locked={locked}
+      answer={answer}
+      onAnswer={(value) => setAnswers((current) => ({ ...current, [activity.id]: value }))}
+      result={activityResult}
+      citationReading={Boolean(snapshot && activity.id === citedActivityId)}
+    />
+  ) : null;
+
   return (
     <NodePlayerLayout
       rightSidebar={
@@ -305,7 +377,11 @@ function NodePlayer({ moduleId, nodeId }: NodePlayerProps): JSX.Element {
         )
       }
     >
-      {showResult ? (
+      {citation.requested && citation.valid && citation.isPending ? (
+        <p role="status" className="text-sm text-muted-foreground">
+          Membuka materi rujukan…
+        </p>
+      ) : showResult ? (
         <NodeAttemptResult
           result={attemptResult}
           animate={resultEffects.animateResult}
@@ -320,16 +396,17 @@ function NodePlayer({ moduleId, nodeId }: NodePlayerProps): JSX.Element {
           onRetry={handleTryAgain}
         />
       ) : activity ? (
-        <NodeActivity
-          key={activity.id}
-          activity={activity}
-          readOnly={readOnly}
-          completed={completed}
-          locked={locked}
-          answer={answer}
-          onAnswer={(value) => setAnswers((current) => ({ ...current, [activity.id]: value }))}
-          result={activityResult}
-        />
+        snapshot && activity.id === citedActivityId ? (
+          <CitationContent
+            key={snapshot.citation.id}
+            snapshot={snapshot}
+            markdown={activity.type === "lesson" && "format" in activity.content}
+          >
+            {activityContent}
+          </CitationContent>
+        ) : (
+          activityContent
+        )
       ) : (
         <div className="space-y-3">
           <h2 className="text-2xl font-bold">Aktivitas belum tersedia</h2>

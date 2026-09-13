@@ -6,6 +6,7 @@ import { Lesson } from "./lesson-activity";
 
 interface NodeActivityProps {
   activity: PublicActivity;
+  citationReading?: boolean;
   readOnly: boolean;
   completed: boolean;
   locked: boolean;
@@ -16,6 +17,7 @@ interface NodeActivityProps {
 
 export function NodeActivity({
   activity,
+  citationReading = false,
   readOnly,
   completed,
   locked,
@@ -33,7 +35,7 @@ export function NodeActivity({
       content = <Lesson activity={activity} />;
       break;
     case "flashcard":
-      content = <Flashcards activity={activity} />;
+      content = <Flashcards activity={activity} reading={citationReading} />;
       break;
     default:
       content = (

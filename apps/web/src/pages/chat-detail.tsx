@@ -1,16 +1,12 @@
 import { uuidSchema } from "@ngertiin/contracts/api";
 import { useQuery } from "@tanstack/react-query";
 import { MessageSquarePlus } from "lucide-react";
-import { type ReactNode, useMemo, useRef, useState } from "react";
+import { type ReactNode, useMemo } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { AppShell } from "../components/app-shell";
 import { Button } from "../components/ui/button";
 import { isClerkConfigured } from "../config";
 import { chatApi } from "../features/chat/api/chat-api";
-import {
-  ChatCitationReader,
-  type ChatCitationSelection,
-} from "../features/chat/components/chat-citation";
 import { ChatConversation } from "../features/chat/components/chat-conversation";
 import { ChatMascot } from "../features/chat/components/chat-mascot";
 import { ChatThreadActions } from "../features/chat/components/chat-thread-actions";
@@ -41,8 +37,6 @@ function ConnectedChatDetailPage() {
   });
   const thread = detail.data;
   const moduleId = thread?.moduleId ?? null;
-  const [citation, setCitation] = useState<ChatCitationSelection | null>(null);
-  const citationTrigger = useRef<HTMLElement | null>(null);
   const api = useMemo(() => chatApi(chat.getToken, moduleId), [chat.getToken, moduleId]);
   const unavailable = Boolean(threadId && (!validThread || detail.isError));
   function renderContent(): ReactNode {
@@ -80,11 +74,6 @@ function ConnectedChatDetailPage() {
           root={chat.root}
           getToken={chat.getToken}
           moduleId={thread.moduleId}
-          onOpenCitation={(selection) => {
-            citationTrigger.current =
-              document.activeElement instanceof HTMLElement ? document.activeElement : null;
-            setCitation(selection);
-          }}
           fullPage
         />
       );
@@ -92,22 +81,7 @@ function ConnectedChatDetailPage() {
     return null;
   }
   return (
-    <AppShell
-      workspace
-      rightSidebar={
-        citation && citation.threadId === threadId && thread && !unavailable ? (
-          <ChatCitationReader
-            key={citation.citation.id}
-            {...citation}
-            api={chat.api}
-            panel
-            onSelect={(next) => setCitation({ ...citation, citation: next })}
-            onClose={() => setCitation(null)}
-            returnFocus={() => citationTrigger.current?.focus()}
-          />
-        ) : undefined
-      }
-    >
+    <AppShell workspace>
       <header className="flex h-14 shrink-0 items-center gap-2 px-4 sm:gap-3 sm:px-6">
         <Link
           to="/chat"

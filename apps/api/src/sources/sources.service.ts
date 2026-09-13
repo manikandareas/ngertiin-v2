@@ -554,6 +554,7 @@ export class SourcesService {
       );
     const sections = await this.infrastructure.database.db
       .select({
+        id: source_contents.id,
         position: source_contents.position,
         pageNumber: source_contents.page_number,
         heading: source_contents.heading,

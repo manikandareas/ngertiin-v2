@@ -19,7 +19,7 @@ import { createChatTransport, type LearningMessage, toUIMessage } from "../api/c
 import { withLockedMention } from "../chat-draft";
 import { useChatSession } from "../chat-session";
 import { CHAT_AGENT_NAME } from "../constants";
-import { type ChatCitationSelection, ChatCitedAnswer } from "./chat-citation";
+import { ChatCitedAnswer } from "./chat-citation";
 import { ChatComposer } from "./chat-composer";
 import { ChatMascot } from "./chat-mascot";
 import { ChatWelcome } from "./chat-welcome";
@@ -32,7 +32,6 @@ type ChatConversationProps = {
   moduleId: string | null;
   lockedContext?: ChatMention;
   fullPage?: boolean;
-  onOpenCitation?: (selection: ChatCitationSelection) => void;
 };
 
 export function ChatConversation({
@@ -43,7 +42,6 @@ export function ChatConversation({
   moduleId,
   lockedContext,
   fullPage = false,
-  onOpenCitation,
 }: ChatConversationProps) {
   const client = useQueryClient();
   const { session, patch, setDraft, setExcerpts } = useChatSession(root, thread.id);
@@ -355,7 +353,6 @@ export function ChatConversation({
                 ) : null}
                 {message.role === "assistant" ? (
                   <ChatCitedAnswer
-                    onOpenCitation={onOpenCitation}
                     isAnimating={message === activeAssistant}
                     text={message.parts
                       .filter((p) => p.type === "text")
@@ -366,7 +363,6 @@ export function ChatConversation({
                     )}
                     messageId={message.id}
                     threadId={thread.id}
-                    api={api}
                   />
                 ) : (
                   <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">

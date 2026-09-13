@@ -1,233 +1,84 @@
-import {
-  ArrowLeft01Icon,
-  ArrowRight01Icon,
-  Book02Icon,
-  File01Icon,
-  QuoteUpIcon,
-} from "@hugeicons/core-free-icons";
+import { Book02Icon, File01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import type { ChatCitation } from "@ngertiin/contracts/api";
-import { useQuery } from "@tanstack/react-query";
-import { useRef, useState } from "react";
-import { Button } from "../../../components/ui/button";
-import { DialogFrame } from "../../../components/ui/dialog-frame";
-import type { chatApi } from "../api/chat-api";
-
-import { ChatCitationFrame } from "./chat-citation-frame";
+import { ArrowUpRight } from "lucide-react";
+import { citationLink } from "../citation-location";
 import { ChatMarkdown } from "./chat-markdown";
+import { CitationPreview } from "./citation-preview";
 
-export type ChatCitationSelection = {
-  citation: ChatCitation;
-  citations: ChatCitation[];
-  messageId: string;
-  threadId: string;
-};
-
-function citationLocation(citation: ChatCitation): string {
-  if (citation.pageNumber) return ` · Halaman ${citation.pageNumber}`;
-  if (citation.sectionTitle) return ` · ${citation.sectionTitle}`;
-  return "";
-}
+const cardColors = [
+  "bg-[#fff0b3] text-[#594113]",
+  "bg-[#dceecb] text-[#30492c]",
+  "bg-[#fbdedb] text-[#653631]",
+  "bg-[#dce7ff] text-[#35476d]",
+];
 
 export function ChatCitedAnswer({
   text,
   citations,
   messageId,
   threadId,
-  api,
   isAnimating = false,
-  onOpenCitation,
 }: {
-  isAnimating?: boolean;
-  onOpenCitation?: (selection: ChatCitationSelection) => void;
   text: string;
   citations: ChatCitation[];
   messageId: string;
   threadId: string;
-  api: ReturnType<typeof chatApi>;
+  isAnimating?: boolean;
 }) {
-  const [selected, setSelected] = useState<ChatCitation | null>(null);
-  const trigger = useRef<HTMLElement | null>(null);
-  function open(citation: ChatCitation) {
-    trigger.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    if (onOpenCitation) onOpenCitation({ citation, citations, messageId, threadId });
-    else setSelected(citation);
-  }
+  const href = (citation: ChatCitation) => citationLink(threadId, messageId, citation);
   return (
     <>
-      <ChatMarkdown text={text} citations={citations} onCitation={open} isAnimating={isAnimating} />
-      {citations.length ? (
-        <div className="mt-4 flex flex-wrap gap-2">
+      <ChatMarkdown
+        text={text}
+        citations={citations}
+        citationHref={href}
+        isAnimating={isAnimating}
+      />
+      {citations.length > 0 ? (
+        <section
+          className="mt-3 flex min-w-0 flex-wrap items-start gap-2"
+          aria-label="Rujukan jawaban"
+        >
           {citations.map((citation, index) => (
-            <button
-              type="button"
+            <a
               key={citation.id}
-              onClick={() => open(citation)}
-              className="flex h-[42px] min-w-0 max-w-full items-center gap-2 rounded-xl border bg-muted px-3 text-left hover:bg-accent/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-              title={`${citation.title} · ${citation.origin === "original_source" ? "Sumber asli" : "Materi pelajaran"}${citationLocation(citation)}`}
-              aria-label={`Buka rujukan ${index + 1}: ${citation.title}`}
+              href={href(citation)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`group block w-64 max-w-full min-w-0 rounded-xl p-3 text-left transition-[filter] hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${cardColors[index % cardColors.length]}`}
+              aria-label={`Buka rujukan ${index + 1}: ${citation.title} di tab baru`}
             >
-              <HugeiconsIcon
-                icon={citation.origin === "original_source" ? File01Icon : Book02Icon}
-                size={16}
-                strokeWidth={1.5}
-                className="shrink-0 text-adaptive-foreground"
-                aria-hidden="true"
-              />
-              <span className="min-w-0 max-w-[155px] truncate text-[11px] font-semibold">
-                {citation.title}
-              </span>
-              <span className="shrink-0 border-l pl-2 text-[10px] font-bold text-muted-foreground">
-                {index + 1}
-              </span>
-            </button>
+              <div className="flex items-start gap-3">
+                <span className="min-w-0 flex-1 line-clamp-2 break-words text-xs font-semibold leading-5 [overflow-wrap:anywhere]">
+                  {citation.sectionTitle ?? citation.title}
+                </span>
+                <span className="shrink-0 text-[10px] tabular-nums opacity-75">{index + 1}</span>
+                <ArrowUpRight className="size-3.5 shrink-0 opacity-75" aria-hidden="true" />
+              </div>
+              <CitationPreview text={citation.excerpt} />
+              <div className="mt-2 flex min-w-0 items-center gap-1.5 border-t border-current/15 pt-2 text-[10px]">
+                <HugeiconsIcon
+                  icon={citation.origin === "original_source" ? File01Icon : Book02Icon}
+                  size={14}
+                  strokeWidth={1.5}
+                  className="shrink-0"
+                  aria-hidden="true"
+                />
+                <span className="shrink-0 opacity-75">
+                  {citation.origin === "original_source" ? "Sumber" : "Modul"}
+                </span>
+                <span className="min-w-0 truncate font-medium" title={citation.title}>
+                  {citation.title}
+                </span>
+                {citation.pageNumber ? (
+                  <span className="ml-auto shrink-0 opacity-75">Hal. {citation.pageNumber}</span>
+                ) : null}
+              </div>
+            </a>
           ))}
-        </div>
-      ) : null}
-      {selected ? (
-        <ChatCitationReader
-          key={selected.id}
-          citation={selected}
-          citations={citations}
-          messageId={messageId}
-          threadId={threadId}
-          api={api}
-          onSelect={setSelected}
-          onClose={() => setSelected(null)}
-          returnFocus={() => trigger.current?.focus()}
-        />
+        </section>
       ) : null}
     </>
-  );
-}
-
-export function ChatCitationReader({
-  citation,
-  citations,
-  threadId,
-  messageId,
-  api,
-  onSelect,
-  onClose,
-  returnFocus,
-  panel = false,
-}: {
-  citation: ChatCitation;
-  citations: ChatCitation[];
-  threadId: string;
-  messageId: string;
-  api: ReturnType<typeof chatApi>;
-  onSelect: (citation: ChatCitation) => void;
-  onClose: () => void;
-  returnFocus: () => void;
-  panel?: boolean;
-}) {
-  const excerpt = useRef<HTMLElement>(null);
-  const reader = useQuery({
-    queryKey: ["chat-citation", threadId, messageId, citation.id],
-    queryFn: () => api.citation(threadId, messageId, citation.id),
-    staleTime: 0,
-    gcTime: 0,
-    retry: false,
-  });
-  const data = reader.data;
-  const points = data ? [...data.text] : [];
-  const start = data ? data.citation.reference.startCodePoint - data.startCodePoint : 0;
-  const end = data ? data.citation.reference.endCodePoint - data.startCodePoint : 0;
-  const index = citations.findIndex((item) => item.id === citation.id);
-  const Frame = panel ? ChatCitationFrame : DialogFrame;
-  return (
-    <Frame
-      open
-      title={citation.title}
-      description="Materi saat jawaban dibuat · bagian yang digunakan disorot."
-      onClose={onClose}
-      returnFocus={returnFocus}
-      className="max-w-2xl"
-    >
-      <div className="mb-5 flex items-center justify-between gap-3 text-xs text-muted-foreground">
-        <span>
-          Rujukan {index + 1} dari {citations.length}
-          {citation.pageNumber ? ` · Halaman ${citation.pageNumber}` : ""}
-        </span>
-        <div className="flex gap-1">
-          <Button
-            size="icon"
-            variant="ghost"
-            aria-label="Rujukan sebelumnya"
-            disabled={index === 0}
-            onClick={() => {
-              const next = citations[index - 1];
-              if (next) onSelect(next);
-            }}
-          >
-            <HugeiconsIcon icon={ArrowLeft01Icon} strokeWidth={1.5} aria-hidden="true" />
-          </Button>
-          <Button
-            size="icon"
-            variant="ghost"
-            aria-label="Rujukan berikutnya"
-            disabled={index === citations.length - 1}
-            onClick={() => {
-              const next = citations[index + 1];
-              if (next) onSelect(next);
-            }}
-          >
-            <HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={1.5} aria-hidden="true" />
-          </Button>
-        </div>
-      </div>
-      {reader.isPending ? (
-        <p role="status" className="py-10 text-center text-sm text-muted-foreground">
-          Memuat kutipan…
-        </p>
-      ) : reader.isError ? (
-        <div role="alert" className="py-8 text-center">
-          <p className="text-sm">Kutipan belum dapat dimuat.</p>
-          <Button variant="link" onClick={() => void reader.refetch()}>
-            Coba lagi
-          </Button>
-        </div>
-      ) : data ? (
-        <>
-          <div className="max-h-[50dvh] overflow-y-auto overscroll-contain rounded-xl border bg-muted/20 p-5 sm:p-8">
-            <p className="mb-5 text-xs text-muted-foreground">
-              {citation.sectionTitle ?? citation.title}
-            </p>
-            <p className="whitespace-pre-wrap break-words text-sm leading-8 [overflow-wrap:anywhere]">
-              {points.slice(0, start).join("")}
-              <mark
-                ref={excerpt}
-                className="rounded bg-accent text-accent-foreground ring-2 ring-accent"
-              >
-                {points.slice(start, end).join("")}
-              </mark>
-              {points.slice(end).join("")}
-            </p>
-          </div>
-          <div className="mt-5 flex items-center justify-between gap-3">
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() =>
-                excerpt.current?.scrollIntoView({ block: "center", behavior: "smooth" })
-              }
-            >
-              <HugeiconsIcon icon={QuoteUpIcon} strokeWidth={1.5} aria-hidden="true" />
-              Ke kutipan
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => {
-                onClose();
-                if (panel) returnFocus();
-              }}
-            >
-              Kembali ke jawaban
-            </Button>
-          </div>
-        </>
-      ) : null}
-    </Frame>
   );
 }
