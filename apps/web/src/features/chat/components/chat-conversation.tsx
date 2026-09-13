@@ -327,7 +327,9 @@ export function ChatConversation({
             followBottom.current = true;
         }}
         className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-6 pb-4 pt-5 [&>*]:shrink-0"
-        style={fullPage ? { paddingInline: "max(1.5rem, calc((100% - 48rem) / 2))" } : undefined}
+        style={
+          fullPage ? { paddingInline: "max(1rem, calc((100% - 48rem) / 2 + 1rem))" } : undefined
+        }
         role="log"
         aria-label="Pesan percakapan"
         aria-live="off"

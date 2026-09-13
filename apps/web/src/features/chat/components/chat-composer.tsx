@@ -2,6 +2,7 @@ import { ArrowUp02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import type { ChatMention } from "@ngertiin/contracts/api";
 import type { JSONContent } from "@tiptap/react";
+import { Square } from "lucide-react";
 import { lazy, Suspense } from "react";
 import { Button } from "../../../components/ui/button";
 import type { TokenResolver } from "../../../lib/api";
@@ -93,12 +94,17 @@ export function ChatComposer({
             <Button
               type="button"
               variant="ghost"
-              size="sm"
-              className="h-8 text-xs normal-case"
+              size="icon"
+              className={cn(
+                "rounded-full text-destructive hover:bg-destructive/10 hover:text-destructive",
+                fullPage ? "size-10" : "size-8",
+              )}
+              aria-label="Hentikan jawaban"
+              title="Hentikan jawaban"
               onClick={onCancel}
               disabled={cancelling}
             >
-              Hentikan
+              <Square className="fill-current" aria-hidden="true" />
             </Button>
           ) : (
             <Button
