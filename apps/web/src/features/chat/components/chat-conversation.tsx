@@ -9,15 +9,9 @@ import {
   isChatRunActive,
 } from "@ngertiin/contracts/api";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  useCallback,
-  useEffect,
-  useEffectEvent,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { ArrowDown } from "lucide-react";
+import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
+import { useStickToBottom } from "use-stick-to-bottom";
 import { Button } from "../../../components/ui/button";
 import { ApiProblemError, type TokenResolver } from "../../../lib/api";
 import type { chatApi } from "../api/chat-api";
@@ -58,8 +52,10 @@ export function ChatConversation({
   const initialSent = useRef(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
-  const bodyRef = useRef<HTMLDivElement>(null);
-  const followBottom = useRef(true);
+  const { scrollRef, contentRef, isAtBottom, scrollToBottom, stopScroll } = useStickToBottom({
+    initial: "smooth",
+    resize: "smooth",
+  });
   const refresh = useCallback(() => {
     void client.invalidateQueries({ queryKey: root });
   }, [client, root]);
@@ -205,15 +201,6 @@ export function ChatConversation({
         : `${CHAT_AGENT_NAME} sedang menjawab…`}
     </p>
   );
-  const textSize = messages.reduce(
-    (n, m) =>
-      n + m.parts.filter((p) => p.type === "text").reduce((size, p) => size + p.text.length, 0),
-    0,
-  );
-  useLayoutEffect(() => {
-    if (textSize > 0 && followBottom.current && bodyRef.current)
-      bodyRef.current.scrollTop = bodyRef.current.scrollHeight;
-  }, [textSize]);
   const terminal =
     run.data && !isChatRunActive(run.data.status) && run.data.status !== "completed"
       ? run.data
@@ -242,7 +229,7 @@ export function ChatConversation({
     if (!trimmed || active || history.isPending || history.isError) return;
     setActionError(null);
     chat.clearError();
-    followBottom.current = true;
+    void scrollToBottom();
     if (
       !pending.current ||
       pending.current.text !== trimmed ||
@@ -307,160 +294,161 @@ export function ChatConversation({
     : undefined;
   return (
     <>
-      <div
-        ref={bodyRef}
-        onWheel={(event) => {
-          if (event.deltaY < 0) followBottom.current = false;
-        }}
-        onTouchMove={() => {
-          followBottom.current = false;
-        }}
-        onPointerDown={() => {
-          followBottom.current = false;
-        }}
-        onKeyDown={(event) => {
-          if (["ArrowUp", "PageUp", "Home"].includes(event.key)) followBottom.current = false;
-        }}
-        onScroll={() => {
-          const body = bodyRef.current;
-          if (body && body.scrollHeight - body.scrollTop - body.clientHeight < 40)
-            followBottom.current = true;
-        }}
-        className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-6 pb-4 pt-5 [&>*]:shrink-0"
-        style={
-          fullPage ? { paddingInline: "max(1rem, calc((100% - 48rem) / 2 + 1rem))" } : undefined
-        }
-        role="log"
-        aria-label="Pesan percakapan"
-        aria-live="off"
-      >
-        {history.hasNextPage ? (
-          <Button
-            variant="link"
-            size="sm"
-            className="mx-auto mb-5 flex text-xs"
-            disabled={history.isFetchingNextPage}
-            onClick={() => {
-              followBottom.current = false;
-              void history.fetchNextPage();
-            }}
-          >
-            Muat pesan sebelumnya
-          </Button>
-        ) : null}
-        {history.isPending ? (
-          <p role="status" className="text-sm text-muted-foreground">
-            Memuat percakapan…
-          </p>
-        ) : null}
-        {!history.isPending && !history.isError && !messages.length ? (
-          <ChatWelcome
-            standalone={!moduleId}
-            disabled={active}
-            onSuggest={(text) => {
-              setDraft(text);
-              void send(undefined, text);
-            }}
-          />
-        ) : null}
-        {messages.map((message) => (
+      <div className="relative flex min-h-0 flex-1 flex-col">
+        <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
           <div
-            key={message.id}
-            className={
-              message.role === "user"
-                ? "mb-6 ml-auto max-w-[90%] rounded-2xl rounded-br-sm bg-muted px-4 py-3 text-sm leading-7"
-                : "mb-7 text-sm leading-7"
+            ref={contentRef}
+            className="flex min-h-full flex-col px-6 pb-4 pt-5 [&>*]:shrink-0"
+            style={
+              fullPage ? { paddingInline: "max(1rem, calc((100% - 48rem) / 2 + 1rem))" } : undefined
             }
+            role="log"
+            aria-label="Pesan percakapan"
+            aria-live="off"
           >
-            {message === activeAssistant ? <div className="mb-3">{loadingIndicator}</div> : null}
-            {message.role === "assistant" && message !== activeAssistant ? (
-              <div className="mb-3 flex items-center gap-2 text-xs font-bold">
-                <ChatMascot className="size-7" />
-                {CHAT_AGENT_NAME}
-              </div>
-            ) : null}
-            {message.role === "assistant" ? (
-              <ChatCitedAnswer
-                onOpenCitation={onOpenCitation}
-                isAnimating={message === activeAssistant}
-                text={message.parts
-                  .filter((p) => p.type === "text")
-                  .map((p) => p.text)
-                  .join("")}
-                citations={message.parts.flatMap((p) =>
-                  p.type === "data-citation" ? [p.data] : [],
-                )}
-                messageId={message.id}
-                threadId={thread.id}
-                api={api}
-              />
-            ) : (
-              <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
-                {message.parts
-                  .filter((p) => p.type === "text")
-                  .map((p) => p.text)
-                  .join("")}
-              </p>
-            )}
-            {message.parts.some(
-              (p) =>
-                p.type === "data-run-status" &&
-                !isChatRunActive(p.data.status) &&
-                p.data.status !== "completed",
-            ) ? (
-              <p className="mt-2 text-xs text-muted-foreground">
-                Jawaban terhenti · teks mungkin belum lengkap.
-              </p>
-            ) : null}
-          </div>
-        ))}
-        {active && !activeAssistant ? loadingIndicator : null}
-        {terminal ? (
-          <div className="rounded-xl border p-3 text-xs text-muted-foreground">
-            <p>
-              {terminal.status === "cancelled"
-                ? "Jawaban dihentikan."
-                : "Jawaban belum selesai. Kamu dapat mencoba ulang."}
-            </p>
-            {retryMessage ? (
+            {history.hasNextPage ? (
               <Button
                 variant="link"
                 size="sm"
-                className="px-0 text-xs"
-                onClick={() =>
-                  void send(
-                    terminal.id,
-                    retryMessage.parts
-                      .filter((p) => p.type === "text")
-                      .map((p) => p.text)
-                      .join(""),
-                    retryMessage.references,
-                    retryMessage.contexts[0],
-                    retryMessage.mentions,
-                  )
-                }
-                disabled={active}
+                className="mx-auto mb-5 flex text-xs"
+                disabled={history.isFetchingNextPage}
+                onClick={() => {
+                  stopScroll();
+                  void history.fetchNextPage();
+                }}
               >
-                Coba ulang
+                Muat pesan sebelumnya
               </Button>
             ) : null}
+            {history.isPending ? (
+              <p role="status" className="text-sm text-muted-foreground">
+                Memuat percakapan…
+              </p>
+            ) : null}
+            {!history.isPending && !history.isError && !messages.length ? (
+              <ChatWelcome
+                standalone={!moduleId}
+                disabled={active}
+                onSuggest={(text) => {
+                  setDraft(text);
+                  void send(undefined, text);
+                }}
+              />
+            ) : null}
+            {messages.map((message) => (
+              <div
+                key={message.id}
+                className={
+                  message.role === "user"
+                    ? "mb-6 ml-auto max-w-[90%] rounded-2xl rounded-br-sm bg-muted px-4 py-3 text-sm leading-7"
+                    : "mb-7 text-sm leading-7"
+                }
+              >
+                {message === activeAssistant ? (
+                  <div className="mb-3">{loadingIndicator}</div>
+                ) : null}
+                {message.role === "assistant" && message !== activeAssistant ? (
+                  <div className="mb-3 flex items-center gap-2 text-xs font-bold">
+                    <ChatMascot className="size-7" />
+                    {CHAT_AGENT_NAME}
+                  </div>
+                ) : null}
+                {message.role === "assistant" ? (
+                  <ChatCitedAnswer
+                    onOpenCitation={onOpenCitation}
+                    isAnimating={message === activeAssistant}
+                    text={message.parts
+                      .filter((p) => p.type === "text")
+                      .map((p) => p.text)
+                      .join("")}
+                    citations={message.parts.flatMap((p) =>
+                      p.type === "data-citation" ? [p.data] : [],
+                    )}
+                    messageId={message.id}
+                    threadId={thread.id}
+                    api={api}
+                  />
+                ) : (
+                  <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+                    {message.parts
+                      .filter((p) => p.type === "text")
+                      .map((p) => p.text)
+                      .join("")}
+                  </p>
+                )}
+                {message.parts.some(
+                  (p) =>
+                    p.type === "data-run-status" &&
+                    !isChatRunActive(p.data.status) &&
+                    p.data.status !== "completed",
+                ) ? (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Jawaban terhenti · teks mungkin belum lengkap.
+                  </p>
+                ) : null}
+              </div>
+            ))}
+            {active && !activeAssistant ? loadingIndicator : null}
+            {terminal ? (
+              <div className="rounded-xl border p-3 text-xs text-muted-foreground">
+                <p>
+                  {terminal.status === "cancelled"
+                    ? "Jawaban dihentikan."
+                    : "Jawaban belum selesai. Kamu dapat mencoba ulang."}
+                </p>
+                {retryMessage ? (
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="px-0 text-xs"
+                    onClick={() =>
+                      void send(
+                        terminal.id,
+                        retryMessage.parts
+                          .filter((p) => p.type === "text")
+                          .map((p) => p.text)
+                          .join(""),
+                        retryMessage.references,
+                        retryMessage.contexts[0],
+                        retryMessage.mentions,
+                      )
+                    }
+                    disabled={active}
+                  >
+                    Coba ulang
+                  </Button>
+                ) : null}
+              </div>
+            ) : null}
+            {safeError ? (
+              <div role="alert" className="mt-4 text-xs leading-6 text-destructive">
+                {safeError}
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="block px-0 text-xs"
+                  onClick={() => {
+                    void history.refetch();
+                    if (runId) void run.refetch();
+                  }}
+                >
+                  Muat ulang riwayat
+                </Button>
+              </div>
+            ) : null}
           </div>
-        ) : null}
-        {safeError ? (
-          <div role="alert" className="mt-4 text-xs leading-6 text-destructive">
-            {safeError}
-            <Button
-              variant="link"
-              size="sm"
-              className="block px-0 text-xs"
-              onClick={() => {
-                void history.refetch();
-                if (runId) void run.refetch();
-              }}
-            >
-              Muat ulang riwayat
-            </Button>
-          </div>
+        </div>
+        {!isAtBottom ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="absolute bottom-4 left-1/2 z-10 size-11 -translate-x-1/2 rounded-full border shadow-sm"
+            aria-label="Gulir ke pesan terbaru"
+            onClick={() => void scrollToBottom()}
+          >
+            <ArrowDown aria-hidden="true" />
+          </Button>
         ) : null}
       </div>
       <ChatComposer
