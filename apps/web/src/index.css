@@ -634,3 +634,53 @@
     transform: translateY(-3px) rotateY(-2deg);
   }
 }
+
+/* Small, occasional gestures for Timo on the new-chat welcome screen. */
+@keyframes chat-mascot-nod {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  30%,
+  65% {
+    transform: translateY(2px) scale(1.02, 0.97);
+  }
+  48% {
+    transform: translateY(-1px) scale(1);
+  }
+}
+
+@keyframes chat-mascot-tilt {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  30%,
+  65% {
+    transform: rotate(-7deg);
+  }
+}
+
+@keyframes chat-mascot-sway {
+  0%,
+  100% {
+    transform: translateX(0) rotate(0deg);
+  }
+  30% {
+    transform: translateX(-2px) rotate(-4deg);
+  }
+  65% {
+    transform: translateX(2px) rotate(4deg);
+  }
+}
+
+@keyframes chat-mascot-lift {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  30%,
+  55% {
+    transform: translateY(-4px) scale(1.03);
+  }
+}

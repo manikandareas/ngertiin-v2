@@ -178,47 +178,49 @@ function ConnectedChatPage() {
         ) : undefined
       }
     >
-      <header className="flex min-h-16 shrink-0 items-center gap-3 border-b px-5 py-3 sm:px-8">
-        <div className="min-w-0 flex-1">
-          <h1 className="truncate font-display text-base font-bold">
-            {thread?.title ?? "Chat baru"}
-          </h1>
-          <p className="truncate text-xs text-muted-foreground">
-            {contextLabel ?? "Percakapan mandiri"}
-          </p>
-        </div>
-        {moduleId ? (
-          <Button variant="ghost" size="sm" className="text-xs normal-case" asChild>
-            <Link
-              to={returnTo}
-              onClick={() =>
-                client.setQueryData(
-                  [...chat.root, "selection", moduleId],
-                  (previous: typeof initialSelection | undefined) => ({
-                    ...initialSelection,
-                    ...previous,
-                    threadId: threadId ?? "new",
-                    open: true,
-                  }),
-                )
-              }
-            >
-              <ArrowLeft className="size-4" />
-              <span className="hidden sm:inline">Kembali ke modul</span>
-              <span className="sm:hidden">Modul</span>
-            </Link>
-          </Button>
-        ) : null}
-        {thread ? (
-          <ChatThreadActions
-            thread={thread}
-            api={chat.api}
-            root={chat.root}
-            onChooseModule={thread.moduleId ? openPicker : undefined}
-            onDeleted={() => navigate("/chat", { replace: true })}
-          />
-        ) : null}
-      </header>
+      {threadId || moduleId ? (
+        <header className="flex min-h-16 shrink-0 items-center gap-3 px-5 py-3 sm:px-8">
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate font-display text-base font-bold">
+              {thread?.title ?? "Chat baru"}
+            </h1>
+            {contextLabel ? (
+              <p className="truncate text-xs text-muted-foreground">{contextLabel}</p>
+            ) : null}
+          </div>
+          {moduleId ? (
+            <Button variant="ghost" size="sm" className="text-xs normal-case" asChild>
+              <Link
+                to={returnTo}
+                onClick={() =>
+                  client.setQueryData(
+                    [...chat.root, "selection", moduleId],
+                    (previous: typeof initialSelection | undefined) => ({
+                      ...initialSelection,
+                      ...previous,
+                      threadId: threadId ?? "new",
+                      open: true,
+                    }),
+                  )
+                }
+              >
+                <ArrowLeft className="size-4" />
+                <span className="hidden sm:inline">Kembali ke modul</span>
+                <span className="sm:hidden">Modul</span>
+              </Link>
+            </Button>
+          ) : null}
+          {thread ? (
+            <ChatThreadActions
+              thread={thread}
+              api={chat.api}
+              root={chat.root}
+              onChooseModule={thread.moduleId ? openPicker : undefined}
+              onDeleted={() => navigate("/chat", { replace: true })}
+            />
+          ) : null}
+        </header>
+      ) : null}
       {renderContent()}
       {pickerOpen ? (
         <ChatModulePicker

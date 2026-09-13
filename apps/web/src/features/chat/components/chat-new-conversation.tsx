@@ -72,27 +72,16 @@ export function ChatNewConversation({
       creating.current = false;
     }
   }
-  return (
+  const composer = (
     <>
-      <div className="flex min-h-0 flex-1 overflow-y-auto px-6 pb-6">
-        <div className={fullPage ? "mx-auto my-auto w-full max-w-3xl" : "my-auto w-full"}>
-          <ChatWelcome
-            standalone={!moduleId}
-            disabled={session.sending}
-            onSuggest={(text) => {
-              setDraft(text);
-              void create(text);
-            }}
-          />
-        </div>
-      </div>
       {error ? (
         <p role="alert" className="mx-auto w-full max-w-3xl px-6 py-2 text-sm text-destructive">
           {error}
         </p>
       ) : null}
       <ChatComposer
-        className={fullPage ? "mx-auto w-full max-w-3xl" : undefined}
+        className={fullPage ? "w-full px-0 pb-0 pt-0 text-left" : undefined}
+        fullPage={fullPage}
         draft={session.draft}
         onDraftChange={setDraft}
         onSend={() => void create()}
@@ -170,6 +159,35 @@ export function ChatNewConversation({
           Membuka percakapan…
         </p>
       ) : null}
+    </>
+  );
+  return (
+    <>
+      <div
+        className={
+          fullPage
+            ? "flex min-h-0 flex-1 overflow-y-auto px-5 py-10 sm:px-8"
+            : "flex min-h-0 flex-1 overflow-y-auto px-6 pb-6"
+        }
+      >
+        <div
+          className={fullPage ? "mx-auto my-auto w-full max-w-3xl pb-8 sm:pb-16" : "my-auto w-full"}
+        >
+          <ChatWelcome
+            standalone={!moduleId}
+            fullPage={fullPage}
+            idlePaused={session.draft.length > 0}
+            disabled={session.sending}
+            onSuggest={(text) => {
+              setDraft(text);
+              void create(text);
+            }}
+          >
+            {fullPage ? <div className="mt-8 sm:mt-10">{composer}</div> : null}
+          </ChatWelcome>
+        </div>
+      </div>
+      {!fullPage ? composer : null}
       {pickerOpen && moduleId ? (
         <ChatContextPicker
           moduleId={moduleId}

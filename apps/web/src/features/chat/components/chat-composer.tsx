@@ -3,6 +3,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import type { ReactNode } from "react";
 import { Button } from "../../../components/ui/button";
 import { Textarea } from "../../../components/ui/textarea";
+import { cn } from "../../../lib/utils";
 import { CHAT_AGENT_NAME } from "../constants";
 
 type ChatComposerProps = {
@@ -12,6 +13,7 @@ type ChatComposerProps = {
   contextLabel?: string;
   className?: string;
   disabled?: boolean;
+  fullPage?: boolean;
   active?: boolean;
   cancelling?: boolean;
   onCancel?: () => void;
@@ -26,6 +28,7 @@ export function ChatComposer({
   contextLabel,
   className,
   disabled,
+  fullPage = false,
   active = false,
   cancelling = false,
   onCancel,
@@ -36,13 +39,19 @@ export function ChatComposer({
 
   return (
     <form
-      className={`shrink-0 px-4 pb-[max(.75rem,env(safe-area-inset-bottom))] pt-2 ${className ?? ""}`}
+      className={cn("shrink-0 px-4 pb-[max(.75rem,env(safe-area-inset-bottom))] pt-2", className)}
       onSubmit={(event) => {
         event.preventDefault();
         if (canSend) onSend();
       }}
     >
-      <div className="rounded-card border bg-muted p-2.5 focus-within:border-input">
+      <div
+        className={
+          fullPage
+            ? "rounded-card border border-input/60 bg-background p-3 focus-within:border-ring focus-within:ring-1 focus-within:ring-ring"
+            : "rounded-card border bg-muted p-2.5 focus-within:border-input"
+        }
+      >
         {contextLabel ? (
           <div
             className="inline-flex max-w-[min(75%,15rem)] items-center gap-1.5 rounded-full bg-foreground/5 px-2.5 py-1 text-[11px] text-muted-foreground"
@@ -71,7 +80,10 @@ export function ChatComposer({
             }
           }}
           rows={2}
-          className="max-h-32 min-h-14 resize-none border-0 bg-transparent px-0.5 py-2 text-sm shadow-none focus-visible:outline-none focus-visible:ring-0"
+          className={cn(
+            "resize-none border-0 bg-transparent px-0.5 py-2 shadow-none focus-visible:outline-none focus-visible:ring-0",
+            fullPage ? "max-h-48 min-h-16 text-base" : "max-h-32 min-h-14 text-sm",
+          )}
         />
         <div className="flex items-center justify-between gap-2">
           {attachAction ?? (
@@ -94,7 +106,10 @@ export function ChatComposer({
             <Button
               type="submit"
               size="icon"
-              className="size-8 rounded-full shadow-none disabled:bg-border disabled:text-muted-foreground"
+              className={cn(
+                "rounded-full shadow-none disabled:text-muted-foreground",
+                fullPage ? "size-10 disabled:bg-muted" : "size-8 disabled:bg-border",
+              )}
               aria-label="Kirim pesan"
               disabled={!canSend}
             >
