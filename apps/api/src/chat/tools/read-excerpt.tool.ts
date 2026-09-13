@@ -14,9 +14,23 @@ export function readExcerptTool(
         const remaining = evidence.remainingCodePoints(context.maxContextCodePoints);
         if (remaining <= 0)
           return { error: "CONTEXT_LIMIT", message: "Anggaran kutipan sudah penuh." };
+        const snapshots = evidence.values();
+        const scope = context.scopes.find((scope) => {
+          if (scope.nodeId && (reference.kind !== "activity" || reference.nodeId !== scope.nodeId))
+            return false;
+          return snapshots.some((snapshot) => {
+            if (snapshot.moduleId !== scope.moduleId) return false;
+            const target = snapshot.citation.reference;
+            if (reference.kind === "activity")
+              return target.kind === "activity" && target.activityId === reference.activityId;
+            return target.kind === "source" && target.sourceContentId === reference.sourceContentId;
+          });
+        });
+        if (!scope)
+          return { error: "CONTEXT_UNAVAILABLE", message: "Referensi di luar konteks aktif." };
         const snapshot = await knowledge.readExcerpt(
           context.userId,
-          context.moduleId,
+          scope.moduleId,
           reference,
           remaining,
         );

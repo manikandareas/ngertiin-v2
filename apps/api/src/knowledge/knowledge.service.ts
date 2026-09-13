@@ -108,6 +108,7 @@ export class KnowledgeService {
     const startCodePoint = Math.max(0, reference.startCodePoint - MATERIAL_EXCERPT_PADDING);
     const end = Math.min(points.length, reference.endCodePoint + MATERIAL_EXCERPT_PADDING);
     return {
+      moduleId,
       citation: {
         id: randomUUID(),
         origin: reference.kind === "source" ? "original_source" : "generated_material",
@@ -127,8 +128,9 @@ export class KnowledgeService {
     moduleId: string,
     query: string,
     maxCodePoints: number,
+    nodeId?: string,
   ): Promise<SearchResult> {
-    await this.modules.validateChatScope(userId, moduleId);
+    await this.modules.validateChatScope(userId, moduleId, nodeId);
     const unavailable: SearchResult = {
       status: "INDEX_NOT_READY",
       degraded: false,
@@ -145,7 +147,9 @@ export class KnowledgeService {
       version.dimensions !== 1536
     )
       return unavailable;
-    const documents = await this.modules.chatSearchDocuments(userId, moduleId);
+    const documents = (await this.modules.chatSearchDocuments(userId, moduleId)).filter(
+      (document) => !nodeId || document.node_id === nodeId,
+    );
     const documentsById = new Map(documents.map((document) => [document.id, document]));
     const documentIds = documents.flatMap((document) => (document.id ? [document.id] : []));
     const ids = documents.flatMap((item) =>

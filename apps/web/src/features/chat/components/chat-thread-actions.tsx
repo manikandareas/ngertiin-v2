@@ -1,6 +1,6 @@
 import { type ChatThread, chatTitleSchema } from "@ngertiin/contracts/api";
 import { useQueryClient } from "@tanstack/react-query";
-import { MessageCircle, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { useRef, useState } from "react";
 import { Button } from "../../../components/ui/button";
 import { DialogFrame } from "../../../components/ui/dialog-frame";
@@ -19,16 +19,9 @@ type ChatThreadActionsProps = {
   api: ReturnType<typeof chatApi>;
   root: readonly unknown[];
   onDeleted?: () => void;
-  onChooseModule?: () => void;
 };
 
-export function ChatThreadActions({
-  thread,
-  api,
-  root,
-  onDeleted,
-  onChooseModule,
-}: ChatThreadActionsProps) {
+export function ChatThreadActions({ thread, api, root, onDeleted }: ChatThreadActionsProps) {
   const client = useQueryClient();
   const trigger = useRef<HTMLSpanElement>(null);
   const [action, setAction] = useState<"rename" | "delete" | null>(null);
@@ -81,11 +74,6 @@ export function ChatThreadActions({
           </DropdownMenuTrigger>
         </span>
         <DropdownMenuContent align="end">
-          {onChooseModule ? (
-            <DropdownMenuItem onSelect={onChooseModule}>
-              <MessageCircle className="size-4" /> Chat dengan modul lain
-            </DropdownMenuItem>
-          ) : null}
           <DropdownMenuItem
             onSelect={() => {
               setTitle(thread.title);

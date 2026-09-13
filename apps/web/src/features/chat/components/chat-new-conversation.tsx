@@ -1,46 +1,76 @@
-import type { ChatPageContext, ChatThread } from "@ngertiin/contracts/api";
+import type { ChatMention, ChatPageContext, ChatThread } from "@ngertiin/contracts/api";
 import { useQueryClient } from "@tanstack/react-query";
-import { useRef, useState } from "react";
-import { Button } from "../../../components/ui/button";
+import { useEffect, useRef, useState } from "react";
 import { ApiProblemError, type TokenResolver } from "../../../lib/api";
+import { useModule } from "../../modules/api/use-modules";
 import { chatApi } from "../api/chat-api";
+import { mentionDocument, withLockedMention } from "../chat-draft";
 import { patchChatSession, useChatSession } from "../chat-session";
 import { ChatComposer } from "./chat-composer";
-import { ChatContextPicker } from "./chat-context-picker";
 import { ChatWelcome } from "./chat-welcome";
 
 type ChatNewConversationProps = {
   moduleId: string | null;
+  lockedContext?: ChatMention;
   contextLabel?: string;
   pageContext?: ChatPageContext;
   root: readonly unknown[];
   getToken: TokenResolver;
   onCreated: (thread: ChatThread) => void;
-  onChooseModule?: () => void;
-  onRemoveModule?: () => void;
   fullPage?: boolean;
 };
 
 export function ChatNewConversation({
   moduleId,
+  lockedContext,
   contextLabel,
   pageContext,
   root,
   getToken,
   onCreated,
-  onChooseModule,
-  onRemoveModule,
   fullPage = false,
 }: ChatNewConversationProps) {
   const client = useQueryClient();
-  const { session, patch, setDraft, setExcerpts } = useChatSession(
-    root,
-    `new:${moduleId ?? "standalone"}`,
-  );
+  const { session, patch, setDraft } = useChatSession(root, `new:${moduleId ?? "standalone"}`);
+  const module = useModule(pageContext?.surface === "node" ? (moduleId ?? undefined) : undefined);
   const creating = useRef(false);
   const [error, setError] = useState<string | null>(null);
-  const [pickerOpen, setPickerOpen] = useState(false);
-  const attach = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    if (
+      lockedContext ||
+      session.sending ||
+      session.contextSeeded ||
+      (pageContext?.surface === "node" && module.isPending)
+    )
+      return;
+    if (moduleId && !session.draft) {
+      const mention = {
+        moduleId,
+        ...(pageContext?.surface === "node" ? { nodeId: pageContext.nodeId } : {}),
+        label: (pageContext?.surface === "node"
+          ? `${module.data?.title ?? "Modul belajar"}:${contextLabel ?? "Materi"}`
+          : (contextLabel ?? "Modul belajar")
+        ).slice(0, 240),
+      };
+      patch({
+        contextSeeded: true,
+        mentions: [mention],
+        document: mentionDocument(mention),
+        draft: `@${mention.label} `,
+      });
+    } else patch({ contextSeeded: true });
+  }, [
+    moduleId,
+    lockedContext,
+    contextLabel,
+    pageContext,
+    session.contextSeeded,
+    session.sending,
+    session.draft,
+    patch,
+    module.data?.title,
+    module.isPending,
+  ]);
   async function create(text = session.draft) {
     if (!text.trim() || creating.current || session.sending) return;
     creating.current = true;
@@ -53,11 +83,13 @@ export function ChatNewConversation({
       patchChatSession(client, root, thread.id, {
         draft: text.trim(),
         excerpts: session.excerpts,
+        mentions: withLockedMention(session.mentions, lockedContext),
+        document: text === session.draft ? session.document : undefined,
         autoSend: true,
         pageContext,
       });
       client.setQueryData([...root, "thread", thread.id], thread);
-      patch({ draft: "", excerpts: [] });
+      patch({ draft: "", document: undefined, mentions: [], excerpts: [], contextSeeded: false });
       void client.invalidateQueries({ queryKey: [...root, "threads"] });
       onCreated(thread);
     } catch (e) {
@@ -83,76 +115,13 @@ export function ChatNewConversation({
         className={fullPage ? "w-full px-0 pb-0 pt-0 text-left" : undefined}
         fullPage={fullPage}
         draft={session.draft}
-        onDraftChange={setDraft}
+        document={session.document}
+        lockedContext={lockedContext}
+        root={root}
+        getToken={getToken}
+        onDraftChange={(draft, document, mentions) => patch({ draft, document, mentions })}
         onSend={() => void create()}
         disabled={session.sending}
-        contextLabel={contextLabel}
-        attachAction={
-          <div className="flex flex-wrap gap-1">
-            {onChooseModule ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="h-8 px-2 text-xs normal-case"
-                disabled={session.sending}
-                onClick={onChooseModule}
-              >
-                {moduleId ? "Ubah modul" : "Tambahkan konteks"}
-              </Button>
-            ) : null}
-            {moduleId ? (
-              <span ref={attach}>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 px-2 text-xs normal-case"
-                  disabled={session.sending}
-                  onClick={() => setPickerOpen(true)}
-                >
-                  Kutip materi
-                </Button>
-              </span>
-            ) : null}
-            {moduleId && onRemoveModule ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                aria-label="Hapus konteks modul"
-                disabled={session.sending}
-                onClick={onRemoveModule}
-              >
-                ×
-              </Button>
-            ) : null}
-          </div>
-        }
-        attachments={
-          session.excerpts.length ? (
-            <div className="space-y-2 py-2">
-              {session.excerpts.map((item, index) => (
-                <div
-                  key={JSON.stringify(item.reference)}
-                  className="flex gap-2 rounded-lg border p-2 text-xs"
-                >
-                  <span className="min-w-0 flex-1 truncate">
-                    {item.title}: {item.excerpt}
-                  </span>
-                  <button
-                    type="button"
-                    aria-label="Hapus kutipan"
-                    disabled={session.sending}
-                    onClick={() => setExcerpts((items) => items.filter((_, i) => i !== index))}
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
-            </div>
-          ) : undefined
-        }
       />
       {session.sending ? (
         <p role="status" className="pb-2 text-center text-xs text-muted-foreground">
@@ -188,25 +157,6 @@ export function ChatNewConversation({
         </div>
       </div>
       {!fullPage ? composer : null}
-      {pickerOpen && moduleId ? (
-        <ChatContextPicker
-          moduleId={moduleId}
-          api={chatApi(getToken, moduleId)}
-          root={root}
-          pageContext={pageContext ?? { surface: "journey" }}
-          onClose={() => setPickerOpen(false)}
-          returnFocus={() => attach.current?.querySelector("button")?.focus()}
-          onSelect={(item) => {
-            setExcerpts((items) => [
-              ...items.filter(
-                (previous) => JSON.stringify(previous.reference) !== JSON.stringify(item.reference),
-              ),
-              item,
-            ]);
-            setPickerOpen(false);
-          }}
-        />
-      ) : null}
     </>
   );
 }

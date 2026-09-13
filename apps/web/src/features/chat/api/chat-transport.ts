@@ -62,6 +62,7 @@ export function createChatTransport(options: {
         pageContext: body?.pageContext as ChatPageContext | undefined,
         retryOfRunId: body?.retryOfRunId,
         references: body?.references,
+        mentions: body?.mentions,
       });
       const key =
         typeof body?.idempotencyKey === "string" ? body.idempotencyKey : crypto.randomUUID();

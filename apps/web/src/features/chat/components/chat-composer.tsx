@@ -1,41 +1,50 @@
-import { ArrowUp02Icon, Book02Icon } from "@hugeicons/core-free-icons";
+import { ArrowUp02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import type { ReactNode } from "react";
+import type { ChatMention } from "@ngertiin/contracts/api";
+import type { JSONContent } from "@tiptap/react";
+import { lazy, Suspense } from "react";
 import { Button } from "../../../components/ui/button";
-import { Textarea } from "../../../components/ui/textarea";
+import type { TokenResolver } from "../../../lib/api";
 import { cn } from "../../../lib/utils";
-import { CHAT_AGENT_NAME } from "../constants";
+import { draftMentions, hasEditableDraft } from "../chat-draft";
+
+const ChatMentionInput = lazy(() =>
+  import("./chat-mention-input").then((module) => ({ default: module.ChatMentionInput })),
+);
 
 type ChatComposerProps = {
   draft: string;
-  onDraftChange: (value: string) => void;
+  onDraftChange: (value: string, document: JSONContent, mentions: ChatMention[]) => void;
+  document?: JSONContent;
+  lockedContext?: ChatMention;
+  root: readonly unknown[];
+  getToken: TokenResolver;
   onSend: () => void;
-  contextLabel?: string;
   className?: string;
   disabled?: boolean;
   fullPage?: boolean;
   active?: boolean;
   cancelling?: boolean;
   onCancel?: () => void;
-  attachments?: ReactNode;
-  attachAction?: ReactNode;
 };
 
 export function ChatComposer({
   draft,
   onDraftChange,
+  document,
+  lockedContext,
+  root,
+  getToken,
   onSend,
-  contextLabel,
   className,
   disabled,
   fullPage = false,
   active = false,
   cancelling = false,
   onCancel,
-  attachments,
-  attachAction,
 }: ChatComposerProps) {
-  const canSend = Boolean(draft.trim()) && !disabled && !active;
+  const tooManyMentions = draftMentions(document).length > 8;
+  const canSend = hasEditableDraft(document, draft) && !disabled && !active && !tooManyMentions;
 
   return (
     <form
@@ -52,45 +61,34 @@ export function ChatComposer({
             : "rounded-card border bg-muted p-2.5 focus-within:border-input"
         }
       >
-        {contextLabel ? (
-          <div
-            className="inline-flex max-w-[min(75%,15rem)] items-center gap-1.5 rounded-full bg-foreground/5 px-2.5 py-1 text-[11px] text-muted-foreground"
-            title={contextLabel}
-          >
-            <HugeiconsIcon
-              icon={Book02Icon}
-              size={14}
-              strokeWidth={1.5}
-              className="shrink-0 text-muted-foreground"
-              aria-hidden="true"
-            />
-            <span className="truncate">{contextLabel}</span>
-          </div>
-        ) : null}
-        {attachments}
-        <Textarea
-          aria-label={`Pesan untuk ${CHAT_AGENT_NAME}`}
-          placeholder="Tanyakan yang belum kamu pahami…"
-          value={draft}
-          onChange={(event) => onDraftChange(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
-              event.preventDefault();
+        <Suspense
+          fallback={
+            <div className="min-h-16 py-2 text-sm text-muted-foreground" role="status">
+              Menyiapkan kolom pesan…
+            </div>
+          }
+        >
+          <ChatMentionInput
+            draft={draft}
+            document={document}
+            lockedContext={lockedContext}
+            onChange={onDraftChange}
+            onSend={() => {
               if (canSend) onSend();
-            }
-          }}
-          rows={2}
-          className={cn(
-            "resize-none border-0 bg-transparent px-0.5 py-2 shadow-none focus-visible:outline-none focus-visible:ring-0",
-            fullPage ? "max-h-48 min-h-16 text-base" : "max-h-32 min-h-14 text-sm",
-          )}
-        />
+            }}
+            disabled={disabled || active}
+            root={root}
+            getToken={getToken}
+            fullPage={fullPage}
+          />
+        </Suspense>
         <div className="flex items-center justify-between gap-2">
-          {attachAction ?? (
-            <span className="text-[10px] text-muted-foreground">
-              {contextLabel ? "Percakapan dalam modul ini" : "Tanyakan apa yang ingin kamu pahami"}
-            </span>
-          )}
+          <span
+            role={tooManyMentions ? "alert" : undefined}
+            className="text-[10px] text-muted-foreground"
+          >
+            {tooManyMentions ? "Maksimal 8 konteks per pesan" : "Ketik @ untuk konteks"}
+          </span>
           {active ? (
             <Button
               type="button"

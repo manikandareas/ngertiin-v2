@@ -14,21 +14,25 @@ export function searchModuleMaterialsTool(
       const remaining = evidence.remainingCodePoints(context.maxContextCodePoints);
       if (remaining <= 2 * MATERIAL_EXCERPT_PADDING)
         return { error: "CONTEXT_LIMIT", message: "Anggaran kutipan sudah penuh." };
-      const result = await knowledge.search(context.userId, context.moduleId, query, remaining);
-      let message: string | undefined;
-      if (result.status === "INDEX_NOT_READY") {
-        message = "Indeks belum lengkap. Jelaskan keterbatasan bukti yang tersedia.";
-      } else if (result.degraded) {
-        message =
-          "Pencarian terbatas pada kata kunci karena embedding tidak tersedia. Sebutkan keterbatasan ini.";
-      }
-      return {
-        status: result.status,
-        degraded: result.degraded,
-        message,
-        snapshots: result.snapshots.filter((snapshot) =>
-          evidence.tryAdd(snapshot, context.maxContextCodePoints),
+      const results = await Promise.all(
+        context.scopes.map((scope) =>
+          knowledge.search(
+            context.userId,
+            scope.moduleId,
+            query,
+            Math.floor(remaining / context.scopes.length),
+            scope.nodeId,
+          ),
         ),
+      );
+      return {
+        status: results.some((result) => result.status === "INDEX_NOT_READY")
+          ? "INDEX_NOT_READY"
+          : "ready",
+        degraded: results.some((result) => result.degraded),
+        snapshots: results
+          .flatMap((result) => result.snapshots)
+          .filter((snapshot) => evidence.tryAdd(snapshot, context.maxContextCodePoints)),
       };
     },
     {

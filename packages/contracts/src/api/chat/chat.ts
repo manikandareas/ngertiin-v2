@@ -67,6 +67,7 @@ export const chatCitationSchema = z.object({
 export type ChatCitation = z.infer<typeof chatCitationSchema>;
 export const chatCitationSnapshotSchema = z.object({
   citation: chatCitationSchema,
+  moduleId: uuidSchema.optional(),
   text: z.string(),
   startCodePoint: z.number().int().nonnegative(),
   capturedAt: timestampSchema,
@@ -122,9 +123,25 @@ export const chatPaginationSchema = z.object({
   cursor: z.string().max(2048).optional(),
   limit: z.coerce.number().int().min(1).max(100).default(20),
 });
+export const chatScopeSchema = z
+  .object({
+    moduleId: uuidSchema,
+    nodeId: uuidSchema.optional(),
+  })
+  .strict();
+export type ChatScope = z.infer<typeof chatScopeSchema>;
+export const chatMentionSchema = chatScopeSchema.extend({
+  label: z.string().trim().min(1).max(240),
+});
+export type ChatMention = z.infer<typeof chatMentionSchema>;
+export const chatMessageScopeSchema = z.object({
+  mentions: z.array(chatMentionSchema).max(8),
+  scopes: z.array(chatScopeSchema).max(8),
+});
 export const sendChatMessageSchema = z
   .object({
     text: z.string().trim().min(1),
+    mentions: z.array(chatMentionSchema).max(8).optional(),
     pageContext: chatPageContextSchema.optional(),
     references: z.array(chatContextReferenceSchema).default([]),
     retryOfRunId: uuidSchema.optional(),
@@ -163,6 +180,8 @@ export const chatMessageSchema = z.object({
   role: z.enum(["user", "assistant"]),
   parts: z.array(chatPartSchema),
   contexts: z.array(chatPageContextSchema),
+  mentions: z.array(chatMentionSchema).default([]),
+  scopes: z.array(chatScopeSchema).default([]),
   references: z.array(chatContextReferenceSchema).default([]),
   createdAt: timestampSchema,
   availability: z.enum(["available", "unavailable"]),

@@ -13,7 +13,6 @@ import {
   type ChatCitationSelection,
 } from "../features/chat/components/chat-citation";
 import { ChatConversation } from "../features/chat/components/chat-conversation";
-import { ChatModulePicker } from "../features/chat/components/chat-module-picker";
 import { ChatNewConversation } from "../features/chat/components/chat-new-conversation";
 import { ChatThreadActions } from "../features/chat/components/chat-thread-actions";
 import { useChatThreads } from "../features/chat/use-chat-threads";
@@ -53,13 +52,6 @@ function ConnectedChatPage() {
   const { session } = useChatSession(chat.root, sessionId);
   const [citation, setCitation] = useState<ChatCitationSelection | null>(null);
   const citationTrigger = useRef<HTMLElement | null>(null);
-  const [pickerOpen, setPickerOpen] = useState(false);
-  const pickerTrigger = useRef<HTMLElement | null>(null);
-  function openPicker() {
-    pickerTrigger.current =
-      document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    setPickerOpen(true);
-  }
   function chooseModule(nextId: string | null) {
     if (!threadId)
       patchChatSession(client, chat.root, `new:${nextId ?? "standalone"}`, {
@@ -67,7 +59,6 @@ function ConnectedChatPage() {
         excerpts: [],
         pageContext: undefined,
       });
-    setPickerOpen(false);
     if (threadId) navigate(nextId ? `/chat?moduleId=${nextId}` : "/chat");
     else setSearch(nextId ? { moduleId: nextId } : {});
   }
@@ -116,9 +107,6 @@ function ConnectedChatPage() {
           root={chat.root}
           getToken={chat.getToken}
           moduleId={thread.moduleId}
-          pageContext={pageContext}
-          contextLabel={contextLabel}
-          onChooseModule={openPicker}
           onOpenCitation={(selection) => {
             citationTrigger.current =
               document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -155,8 +143,6 @@ function ConnectedChatPage() {
         root={chat.root}
         getToken={chat.getToken}
         onCreated={(created) => navigate(`/chat/${created.id}`, { replace: true })}
-        onChooseModule={openPicker}
-        onRemoveModule={() => chooseModule(null)}
         fullPage
       />
     );
@@ -185,7 +171,7 @@ function ConnectedChatPage() {
               {thread?.title ?? "Chat baru"}
             </h1>
             {contextLabel ? (
-              <p className="truncate text-xs text-muted-foreground">{contextLabel}</p>
+              <p className="truncate text-xs text-muted-foreground">Dibuka dari {contextLabel}</p>
             ) : null}
           </div>
           {moduleId ? (
@@ -215,21 +201,12 @@ function ConnectedChatPage() {
               thread={thread}
               api={chat.api}
               root={chat.root}
-              onChooseModule={thread.moduleId ? openPicker : undefined}
               onDeleted={() => navigate("/chat", { replace: true })}
             />
           ) : null}
         </header>
       ) : null}
       {renderContent()}
-      {pickerOpen ? (
-        <ChatModulePicker
-          startsNew={Boolean(threadId)}
-          onClose={() => setPickerOpen(false)}
-          returnFocus={() => pickerTrigger.current?.focus()}
-          onSelect={(selected) => chooseModule(selected.id)}
-        />
-      ) : null}
     </AppShell>
   );
 }

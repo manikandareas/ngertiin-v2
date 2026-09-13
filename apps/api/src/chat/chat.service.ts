@@ -17,9 +17,11 @@ import {
   type ChatPart,
   type ChatRunError,
   type ChatRunStatus,
+  type ChatScope,
   type ChatUsage,
   chatCitationSnapshotSchema,
   chatMessageSchema,
+  chatMessageScopeSchema,
   chatPageContextSchema,
   chatPartSchema,
   chatRunSchema,
@@ -59,6 +61,7 @@ import { InfrastructureService } from "../infrastructure/infrastructure.service.
 import { KnowledgeService } from "../knowledge/knowledge.service.js";
 import { ModulesService } from "../modules/modules.service.js";
 import { ChatExecutionBudget } from "./chat.budget.js";
+import { resolveMessageScope } from "./chat.context.js";
 import { chatFailureStatus, withAbortGrace } from "./chat.execution.js";
 import { chatPage, readChatCursor } from "./chat.pagination.js";
 import { ChatPubSub } from "./chat.pubsub.js";
@@ -346,18 +349,20 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
     moduleId: string | null,
     snapshots: ChatCitationSnapshot[],
   ) {
-    if (!moduleId) return snapshots.length === 0;
     try {
       const authorized = new Set<string>();
       for (const snapshot of snapshots) {
+        const evidenceModuleId = snapshot.moduleId ?? moduleId;
+        if (!evidenceModuleId) return false;
         const reference = snapshot.citation.reference;
         const key =
           reference.kind === "activity"
             ? `activity:${reference.nodeId}:${reference.activityId}`
             : `source:${reference.sourceId}`;
-        if (authorized.has(key)) continue;
-        await this.modules.validateChatMaterial(userId, moduleId, reference);
-        authorized.add(key);
+        const authorizationKey = `${evidenceModuleId}:${key}`;
+        if (authorized.has(authorizationKey)) continue;
+        await this.modules.validateChatMaterial(userId, evidenceModuleId, reference);
+        authorized.add(authorizationKey);
       }
       return true;
     } catch (error) {
@@ -448,6 +453,12 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
                 },
               ]
             : row.parts_json,
+        ...chatMessageScopeSchema.parse(
+          contexts.find((c) => c.message_id === row.id && c.kind === "scope")?.reference_json ?? {
+            mentions: [],
+            scopes: [],
+          },
+        ),
         contexts: contexts
           .filter((c) => c.message_id === row.id && c.kind === "page")
           .map((c) => c.reference_json),
@@ -679,6 +690,45 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
             )
             .limit(1);
           if (active) this.conflict();
+          const [previousScope] = await tx
+            .select({ value: chat_message_contexts.reference_json })
+            .from(chat_message_contexts)
+            .innerJoin(chat_messages, eq(chat_messages.id, chat_message_contexts.message_id))
+            .where(
+              and(eq(chat_messages.thread_id, threadId), eq(chat_message_contexts.kind, "scope")),
+            )
+            .orderBy(desc(chat_messages.sequence))
+            .limit(1);
+          const [retryScope] = input.retryOfRunId
+            ? await tx
+                .select({ value: chat_message_contexts.reference_json })
+                .from(chat_message_contexts)
+                .innerJoin(chat_messages, eq(chat_messages.id, chat_message_contexts.message_id))
+                .where(
+                  and(
+                    eq(chat_messages.run_id, input.retryOfRunId),
+                    eq(chat_message_contexts.kind, "scope"),
+                  ),
+                )
+                .limit(1)
+            : [];
+          const legacyScope =
+            moduleId && (input.mentions === undefined || thread.next_sequence > 1)
+              ? {
+                  moduleId,
+                  ...(input.pageContext?.surface === "node"
+                    ? { nodeId: input.pageContext.nodeId }
+                    : {}),
+                }
+              : undefined;
+          const { mentions, scopes } = resolveMessageScope(
+            input,
+            previousScope?.value,
+            retryScope?.value,
+            legacyScope,
+          );
+          for (const scope of scopes)
+            await this.modules.validateChatScope(userId, scope.moduleId, scope.nodeId);
           const [global] = await tx
             .select({ total: count() })
             .from(chat_runs)
@@ -724,6 +774,9 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
             role: "user",
             parts_json: [{ type: "text", text: input.text }],
           });
+          await tx
+            .insert(chat_message_contexts)
+            .values({ message_id: messageId, kind: "scope", reference_json: { mentions, scopes } });
           if (evidence.length)
             await tx
               .insert(chat_message_contexts)
@@ -865,7 +918,7 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
   private async promptMessages(
     run: RunRow,
     model: ReturnType<AiService["createChatModel"]>,
-    scope: { userId: string; moduleId: string | null },
+    scope: { userId: string; moduleId: string | null; scopes: ChatScope[] },
     evidence: LearningEvidence,
   ) {
     const [user] = await this.db
@@ -888,6 +941,7 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
     const messages: BaseMessage[] = [
       new HumanMessage(
         textOf(user.parts_json) +
+          `\nCakupan materi aktif untuk pesan ini (ditentukan server): ${JSON.stringify(scope.scopes)}. Mention baru menggantikan cakupan lama; history tetap untuk kesinambungan diskusi.` +
           materialPrompt(currentEvidence) +
           (page ? `\nMetadata halaman saat pesan dikirim: ${JSON.stringify(page)}` : ""),
       ),
@@ -1183,7 +1237,9 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
       },
       Math.min(this.env.CHAT_HEARTBEAT_MS, this.env.CHAT_CANCEL_POLL_MS),
     );
-    let executionScope: { userId: string; moduleId: string | null } | undefined;
+    let executionScope:
+      | { userId: string; moduleId: string | null; scopes: ChatScope[] }
+      | undefined;
     let savedText = "";
     let saving = Promise.resolve();
     const save = () => {
@@ -1191,8 +1247,12 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
         assertActive();
         const snapshotText = text;
         if (executionScope) {
-          if (executionScope.moduleId)
-            await this.modules.validateChatScope(executionScope.userId, executionScope.moduleId);
+          for (const scope of executionScope.scopes)
+            await this.modules.validateChatScope(
+              executionScope.userId,
+              scope.moduleId,
+              scope.nodeId,
+            );
           if (
             !(await this.canReadEvidence(
               executionScope.userId,
@@ -1275,23 +1335,41 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
       await this.publish(initial);
       assertActive();
       const model = this.ai.createChatModel();
+      const [scopeRow] = await this.db
+        .select()
+        .from(chat_message_contexts)
+        .where(
+          and(
+            eq(chat_message_contexts.message_id, run.user_message_id ?? ""),
+            eq(chat_message_contexts.kind, "scope"),
+          ),
+        )
+        .limit(1);
+      let scopes: ChatScope[] = [];
+      if (scopeRow) {
+        scopes = chatMessageScopeSchema.parse(scopeRow.reference_json).scopes;
+      } else if (thread.module_id) {
+        scopes = [{ moduleId: thread.module_id }];
+      }
+      for (const scope of scopes)
+        await this.modules.validateChatScope(thread.user_id, scope.moduleId, scope.nodeId);
       const context = Object.freeze({
         userId: thread.user_id,
         moduleId: thread.module_id,
+        scopes,
         maxContextCodePoints: this.env.CHAT_CONTEXT_MAX_CODE_POINTS,
       });
       executionScope = context;
       const messages = await this.promptMessages(run, model, context, evidence);
       await save(); // Commit inherited dependencies before the first provider call.
       const tools: Parameters<typeof createLearningAgent>[2] = [];
-      if (context.moduleId) {
-        const moduleContext = { ...context, moduleId: context.moduleId };
+      if (context.scopes.length) {
         tools.push(
-          readExcerptTool(this.knowledge, moduleContext, evidence),
-          readProgressTool(this.modules, moduleContext),
+          readExcerptTool(this.knowledge, context, evidence),
+          readProgressTool(this.modules, context),
           searchModuleMaterialsTool(
             this.knowledge,
-            moduleContext,
+            context,
             evidence,
             this.env.CHAT_INPUT_MAX_CODE_POINTS,
           ),

@@ -4,9 +4,11 @@ import type {
   CreateModuleBodyInput,
   GenerationStatus,
   ListModulesQueryInput,
+  ListModulesResponse,
   SubmitAttemptBody,
 } from "@ngertiin/contracts/api";
 import {
+  type InfiniteData,
   type QueryClient,
   useInfiniteQuery,
   useMutation,
@@ -420,7 +422,21 @@ export function useArchiveModule(moduleId: string) {
     mutationFn: () => archiveModule(getToken, moduleId),
     onSuccess: async (module) => {
       queryClient.setQueryData(moduleQueryKey(userId, moduleId), module);
+      queryClient.setQueriesData<InfiniteData<ListModulesResponse>>(
+        { queryKey: ["chat", userId, "mention-modules"] },
+        (previous) =>
+          previous
+            ? {
+                ...previous,
+                pages: previous.pages.map((page) => ({
+                  ...page,
+                  data: page.data.filter((item) => item.id !== moduleId),
+                })),
+              }
+            : previous,
+      );
       await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["chat", userId, "mention-modules"] }),
         queryClient.invalidateQueries({ queryKey: journeyQueryKey(userId, moduleId) }),
         invalidateModuleCollections(queryClient, userId),
       ]);

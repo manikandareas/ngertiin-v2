@@ -1,10 +1,18 @@
-import type { ChatAcknowledgment, ChatPageContext } from "@ngertiin/contracts/api";
+import type {
+  ChatAcknowledgment,
+  ChatContextReference,
+  ChatMention,
+  ChatPageContext,
+} from "@ngertiin/contracts/api";
 import { type QueryClient, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { JSONContent } from "@tiptap/react";
 import { useCallback } from "react";
-import type { SelectedChatExcerpt } from "./components/chat-context-picker";
+
+type SelectedChatExcerpt = { reference: ChatContextReference; title: string; excerpt: string };
 
 export type PendingChatMessage = {
   key: string;
+  mentions: ChatMention[];
   text: string;
   pageContext?: ChatPageContext;
   retryOfRunId?: string;
@@ -12,6 +20,9 @@ export type PendingChatMessage = {
 };
 export type ChatSession = {
   draft: string;
+  document?: JSONContent;
+  mentions: ChatMention[];
+  contextSeeded?: boolean;
   excerpts: SelectedChatExcerpt[];
   pending: { current: PendingChatMessage | null };
   ack: ChatAcknowledgment | null;
@@ -21,6 +32,7 @@ export type ChatSession = {
 };
 const emptySession = (): ChatSession => ({
   draft: "",
+  mentions: [],
   excerpts: [],
   pending: { current: null },
   ack: null,
@@ -61,7 +73,10 @@ export function useChatSession(root: readonly unknown[], id: string) {
     (value: string | ((previous: string) => string)) => {
       client.setQueryData<ChatSession>(sessionKey(root, id), (current) => {
         const previous = current ?? emptySession();
-        return { ...previous, draft: typeof value === "function" ? value(previous.draft) : value };
+        const draft = typeof value === "function" ? value(previous.draft) : value;
+        return draft === previous.draft
+          ? previous
+          : { ...previous, draft, document: undefined, mentions: [] };
       });
     },
     [client, root, id],

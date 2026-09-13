@@ -74,7 +74,7 @@ export function ChatPanel({ open, onOpenChange, layout, children }: ChatPanelPro
           onOpenAutoFocus={(event) => {
             event.preventDefault();
             (
-              panel.current?.querySelector<HTMLTextAreaElement>("textarea") ?? panel.current
+              panel.current?.querySelector<HTMLElement>('[role="textbox"]') ?? panel.current
             )?.focus();
           }}
           onCloseAutoFocus={(event) => {

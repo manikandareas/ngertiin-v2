@@ -1,8 +1,10 @@
-import type { ChatPageContext } from "@ngertiin/contracts/api";
+import type { ChatMention, ChatPageContext } from "@ngertiin/contracts/api";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../../../components/ui/button";
 import { isClerkConfigured } from "../../../config";
+import { useModule } from "../../modules/api/use-modules";
 import { patchChatSession, useChatSession } from "../chat-session";
 import { useModuleChat } from "../use-module-chat";
 import { ChatConversation } from "./chat-conversation";
@@ -16,6 +18,19 @@ export function ChatSidebar(props: Props) {
 }
 function ConnectedChatSidebar({ moduleId, pageContext, contextLabel = "Modul ini" }: Props) {
   const chat = useModuleChat(moduleId);
+  const nodeId = pageContext.surface === "node" ? pageContext.nodeId : undefined;
+  const module = useModule(nodeId ? moduleId : undefined);
+  const lockedContext = useMemo<ChatMention>(
+    () => ({
+      moduleId,
+      ...(nodeId ? { nodeId } : {}),
+      label: (nodeId
+        ? `${(module.data?.title ?? "Modul belajar").slice(0, 120)}:${contextLabel.slice(0, 119)}`
+        : contextLabel
+      ).slice(0, 240),
+    }),
+    [moduleId, nodeId, module.data?.title, contextLabel],
+  );
   const client = useQueryClient();
   const navigate = useNavigate();
   const { session: newSession } = useChatSession(chat.root, `new:${moduleId}`);
@@ -60,8 +75,7 @@ function ConnectedChatSidebar({ moduleId, pageContext, contextLabel = "Modul ini
           root={chat.root}
           getToken={chat.getToken}
           moduleId={moduleId}
-          pageContext={pageContext}
-          contextLabel={contextLabel}
+          lockedContext={lockedContext}
         />
       ) : chat.selectedId || chat.threads.isPending ? (
         <p role="status" className="p-5 text-sm text-muted-foreground">
@@ -70,6 +84,7 @@ function ConnectedChatSidebar({ moduleId, pageContext, contextLabel = "Modul ini
       ) : (
         <ChatNewConversation
           moduleId={moduleId}
+          lockedContext={lockedContext}
           contextLabel={contextLabel}
           pageContext={pageContext}
           root={chat.root}

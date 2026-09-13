@@ -1,8 +1,7 @@
 import { useChat } from "@ai-sdk/react";
-import { Attachment01Icon, Cancel01Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import {
   type ChatAcknowledgment,
+  type ChatMention,
   type ChatPageContext,
   type ChatThread,
   chatCitationSchema,
@@ -23,11 +22,11 @@ import { Button } from "../../../components/ui/button";
 import { ApiProblemError, type TokenResolver } from "../../../lib/api";
 import type { chatApi } from "../api/chat-api";
 import { createChatTransport, type LearningMessage, toUIMessage } from "../api/chat-transport";
+import { withLockedMention } from "../chat-draft";
 import { useChatSession } from "../chat-session";
 import { CHAT_AGENT_NAME } from "../constants";
 import { type ChatCitationSelection, ChatCitedAnswer } from "./chat-citation";
 import { ChatComposer } from "./chat-composer";
-import { ChatContextPicker } from "./chat-context-picker";
 import { ChatMascot } from "./chat-mascot";
 import { ChatWelcome } from "./chat-welcome";
 
@@ -37,9 +36,7 @@ type ChatConversationProps = {
   root: readonly unknown[];
   getToken: TokenResolver;
   moduleId: string | null;
-  pageContext?: ChatPageContext;
-  contextLabel?: string;
-  onChooseModule?: () => void;
+  lockedContext?: ChatMention;
   fullPage?: boolean;
   onOpenCitation?: (selection: ChatCitationSelection) => void;
 };
@@ -50,9 +47,7 @@ export function ChatConversation({
   root,
   getToken,
   moduleId,
-  pageContext,
-  contextLabel,
-  onChooseModule,
+  lockedContext,
   fullPage = false,
   onOpenCitation,
 }: ChatConversationProps) {
@@ -61,8 +56,6 @@ export function ChatConversation({
   const { draft, excerpts, pending, ack } = session;
   const setAck = useCallback((value: ChatAcknowledgment | null) => patch({ ack: value }), [patch]);
   const initialSent = useRef(false);
-  const [pickerOpen, setPickerOpen] = useState(false);
-  const attachButton = useRef<HTMLSpanElement>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -242,7 +235,8 @@ export function ChatConversation({
     retryOfRunId?: string,
     text = draft,
     references = excerpts.map((item) => item.reference),
-    sentPageContext = pageContext,
+    sentPageContext: ChatPageContext | undefined = undefined,
+    mentions = withLockedMention(session.mentions, lockedContext),
   ) {
     const trimmed = text.trim();
     if (!trimmed || active || history.isPending || history.isError) return;
@@ -255,6 +249,7 @@ export function ChatConversation({
       JSON.stringify(pending.current.pageContext) !== JSON.stringify(sentPageContext) ||
       pending.current.retryOfRunId !== retryOfRunId ||
       JSON.stringify(pending.current.references) !== JSON.stringify(references) ||
+      JSON.stringify(pending.current.mentions) !== JSON.stringify(mentions) ||
       ack
     ) {
       pending.current = {
@@ -263,6 +258,7 @@ export function ChatConversation({
         pageContext: sentPageContext,
         retryOfRunId,
         references,
+        mentions,
       };
     }
     setAck(null);
@@ -275,6 +271,7 @@ export function ChatConversation({
             pageContext: sentPageContext,
             retryOfRunId,
             references: pending.current.references,
+            mentions: pending.current.mentions,
             idempotencyKey: pending.current.key,
           },
         },
@@ -436,7 +433,8 @@ export function ChatConversation({
                       .map((p) => p.text)
                       .join(""),
                     retryMessage.references,
-                    retryMessage.contexts[0] ?? pageContext,
+                    retryMessage.contexts[0],
+                    retryMessage.mentions,
                   )
                 }
                 disabled={active}
@@ -465,89 +463,19 @@ export function ChatConversation({
       </div>
       <ChatComposer
         draft={draft}
-        onDraftChange={setDraft}
+        document={session.document}
+        lockedContext={lockedContext}
+        root={root}
+        getToken={getToken}
+        fullPage={fullPage}
+        onDraftChange={(draft, document, mentions) => patch({ draft, document, mentions })}
         onSend={() => void send()}
-        contextLabel={contextLabel}
         className={fullPage ? "mx-auto w-full max-w-3xl" : undefined}
         disabled={history.isPending || history.isError}
         active={active}
         cancelling={cancelling || !runId}
         onCancel={() => void cancel()}
-        attachments={
-          excerpts.length ? (
-            <div className="mt-3 max-h-32 space-y-2 overflow-y-auto">
-              {excerpts.map((item, index) => (
-                <div
-                  key={JSON.stringify(item.reference)}
-                  className="flex items-start gap-2 rounded-xl bg-accent/50 p-3 text-xs"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-semibold">{item.title}</p>
-                    <p className="mt-1 line-clamp-2 text-muted-foreground">{item.excerpt}</p>
-                  </div>
-                  <Button
-                    type="button"
-                    size="icon"
-                    variant="ghost"
-                    className="size-6"
-                    aria-label="Hapus kutipan"
-                    disabled={active}
-                    onClick={() => setExcerpts((items) => items.filter((_, i) => i !== index))}
-                  >
-                    <HugeiconsIcon icon={Cancel01Icon} aria-hidden="true" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          ) : null
-        }
-        attachAction={
-          moduleId ? (
-            <span ref={attachButton}>
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                className="h-8 px-1 text-xs font-semibold normal-case text-muted-foreground"
-                disabled={active}
-                onClick={() => setPickerOpen(true)}
-              >
-                <HugeiconsIcon icon={Attachment01Icon} strokeWidth={1.5} aria-hidden="true" />
-                Kutip materi
-              </Button>
-            </span>
-          ) : onChooseModule ? (
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              className="h-8 px-2 text-xs normal-case"
-              onClick={onChooseModule}
-            >
-              Tambahkan konteks
-            </Button>
-          ) : undefined
-        }
       />
-      {pickerOpen && moduleId ? (
-        <ChatContextPicker
-          moduleId={moduleId}
-          api={api}
-          root={root}
-          pageContext={pageContext ?? { surface: "journey" }}
-          onClose={() => setPickerOpen(false)}
-          returnFocus={() => attachButton.current?.querySelector("button")?.focus()}
-          onSelect={(excerpt) => {
-            setExcerpts((items) => [
-              ...items.filter(
-                (item) => JSON.stringify(item.reference) !== JSON.stringify(excerpt.reference),
-              ),
-              excerpt,
-            ]);
-            setPickerOpen(false);
-          }}
-        />
-      ) : null}
     </>
   );
 }

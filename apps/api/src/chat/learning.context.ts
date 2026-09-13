@@ -1,9 +1,9 @@
-import type { ChatCitationSnapshot } from "@ngertiin/contracts/api";
+import type { ChatCitationSnapshot, ChatScope } from "@ngertiin/contracts/api";
 
 /** Scope is server-owned and never accepted as model tool arguments. */
 export type LearningContext = Readonly<{
   userId: string;
-  moduleId: string;
+  scopes: readonly ChatScope[];
   maxContextCodePoints: number;
 }>;
 
