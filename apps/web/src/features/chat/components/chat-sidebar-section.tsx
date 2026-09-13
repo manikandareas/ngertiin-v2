@@ -1,6 +1,6 @@
 import { Chat01Icon, Search01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { X } from "lucide-react";
+import { LoaderCircle, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Button } from "../../../components/ui/button";
@@ -174,11 +174,15 @@ export function ChatSidebarSection({ collapsed = false }: { collapsed?: boolean 
                           className="size-[18px] shrink-0 text-muted-foreground"
                           aria-hidden="true"
                         />
-                        <span className="min-w-0 flex-1">
-                          <span className="thread-title block truncate">{thread.title}</span>
+                        <span className="flex min-w-0 flex-1 items-center gap-2">
+                          <span className="thread-title truncate">{thread.title}</span>
                           {thread.activeRunId ? (
-                            <span className="block text-[10px] text-muted-foreground">
-                              Sedang menjawab…
+                            <span role="status" className="shrink-0 text-muted-foreground">
+                              <LoaderCircle
+                                className="size-3.5 motion-safe:animate-spin"
+                                aria-hidden="true"
+                              />
+                              <span className="sr-only">Sedang menjawab…</span>
                             </span>
                           ) : null}
                         </span>

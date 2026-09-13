@@ -298,7 +298,7 @@ export function ChatConversation({
         <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
           <div
             ref={contentRef}
-            className="flex min-h-full flex-col px-6 pb-4 pt-5 [&>*]:shrink-0"
+            className={`flex min-h-full flex-col px-6 pb-4 [&>*]:shrink-0 ${fullPage ? "pt-8 sm:pt-12" : "pt-5"}`}
             style={
               fullPage ? { paddingInline: "max(1rem, calc((100% - 48rem) / 2 + 1rem))" } : undefined
             }
@@ -340,14 +340,14 @@ export function ChatConversation({
                 key={message.id}
                 className={
                   message.role === "user"
-                    ? "mb-6 ml-auto max-w-[90%] rounded-2xl rounded-br-sm bg-muted px-4 py-3 text-sm leading-7"
-                    : "mb-7 text-sm leading-7"
+                    ? `ml-auto max-w-[90%] rounded-2xl bg-muted px-4 py-2.5 text-sm leading-7 ${fullPage ? "mb-10" : "mb-6 rounded-br-sm"}`
+                    : `${fullPage ? "mb-10" : "mb-7"} text-sm leading-7`
                 }
               >
                 {message === activeAssistant ? (
                   <div className="mb-3">{loadingIndicator}</div>
                 ) : null}
-                {message.role === "assistant" && message !== activeAssistant ? (
+                {!fullPage && message.role === "assistant" && message !== activeAssistant ? (
                   <div className="mb-3 flex items-center gap-2 text-xs font-bold">
                     <ChatMascot className="size-7" />
                     {CHAT_AGENT_NAME}
@@ -460,7 +460,7 @@ export function ChatConversation({
         fullPage={fullPage}
         onDraftChange={(draft, document, mentions) => patch({ draft, document, mentions })}
         onSend={() => void send()}
-        className={fullPage ? "mx-auto w-full max-w-3xl" : undefined}
+        className={fullPage ? "mx-auto w-full max-w-3xl sm:pb-6" : undefined}
         disabled={history.isPending || history.isError}
         active={active}
         cancelling={cancelling || !runId}
