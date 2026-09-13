@@ -48,13 +48,13 @@ export function ChatWelcome({
   return (
     <div className={fullPage ? "w-full text-center" : "mt-auto pb-3 pt-8"}>
       <ChatMascot
-        className={fullPage ? "mx-auto size-18" : "-ml-1 size-18"}
+        className={fullPage ? "mx-auto size-28" : "-ml-1 size-18"}
         variedIdle={fullPage && !disabled && !idlePaused}
       />
       <h2
         className={
           fullPage
-            ? "mt-5 text-balance font-display text-2xl font-bold tracking-tight sm:text-3xl"
+            ? "text-balance font-display text-2xl font-bold tracking-tight sm:text-3xl"
             : "mt-5 font-display text-[26px] font-extrabold leading-tight tracking-tight"
         }
       >

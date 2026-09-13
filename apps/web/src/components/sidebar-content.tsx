@@ -10,7 +10,7 @@ import type { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { isClerkConfigured } from "../config";
 import { ChatSidebarSection } from "../features/chat/components/chat-sidebar-section";
-import { SidebarCreateMenu } from "./sidebar-create-menu";
+import { SidebarCreateActions } from "./sidebar-create-actions";
 
 const navigation = [
   { to: "/modules", label: "Modul belajar", icon: BookOpen01Icon },
@@ -98,7 +98,12 @@ export function SidebarContent({
       )}
       <div className={`mt-auto shrink-0 space-y-3 py-4 ${collapsed ? "px-2" : "px-5"}`}>
         {!collapsed ? usageBanner : null}
-        <SidebarCreateMenu collapsed={collapsed} onNewChat={onNewChat} onNavigate={onNavigate} />
+        <SidebarCreateActions
+          collapsed={collapsed}
+          isChatPage={isChatPage}
+          onNewChat={onNewChat}
+          onNavigate={onNavigate}
+        />
       </div>
     </>
   );
