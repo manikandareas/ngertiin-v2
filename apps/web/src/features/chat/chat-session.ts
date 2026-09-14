@@ -1,5 +1,6 @@
 import type {
   ChatAcknowledgment,
+  ChatAttachment,
   ChatContextReference,
   ChatMention,
   ChatPageContext,
@@ -12,6 +13,7 @@ type SelectedChatExcerpt = { reference: ChatContextReference; title: string; exc
 
 export type PendingChatMessage = {
   key: string;
+  attachmentIds: string[];
   mentions: ChatMention[];
   text: string;
   pageContext?: ChatPageContext;
@@ -19,6 +21,7 @@ export type PendingChatMessage = {
   references: SelectedChatExcerpt["reference"][];
 };
 export type ChatSession = {
+  attachments: ChatAttachment[];
   draft: string;
   document?: JSONContent;
   mentions: ChatMention[];
@@ -32,6 +35,7 @@ export type ChatSession = {
 };
 const emptySession = (): ChatSession => ({
   draft: "",
+  attachments: [],
   mentions: [],
   excerpts: [],
   pending: { current: null },

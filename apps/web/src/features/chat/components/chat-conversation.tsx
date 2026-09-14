@@ -3,7 +3,10 @@ import {
   type ChatAcknowledgment,
   type ChatMention,
   type ChatPageContext,
+  type ChatRunError,
+  type ChatRunStatus,
   type ChatThread,
+  chatAttachmentSchema,
   chatCitationSchema,
   chatRunDataSchema,
   isChatRunActive,
@@ -19,6 +22,7 @@ import { createChatTransport, type LearningMessage, toUIMessage } from "../api/c
 import { withLockedMention } from "../chat-draft";
 import { useChatSession } from "../chat-session";
 import { CHAT_AGENT_NAME } from "../constants";
+import { ChatAttachmentCard } from "./chat-attachment-card";
 import { ChatCitedAnswer } from "./chat-citation";
 import { ChatComposer } from "./chat-composer";
 import { ChatMascot } from "./chat-mascot";
@@ -63,9 +67,10 @@ export function ChatConversation({
       setObservedRunId(value.runId);
       setDraft((current) => (current.trim() === pending.current?.text ? "" : current));
       setExcerpts([]);
+      patch({ attachments: [] });
       refresh();
     },
-    [refresh, setAck, setDraft, setExcerpts, pending],
+    [refresh, setAck, setDraft, setExcerpts, pending, patch],
   );
   const transport = useMemo(
     () => createChatTransport({ threadId: thread.id, token: getToken, onAccepted }),
@@ -74,7 +79,11 @@ export function ChatConversation({
   const chat = useChat<LearningMessage>({
     id: thread.id,
     transport,
-    dataPartSchemas: { "run-status": chatRunDataSchema, citation: chatCitationSchema },
+    dataPartSchemas: {
+      attachment: chatAttachmentSchema,
+      "run-status": chatRunDataSchema,
+      citation: chatCitationSchema,
+    },
     onFinish: refresh,
     onError: refresh,
   });
@@ -222,15 +231,18 @@ export function ChatConversation({
     references = excerpts.map((item) => item.reference),
     sentPageContext: ChatPageContext | undefined = undefined,
     mentions = withLockedMention(session.mentions, lockedContext),
+    attachmentIds = session.attachments.map((attachment) => attachment.id),
   ) {
     const trimmed = text.trim();
-    if (!trimmed || active || history.isPending || history.isError) return;
+    if ((!trimmed && !attachmentIds.length) || active || history.isPending || history.isError)
+      return;
     setActionError(null);
     chat.clearError();
     void scrollToBottom();
     if (
       !pending.current ||
       pending.current.text !== trimmed ||
+      JSON.stringify(pending.current.attachmentIds) !== JSON.stringify(attachmentIds) ||
       JSON.stringify(pending.current.pageContext) !== JSON.stringify(sentPageContext) ||
       pending.current.retryOfRunId !== retryOfRunId ||
       JSON.stringify(pending.current.references) !== JSON.stringify(references) ||
@@ -239,6 +251,7 @@ export function ChatConversation({
     ) {
       pending.current = {
         key: crypto.randomUUID(),
+        attachmentIds,
         text: trimmed,
         pageContext: sentPageContext,
         retryOfRunId,
@@ -257,6 +270,7 @@ export function ChatConversation({
             retryOfRunId,
             references: pending.current.references,
             mentions: pending.current.mentions,
+            attachmentIds: pending.current.attachmentIds,
             idempotencyKey: pending.current.key,
           },
         },
@@ -372,6 +386,11 @@ export function ChatConversation({
                       .join("")}
                   </p>
                 )}
+                {message.parts.map((part) =>
+                  part.type === "data-attachment" ? (
+                    <ChatAttachmentCard key={part.id} attachment={part.data} getToken={getToken} />
+                  ) : null,
+                )}
                 {message.parts.some(
                   (p) =>
                     p.type === "data-run-status" &&
@@ -387,11 +406,7 @@ export function ChatConversation({
             {active && !activeAssistant ? loadingIndicator : null}
             {terminal ? (
               <div className="rounded-xl border p-3 text-xs text-muted-foreground">
-                <p>
-                  {terminal.status === "cancelled"
-                    ? "Jawaban dihentikan."
-                    : "Jawaban belum selesai. Kamu dapat mencoba ulang."}
-                </p>
+                <p>{incompleteRunMessage(terminal.status, terminal.errorCode)}</p>
                 {retryMessage ? (
                   <Button
                     variant="link"
@@ -407,6 +422,9 @@ export function ChatConversation({
                         retryMessage.references,
                         retryMessage.contexts[0],
                         retryMessage.mentions,
+                        retryMessage.parts.flatMap((p) =>
+                          p.type === "data-attachment" ? [p.id] : [],
+                        ),
                       )
                     }
                     disabled={active}
@@ -448,6 +466,8 @@ export function ChatConversation({
         ) : null}
       </div>
       <ChatComposer
+        attachments={session.attachments}
+        onAttachmentsChange={(attachments) => patch({ attachments })}
         draft={draft}
         document={session.document}
         lockedContext={lockedContext}
@@ -464,4 +484,15 @@ export function ChatConversation({
       />
     </>
   );
+}
+
+function incompleteRunMessage(status: ChatRunStatus, errorCode: ChatRunError | null): string {
+  if (errorCode === "ATTACHMENT_UNREADABLE") {
+    return "Lampiran tidak dapat dibaca. Jika XLSX ditolak, ekspor bagian yang diperlukan sebagai CSV atau PDF. Untuk file lain, coba unggah ulang sebagai PDF.";
+  }
+  if (errorCode === "CONTEXT_LIMIT") {
+    return "Pesan dan lampiran melebihi kapasitas konteks. Gunakan file yang lebih kecil atau mulai percakapan baru.";
+  }
+  if (status === "cancelled") return "Jawaban dihentikan.";
+  return "Jawaban belum selesai. Kamu dapat mencoba ulang.";
 }

@@ -1,6 +1,8 @@
 import {
   type ChatMaterialTarget,
   type ChatThread,
+  chatAttachmentDownloadSchema,
+  chatAttachmentResponseSchema,
   chatCitationResponseSchema,
   chatMaterialPreviewResponseSchema,
   chatMaterialsResponseSchema,
@@ -19,6 +21,34 @@ export function chatApi(token: TokenResolver, moduleId?: string | null) {
   };
   const thread = (id: string) => `${root}/threads/${encodeURIComponent(id)}`;
   return {
+    upload: async (file: File, signal?: AbortSignal) => {
+      const body = new FormData();
+      body.set("file", file);
+      return (
+        await requestApi(`${root}/attachments`, token, chatAttachmentResponseSchema, {
+          method: "POST",
+          body,
+          signal,
+        })
+      ).data;
+    },
+    removeAttachment: (id: string) =>
+      requestApi(
+        `${root}/attachments/${encodeURIComponent(id)}`,
+        token,
+        { parse: () => undefined },
+        { method: "DELETE" },
+      ),
+    downloadAttachment: async (id: string) =>
+      (
+        await requestApi(
+          `${root}/attachments/${encodeURIComponent(id)}/download`,
+          token,
+          chatAttachmentDownloadSchema,
+          { cache: "no-store" },
+        )
+      ).data,
+
     materials: async (nodeId?: string, after?: string) => {
       const query = new URLSearchParams();
       if (nodeId) query.set("nodeId", nodeId);

@@ -1,6 +1,6 @@
 import { ArrowUp02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import type { ChatMention } from "@ngertiin/contracts/api";
+import type { ChatAttachment, ChatMention } from "@ngertiin/contracts/api";
 import type { JSONContent } from "@tiptap/react";
 import { Square } from "lucide-react";
 import { lazy, Suspense } from "react";
@@ -8,12 +8,15 @@ import { Button } from "../../../components/ui/button";
 import type { TokenResolver } from "../../../lib/api";
 import { cn } from "../../../lib/utils";
 import { draftMentions, hasEditableDraft } from "../chat-draft";
+import { useAttachmentUpload } from "./chat-attachment-upload";
 
 const ChatMentionInput = lazy(() =>
   import("./chat-mention-input").then((module) => ({ default: module.ChatMentionInput })),
 );
 
 type ChatComposerProps = {
+  attachments: ChatAttachment[];
+  onAttachmentsChange: (items: ChatAttachment[]) => void;
   draft: string;
   onDraftChange: (value: string, document: JSONContent, mentions: ChatMention[]) => void;
   document?: JSONContent;
@@ -30,6 +33,8 @@ type ChatComposerProps = {
 };
 
 export function ChatComposer({
+  attachments,
+  onAttachmentsChange,
   draft,
   onDraftChange,
   document,
@@ -44,11 +49,42 @@ export function ChatComposer({
   cancelling = false,
   onCancel,
 }: ChatComposerProps) {
+  const upload = useAttachmentUpload(
+    attachments,
+    onAttachmentsChange,
+    getToken,
+    Boolean(disabled || active),
+  );
   const tooManyMentions = draftMentions(document).length > 8;
-  const canSend = hasEditableDraft(document, draft) && !disabled && !active && !tooManyMentions;
+  const canSend =
+    (hasEditableDraft(document, draft) || attachments.length > 0) &&
+    !upload.pending &&
+    !disabled &&
+    !active &&
+    !tooManyMentions;
 
   return (
     <form
+      onDragOver={(event) => {
+        if (event.dataTransfer.types.includes("Files")) event.preventDefault();
+      }}
+      onDropCapture={(event) => {
+        if (event.dataTransfer.files.length) {
+          event.preventDefault();
+          event.stopPropagation();
+          upload.add(Array.from(event.dataTransfer.files));
+        }
+      }}
+      onPasteCapture={(event) => {
+        const files = Array.from(event.clipboardData.files).filter((file) =>
+          file.type.startsWith("image/"),
+        );
+        if (files.length) {
+          event.preventDefault();
+          event.stopPropagation();
+          upload.add(files);
+        }
+      }}
       className={cn("shrink-0 px-4 pb-[max(.75rem,env(safe-area-inset-bottom))] pt-2", className)}
       onSubmit={(event) => {
         event.preventDefault();
@@ -62,6 +98,7 @@ export function ChatComposer({
             : "rounded-card border bg-muted p-2.5 focus-within:border-input"
         }
       >
+        {upload.content}
         <Suspense
           fallback={
             <div className="min-h-16 py-2 text-sm text-muted-foreground" role="status">
@@ -84,9 +121,10 @@ export function ChatComposer({
           />
         </Suspense>
         <div className="flex items-center justify-between gap-2">
+          {upload.button}
           <span
             role={tooManyMentions ? "alert" : undefined}
-            className="text-[10px] text-muted-foreground"
+            className="flex-1 text-[10px] text-muted-foreground"
           >
             {tooManyMentions ? "Maksimal 8 konteks per pesan" : "Ketik @ untuk konteks"}
           </span>

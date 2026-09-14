@@ -4,7 +4,9 @@ import type { ChatOpenAI } from "@langchain/openai";
 import type { ChatRunError, ChatUsage } from "@ngertiin/contracts/api";
 import type { ApiEnvironment } from "@ngertiin/contracts/environment";
 import type { AiService } from "../ai/ai.service.js";
-import { type ExecutionBudget, LearningRunError } from "./learning.agent.js";
+import { LearningRunError } from "./chat.errors.js";
+import { promptTokenCount } from "./chat-multimodal.js";
+import type { ExecutionBudget } from "./learning.agent.js";
 
 type ExecutionContext = {
   calls: Map<string, ChatUsage>;
@@ -20,6 +22,7 @@ export class ChatExecutionBudget implements ExecutionBudget {
   toolCallCount = 0;
   outputLimited = false;
   failure?: ChatRunError;
+  private streamStarted = false;
 
   constructor(
     private readonly ai: AiService,
@@ -42,9 +45,8 @@ export class ChatExecutionBudget implements ExecutionBudget {
     );
     const remaining = this.env.CHAT_OUTPUT_MAX_TOKENS - spent;
     if (remaining <= 0) this.fail("OUTPUT_LIMIT");
-    const prompt = await this.ai.createChatModel().getNumTokensFromMessages(messages);
-    if (prompt.totalCount > this.env.CHAT_PROMPT_MAX_TOKENS)
-      throw new Error("Prompt budget exceeded");
+    const prompt = await promptTokenCount(this.ai.createChatModel(), messages);
+    if (prompt > this.env.CHAT_PROMPT_MAX_TOKENS) throw new LearningRunError("CONTEXT_LIMIT");
     this.context.assertActive();
     const callId = randomUUID();
     this.context.calls.set(callId, {
@@ -56,13 +58,33 @@ export class ChatExecutionBudget implements ExecutionBudget {
     this.modelCallCount += 1;
     // Persist an unknown call before invoking the provider, including crash coverage.
     await this.context.save();
-    return {
-      callId,
-      model: this.ai.createChatModel({
-        maxTokens: remaining,
-        timeout: Math.max(1, this.context.deadlineAt.getTime() - Date.now()),
-      }),
-    };
+    const model = this.ai.createChatModel({
+      onStream: () => {
+        this.streamStarted = true;
+      },
+      maxTokens: remaining,
+      timeout: Math.max(1, this.context.deadlineAt.getTime() - Date.now()),
+    });
+    return { callId, model };
+  }
+
+  canFallback() {
+    return (
+      !this.streamStarted &&
+      this.modelCallCount === 1 &&
+      this.toolCallCount === 0 &&
+      !this.context.signal.aborted
+    );
+  }
+
+  rejectedCall(callId: string) {
+    this.context.calls.set(callId, {
+      inputTokens: 0,
+      outputTokens: 0,
+      totalTokens: 0,
+      coverage: "complete",
+    });
+    this.modelCallCount -= 1;
   }
 
   async afterCall(callId: string, message: AIMessage): Promise<void> {

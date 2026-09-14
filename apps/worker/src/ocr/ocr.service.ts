@@ -1,6 +1,7 @@
 import type { Mistral } from "@mistralai/mistralai";
 import { Inject, Injectable } from "@nestjs/common";
 import type { WorkerEnvironment } from "@ngertiin/contracts/environment";
+import { processOcr } from "@ngertiin/shared/ocr";
 import { WORKER_ENV } from "../config.js";
 
 export const OCR_CLIENT = Symbol("OCR_CLIENT");
@@ -68,13 +69,10 @@ export class OcrService {
   async extractPdf(binary: Uint8Array): Promise<ExtractedPdfPage[]> {
     const startedAt = performance.now();
     try {
-      const response = await this.client.ocr.process({
+      const response = await processOcr(this.client, {
         model: this.environment.MISTRAL_OCR_MODEL,
-        document: {
-          type: "document_url",
-          documentUrl: `data:application/pdf;base64,${Buffer.from(binary).toString("base64")}`,
-        },
-        includeImageBase64: false,
+        binary,
+        mimeType: "application/pdf",
       });
       const pages = [...response.pages]
         .sort((left, right) => left.index - right.index)

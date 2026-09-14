@@ -22,7 +22,7 @@ export class AiService {
     return validateEmbeddings(await client.embedDocuments(texts), texts.length, dimensions);
   }
 
-  createChatModel(options?: { maxTokens: number; timeout: number }) {
+  createChatModel(options?: { maxTokens: number; timeout: number; onStream?: () => void }) {
     if (!this.env.OPENAI_API_KEY || !this.env.OPENAI_CHAT_MODEL) {
       throw new ProductError(
         503,
@@ -35,6 +35,9 @@ export class AiService {
       apiKey: this.env.OPENAI_API_KEY,
       model: this.env.OPENAI_CHAT_MODEL,
       useResponsesApi: true,
+      callbacks: options?.onStream
+        ? [{ handleLLMNewToken: options.onStream, handleChatModelStreamEvent: options.onStream }]
+        : undefined,
       maxTokens: options?.maxTokens ?? this.env.CHAT_OUTPUT_MAX_TOKENS,
       timeout: Math.min(
         this.env.CHAT_PROVIDER_TIMEOUT_MS,
@@ -47,6 +50,18 @@ export class AiService {
   }
 
   normalizeChatError(error: unknown): ChatRunError {
+    const code = error && typeof error === "object" && "code" in error ? error.code : undefined;
+    if (code === "context_length_exceeded") return "CONTEXT_LIMIT";
+    if (
+      [
+        "invalid_file",
+        "invalid_image",
+        "file_parse_error",
+        "file_read_error",
+        "unsupported_file_type",
+      ].includes(String(code))
+    )
+      return "ATTACHMENT_UNREADABLE";
     const name = error instanceof Error ? error.name : "";
     if (["TimeoutError", "APIConnectionTimeoutError"].includes(name)) return "RUN_TIMEOUT";
     if (name === "GraphRecursionError") return "STEP_LIMIT";

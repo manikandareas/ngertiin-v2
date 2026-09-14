@@ -5,7 +5,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./knowledge": "./src/knowledge.ts"
+    "./knowledge": "./src/knowledge.ts",
+    "./ocr": "./src/ocr.ts"
   },
   "scripts": {
     "build": "bun build ./src/index.ts --outdir ./dist --target bun",
@@ -13,6 +14,7 @@
     "dev": "bun build ./src/index.ts --outdir ./dist --target bun --watch"
   },
   "dependencies": {
+    "@mistralai/mistralai": "2.6.4",
     "@ngertiin/contracts": "workspace:*",
     "@ngertiin/database": "workspace:*",
     "drizzle-orm": "0.45.2",

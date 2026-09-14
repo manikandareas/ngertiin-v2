@@ -32,6 +32,7 @@ import {
 import type { ApiEnvironment } from "@ngertiin/contracts/environment";
 import {
   chat_admission_slots,
+  chat_attachments,
   chat_message_contexts,
   chat_messages,
   chat_run_usage,
@@ -62,6 +63,7 @@ import { KnowledgeService } from "../knowledge/knowledge.service.js";
 import { ModulesService } from "../modules/modules.service.js";
 import { ChatExecutionBudget } from "./chat.budget.js";
 import { resolveMessageScope } from "./chat.context.js";
+import { LearningRunError } from "./chat.errors.js";
 import { chatFailureStatus, withAbortGrace } from "./chat.execution.js";
 import { chatPage, readChatCursor } from "./chat.pagination.js";
 import { ChatPubSub } from "./chat.pubsub.js";
@@ -71,7 +73,9 @@ import {
   chatSnapshotFrames,
   streamChatSnapshots,
 } from "./chat.stream.js";
-import { createLearningAgent, LearningRunError } from "./learning.agent.js";
+import { attachmentDto, ChatAttachmentsService } from "./chat-attachments.service.js";
+import { ChatMultimodal, promptTokenCount } from "./chat-multimodal.js";
+import { createLearningAgent } from "./learning.agent.js";
 import { LearningEvidence, materialPrompt } from "./learning.context.js";
 import { learningPrompt } from "./prompts/learning.prompt.js";
 import { readExcerptTool } from "./tools/read-excerpt.tool.js";
@@ -105,6 +109,7 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
     @Inject(ModulesService) private readonly modules: ModulesService,
     @Inject(KnowledgeService) private readonly knowledge: KnowledgeService,
     @Inject(IdempotencyService) private readonly idempotency: IdempotencyService,
+    @Inject(ChatAttachmentsService) private readonly attachments: ChatAttachmentsService,
     @Inject(AiService) private readonly ai: AiService,
     @Inject(API_ENV) private readonly env: ApiEnvironment,
   ) {
@@ -678,6 +683,15 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
             .for("update")
             .limit(1);
           if (!thread) this.notFound();
+          const attachmentIds = input.attachmentIds ?? [];
+          const attachmentRows = await this.attachments.admit(
+            tx,
+            userId,
+            threadId,
+            input,
+            this.env.CHAT_PROMPT_MAX_TOKENS - mandatory.totalCount,
+          );
+
           const [active] = await tx
             .select({ id: chat_runs.id })
             .from(chat_runs)
@@ -771,8 +785,25 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
             run_id: runId,
             sequence: thread.next_sequence,
             role: "user",
-            parts_json: [{ type: "text", text: input.text }],
+            parts_json: [
+              { type: "text", text: input.text },
+              ...attachmentIds.map((id) => {
+                const row = attachmentRows.find((row) => row.id === id);
+                if (!row) throw new Error("Missing attachment");
+                return { type: "data-attachment", id, data: attachmentDto(row) };
+              }),
+            ],
           });
+          if (attachmentIds.length)
+            await tx
+              .update(chat_attachments)
+              .set({ thread_id: threadId, message_id: messageId })
+              .where(
+                and(
+                  inArray(chat_attachments.id, attachmentIds),
+                  isNull(chat_attachments.thread_id),
+                ),
+              );
           await tx
             .insert(chat_message_contexts)
             .values({ message_id: messageId, kind: "scope", reference_json: { mentions, scopes } });
@@ -919,6 +950,7 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
     model: ReturnType<AiService["createChatModel"]>,
     scope: { userId: string; moduleId: string | null; scopes: ChatScope[] },
     evidence: LearningEvidence,
+    multimodal: ChatMultimodal,
   ) {
     const [user] = await this.db
       .select()
@@ -938,13 +970,19 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
       );
     const page = pageRows[0] ? chatPageContextSchema.parse(pageRows[0].reference_json) : undefined;
     const messages: BaseMessage[] = [
-      new HumanMessage(
-        textOf(user.parts_json) +
+      await multimodal.human(
+        user.parts_json,
+        (textOf(user.parts_json) || "Kenali isi lampiran, lalu tanyakan bantuan yang diperlukan.") +
           `\nCakupan materi aktif untuk pesan ini (ditentukan server): ${JSON.stringify(scope.scopes)}. Mention baru menggantikan cakupan lama; history tetap untuk kesinambungan diskusi.` +
           materialPrompt(currentEvidence) +
           (page ? `\nMetadata halaman saat pesan dikirim: ${JSON.stringify(page)}` : ""),
       ),
     ];
+    if (
+      (await promptTokenCount(model, [new SystemMessage(learningPrompt), ...messages])) >
+      this.env.CHAT_PROMPT_MAX_TOKENS
+    )
+      throw new LearningRunError("CONTEXT_LIMIT");
     let beforeSequence = user.sequence;
     // Read recent completed pairs incrementally; never materialize an entire long thread.
     while (true) {
@@ -974,16 +1012,23 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
           continue;
         const dependencies = await this.runEvidence(previous.run_id);
         if (!(await this.canReadEvidence(scope.userId, scope.moduleId, dependencies))) continue;
-        const pair = [
-          new HumanMessage(textOf(previous.parts_json) + materialPrompt(dependencies)),
-          new AIMessage(textOf(assistant.parts_json)),
-        ];
-        const budget = await model.getNumTokensFromMessages([
+        let previousMessage: HumanMessage;
+        try {
+          previousMessage = await multimodal.human(
+            previous.parts_json,
+            textOf(previous.parts_json) + materialPrompt(dependencies),
+          );
+        } catch (error) {
+          if (error instanceof LearningRunError && error.code === "CONTEXT_LIMIT") return messages;
+          throw error;
+        }
+        const pair = [previousMessage, new AIMessage(textOf(assistant.parts_json))];
+        const budget = await promptTokenCount(model, [
           new SystemMessage(learningPrompt),
           ...pair,
           ...messages,
         ]);
-        if (budget.totalCount > this.env.CHAT_PROMPT_MAX_TOKENS) return messages;
+        if (budget > this.env.CHAT_PROMPT_MAX_TOKENS) return messages;
         for (const snapshot of dependencies) evidence.add(snapshot);
         messages.unshift(...pair);
       }
@@ -1359,7 +1404,8 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
         maxContextCodePoints: this.env.CHAT_CONTEXT_MAX_CODE_POINTS,
       });
       executionScope = context;
-      const messages = await this.promptMessages(run, model, context, evidence);
+      const multimodal = new ChatMultimodal(this.attachments, thread.user_id, run, abort.signal);
+      const messages = await this.promptMessages(run, model, context, evidence, multimodal);
       await save(); // Commit inherited dependencies before the first provider call.
       const tools: Parameters<typeof createLearningAgent>[2] = [];
       if (context.scopes.length) {
@@ -1374,7 +1420,21 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
           ),
         );
       }
-      const agent = createLearningAgent(model, budget, tools);
+      const agent = createLearningAgent(model, budget, tools, async (messages) => {
+        assertActive();
+        if (!multimodal.rows.size) throw new LearningRunError("ATTACHMENT_UNREADABLE");
+        const extracted = await multimodal.fallback(messages);
+        while (
+          (await promptTokenCount(model, [new SystemMessage(learningPrompt), ...extracted])) >
+          this.env.CHAT_PROMPT_MAX_TOKENS
+        ) {
+          const latestUser = extracted.findLastIndex((message) => message.type === "human");
+          if (latestUser < 2 || extracted[0]?.type !== "human" || extracted[1]?.type !== "ai")
+            throw new LearningRunError("CONTEXT_LIMIT");
+          extracted.splice(0, 2);
+        }
+        return extracted;
+      });
       const stream = await agent.stream(
         { messages },
         {

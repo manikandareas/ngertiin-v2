@@ -1300,3 +1300,38 @@ export const knowledge_chunks = pgTable(
     index("knowledge_chunk_search_idx").using("gin", t.search_vector),
   ],
 );
+
+// Rows survive object deletion failures so cleanup can retry without restoring access.
+export const chat_attachments = pgTable(
+  "chat_attachments",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    user_id: uuid()
+      .notNull()
+      .references(() => users.id),
+    object_key: text().notNull(),
+    filename: text().notNull(),
+    mime_type: text().notNull(),
+    size: integer().notNull(),
+    content_hash: text().notNull(),
+    context_tokens: integer().notNull(),
+    thread_id: uuid().references(() => chat_threads.id),
+    message_id: uuid().references(() => chat_messages.id),
+    extraction_text: text(),
+    extraction_status: text().notNull().default("pending"),
+    extraction_usage: jsonb(),
+    created_at: createdAt(),
+    deleted_at: optionalTimestamp(),
+  },
+  (t) => [
+    index("chat_attachment_owner_idx").on(t.user_id),
+    index("chat_attachment_cleanup_idx").on(t.created_at),
+    index("chat_attachment_thread_idx").on(t.thread_id),
+    check("chat_attachment_size", sql`${t.size} > 0 and ${t.size} <= 10485760`),
+    check("chat_attachment_binding", sql`(${t.thread_id} is null) = (${t.message_id} is null)`),
+    check(
+      "chat_attachment_extraction",
+      sql`${t.extraction_status} in ('pending','ready','failed')`,
+    ),
+  ],
+);

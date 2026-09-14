@@ -72,24 +72,33 @@ export function ChatNewConversation({
     module.isPending,
   ]);
   async function create(text = session.draft) {
-    if (!text.trim() || creating.current || session.sending) return;
+    if ((!text.trim() && !session.attachments.length) || creating.current || session.sending)
+      return;
     creating.current = true;
     patch({ sending: true });
     setError(null);
     try {
       const thread = await chatApi(getToken, moduleId).create(
-        [...text.trim()].slice(0, 80).join(""),
+        [...(text.trim() || session.attachments[0]?.filename || "Lampiran")].slice(0, 80).join(""),
       );
       patchChatSession(client, root, thread.id, {
         draft: text.trim(),
         excerpts: session.excerpts,
+        attachments: session.attachments,
         mentions: withLockedMention(session.mentions, lockedContext),
         document: text === session.draft ? session.document : undefined,
         autoSend: true,
         pageContext,
       });
       client.setQueryData([...root, "thread", thread.id], thread);
-      patch({ draft: "", document: undefined, mentions: [], excerpts: [], contextSeeded: false });
+      patch({
+        attachments: [],
+        draft: "",
+        document: undefined,
+        mentions: [],
+        excerpts: [],
+        contextSeeded: false,
+      });
       void client.invalidateQueries({ queryKey: [...root, "threads"] });
       onCreated(thread);
     } catch (e) {
@@ -114,6 +123,8 @@ export function ChatNewConversation({
       <ChatComposer
         className={fullPage ? "w-full px-0 pb-0 pt-0 text-left" : undefined}
         fullPage={fullPage}
+        attachments={session.attachments}
+        onAttachmentsChange={(attachments) => patch({ attachments })}
         draft={session.draft}
         document={session.document}
         lockedContext={lockedContext}

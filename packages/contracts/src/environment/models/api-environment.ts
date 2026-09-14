@@ -7,6 +7,8 @@ export const apiEnvSchema = infrastructureEnvSchema
     ...knowledgeEnvironment,
     USAGE_MODULES_WEEKLY_LIMIT: z.coerce.number().int().positive().default(10),
     USAGE_SOURCES_WEEKLY_LIMIT: z.coerce.number().int().positive().default(40),
+    MISTRAL_API_KEY: z.string().min(1).optional(),
+    MISTRAL_OCR_MODEL: z.string().min(1).default("mistral-ocr-latest"),
     OPENAI_API_KEY: z.string().trim().min(1),
     OPENAI_CHAT_MODEL: z.string().trim().min(1),
     CHAT_CONTEXT_MAX_REFERENCES: z.coerce.number().int().positive().default(5),

@@ -1,5 +1,6 @@
 import {
   type ChatAcknowledgment,
+  type ChatAttachment,
   type ChatCitation,
   type ChatMessage,
   type ChatPageContext,
@@ -19,7 +20,11 @@ import { requestApi, type TokenResolver } from "../../../lib/api";
 import { chatRoot } from "./chat-api";
 export type LearningMessage = UIMessage<
   { runId: string; status?: ChatRunStatus },
-  { "run-status": { status: ChatRunStatus; errorCode: string | null }; citation: ChatCitation }
+  {
+    attachment: ChatAttachment;
+    "run-status": { status: ChatRunStatus; errorCode: string | null };
+    citation: ChatCitation;
+  }
 >;
 export function toUIMessage(message: ChatMessage): LearningMessage {
   const status = message.parts.find((p) => p.type === "data-run-status");
@@ -63,6 +68,7 @@ export function createChatTransport(options: {
         retryOfRunId: body?.retryOfRunId,
         references: body?.references,
         mentions: body?.mentions,
+        attachmentIds: body?.attachmentIds,
       });
       const key =
         typeof body?.idempotencyKey === "string" ? body.idempotencyKey : crypto.randomUUID();

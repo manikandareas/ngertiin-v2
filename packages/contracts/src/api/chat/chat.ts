@@ -14,6 +14,8 @@ export const chatRunStatusSchema = z.enum([
 ]);
 export const chatRunErrorSchema = z.enum([
   "PROVIDER_ERROR",
+  "ATTACHMENT_UNREADABLE",
+  "CONTEXT_LIMIT",
   "STEP_LIMIT",
   "OUTPUT_LIMIT",
   "RUN_TIMEOUT",
@@ -138,15 +140,58 @@ export const chatMessageScopeSchema = z.object({
   mentions: z.array(chatMentionSchema).max(8),
   scopes: z.array(chatScopeSchema).max(8),
 });
+export const CHAT_ATTACHMENT_MAX_FILES = 5;
+export const CHAT_ATTACHMENT_MAX_BYTES = 10 * 1024 * 1024;
+export const CHAT_ATTACHMENT_TOTAL_BYTES = 25 * 1024 * 1024;
+export const chatAttachmentTypes = {
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+  pdf: "application/pdf",
+  docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  txt: "text/plain",
+  md: "text/markdown",
+  markdown: "text/markdown",
+  csv: "text/csv",
+} as const;
+export const chatAttachmentSchema = z.object({
+  id: uuidSchema,
+  filename: z.string(),
+  mimeType: z.string(),
+  size: z.number().int().positive(),
+});
+export type ChatAttachment = z.infer<typeof chatAttachmentSchema>;
+export const chatAttachmentResponseSchema = successEnvelopeSchema(chatAttachmentSchema);
+export const chatAttachmentDownloadSchema = successEnvelopeSchema(
+  z.object({ url: z.string().url() }),
+);
+export function chatAttachmentNote(filename: string): string | undefined {
+  if (/\.(docx|pptx)$/i.test(filename))
+    return "Gambar tertanam mungkin tidak terbaca. Gunakan PDF untuk detail visual.";
+  if (/\.xlsx$/i.test(filename))
+    return "Pembacaan spreadsheet terbatas; bukan analisis seluruh workbook.";
+}
 export const sendChatMessageSchema = z
   .object({
-    text: z.string().trim().min(1),
+    text: z.string().trim().default(""),
+    attachmentIds: z
+      .array(uuidSchema)
+      .max(CHAT_ATTACHMENT_MAX_FILES)
+      .refine((ids) => new Set(ids).size === ids.length)
+      .optional(),
     mentions: z.array(chatMentionSchema).max(8).optional(),
     pageContext: chatPageContextSchema.optional(),
     references: z.array(chatContextReferenceSchema).default([]),
     retryOfRunId: uuidSchema.optional(),
   })
-  .strict();
+  .strict()
+  .refine(
+    (value) => Boolean(value.text || value.attachmentIds?.length),
+    "Tulis pesan atau tambahkan lampiran.",
+  );
 export const chatUsageSchema = z.object({
   inputTokens: z.number().int().nonnegative().nullable(),
   outputTokens: z.number().int().nonnegative().nullable(),
@@ -159,6 +204,7 @@ export const chatRunDataSchema = z.object({
 });
 // Public parts are persisted before they are streamed.
 export const chatPartSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("data-attachment"), id: uuidSchema, data: chatAttachmentSchema }),
   z.object({ type: z.literal("text"), text: z.string() }),
   z.object({ type: z.literal("data-citation"), id: uuidSchema, data: chatCitationSchema }),
   z.object({ type: z.literal("data-run-status"), data: chatRunDataSchema }),
