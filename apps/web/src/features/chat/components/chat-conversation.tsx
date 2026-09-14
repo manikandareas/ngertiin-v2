@@ -152,11 +152,13 @@ export function ChatConversation({
       (part) => part.type === "data-run-status" && !isChatRunActive(part.data.status),
     ),
   );
+  // SSE can finish before history refetches its terminal snapshot. Keep the
+  // streamed answer until then so stale history cannot shorten the DOM.
   const showStream =
     streaming ||
     Boolean(
       ack &&
-        !savedAssistant &&
+        !hasFinalSnapshot &&
         chat.messages.some(
           (message) => message.role === "assistant" && message.metadata?.runId === ack.runId,
         ),
@@ -359,7 +361,7 @@ export function ChatConversation({
                 {message === activeAssistant ? (
                   <div className="mb-3">{loadingIndicator}</div>
                 ) : null}
-                {!fullPage && message.role === "assistant" && message !== activeAssistant ? (
+                {message.role === "assistant" && message !== activeAssistant ? (
                   <div className="mb-3 flex items-center gap-2 text-xs font-bold">
                     <ChatMascot className="size-7" />
                     {CHAT_AGENT_NAME}

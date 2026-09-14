@@ -69,9 +69,16 @@ type ChatMarkdownProps = {
   citations: ChatCitation[];
   citationHref: (citation: ChatCitation) => string;
   isAnimating: boolean;
+  animateWords?: boolean;
 };
 
-export function ChatMarkdown({ text, citations, citationHref, isAnimating }: ChatMarkdownProps) {
+export function ChatMarkdown({
+  text,
+  citations,
+  citationHref,
+  isAnimating,
+  animateWords = false,
+}: ChatMarkdownProps) {
   const remarkPlugins = useMemo<StreamdownProps["remarkPlugins"]>(
     () => [
       ...Object.values(defaultRemarkPlugins),
@@ -90,7 +97,7 @@ export function ChatMarkdown({ text, citations, citationHref, isAnimating }: Cha
               href={citationHref(citation)}
               target="_blank"
               rel="noopener noreferrer"
-              className="mx-1 rounded bg-accent px-1.5 align-super text-[10px] font-bold text-link hover:bg-primary/15"
+              className="mx-1 inline-flex h-5 items-center rounded-md bg-muted px-1.5 align-middle text-[10px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-link"
               aria-label={`Buka rujukan ${number} di tab baru`}
             >
               {number}
@@ -121,6 +128,11 @@ export function ChatMarkdown({ text, citations, citationHref, isAnimating }: Cha
         key={citations.map((citation) => citation.id).join(",")}
         mode="streaming"
         isAnimating={isAnimating}
+        animated={
+          animateWords
+            ? { animation: "blurIn", duration: 160, sep: "word", stagger: 0, maxBacklogMs: 0 }
+            : false
+        }
         plugins={plugins}
         components={components}
         remarkPlugins={remarkPlugins}
