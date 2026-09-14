@@ -33,13 +33,17 @@ FROM pg_available_extensions WHERE name = 'vector';
 
 Jika tidak ada baris `vector`, image PostgreSQL belum menyediakan extension. Dokumentasi deployment lama mencatat `postgres:17-alpine`; jangan mengasumsikan image itu sudah memiliki pgvector.
 
-Repo menyediakan `infra/postgres/Dockerfile`, berbasis PostgreSQL 17 Alpine dan pgvector 0.8.2. Pada **host Docker database**, dari checkout kandidat, build image dengan tag lokal unik:
+Repo menyediakan `infra/postgres/Dockerfile`, berbasis PostgreSQL 17 Alpine dan pgvector 0.8.2. Publikasikan image lewat workflow manual (gunakan ref yang memuat opsi ini):
 
 ```sh
-docker build -f infra/postgres/Dockerfile -t ngertiin-postgres-vector:chat-m5 .
+gh workflow run backend-images.yml --ref main -f postgres_only=true
 ```
 
-Untuk database yang masih memakai PostgreSQL 17 Alpine, jadwalkan maintenance, drain/stop API dan worker, lalu gunakan image tersebut pada resource PostgreSQL Dokploy dengan volume, mount, database/user, dan network yang sama. Pastikan mekanisme deploy Dokploy bisa memakai image lokal; bila selalu pull atau memakai host lain, publish image ke registry yang dapat diakses lebih dahulu. Jangan mengganti major version atau varian OS database secara sembarang.
+Tunggu job `postgres` sukses. Image amd64/arm64 tersedia sebagai `ghcr.io/manikandareas/ngertiin-v2-postgres:<headSha-run>`. Pastikan Dokploy dapat menarik image tersebut sebelum mengganti database. Opsi `postgres_only` tidak membangun image API/worker/migrasi; tag PostgreSQL dapat berbeda dari tag aplikasi.
+
+Untuk database yang masih memakai PostgreSQL 17 Alpine, jadwalkan maintenance, drain/stop API dan worker. Pada resource PostgreSQL Dokploy → Advanced, ubah hanya Docker Image ke tag registry di atas, simpan lalu Deploy. Pertahankan volume, mount, database/user, dan network yang sama. Jangan memakai Rebuild Database: tombol tersebut menghapus data. Jangan mengganti major version atau varian OS database secara sembarang.
+
+Alternatif untuk host yang dapat diakses: build `docker build -f infra/postgres/Dockerfile -t ngertiin-postgres-vector:chat-m5 .` dari checkout kandidat, lalu pastikan orchestrator dapat memakai image lokal tersebut.
 
 Tunggu database sehat dan ulangi query extension. Migrasi akan menjalankan `CREATE EXTENSION IF NOT EXISTS vector`; role migrasi harus memiliki izin yang diperlukan. Jika extension sudah tersedia dan kompatibel, langkah penggantian image tidak diperlukan.
 
