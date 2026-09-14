@@ -1,6 +1,6 @@
 import { Book02Icon, File01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import type { ChatCitation } from "@ngertiin/contracts/api";
+import type { ChatCitation, ChatImage } from "@ngertiin/contracts/api";
 import { ArrowUpRight, Check, ChevronDown, Copy } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -11,12 +11,16 @@ import { ChatMarkdown } from "./chat-markdown";
 export function ChatCitedAnswer({
   text,
   citations,
+  images,
+  loadImage,
   messageId,
   threadId,
   isAnimating = false,
 }: {
   text: string;
   citations: ChatCitation[];
+  images: ChatImage[];
+  loadImage: (id: string) => Promise<string>;
   messageId: string;
   threadId: string;
   isAnimating?: boolean;
@@ -43,6 +47,8 @@ export function ChatCitedAnswer({
       <ChatMarkdown
         text={presentation.text}
         citations={citations}
+        images={images}
+        loadImage={loadImage}
         citationHref={href}
         isAnimating={presentation.revealing}
         animateWords={!presentation.reducedMotion && presentation.revealing}

@@ -1,4 +1,4 @@
-import type { ChatCitation } from "@ngertiin/contracts/api";
+import type { ChatCitation, ChatImage } from "@ngertiin/contracts/api";
 import { code } from "@streamdown/code";
 import { createMathPlugin } from "@streamdown/math";
 import { useMemo } from "react";
@@ -9,6 +9,7 @@ import {
   type StreamdownProps,
 } from "streamdown";
 import "katex/dist/katex.min.css";
+import { ChatImageView } from "./chat-image";
 
 const math = createMathPlugin({ singleDollarTextMath: true });
 const plugins = { code, math };
@@ -64,9 +65,23 @@ function remarkChatCitations({ ids }: { ids: string[] }) {
   return (tree: MarkdownNode) => visit(tree);
 }
 
+function remarkRegisteredImages({ ids }: { ids: string[] }) {
+  const allowed = new Set(ids.map((id) => `chat-image-${id}`));
+  return function visit(node: MarkdownNode): void {
+    if (!node.children) return;
+    node.children = node.children.filter(
+      (child) =>
+        child.type !== "imageReference" && (child.type !== "image" || allowed.has(child.url ?? "")),
+    );
+    node.children.forEach(visit);
+  };
+}
+
 type ChatMarkdownProps = {
   text: string;
   citations: ChatCitation[];
+  images: ChatImage[];
+  loadImage: (id: string) => Promise<string>;
   citationHref: (citation: ChatCitation) => string;
   isAnimating: boolean;
   animateWords?: boolean;
@@ -75,16 +90,19 @@ type ChatMarkdownProps = {
 export function ChatMarkdown({
   text,
   citations,
+  images,
+  loadImage,
   citationHref,
   isAnimating,
   animateWords = false,
 }: ChatMarkdownProps) {
   const remarkPlugins = useMemo<StreamdownProps["remarkPlugins"]>(
     () => [
+      [remarkRegisteredImages, { ids: images.map((image) => image.id) }],
       ...Object.values(defaultRemarkPlugins),
       [remarkChatCitations, { ids: citations.map((citation) => citation.id) }],
     ],
-    [citations],
+    [citations, images],
   );
   const components = useMemo<Components>(
     () => ({
@@ -116,16 +134,23 @@ export function ChatMarkdown({
           </a>
         );
       },
-      img: () => null,
+      img: ({ src }) => {
+        const image = images.find((item) => `chat-image-${item.id}` === src);
+        return image ? (
+          <ChatImageView key={image.id} image={image} load={() => loadImage(image.id)} />
+        ) : null;
+      },
     }),
-    [citations, citationHref],
+    [citations, citationHref, images, loadImage],
   );
   return (
     <div className="lesson-markdown min-w-0 max-w-full text-sm leading-7 [&_h1]:text-xl [&_h2]:text-lg [&_h3]:text-base">
       {/* Streamdown 2.6 memoizes without components/remarkPlugins. Refresh when
           citation data arrives separately from the unchanged text chunk. */}
       <Streamdown
-        key={citations.map((citation) => citation.id).join(",")}
+        key={[...citations.map((citation) => citation.id), ...images.map((image) => image.id)].join(
+          ",",
+        )}
         mode="streaming"
         isAnimating={isAnimating}
         animated={

@@ -1,5 +1,6 @@
 import {
   type ChatCitation,
+  type ChatImage,
   type ChatRunError,
   type ChatRunStatus,
   isChatRunActive,
@@ -16,6 +17,7 @@ export type ChatSnapshot = {
   };
   text: string;
   citations?: ChatCitation[];
+  images?: ChatImage[];
   sequence: number;
 };
 export type ChatEventResponse = {
@@ -57,6 +59,10 @@ export function chatSnapshotFrames(
         },
         { type: "data-citation", id: citation.id, data: citation },
       );
+  }
+  for (const image of snapshot.images ?? []) {
+    if (!previous?.images?.some((item) => item.id === image.id))
+      frames.push({ type: "data-image", id: image.id, data: image });
   }
   if (!isChatRunActive(run.status)) {
     frames.push(

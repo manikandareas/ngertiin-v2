@@ -1,6 +1,6 @@
+import type { CommonsCandidate } from "@ngertiin/shared/commons-images";
 import { z } from "zod";
 import type { GenerateObjectRequest } from "../ai/ai.service.js";
-import type { CommonsCandidate } from "./commons-images.js";
 import type { GeneratedNodeActivities } from "./modules.schemas.js";
 
 export type LessonVisualNeed = Extract<

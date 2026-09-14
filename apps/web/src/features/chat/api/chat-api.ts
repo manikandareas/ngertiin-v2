@@ -4,6 +4,7 @@ import {
   chatAttachmentDownloadSchema,
   chatAttachmentResponseSchema,
   chatCitationResponseSchema,
+  chatImageDownloadSchema,
   chatMaterialPreviewResponseSchema,
   chatMaterialsResponseSchema,
   chatMessagesResponseSchema,
@@ -81,6 +82,15 @@ export function chatApi(token: TokenResolver, moduleId?: string | null) {
           chatCitationResponseSchema,
         )
       ).data,
+    image: async (threadId: string, messageId: string, imageId: string) =>
+      (
+        await requestApi(
+          `${thread(threadId)}/messages/${encodeURIComponent(messageId)}/images/${encodeURIComponent(imageId)}`,
+          token,
+          chatImageDownloadSchema,
+          { cache: "no-store" },
+        )
+      ).data.url,
     list: (cursor?: string) =>
       requestApi(
         `${root}/threads?${new URLSearchParams({ ...(moduleId ? { moduleId } : {}), ...(cursor ? { cursor } : {}) })}`,

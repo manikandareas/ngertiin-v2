@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  Header,
   Headers,
   HttpCode,
   Inject,
@@ -17,6 +18,7 @@ import {
 import {
   type ChatPagination,
   chatCitationResponseSchema,
+  chatImageDownloadSchema,
   chatMessagesResponseSchema,
   chatPaginationSchema,
   chatRunParamsSchema,
@@ -64,6 +66,27 @@ export class ChatController {
         p.threadId,
         p.messageId,
         p.citationId,
+      ),
+    });
+  }
+  @Get("threads/:threadId/messages/:messageId/images/:imageId")
+  @Header("Cache-Control", "no-store")
+  async image(
+    @Req() req: ProductRequest,
+    @Param(
+      new ZodValidationPipe(
+        chatThreadParamsSchema.extend({ messageId: uuidSchema, imageId: uuidSchema }),
+      ),
+    )
+    p: ThreadParams & { messageId: string; imageId: string },
+  ) {
+    return chatImageDownloadSchema.parse({
+      data: await this.chat.getImage(
+        getLocalUserId(req),
+        await this.chat.resolveThreadModuleId(getLocalUserId(req), p.threadId, p.moduleId),
+        p.threadId,
+        p.messageId,
+        p.imageId,
       ),
     });
   }

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { successEnvelopeSchema, timestampSchema, uuidSchema } from "../common/identifiers.js";
 import { paginatedSuccessEnvelopeSchema } from "../common/pagination.js";
+import { lessonImageSchema } from "../modules/module.js";
 
 export const chatRunStatusSchema = z.enum([
   "queued",
@@ -202,8 +203,12 @@ export const chatRunDataSchema = z.object({
   status: chatRunStatusSchema,
   errorCode: chatRunErrorSchema.nullable(),
 });
+export const chatImageSchema = lessonImageSchema.extend({ id: uuidSchema });
+export type ChatImage = z.infer<typeof chatImageSchema>;
+export const chatImageDownloadSchema = successEnvelopeSchema(z.object({ url: z.url() }));
 // Public parts are persisted before they are streamed.
 export const chatPartSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("data-image"), id: uuidSchema, data: chatImageSchema }),
   z.object({ type: z.literal("data-attachment"), id: uuidSchema, data: chatAttachmentSchema }),
   z.object({ type: z.literal("text"), text: z.string() }),
   z.object({ type: z.literal("data-citation"), id: uuidSchema, data: chatCitationSchema }),

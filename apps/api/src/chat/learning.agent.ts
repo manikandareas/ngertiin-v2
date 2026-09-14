@@ -1,4 +1,4 @@
-import type { AIMessage, BaseMessage } from "@langchain/core/messages";
+import type { AIMessage, BaseMessage, SystemMessage } from "@langchain/core/messages";
 import type { StructuredToolInterface } from "@langchain/core/tools";
 import type { ChatOpenAI } from "@langchain/openai";
 import { createAgent, createMiddleware } from "langchain";
@@ -6,7 +6,9 @@ import { isAttachmentRejection } from "./chat-multimodal.js";
 import { learningPrompt } from "./prompts/learning.prompt.js";
 
 export type ExecutionBudget = {
-  beforeCall(messages: BaseMessage[]): Promise<{ callId: string; model: ChatOpenAI }>;
+  beforeCall(
+    messages: BaseMessage[],
+  ): Promise<{ callId: string; model: ChatOpenAI; systemMessage?: SystemMessage }>;
   afterCall(callId: string, message: AIMessage): Promise<void>;
   beforeToolCall(): void;
   canFallback(): boolean;
@@ -33,7 +35,11 @@ export function createLearningAgent(
             request = { ...request, messages: await fallback(request.messages) };
           const call = await budget.beforeCall([request.systemMessage, ...request.messages]);
           try {
-            const message = await handler({ ...request, model: call.model });
+            const message = await handler({
+              ...request,
+              model: call.model,
+              systemMessage: call.systemMessage ?? request.systemMessage,
+            });
             await budget.afterCall(call.callId, message);
             return message;
           } catch (error) {
@@ -43,7 +49,12 @@ export function createLearningAgent(
                 const messages = await fallback(request.messages);
                 budget.rejectedCall(call.callId);
                 const retry = await budget.beforeCall([request.systemMessage, ...messages]);
-                const message = await handler({ ...request, messages, model: retry.model });
+                const message = await handler({
+                  ...request,
+                  messages,
+                  model: retry.model,
+                  systemMessage: retry.systemMessage ?? request.systemMessage,
+                });
                 await budget.afterCall(retry.callId, message);
                 return message;
               } catch (fallbackError) {

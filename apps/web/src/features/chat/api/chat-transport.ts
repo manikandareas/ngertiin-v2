@@ -2,6 +2,7 @@ import {
   type ChatAcknowledgment,
   type ChatAttachment,
   type ChatCitation,
+  type ChatImage,
   type ChatMessage,
   type ChatPageContext,
   type ChatRunStatus,
@@ -24,6 +25,7 @@ export type LearningMessage = UIMessage<
     attachment: ChatAttachment;
     "run-status": { status: ChatRunStatus; errorCode: string | null };
     citation: ChatCitation;
+    image: ChatImage;
   }
 >;
 export function toUIMessage(message: ChatMessage): LearningMessage {

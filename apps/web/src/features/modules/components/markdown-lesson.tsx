@@ -5,8 +5,8 @@ import { createMathPlugin } from "@streamdown/math";
 import { type JSX, useMemo, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { defaultRemarkPlugins, Streamdown } from "streamdown";
+import { WikimediaImage } from "../../../components/wikimedia-image";
 import { getNode } from "../../../lib/api";
-import { LessonImage } from "./lesson-image";
 import "katex/dist/katex.min.css";
 
 const math = createMathPlugin({ singleDollarTextMath: true });
@@ -35,7 +35,7 @@ export function MarkdownLesson({ content, activityId }: MarkdownLessonProps): JS
         const image = content.images.find((item) => item.id === src);
         if (!image) return null;
         return (
-          <LessonImage
+          <WikimediaImage
             key={`${image.id}:${image.url}`}
             image={image}
             refresh={() => {

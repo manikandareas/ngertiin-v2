@@ -8,6 +8,7 @@ import {
   type ChatThread,
   chatAttachmentSchema,
   chatCitationSchema,
+  chatImageSchema,
   chatRunDataSchema,
   isChatRunActive,
 } from "@ngertiin/contracts/api";
@@ -83,6 +84,7 @@ export function ChatConversation({
       attachment: chatAttachmentSchema,
       "run-status": chatRunDataSchema,
       citation: chatCitationSchema,
+      image: chatImageSchema,
     },
     onFinish: refresh,
     onError: refresh,
@@ -377,6 +379,8 @@ export function ChatConversation({
                     citations={message.parts.flatMap((p) =>
                       p.type === "data-citation" ? [p.data] : [],
                     )}
+                    images={message.parts.flatMap((p) => (p.type === "data-image" ? [p.data] : []))}
+                    loadImage={(id) => api.image(thread.id, message.id, id)}
                     messageId={message.id}
                     threadId={thread.id}
                   />

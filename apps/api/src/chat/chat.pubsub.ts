@@ -1,5 +1,6 @@
 import {
   chatCitationSchema,
+  chatImageSchema,
   chatRunDataSchema,
   chatRunStatusSchema,
 } from "@ngertiin/contracts/api";
@@ -25,6 +26,7 @@ const frameSchema = z.discriminatedUnion("type", [
     title: z.string(),
   }),
   z.object({ type: z.literal("data-citation"), id: z.uuid(), data: chatCitationSchema }),
+  z.object({ type: z.literal("data-image"), id: z.uuid(), data: chatImageSchema }),
   z.object({ type: z.literal("error"), errorText: z.string().max(200) }),
   z.object({ type: z.literal("finish"), messageMetadata: metadataSchema.optional() }),
 ]);

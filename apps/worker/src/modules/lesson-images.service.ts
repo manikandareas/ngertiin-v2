@@ -2,11 +2,15 @@ import { Inject, Injectable } from "@nestjs/common";
 import type { StoredLessonImage } from "@ngertiin/contracts/api";
 import type { WorkerEnvironment } from "@ngertiin/contracts/environment";
 import { generation_runs } from "@ngertiin/database";
+import {
+  downloadThumbnail,
+  normalizeCommonsQuery,
+  searchCommons,
+} from "@ngertiin/shared/commons-images";
 import { eq, sql } from "drizzle-orm";
 import { AiService } from "../ai/ai.service.js";
 import { WORKER_ENV } from "../config.js";
 import { InfrastructureService } from "../infrastructure/infrastructure.service.js";
-import { downloadThumbnail, normalizeCommonsQuery, searchCommons } from "./commons-images.js";
 import { placeLessonImages } from "./lesson-image-content.js";
 import { buildLessonImageReviewRequest, type InspectedLessonImage } from "./lesson-image-review.js";
 import type { GeneratedNodeActivities, NodeActivities } from "./modules.schemas.js";

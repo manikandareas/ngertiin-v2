@@ -11,6 +11,7 @@ import {
   activeChatStatuses,
   type ChatAcknowledgment,
   type ChatCitationSnapshot,
+  type ChatImage,
   type ChatMaterialTarget,
   type ChatMessage,
   type ChatPagination,
@@ -81,6 +82,11 @@ import { learningPrompt } from "./prompts/learning.prompt.js";
 import { readExcerptTool } from "./tools/read-excerpt.tool.js";
 import { readProgressTool } from "./tools/read-progress.tool.js";
 import { searchModuleMaterialsTool } from "./tools/search-module-materials.tool.js";
+import {
+  type ChatImageDiagnostic,
+  chatImageKey,
+  searchWikimediaImagesTool,
+} from "./tools/search-wikimedia-images.tool.js";
 
 type RunRow = typeof chat_runs.$inferSelect;
 const textOf = (parts: unknown): string =>
@@ -400,6 +406,39 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
     if (!snapshot || !(await this.canReadEvidence(userId, moduleId, [snapshot]))) this.notFound();
     return { ...snapshot, moduleId: snapshot.moduleId ?? moduleId ?? undefined };
   }
+  async getImage(
+    userId: string,
+    moduleId: string | null,
+    threadId: string,
+    messageId: string,
+    imageId: string,
+  ) {
+    await this.ownedThread(userId, moduleId, threadId);
+    const [message] = await this.db
+      .select()
+      .from(chat_messages)
+      .where(
+        and(
+          eq(chat_messages.id, messageId),
+          eq(chat_messages.thread_id, threadId),
+          eq(chat_messages.role, "assistant"),
+        ),
+      )
+      .limit(1);
+    if (
+      !message ||
+      !chatMessageParts(message.parts_json).some(
+        (part) => part.type === "data-image" && part.data.id === imageId,
+      )
+    )
+      this.notFound();
+    if (!(await this.canReadEvidence(userId, moduleId, await this.runEvidence(message.run_id))))
+      this.notFound();
+    return {
+      url: await this.infrastructure.storage.createSignedUrl(chatImageKey(message.run_id, imageId)),
+    };
+  }
+
   private evidenceRows(
     messageId: string,
     snapshots: ChatCitationSnapshot[],
@@ -1056,7 +1095,10 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
     calls: Map<string, ChatUsage>,
     terminal?: { status: ChatRunStatus; errorCode: ChatRunError | null },
     evidence: ChatCitationSnapshot[] = [],
+    images: ChatImage[] = [],
   ) {
+    // A concurrent tool completion must not change a snapshot mid-transaction.
+    images = [...images];
     const committed = await this.db.transaction(async (tx) => {
       const [locked] = await tx
         .select({
@@ -1076,6 +1118,11 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
         .where(eq(chat_messages.id, assistantId));
       const previous = {
         ...this.snapshot(current, message ? textOf(message.parts_json) : ""),
+        images: message
+          ? chatMessageParts(message.parts_json).flatMap((part) =>
+              part.type === "data-image" ? [part.data] : [],
+            )
+          : [],
         citations: message
           ? chatMessageParts(message.parts_json).flatMap((part) =>
               part.type === "data-citation" ? [part.data] : [],
@@ -1097,7 +1144,11 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
           id: snapshot.citation.id,
           data: snapshot.citation,
         }));
-      const parts: ChatPart[] = [{ type: "text", text }, ...citations];
+      const parts: ChatPart[] = [
+        { type: "text", text },
+        ...citations,
+        ...images.map((image): ChatPart => ({ type: "data-image", id: image.id, data: image })),
+      ];
       if (terminal) parts.push({ type: "data-run-status", data: { status, errorCode } });
       if (message)
         await tx
@@ -1142,6 +1193,7 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
         ? {
             snapshot: {
               ...this.snapshot(updated, text),
+              images,
               citations: citations.flatMap((part) =>
                 part.type === "data-citation" ? [part.data] : [],
               ),
@@ -1231,6 +1283,8 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
     const assistantId = randomUUID();
     const calls = new Map<string, ChatUsage>();
     const evidence = new LearningEvidence();
+    const images: ChatImage[] = [];
+    const imageDiagnostic: ChatImageDiagnostic = { status: "not_requested", searches: [] };
     let text = "";
     let lastSnapshot = 0;
     let heartbeatBusy = false,
@@ -1301,7 +1355,15 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
             this.notFound();
         }
         if (
-          !(await this.persist(run, assistantId, snapshotText, calls, undefined, evidence.values()))
+          !(await this.persist(
+            run,
+            assistantId,
+            snapshotText,
+            calls,
+            undefined,
+            evidence.values(),
+            images,
+          ))
         ) {
           stop("PROCESS_INTERRUPTED");
           assertActive();
@@ -1401,7 +1463,25 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
       const multimodal = new ChatMultimodal(this.attachments, thread.user_id, run, abort.signal);
       const messages = await this.promptMessages(run, model, context, evidence, multimodal);
       await save(); // Commit inherited dependencies before the first provider call.
-      const tools: Parameters<typeof createLearningAgent>[2] = [];
+      const [userMessage] = await this.db
+        .select({ parts: chat_messages.parts_json })
+        .from(chat_messages)
+        .where(eq(chat_messages.id, run.user_message_id ?? ""))
+        .limit(1);
+      const tools: Parameters<typeof createLearningAgent>[2] = [
+        searchWikimediaImagesTool({
+          runId: run.id,
+          userAgent: this.env.WIKIMEDIA_USER_AGENT,
+          request: userMessage ? textOf(userMessage.parts) : "",
+          diagnostic: imageDiagnostic,
+          log: (diagnostic) => this.log("chat.images", { runId: run.id, ...diagnostic }),
+          signal: abort.signal,
+          storage: this.infrastructure.storage,
+          budget,
+          images,
+          save,
+        }),
+      ];
       if (context.scopes.length) {
         tools.push(
           readExcerptTool(this.knowledge, context, evidence),
@@ -1471,6 +1551,7 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
           errorCode: outputLimited ? "OUTPUT_LIMIT" : null,
         },
         evidence.values(),
+        images,
       );
     } catch (error) {
       finished = true; // Late provider callbacks cannot change snapshots or usage.
@@ -1489,6 +1570,7 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
           errorCode: code,
         },
         evidence.values(),
+        images,
       );
     } finally {
       finished = true;
@@ -1508,6 +1590,8 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
         threadId: run.thread_id,
         modelCallCount: budget.modelCallCount,
         toolCallCount: budget.toolCallCount,
+        imageStatus: imageDiagnostic.status,
+        imageCount: images.length,
         usageCoverage: this.ai.aggregateUsage([...calls.values()]).coverage,
       });
     }
@@ -1527,6 +1611,11 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
       this.notFound();
     return {
       ...this.snapshot(row.run, row.message ? textOf(row.message.parts_json) : ""),
+      images: row.message
+        ? chatMessageParts(row.message.parts_json).flatMap((part) =>
+            part.type === "data-image" ? [part.data] : [],
+          )
+        : [],
       citations: row.message
         ? chatMessageParts(row.message.parts_json).flatMap((part) =>
             part.type === "data-citation" ? [part.data] : [],

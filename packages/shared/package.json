@@ -6,7 +6,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./knowledge": "./src/knowledge.ts",
-    "./ocr": "./src/ocr.ts"
+    "./ocr": "./src/ocr.ts",
+    "./commons-images": "./src/commons-images.ts"
   },
   "scripts": {
     "build": "bun build ./src/index.ts --outdir ./dist --target bun",
