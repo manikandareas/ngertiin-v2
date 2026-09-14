@@ -1,0 +1,60 @@
+{
+  "date": "2026-09-11T17:19:45.691Z",
+  "checks": {
+    "unreconciledContentPending": "PASS",
+    "concurrentPendingEmbeddingOnce": "PASS",
+    "changedDuringEmbedding": "PASS",
+    "embeddingFailure": "PASS",
+    "bullmqDedupRecovery": "PASS",
+    "invalidProjectionIsolated": "PASS",
+    "agentRetrieval": {
+      "modelCalls": 3,
+      "toolCalls": 2,
+      "text": "Berikut perbandingannya berdasarkan bukti yang tersedia:\n\n| Aspek | Sumber asli | Materi pelajaran di modul |\n|---|---|---|\n| Fokus penjelasan | Menjelaskan fotosintesis sebagai proses yang mengubah energi cahaya menjadi energi kimia dalam glukosa. | Menjelaskan klorofil sebagai pigmen hijau yang menyerap cahaya untuk fotosintesis. |\n| Peran klorofil | Klorofil menyerap cahaya sebagai bagian dari proses fotosintesis. [[cite:f78ba258-5b8f-4551-9ff5-a0e41b5a2cd1]] | Klorofil didefinisikan secara lebih sederhana sebagai pigmen hijau penyerap cahaya. [[cite:59b9eebf-80be-43d2-b448-5a26625141d7]] |\n| Tingkat kelengkapan | Lebih konseptual dan lengkap karena menyebut perubahan energi serta glukosa sebagai hasilnya. | Lebih ringkas dan bersifat pengantar; hanya menekankan ciri dan fungsi klorofil. |\n\n**Kesimpulan:** Kedua penjelasan konsisten dalam menyatakan bahwa klorofil menyerap cahaya untuk fotosintesis. Namun, sumber asli memberi gambaran yang lebih luas tentang tujuan proses fotosintesis—yaitu mengubah energi cahaya menjadi energi kimia dalam glukosa—sedangkan modul menyederhanakannya dengan berfokus pada peran klorofil.",
+      "snapshots": [
+        {
+          "citation": {
+            "id": "f78ba258-5b8f-4551-9ff5-a0e41b5a2cd1",
+            "origin": "original_source",
+            "title": "Buku fotosintesis",
+            "reference": {
+              "kind": "source",
+              "sourceId": "117eb678-176d-4adf-8b33-bdfd3774cad9",
+              "sourceContentId": "b4276bb4-0310-4be5-b594-0da4c30f2b0c",
+              "contentRevision": "9062c4bb03286ad44df300ac3924ac76ed3c57777842d71a842e7df115c157e8",
+              "startCodePoint": 0,
+              "endCodePoint": 114
+            },
+            "excerpt": "Fotosintesis mengubah energi cahaya menjadi energi kimia dalam glukosa. Klorofil menyerap cahaya untuk proses ini.",
+            "pageNumber": 7,
+            "sectionTitle": "Energi tumbuhan"
+          },
+          "text": "Fotosintesis mengubah energi cahaya menjadi energi kimia dalam glukosa. Klorofil menyerap cahaya untuk proses ini.",
+          "startCodePoint": 0,
+          "capturedAt": "2026-09-11T17:19:38.141Z"
+        },
+        {
+          "citation": {
+            "id": "59b9eebf-80be-43d2-b448-5a26625141d7",
+            "origin": "generated_material",
+            "title": "Fotosintesis",
+            "reference": {
+              "kind": "activity",
+              "nodeId": "3c7c27e6-c167-48fd-9cc9-7f619ead4e7c",
+              "activityId": "d400a649-d1a7-4122-a762-627a9047ddc4",
+              "contentRevision": "9b8082c96681b53d12b48596f1f8cd1e9834f811a74bf9b380a34a85b9e07147",
+              "startCodePoint": 0,
+              "endCodePoint": 79
+            },
+            "excerpt": "Klorofil\n\nKlorofil adalah pigmen hijau yang menyerap cahaya untuk fotosintesis.",
+            "pageNumber": null,
+            "sectionTitle": "Aktivitas 1"
+          },
+          "text": "Klorofil\n\nKlorofil adalah pigmen hijau yang menyerap cahaya untuk fotosintesis.",
+          "startCodePoint": 0,
+          "capturedAt": "2026-09-11T17:19:38.154Z"
+        }
+      ]
+    }
+  }
+}

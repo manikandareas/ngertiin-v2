@@ -1,0 +1,57 @@
+{
+  "date": "2026-09-12T04:50:19.579Z",
+  "scope": "Local application database ngertiin; production not deployed",
+  "removedFlags": ["CHAT_ENABLED", "CHAT_RETRIEVAL_ENABLED", "KNOWLEDGE_INDEXING_ENABLED"],
+  "legacyFalseValuesIgnored": true,
+  "providerConfigurationRequired": true,
+  "postgresImage": "ngertiin-postgres:17-vector",
+  "preservedVolume": "ngertiin_postgres_data",
+  "extension": [
+    {
+      "extversion": "0.8.2"
+    }
+  ],
+  "versions": [
+    {
+      "id": 1,
+      "status": "active",
+      "embedding_model": "text-embedding-3-small",
+      "dimensions": 1536
+    }
+  ],
+  "coverage": [
+    {
+      "status": "ready",
+      "documents": 593
+    }
+  ],
+  "chunks": 4589,
+  "contentCounts": {
+    "modules": 16,
+    "sourcecontents": 185,
+    "activities": 727
+  },
+  "health": {
+    "status": "ok",
+    "service": "api",
+    "dependencies": {
+      "postgres": "up",
+      "redis": "up",
+      "storage": "up"
+    }
+  },
+  "retrieval": {
+    "status": "ready",
+    "degraded": false,
+    "citations": 6,
+    "origins": ["original_source", "generated_material"]
+  },
+  "checks": {
+    "typecheck": "PASS api/worker/contracts",
+    "build": "PASS api/worker",
+    "biome": "PASS",
+    "drizzle": "PASS",
+    "compose": "PASS"
+  },
+  "notRun": ["production deployment", "Clerk browser"]
+}

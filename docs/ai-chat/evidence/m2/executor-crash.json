@@ -1,0 +1,61 @@
+{
+  "before": {
+    "id": "7a5daaf1-0fe4-4356-b724-5eaed8d93421",
+    "thread_id": "a8b24e8e-d891-440d-88eb-91a2969627be",
+    "user_message_id": "26ccfd40-c51b-4c0c-855b-3871249e98f7",
+    "assistant_message_id": "89846f3b-0793-4090-8a45-551617b28681",
+    "retry_of_run_id": null,
+    "status": "running",
+    "error_code": null,
+    "executor_id": "8c425ad7-79c5-4add-b1bb-4acd317145f8",
+    "lease_epoch": 1,
+    "lease_expires_at": "2026-09-11 11:03:14.083699+00",
+    "heartbeat_at": "2026-09-11 11:03:11.083699+00",
+    "cancel_requested_at": null,
+    "deadline_at": "2026-09-11 11:03:25.5283+00",
+    "started_at": "2026-09-11 11:03:10.568981+00",
+    "finished_at": null,
+    "created_at": "2026-09-11 11:03:10.493653+00",
+    "snapshot_sequence": 3,
+    "parts_json": [
+      {
+        "text": "Jawaban ",
+        "type": "text"
+      }
+    ]
+  },
+  "after": {
+    "id": "7a5daaf1-0fe4-4356-b724-5eaed8d93421",
+    "thread_id": "a8b24e8e-d891-440d-88eb-91a2969627be",
+    "user_message_id": "26ccfd40-c51b-4c0c-855b-3871249e98f7",
+    "assistant_message_id": "89846f3b-0793-4090-8a45-551617b28681",
+    "retry_of_run_id": null,
+    "status": "interrupted",
+    "error_code": "PROCESS_INTERRUPTED",
+    "executor_id": "8c425ad7-79c5-4add-b1bb-4acd317145f8",
+    "lease_epoch": 1,
+    "lease_expires_at": "2026-09-11 11:03:14.083699+00",
+    "heartbeat_at": "2026-09-11 11:03:11.083699+00",
+    "cancel_requested_at": null,
+    "deadline_at": "2026-09-11 11:03:25.5283+00",
+    "started_at": "2026-09-11 11:03:10.568981+00",
+    "finished_at": "2026-09-11 11:03:14.28035+00",
+    "created_at": "2026-09-11 11:03:10.493653+00",
+    "snapshot_sequence": 4,
+    "parts_json": [
+      {
+        "text": "Jawaban ",
+        "type": "text"
+      },
+      {
+        "data": {
+          "status": "interrupted",
+          "errorCode": "PROCESS_INTERRUPTED"
+        },
+        "type": "data-run-status"
+      }
+    ]
+  },
+  "staleWrites": 0,
+  "pass": true
+}

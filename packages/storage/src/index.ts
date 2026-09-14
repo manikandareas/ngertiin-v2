@@ -21,8 +21,8 @@ export interface StoredObject {
 
 export interface StorageService {
   put(input: PutObjectInput): Promise<StoredObject>;
-  get(key: string): Promise<Uint8Array>;
-  delete(key: string): Promise<void>;
+  get(key: string, signal?: AbortSignal): Promise<Uint8Array>;
+  delete(key: string, signal?: AbortSignal): Promise<void>;
   createSignedUrl?(key: string, expiresInSeconds?: number): Promise<string>;
 }
 
@@ -63,9 +63,10 @@ export class S3StorageService implements StorageService {
     return { key: input.key, etag: result.ETag };
   }
 
-  async get(key: string): Promise<Uint8Array> {
+  async get(key: string, signal?: AbortSignal): Promise<Uint8Array> {
     const result = await this.client.send(
       new GetObjectCommand({ Bucket: this.config.bucket, Key: key }),
+      { abortSignal: signal },
     );
     if (!result.Body) {
       throw new Error("Storage object has no body");
@@ -73,8 +74,10 @@ export class S3StorageService implements StorageService {
     return result.Body.transformToByteArray();
   }
 
-  async delete(key: string): Promise<void> {
-    await this.client.send(new DeleteObjectCommand({ Bucket: this.config.bucket, Key: key }));
+  async delete(key: string, signal?: AbortSignal): Promise<void> {
+    await this.client.send(new DeleteObjectCommand({ Bucket: this.config.bucket, Key: key }), {
+      abortSignal: signal,
+    });
   }
 
   async createSignedUrl(key: string, expiresInSeconds = 900): Promise<string> {

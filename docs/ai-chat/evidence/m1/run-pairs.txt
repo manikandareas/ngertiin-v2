@@ -1,0 +1,10 @@
+                run_id                |  status   | user_messages | assistant_messages
+--------------------------------------+-----------+---------------+--------------------
+ 017ee195-d8ae-4d05-aa47-2b5f82ff5406 | completed |             1 |                  1
+ ac266859-fb14-4379-9de0-f65723456c52 | completed |             1 |                  1
+ ac865a70-3157-4b5d-a119-427643e2c0b1 | completed |             1 |                  1
+ de8d771e-2103-4509-82c4-6420f12c8ea5 | completed |             1 |                  1
+ ec9ac564-48da-497e-b670-46770b2c0a8a | completed |             1 |                  1
+ ae3ede79-649b-40e1-a44e-c00dff012df1 | completed |             1 |                  1
+ 0d05716f-4bb5-4921-b3b7-ee9ca75851be | completed |             1 |                  1
+(7 rows)

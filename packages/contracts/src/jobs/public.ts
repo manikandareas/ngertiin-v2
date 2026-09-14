@@ -12,6 +12,7 @@ export {
   type AttemptEvaluationJob,
   attemptEvaluationJobSchema,
 } from "./attempt-evaluation.js";
+export * from "./knowledge-indexing.js";
 export {
   MODULE_GENERATION_PHASES,
   MODULE_GENERATION_STEPS,

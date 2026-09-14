@@ -1,0 +1,71 @@
+{
+  "environment": "Real React components and HTTP API on local scratch DB; Clerk hook/guard fixtures; configured real provider",
+  "viewports": ["1440x900", "390x844"],
+  "checks": [
+    {
+      "name": "Chat baru mengirim pesan ke provider dan berpindah ke detail thread",
+      "pass": true
+    },
+    {
+      "name": "Refresh detail membaca pesan yang tersimpan",
+      "pass": true
+    },
+    {
+      "name": "Detail chat tidak memiliki dropdown mode",
+      "pass": true
+    },
+    {
+      "name": "Daftar thread hanya muncul pada halaman Chat",
+      "pass": true
+    },
+    {
+      "name": "Header module tidak memiliki tombol Buka Chat",
+      "pass": true
+    },
+    {
+      "name": "Sidebar dan Overlay memakai thread dan draft yang sama",
+      "pass": true
+    },
+    {
+      "name": "Full Screen mempertahankan thread, draft, dan cuplikan yang dipilih",
+      "pass": true
+    },
+    {
+      "name": "Kirim lalu Full Screen menghasilkan tepat satu pesan user dan satu jawaban selesai",
+      "pass": true
+    },
+    {
+      "name": "Memilih dan menghapus konteks sebelum kirim mempertahankan draft tanpa mengirim pesan",
+      "pass": true
+    },
+    {
+      "name": "Pemilih kutipan menampilkan materi lesson dalam module terpilih",
+      "pass": true
+    },
+    {
+      "name": "Reader desktop menampilkan snapshot dengan sorotan",
+      "pass": true
+    },
+    {
+      "name": "Reader mobile berupa drawer tanpa overflow horizontal pada 390px",
+      "pass": true
+    },
+    {
+      "name": "Navigasi mobile membuka detail dari daftar thread dan menutup drawer",
+      "pass": true
+    },
+    {
+      "name": "Batal rename tidak menyimpan judul; rename dari panel module tersinkron ke halaman Chat",
+      "pass": true
+    },
+    {
+      "name": "Pergantian akun fixture menghapus draft dan riwayat cache pengguna sebelumnya",
+      "pass": true
+    },
+    {
+      "name": "Browser error log kosong setelah pemeriksaan",
+      "pass": true
+    }
+  ],
+  "notRun": ["Real Clerk authentication", "Physical mobile keyboard", "Production deployment/proxy"]
+}

@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { Inject, Injectable } from "@nestjs/common";
 import type {
+  ChatMaterialTarget,
   CompleteNodeResult,
   CreateModuleBody,
   CreateModuleResponse,
@@ -38,6 +39,7 @@ import {
   module_nodes,
   modules,
   node_progress,
+  source_contents,
   sources,
   user_module_progress,
 } from "@ngertiin/database";
@@ -46,6 +48,7 @@ import {
   finalizeCoreNodeProgress,
   selectLearningAction,
 } from "@ngertiin/shared";
+import { learningMaterialText } from "@ngertiin/shared/knowledge";
 import { and, asc, desc, eq, ilike, inArray, lt, or, type SQL, sql } from "drizzle-orm";
 import { z } from "zod";
 import { ProductError } from "../http/product-error.js";
@@ -727,6 +730,242 @@ export class ModulesService {
         currentNodeId: module.currentNodeId,
         nodes: coreRows,
       }),
+    };
+  }
+
+  /** Validate chat page metadata without loading activity bodies or assessment config. */
+  async validateChatScope(userId: string, moduleId: string, nodeId?: string): Promise<void> {
+    const [module] = await this.infrastructure.database.db
+      .select({ id: modules.id })
+      .from(modules)
+      .where(and(eq(modules.id, moduleId), eq(modules.owner_id, userId)))
+      .limit(1);
+    if (!module) this.notFound();
+    if (!nodeId) return;
+    const [node] = await this.infrastructure.database.db
+      .select({ status: node_progress.status })
+      .from(module_nodes)
+      .leftJoin(
+        node_progress,
+        and(eq(node_progress.node_id, module_nodes.id), eq(node_progress.user_id, userId)),
+      )
+      .where(and(eq(module_nodes.id, nodeId), eq(module_nodes.module_id, moduleId)))
+      .limit(1);
+    if (!node) this.notFound();
+    if (!node.status || node.status === "locked")
+      throw new ProductError(403, "NODE_LOCKED", "Node locked", "Node ini belum dapat diakses.");
+  }
+
+  /** Read-only authorization. Archiving never revokes the owner's citation access. */
+  async validateChatMaterial(userId: string, moduleId: string, target: ChatMaterialTarget) {
+    await this.validateChatScope(
+      userId,
+      moduleId,
+      target.kind === "activity" ? target.nodeId : undefined,
+    );
+    const db = this.infrastructure.database.db;
+    if (target.kind === "activity") {
+      const [row] = await db
+        .select({ type: activities.type })
+        .from(activities)
+        .where(and(eq(activities.id, target.activityId), eq(activities.node_id, target.nodeId)))
+        .limit(1);
+      if (!row) this.notFound();
+      if (row.type !== "lesson" && row.type !== "flashcard")
+        throw new ProductError(
+          403,
+          "CHAT_CONTEXT_FORBIDDEN",
+          "Assessment unavailable",
+          "Referensi assessment tidak dapat digunakan.",
+        );
+    } else {
+      const [row] = await db
+        .select({ id: sources.id })
+        .from(sources)
+        .innerJoin(generation_request_sources, eq(generation_request_sources.source_id, sources.id))
+        .innerJoin(
+          modules,
+          eq(modules.generation_request_id, generation_request_sources.generation_request_id),
+        )
+        .where(
+          and(
+            eq(modules.id, moduleId),
+            eq(sources.id, target.sourceId),
+            eq(sources.user_id, userId),
+          ),
+        )
+        .limit(1);
+      if (!row) this.notFound();
+    }
+  }
+
+  /** Access is filtered before either retrieval ranking path, including original sources of locked nodes. */
+  async chatSearchDocuments(userId: string, moduleId: string) {
+    await this.validateChatScope(userId, moduleId);
+    return this.infrastructure.database.db.execute<{
+      id: string | null;
+      source_id: string | null;
+      source_content_id: string | null;
+      node_id: string | null;
+      activity_id: string | null;
+      current_content_revision: string | null;
+    }>(sql`
+      with eligible as (
+        select sc.source_id, sc.id as source_content_id, null::uuid as node_id, null::uuid as activity_id
+        from source_contents sc join sources s on s.id = sc.source_id
+        join generation_request_sources grs on grs.source_id = s.id
+        join modules m on m.generation_request_id = grs.generation_request_id
+        where m.id = ${moduleId} and m.owner_id = ${userId} and s.user_id = ${userId}
+        and m.status in ('ready','archived') and s.status = 'ready'
+        union all
+        select null::uuid, null::uuid, n.id, a.id from activities a
+        join module_nodes n on n.id = a.node_id join modules m on m.id = n.module_id
+        join node_progress p on p.node_id = n.id and p.user_id = ${userId}
+        where m.id = ${moduleId} and m.owner_id = ${userId} and m.status in ('ready','archived')
+        and a.type in ('lesson','flashcard') and p.status <> 'locked'
+      )
+      select d.id, e.source_id, e.source_content_id, e.node_id, e.activity_id, d.current_content_revision
+      from eligible e left join knowledge_documents d on d.module_id = ${moduleId}
+      and d.deleted_at is null and (d.source_content_id = e.source_content_id or
+        (d.activity_id = e.activity_id and d.node_id = e.node_id))
+      order by d.id nulls last`);
+  }
+
+  async listChatMaterials(
+    userId: string,
+    moduleId: string,
+    query: { nodeId?: string; after?: string },
+  ) {
+    await this.validateChatScope(userId, moduleId, query.nodeId);
+    const db = this.infrastructure.database.db;
+    if (query.nodeId) {
+      const rows = await db
+        .select({ id: activities.id, position: activities.position, title: module_nodes.title })
+        .from(activities)
+        .innerJoin(module_nodes, eq(module_nodes.id, activities.node_id))
+        .where(
+          and(
+            eq(activities.node_id, query.nodeId),
+            inArray(activities.type, ["lesson", "flashcard"]),
+            query.after ? sql`${activities.id} > ${query.after}` : undefined,
+          ),
+        )
+        .orderBy(asc(activities.id))
+        .limit(21);
+      return {
+        items: rows.slice(0, 20).map((row) => ({
+          target: { kind: "activity" as const, nodeId: query.nodeId as string, activityId: row.id },
+          title: row.title,
+          sectionTitle: `Aktivitas ${row.position}`,
+          pageNumber: null,
+        })),
+        nextCursor: rows.length > 20 ? (rows[19]?.id ?? null) : null,
+      };
+    }
+    const rows = await db
+      .select({
+        id: source_contents.id,
+        sourceId: sources.id,
+        title: sources.title,
+        heading: source_contents.heading,
+        pageNumber: source_contents.page_number,
+      })
+      .from(source_contents)
+      .innerJoin(sources, eq(sources.id, source_contents.source_id))
+      .innerJoin(generation_request_sources, eq(generation_request_sources.source_id, sources.id))
+      .innerJoin(
+        modules,
+        eq(modules.generation_request_id, generation_request_sources.generation_request_id),
+      )
+      .where(
+        and(
+          eq(modules.id, moduleId),
+          eq(sources.user_id, userId),
+          eq(sources.status, "ready"),
+          query.after ? sql`${source_contents.id} > ${query.after}` : undefined,
+        ),
+      )
+      .orderBy(asc(source_contents.id))
+      .limit(21);
+    return {
+      items: rows.slice(0, 20).map((row) => ({
+        target: { kind: "source" as const, sourceId: row.sourceId, sourceContentId: row.id },
+        title: row.title ?? "Sumber belajar",
+        sectionTitle: row.heading,
+        pageNumber: row.pageNumber,
+      })),
+      nextCursor: rows.length > 20 ? (rows[19]?.id ?? null) : null,
+    };
+  }
+
+  /** SQL and Zod allowlists: evaluation_config and assessment content never enter this projection. */
+  async readChatMaterial(userId: string, moduleId: string, target: ChatMaterialTarget) {
+    await this.validateChatMaterial(userId, moduleId, target);
+    const db = this.infrastructure.database.db;
+    if (target.kind === "source") {
+      const [row] = await db
+        .select({
+          text: source_contents.content,
+          title: sources.title,
+          pageNumber: source_contents.page_number,
+          sectionTitle: source_contents.heading,
+        })
+        .from(source_contents)
+        .innerJoin(sources, eq(sources.id, source_contents.source_id))
+        .where(
+          and(
+            eq(source_contents.id, target.sourceContentId),
+            eq(sources.id, target.sourceId),
+            eq(sources.status, "ready"),
+          ),
+        )
+        .limit(1);
+      if (!row) this.notFound();
+      return { ...row, title: row.title ?? "Sumber belajar", target };
+    }
+    const [row] = await db
+      .select({
+        type: activities.type,
+        content: activities.content,
+        title: module_nodes.title,
+        position: activities.position,
+      })
+      .from(activities)
+      .innerJoin(module_nodes, eq(module_nodes.id, activities.node_id))
+      .where(
+        and(
+          eq(activities.id, target.activityId),
+          eq(activities.node_id, target.nodeId),
+          inArray(activities.type, ["lesson", "flashcard"]),
+        ),
+      )
+      .limit(1);
+    if (!row) this.notFound();
+    const text = learningMaterialText(row.type, row.content);
+    return {
+      target,
+      title: row.title,
+      text,
+      pageNumber: null,
+      sectionTitle: `Aktivitas ${row.position}`,
+    };
+  }
+
+  async readChatProgress(userId: string, moduleId: string) {
+    await this.validateChatScope(userId, moduleId);
+    const rows = await this.infrastructure.database.db
+      .select({ nodeId: module_nodes.id, status: node_progress.status })
+      .from(module_nodes)
+      .leftJoin(
+        node_progress,
+        and(eq(node_progress.node_id, module_nodes.id), eq(node_progress.user_id, userId)),
+      )
+      .where(eq(module_nodes.module_id, moduleId))
+      .orderBy(asc(module_nodes.id));
+    return {
+      totalNodes: rows.length,
+      completedNodes: rows.filter((row) => row.status === "completed").length,
+      nodes: rows.map((row) => ({ nodeId: row.nodeId, status: row.status ?? "locked" })),
     };
   }
 

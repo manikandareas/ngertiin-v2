@@ -1,0 +1,20 @@
+{
+  "date": "2026-09-14",
+  "environment": "authenticated existing Brave session; localhost API/web; live provider and application database",
+  "threadId": "e85c54a9-d116-4856-b4db-76beb1d6e0a1",
+  "checks": [
+    {
+      "name": "standalone chat create and completed answer without module",
+      "status": "PASS"
+    },
+    {
+      "name": "Wikimedia image persisted: 3 model calls and 1 data-image",
+      "status": "PASS"
+    },
+    {
+      "name": "bare UUID image failed to render before fix; registered-only normalization displays diagram, caption and attribution after reload",
+      "status": "PASS"
+    }
+  ],
+  "limits": "One Clerk account only; no two-user authenticated acceptance, full mobile/attachment/mention matrix or staging proxy."
+}

@@ -1,0 +1,244 @@
+[
+  {
+    "name": "same key two instances",
+    "pass": true,
+    "responses": [
+      {
+        "status": 202,
+        "body": {
+          "data": {
+            "messageId": "47b3f376-15af-4af0-9e06-332dc33b37a5",
+            "runId": "6b1f129a-964b-4449-8499-df11ab8404c5",
+            "status": "queued",
+            "eventsUrl": "/api/v1/modules/4c44e4c1-484b-471d-9b09-6145bd7c1242/chat/threads/eaede36f-590b-4e49-808c-e75818f52e63/runs/6b1f129a-964b-4449-8499-df11ab8404c5/events"
+          }
+        }
+      },
+      {
+        "status": 202,
+        "body": {
+          "data": {
+            "runId": "6b1f129a-964b-4449-8499-df11ab8404c5",
+            "status": "queued",
+            "eventsUrl": "/api/v1/modules/4c44e4c1-484b-471d-9b09-6145bd7c1242/chat/threads/eaede36f-590b-4e49-808c-e75818f52e63/runs/6b1f129a-964b-4449-8499-df11ab8404c5/events",
+            "messageId": "47b3f376-15af-4af0-9e06-332dc33b37a5"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "name": "different payload rejected",
+    "pass": true
+  },
+  {
+    "name": "late subscriber receives complete text without duplicate",
+    "pass": true,
+    "snapshot": {
+      "data": [
+        {
+          "id": "784613eb-4e1e-4463-b395-4c1e0ec08346",
+          "threadId": "eaede36f-590b-4e49-808c-e75818f52e63",
+          "runId": "6b1f129a-964b-4449-8499-df11ab8404c5",
+          "sequence": 2,
+          "role": "assistant",
+          "parts": [
+            {
+              "type": "text",
+              "text": "Jawaban "
+            },
+            {
+              "type": "data-run-status",
+              "data": {
+                "status": "running",
+                "errorCode": null
+              }
+            }
+          ],
+          "contexts": [],
+          "createdAt": "2026-09-11T11:12:21.076Z",
+          "availability": "available"
+        },
+        {
+          "id": "47b3f376-15af-4af0-9e06-332dc33b37a5",
+          "threadId": "eaede36f-590b-4e49-808c-e75818f52e63",
+          "runId": "6b1f129a-964b-4449-8499-df11ab8404c5",
+          "sequence": 1,
+          "role": "user",
+          "parts": [
+            {
+              "type": "text",
+              "text": "slow hello"
+            }
+          ],
+          "contexts": [],
+          "createdAt": "2026-09-11T11:12:20.994Z",
+          "availability": "available"
+        }
+      ],
+      "pageInfo": {
+        "hasNextPage": false,
+        "nextCursor": null
+      }
+    },
+    "raw": "data: {\"type\":\"start\",\"messageId\":\"784613eb-4e1e-4463-b395-4c1e0ec08346\",\"messageMetadata\":{\"runId\":\"6b1f129a-964b-4449-8499-df11ab8404c5\",\"status\":\"running\"}}\n\ndata: {\"type\":\"text-start\",\"id\":\"answer\"}\n\ndata: {\"type\":\"text-delta\",\"id\":\"answer\",\"delta\":\"Jawaban \"}\n\n: keepalive\n\n: keepalive\n\ndata: {\"type\":\"text-delta\",\"id\":\"answer\",\"delta\":\"fixture \"}\n\n: keepalive\n\n: keepalive\n\n: keepalive\n\n: keepalive\n\n: keepalive\n\ndata: {\"type\":\"text-delta\",\"id\":\"answer\",\"delta\":\"tetap \"}\n\n: keepalive\n\n: keepalive\n\n: keepalive\n\n: keepalive\n\ndata: {\"type\":\"text-delta\",\"id\":\"answer\",\"delta\":\"tersimpan.\"}\n\ndata: {\"type\":\"text-end\",\"id\":\"answer\"}\n\ndata: {\"type\":\"data-run-status\",\"data\":{\"status\":\"completed\",\"errorCode\":null}}\n\ndata: {\"type\":\"finish\",\"messageMetadata\":{\"runId\":\"6b1f129a-964b-4449-8499-df11ab8404c5\",\"status\":\"completed\"}}\n\ndata: [DONE]\n\n",
+    "usage": {
+      "inputTokens": 17,
+      "outputTokens": 8,
+      "totalTokens": 25,
+      "coverage": "complete"
+    }
+  },
+  {
+    "name": "actual per-call usage aggregated",
+    "pass": true
+  },
+  {
+    "name": "terminal replay returns initial ack",
+    "pass": true
+  },
+  {
+    "name": "different sends exactly one winner",
+    "pass": true,
+    "responses": [
+      {
+        "status": 202,
+        "body": {
+          "data": {
+            "messageId": "56658ad9-ab17-4757-8dd5-fd4deca5a42f",
+            "runId": "37f24622-dd3c-4675-8ec5-f586a702bfec",
+            "status": "queued",
+            "eventsUrl": "/api/v1/modules/4c44e4c1-484b-471d-9b09-6145bd7c1242/chat/threads/fb0aca1d-cbaa-4f60-9bf4-3b8b187ed2ec/runs/37f24622-dd3c-4675-8ec5-f586a702bfec/events"
+          }
+        }
+      },
+      {
+        "status": 409,
+        "body": {
+          "status": 409,
+          "code": "CHAT_RUN_ACTIVE",
+          "detail": "Tunggu jawaban selesai sebelum melanjutkan."
+        }
+      }
+    ]
+  },
+  {
+    "name": "cross-instance cancel terminal",
+    "pass": true,
+    "accepted": {
+      "data": {
+        "id": "37f24622-dd3c-4675-8ec5-f586a702bfec",
+        "threadId": "fb0aca1d-cbaa-4f60-9bf4-3b8b187ed2ec",
+        "messageId": "56658ad9-ab17-4757-8dd5-fd4deca5a42f",
+        "assistantMessageId": null,
+        "status": "cancelling",
+        "createdAt": "2026-09-11T11:12:24.853Z",
+        "startedAt": "2026-09-11T11:12:24.882Z",
+        "finishedAt": null,
+        "errorCode": null,
+        "usage": {
+          "inputTokens": null,
+          "outputTokens": null,
+          "totalTokens": null,
+          "coverage": "unavailable"
+        }
+      }
+    },
+    "terminal": {
+      "id": "37f24622-dd3c-4675-8ec5-f586a702bfec",
+      "threadId": "fb0aca1d-cbaa-4f60-9bf4-3b8b187ed2ec",
+      "messageId": "56658ad9-ab17-4757-8dd5-fd4deca5a42f",
+      "assistantMessageId": null,
+      "status": "cancelled",
+      "createdAt": "2026-09-11T11:12:24.853Z",
+      "startedAt": "2026-09-11T11:12:24.882Z",
+      "finishedAt": "2026-09-11T11:12:24.908Z",
+      "errorCode": "USER_CANCELLED",
+      "usage": {
+        "inputTokens": null,
+        "outputTokens": null,
+        "totalTokens": null,
+        "coverage": "unavailable"
+      }
+    }
+  },
+  {
+    "name": "provider error terminal",
+    "pass": true,
+    "terminal": {
+      "id": "c7d250ed-f29c-4dbc-b583-108b79c9ba7e",
+      "threadId": "56587505-3ff0-486f-93d4-b4ceb527c65c",
+      "messageId": "6547d2cb-572f-4d02-9f58-732908996bf2",
+      "assistantMessageId": "a59df65b-9a10-4cd6-adc2-55f0923d74e3",
+      "status": "failed",
+      "createdAt": "2026-09-11T11:12:24.929Z",
+      "startedAt": "2026-09-11T11:12:24.950Z",
+      "finishedAt": "2026-09-11T11:12:24.990Z",
+      "errorCode": "PROVIDER_ERROR",
+      "usage": {
+        "inputTokens": null,
+        "outputTokens": null,
+        "totalTokens": null,
+        "coverage": "unavailable"
+      }
+    }
+  },
+  {
+    "name": "output limit terminal",
+    "pass": true,
+    "terminal": {
+      "id": "dfb89399-e905-425f-8f36-81aa3785df57",
+      "threadId": "a979c89c-a76d-4de2-9733-ed4fdc046ef2",
+      "messageId": "a655e750-b8c1-453c-ae97-b044df755f6f",
+      "assistantMessageId": "6e836cc1-33ce-41d8-ad5b-f53ecda1f9da",
+      "status": "failed",
+      "createdAt": "2026-09-11T11:12:25.076Z",
+      "startedAt": "2026-09-11T11:12:25.100Z",
+      "finishedAt": "2026-09-11T11:12:25.712Z",
+      "errorCode": "OUTPUT_LIMIT",
+      "usage": {
+        "inputTokens": 17,
+        "outputTokens": 8,
+        "totalTokens": 25,
+        "coverage": "complete"
+      }
+    }
+  },
+  {
+    "name": "per user active limit cross-thread",
+    "pass": true
+  },
+  {
+    "name": "global active limit across owners",
+    "pass": true
+  },
+  {
+    "name": "queued cancel immediate",
+    "pass": true
+  },
+  {
+    "name": "deadline terminal",
+    "pass": true,
+    "terminal": {
+      "id": "97bd7b21-e36b-4ebe-ab56-4da002296dff",
+      "threadId": "f8485520-b31a-4e2e-813e-c7532e1950b9",
+      "messageId": "d9e014f8-df08-403e-ab39-9f2a7d4ff02a",
+      "assistantMessageId": "be917eb5-3527-4a1f-a63a-99a9b50e7167",
+      "status": "timed_out",
+      "createdAt": "2026-09-11T11:12:27.607Z",
+      "startedAt": "2026-09-11T11:12:27.650Z",
+      "finishedAt": "2026-09-11T11:12:27.882Z",
+      "errorCode": "RUN_TIMEOUT",
+      "usage": {
+        "inputTokens": null,
+        "outputTokens": null,
+        "totalTokens": null,
+        "coverage": "unavailable"
+      }
+    }
+  },
+  {
+    "name": "completion before cancel stays completed",
+    "pass": true
+  }
+]

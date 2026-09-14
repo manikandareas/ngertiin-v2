@@ -1,0 +1,50 @@
+{
+  "ocr": [],
+  "runs": [
+    {
+      "runs": 41,
+      "p50_ms": 4712.262,
+      "p95_ms": 20342.774,
+      "status": "completed",
+      "error_code": null
+    },
+    {
+      "runs": 1,
+      "p50_ms": 18084.339,
+      "p95_ms": 18084.339,
+      "status": "failed",
+      "error_code": "OUTPUT_LIMIT"
+    }
+  ],
+  "queue": {
+    "active": 0,
+    "queued": 0,
+    "pastDeadline": 0,
+    "expiredLeases": 0,
+    "oldestQueuedMs": 0
+  },
+  "usage": [
+    {
+      "calls": 73,
+      "model": "gpt-5.6-luna",
+      "coverage": "complete",
+      "provider": "openai",
+      "input_tokens": 318730,
+      "total_tokens": 333127,
+      "output_tokens": 14397
+    }
+  ],
+  "window": "24 hours",
+  "capturedAt": "2026-09-14T05:07:15.685765+00:00",
+  "indexCoverage": [
+    {
+      "ready": 593,
+      "failed": 0,
+      "pending": 0,
+      "index_version": 1,
+      "version_status": "active",
+      "eligible_documents": 593
+    }
+  ],
+  "attachmentCleanupPending": 0
+}

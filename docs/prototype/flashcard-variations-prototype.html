@@ -1,0 +1,1082 @@
+<!doctype html>
+<!-- Disposable UI prototype: compare four flashcard directions. Open directly; no dependencies. -->
+<html lang="id">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Flashcard Playground · Ngerti.in</title>
+    <style>
+    :root {
+      font-family: ui-rounded, "SF Pro Rounded", "Avenir Next", system-ui, sans-serif;
+      color: #292c27;
+      background: #f7f8f4;
+      font-synthesis: none;
+      --accent: #536843;
+      --flip: 620ms;
+      --curve: cubic-bezier(0.22, 0.75, 0.22, 1);
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+    }
+    button {
+      font: inherit;
+      cursor: pointer;
+      color: inherit;
+      -webkit-tap-highlight-color: transparent;
+    }
+    button:focus-visible,
+    a:focus-visible,
+    input:focus-visible {
+      outline: 3px solid #718f50;
+      outline-offset: 6px;
+    }
+    button:active {
+      scale: 0.97;
+    }
+    button {
+      transition: scale 140ms ease;
+    }
+    button:disabled {
+      cursor: default;
+      opacity: 0.3;
+    }
+    button:disabled:active {
+      scale: 1;
+    }
+    header {
+      height: 83px;
+      border-bottom: 1px solid #e3e6dc;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 5vw;
+      background: #fff9;
+    }
+    .brand {
+      font-size: 23px;
+      font-weight: 850;
+      letter-spacing: -1px;
+    }
+    .brand span {
+      color: #78905a;
+    }
+    .eyebrow {
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      font-weight: 750;
+    }
+    .prototype {
+      border: 1px solid #d9ddcf;
+      padding: 7px 11px;
+      border-radius: 7px;
+      font-size: 10px;
+      letter-spacing: 1.4px;
+      color: #707668;
+    }
+    main {
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 42px 32px 150px;
+    }
+    .intro {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .intro h1 {
+      font-size: clamp(28px, 4vw, 40px);
+      letter-spacing: -1.7px;
+      margin: 9px 0 8px;
+      font-weight: 750;
+    }
+    :where(.intro) p {
+      margin: 0;
+      color: #7a7e73;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .collection {
+      font-size: 12px;
+      border: 1px solid #dee2d5;
+      border-radius: 30px;
+      padding: 10px 15px;
+      white-space: nowrap;
+    }
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 240px;
+      gap: 70px;
+      margin-top: 40px;
+      align-items: center;
+    }
+    .player {
+      min-width: 0;
+    }
+    .lesson-line {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #757c69;
+      margin: 0 6px 19px;
+    }
+    .scene {
+      position: relative;
+      perspective: 1500px;
+      margin: 0 8px;
+    }
+    .card {
+      display: block;
+      width: 100%;
+      height: 370px;
+      padding: 0;
+      border: 0;
+      background: none;
+      text-align: left;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform var(--flip) var(--curve);
+      border-radius: 28px;
+      isolation: auto;
+    }
+    .face {
+      position: absolute;
+      inset: 0;
+      border-radius: 28px;
+      padding: 29px 34px;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border: 1px solid #c7d6ae;
+      background: #eaf1d8;
+      box-shadow: 0 12px 30px #42542c0c;
+    }
+    .front {
+      transform: rotateY(0deg);
+    }
+    .back {
+      transform: rotateY(180deg);
+      background: #d7e8b5;
+    }
+    .card.flipped {
+      transform: rotateY(180deg);
+    }
+    .face-top,
+    .face-bottom {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      position: relative;
+      z-index: 1;
+    }
+    .face-top {
+      font-size: 10px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+    .face-bottom {
+      font-size: 11px;
+      margin-top: auto;
+      color: #556345;
+    }
+    .tag {
+      border: 1px solid currentColor;
+      border-radius: 20px;
+      padding: 6px 10px;
+      font-size: 9px;
+      letter-spacing: 1px;
+    }
+    .question {
+      font-size: clamp(24px, 3vw, 33px);
+      line-height: 1.3;
+      letter-spacing: -0.8px;
+      max-width: 440px;
+      margin: 21px 0 26px;
+      position: relative;
+      z-index: 1;
+      font-weight: 700;
+    }
+    .answer {
+      font-size: clamp(20px, 2.4vw, 27px);
+      line-height: 1.4;
+      letter-spacing: -0.6px;
+      max-width: 490px;
+      margin: 24px 0 13px;
+      position: relative;
+      z-index: 1;
+      font-weight: 650;
+    }
+    .explanation {
+      font-size: 13px;
+      line-height: 1.65;
+      max-width: 440px;
+      position: relative;
+      z-index: 1;
+      margin: 0 0 20px;
+      opacity: 0.8;
+    }
+    .motif {
+      height: 60px;
+      margin-top: 24px;
+      position: relative;
+      color: inherit;
+    }
+    .motif svg {
+      width: 68px;
+      height: 60px;
+      overflow: visible;
+    }
+    .turn-icon {
+      font-size: 20px;
+      line-height: 1;
+    }
+    .stack .scene:before,
+    .stack .scene:after {
+      content: "";
+      position: absolute;
+      inset: 8px 3px -8px;
+      border: 1px solid #d4dcc5;
+      border-radius: 28px;
+      background: #edf0e4;
+      transform: rotate(-3deg);
+      z-index: -1;
+    }
+    .stack .scene:after {
+      transform: rotate(2deg);
+      inset: 5px -3px -5px;
+      background: #f2e8cd;
+    }
+    .stack .front:after {
+      content: "✦";
+      position: absolute;
+      right: 32px;
+      bottom: 63px;
+      font-size: 120px;
+      color: #c8d89d;
+      transform: rotate(12deg);
+    }
+    .stack .answer {
+      margin-top: 48px;
+    }
+    .navigation {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 28px 8px 0;
+    }
+    .nav-button {
+      width: 40px;
+      height: 40px;
+      border: 1px solid #d9ddcf;
+      border-radius: 50%;
+      background: #fff;
+      font-size: 19px;
+    }
+    .dots {
+      display: flex;
+      gap: 7px;
+    }
+    .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 10px;
+      background: #d6dbce;
+    }
+    .dot.current {
+      width: 22px;
+      background: var(--accent);
+    }
+    .hint {
+      text-align: center;
+      font-size: 11px;
+      color: #7c8174;
+      margin: 18px 0 0;
+    }
+    .hint kbd {
+      font: inherit;
+      background: #eeefe8;
+      border: 1px solid #dfe2d8;
+      padding: 2px 5px;
+      border-radius: 4px;
+    }
+    aside .number {
+      font-size: 11px;
+      color: #939988;
+      letter-spacing: 2px;
+    }
+    aside h2 {
+      font-size: 27px;
+      letter-spacing: -0.8px;
+      margin: 12px 0;
+    }
+    :where(aside) p {
+      font-size: 13px;
+      line-height: 1.8;
+      color: #777e6e;
+    }
+    aside .traits {
+      display: flex;
+      gap: 7px;
+      flex-wrap: wrap;
+      margin: 22px 0;
+    }
+    .traits span {
+      font-size: 10px;
+      border: 1px solid #dce0d3;
+      border-radius: 5px;
+      padding: 6px 8px;
+    }
+    .motion {
+      border-top: 1px solid #dce0d3;
+      padding-top: 20px;
+      margin-top: 24px;
+    }
+    .motion label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .motion input {
+      accent-color: #536843;
+      width: 15px;
+      height: 15px;
+    }
+    aside .state {
+      font-size: 10px;
+      color: #909683;
+      margin-top: 13px;
+    }
+    .switcher {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: #272d25;
+      color: #f7f8f2;
+      padding: 7px;
+      border: 1px solid #42483d;
+      border-radius: 18px;
+      box-shadow: 0 12px 35px #1e2a2426;
+      z-index: 10;
+      max-width: calc(100% - 24px);
+    }
+    .switcher button {
+      border: 0;
+      background: none;
+      color: #b9c1b2;
+      border-radius: 11px;
+      padding: 13px 18px;
+      white-space: nowrap;
+      font-size: 12px;
+    }
+    .switcher button[aria-pressed="true"] {
+      background: #e8efdb;
+      color: #35402b;
+    }
+    .switcher .arrow {
+      padding: 12px;
+      font-size: 16px;
+    }
+    .switcher small {
+      display: none;
+    }
+    .note .face {
+      border-radius: 8px 8px 24px 8px;
+      border-color: #d9cdb8;
+      background: repeating-linear-gradient(transparent 0 30px, #b7bdc433 30px 31px), #fff8e8;
+      padding-left: 55px;
+    }
+    .note .face:before {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 36px;
+      border-left: 1px solid #d98e8555;
+    }
+    .note .scene:before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: #e9d9ec;
+      border: 1px solid #d2bad3;
+      border-radius: 10px;
+      transform: rotate(-3deg);
+      z-index: -1;
+    }
+    .note .face-top {
+      color: #937152;
+    }
+    .note .question {
+      font-family: Georgia, serif;
+      font-style: italic;
+      font-weight: 500;
+      font-size: 34px;
+      max-width: 390px;
+      margin-top: 17px;
+    }
+    .note .motif {
+      height: 47px;
+      margin-top: 20px;
+      transform: rotate(-9deg);
+    }
+    .note .motif:after {
+      content: "ingat pelan-pelan";
+      position: absolute;
+      left: 90px;
+      top: 12px;
+      font:
+        italic 15px Georgia,
+        serif;
+      color: #917a59;
+    }
+    .note .back {
+      background: repeating-linear-gradient(transparent 0 30px, #b7bdc433 30px 31px), #f7edcf;
+      transform: rotateX(180deg);
+    }
+    .note .card.flipped {
+      transform: rotateX(180deg);
+    }
+    .note .answer {
+      margin-top: 40px;
+      font-family: Georgia, serif;
+      font-weight: 500;
+    }
+    .note .tag {
+      background: #f5d77d;
+      color: #705f30;
+      transform: rotate(5deg);
+      border: 0;
+      border-radius: 3px;
+      padding: 9px;
+    }
+    .orbit .face {
+      background: #212940;
+      color: #f4f0ff;
+      border-color: #454d65;
+      box-shadow: 0 16px 40px #19243824;
+    }
+    .orbit .front {
+      background: radial-gradient(ellipse at 90% 80%, #414d76 0, transparent 55%), #212940;
+    }
+    .orbit .face:after {
+      content: "";
+      position: absolute;
+      width: 300px;
+      height: 300px;
+      border: 1px solid #9baad42b;
+      border-radius: 50%;
+      right: -105px;
+      top: 50px;
+      box-shadow:
+        0 0 0 35px #9baad40b,
+        0 0 0 70px #9baad40b;
+      pointer-events: none;
+    }
+    .orbit .motif {
+      position: absolute;
+      right: 48px;
+      top: 105px;
+      transform: rotate(-17deg);
+      color: #c8bbfb;
+    }
+    .orbit .motif svg {
+      width: 95px;
+      height: 95px;
+    }
+    .orbit .question {
+      max-width: 330px;
+      margin-top: 63px;
+      padding-right: 24px;
+      font-size: 32px;
+    }
+    .orbit .face-top {
+      color: #b9c3e0;
+    }
+    .orbit .face-bottom {
+      color: #b9c3e0;
+    }
+    .orbit .back {
+      transform: rotateY(-180deg);
+      background: #323958;
+    }
+    .orbit .card.flipped {
+      transform: rotateY(-180deg);
+    }
+    .orbit .answer {
+      margin-top: 44px;
+      max-width: 430px;
+    }
+    .orbit .tag {
+      background: #ffffff0b;
+      border-color: #747d9b;
+    }
+    .ticket .face {
+      border: 2px solid #b35534;
+      background: #fff0df;
+      border-radius: 18px;
+      padding: 26px 30px 26px 104px;
+      box-shadow: 5px 6px 0 #c7633e;
+    }
+    .ticket .face:before {
+      content: "QUICK QUIZ  /  NGERTI.IN";
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 68px;
+      border-right: 2px dashed #ca8e6c;
+      writing-mode: vertical-rl;
+      transform: rotate(180deg);
+      text-align: center;
+      padding: 24px;
+      font-size: 11px;
+      letter-spacing: 3px;
+      font-weight: 750;
+      background: #f5c7a4;
+    }
+    .ticket .face-top {
+      color: #9a4b2c;
+    }
+    .ticket .motif {
+      margin-top: 25px;
+      color: #b85530;
+    }
+    .ticket .question {
+      font-size: 30px;
+      margin-top: 14px;
+    }
+    .ticket .back {
+      transform: rotateY(180deg);
+      background: #fbd3ad;
+    }
+    .ticket .card.flipped {
+      transform: rotateY(180deg) rotateZ(-2deg);
+    }
+    .ticket .answer {
+      margin-top: 42px;
+    }
+    .ticket .face-bottom {
+      color: #9a4b2c;
+    }
+    .ticket .tag {
+      background: #b35534;
+      color: #fff3dd;
+      border: 0;
+      border-radius: 4px;
+    }
+    .reduced .card {
+      transition: none;
+    }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+    @media (hover: hover) and (pointer: fine) {
+      .nav-button:not(:disabled):hover {
+        background: #eaf0e0;
+      }
+      .switcher button:not([aria-pressed="true"]):hover {
+        background: #3a4235;
+      }
+      .card:not(.flipped):hover {
+        transform: translateY(-4px) rotateY(-3deg);
+      }
+      .note .card:not(.flipped):hover {
+        transform: translateY(-4px) rotateX(3deg);
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      body button,
+      body .card {
+        transition: none;
+        animation: none;
+      }
+      body[class] .card:not(.flipped):hover {
+        transform: none;
+      }
+    }
+    @media (min-width: 1450px) {
+      main {
+        padding-top: 60px;
+      }
+      .workspace {
+        margin-top: 60px;
+      }
+      .card {
+        height: 410px;
+      }
+    }
+    @media (max-width: 800px) {
+      .workspace {
+        grid-template-columns: 1fr;
+        gap: 36px;
+        max-width: 620px;
+        margin: 32px auto 0;
+      }
+      aside {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0 25px;
+      }
+      aside .number,
+      aside h2,
+      aside > p,
+      aside .traits {
+        grid-column: 1;
+      }
+      aside .number {
+        grid-row: 1;
+      }
+      aside h2 {
+        grid-row: 2;
+      }
+      aside > p {
+        margin: 0;
+      }
+      aside .motion {
+        grid-column: 2;
+        grid-row: 1 / 5;
+        margin: 0;
+        border-top: 0;
+        border-left: 1px solid #dce0d3;
+        padding: 8px 0 0 24px;
+      }
+      .intro {
+        align-items: start;
+      }
+      .collection {
+        display: none;
+      }
+      .switcher button {
+        padding: 12px;
+      }
+      .card {
+        height: 370px;
+      }
+    }
+    @media (max-width: 480px) {
+      header {
+        height: 66px;
+        padding: 0 22px;
+      }
+      main {
+        padding: 28px 18px 128px;
+      }
+      :where(.intro) p {
+        font-size: 12px;
+      }
+      .intro h1 {
+        font-size: 30px;
+      }
+      .scene {
+        margin: 0 4px;
+      }
+      .card {
+        height: 400px;
+      }
+      .face {
+        padding: 24px;
+      }
+      .question {
+        font-size: 29px;
+      }
+      .answer {
+        font-size: 24px;
+      }
+      .face-top {
+        font-size: 9px;
+      }
+      .face-bottom {
+        font-size: 10px;
+      }
+      .note .face {
+        padding-left: 44px;
+        padding-right: 22px;
+      }
+      .note .face:before {
+        left: 28px;
+      }
+      .note .question {
+        font-size: 30px;
+      }
+      .orbit .question {
+        font-size: 26px;
+        max-width: none;
+        padding-right: 0;
+        margin-top: 85px;
+      }
+      .orbit .motif {
+        top: 70px;
+        right: 35px;
+      }
+      .orbit .motif svg {
+        width: 65px;
+        height: 65px;
+      }
+      .ticket .face {
+        padding-left: 77px;
+        padding-right: 19px;
+      }
+      .ticket .face:before {
+        width: 49px;
+        padding: 17px;
+      }
+      .ticket .question {
+        font-size: 27px;
+      }
+      .ticket .answer {
+        font-size: 23px;
+        margin-top: 27px;
+      }
+      .ticket .explanation {
+        font-size: 12px;
+      }
+      .switcher {
+        bottom: 14px;
+        gap: 2px;
+        border-radius: 15px;
+        padding: 5px;
+      }
+      .switcher button {
+        padding: 11px 10px;
+        font-size: 10px;
+      }
+      .switcher .arrow {
+        padding: 8px;
+      }
+      .switcher .long {
+        display: none;
+      }
+      .switcher small {
+        display: inline;
+        font-size: inherit;
+      }
+      aside {
+        gap: 0 16px;
+      }
+      aside h2 {
+        font-size: 23px;
+      }
+      :where(aside) p {
+        font-size: 12px;
+      }
+      aside .motion {
+        padding-left: 16px;
+      }
+      .hint {
+        font-size: 10px;
+      }
+    }
+    @media (max-width: 360px) {
+      .card {
+        height: 465px;
+      }
+      .ticket .question {
+        font-size: 25px;
+      }
+      .ticket .answer {
+        font-size: 22px;
+      }
+      .switcher button {
+        padding: 11px 8px;
+      }
+    }
+    </style>
+  </head>
+  <body class="stack">
+    <header>
+      <div class="brand">ngerti<span>.in</span></div>
+      <span class="prototype">DESIGN PLAYGROUND</span>
+    </header>
+    <main>
+      <div class="intro">
+        <div>
+          <div class="eyebrow">Sedikit main, banyak nyangkut.</div>
+          <h1>Satu kartu. Satu aha!</h1>
+          <p>Coba balik kartunya. Mana yang bikin kamu ingin belajar lagi?</p>
+        </div>
+        <div class="collection">✳ &nbsp; Biologi · Sel & kehidupan</div>
+      </div>
+      <div class="workspace">
+        <section class="player" aria-label="Demo flashcard">
+          <div class="lesson-line">
+            <span>LATIH INGATANMU</span><span id="counter">01 / 03</span>
+          </div>
+          <div class="scene">
+            <button
+              type="button"
+              class="card"
+              id="card"
+              aria-pressed="false"
+              aria-label="Balik kartu untuk melihat jawaban"
+            >
+              <span class="face front"
+                ><span class="face-top"
+                  ><span>Biologi dasar</span><span class="tag">Coba ingat</span></span
+                ><span class="motif" aria-hidden="true"></span
+                ><span class="question" id="question"></span
+                ><span class="face-bottom"
+                  ><span>Pikirkan dulu, lalu balik.</span
+                  ><span class="turn-icon" aria-hidden="true">↻</span></span
+                ></span
+              >
+              <span class="face back" aria-hidden="true"
+                ><span class="face-top"
+                  ><span>Oh, jadi begitu!</span><span class="tag">Jawaban</span></span
+                ><span class="answer" id="answer"></span
+                ><span class="explanation" id="explanation"></span
+                ><span class="face-bottom"
+                  ><span>Sudah nyangkut? Lanjut ke kartu berikutnya.</span
+                  ><span class="turn-icon" aria-hidden="true">↺</span></span
+                ></span
+              >
+            </button>
+          </div>
+          <div class="navigation">
+            <button type="button" class="nav-button" id="prev" aria-label="Kartu sebelumnya">
+              ←
+            </button>
+            <div class="dots" aria-hidden="true">
+              <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+            </div>
+            <button type="button" class="nav-button" id="next" aria-label="Kartu berikutnya">
+              →
+            </button>
+          </div>
+          <p class="hint">Klik kartu atau tekan <kbd>Spasi</kbd> untuk membalik</p>
+          <p class="sr-only" id="announcement" aria-live="polite"></p>
+        </section>
+        <aside>
+          <div class="number" id="variant-number"></div>
+          <h2 id="variant-title">Soft Stack</h2>
+          <p id="variant-description"></p>
+          <div class="traits" id="traits"></div>
+          <div class="motion">
+            <label><input type="checkbox" id="slow"> Gerak lambat</label>
+            <p>Perhatikan bagaimana kartu berputar dan berhenti dengan lembut.</p>
+            <p class="state" id="state"></p>
+          </div>
+        </aside>
+      </div>
+    </main>
+    <nav class="switcher" aria-label="Pilih variasi desain">
+      <button type="button" class="arrow" id="variant-prev" aria-label="Variasi sebelumnya">
+        ←
+      </button><button type="button" data-variant="stack">
+        <span class="long">01 &nbsp; Soft Stack</span><small>01 Stack</small>
+      </button><button type="button" data-variant="note">
+        <span class="long">02 &nbsp; Study Notes</span><small>02 Notes</small>
+      </button><button type="button" data-variant="orbit">
+        <span class="long">03 &nbsp; Orbit</span><small>03 Orbit</small>
+      </button><button type="button" data-variant="ticket">
+        <span class="long">04 &nbsp; Quiz Ticket</span><small>04 Ticket</small>
+      </button><button
+        type="button"
+        class="arrow"
+        id="variant-next"
+        aria-label="Variasi berikutnya"
+      >
+        →
+      </button>
+    </nav>
+    <script>
+    const $ = (s) => document.querySelector(s);
+    const variants = {
+      stack: {
+        title: "Soft Stack",
+        description:
+          "Tumpukan kartu pastel yang terasa bisa disentuh. Ringan, ramah, dan ada sedikit kejutan di baliknya.",
+        traits: ["Flip horizontal", "Layered paper"],
+        duration: 620,
+        art: '<path d="M17 17C8 4 30-7 34 10C45-5 65 11 52 23C70 26 62 47 46 42C48 61 25 63 24 44C6 50-1 30 17 26Z" fill="#aec780" stroke="#536843" stroke-width="1.5"/><path d="M26 25v5m14-5v5m-13 7q6 5 12-1" fill="none" stroke="#40552f" stroke-width="2.5" stroke-linecap="round"/>',
+      },
+      note: {
+        title: "Study Notes",
+        description:
+          "Seperti catatan kecil di meja belajar. Kertas bergaris, stiker, dan gerakan membalik dari bawah ke atas.",
+        traits: ["Flip vertikal", "Scrapbook"],
+        duration: 700,
+        art: '<path d="m30 1 8 17 19 3-14 13 3 19-16-9-17 9 3-19L2 21l20-3Z" fill="#f5d77d" stroke="#aa8440" stroke-width="1.5"/><path d="m23 28 5 5 9-11" fill="none" stroke="#8a6b35" stroke-width="2"/>',
+      },
+      orbit: {
+        title: "Orbit",
+        description:
+          "Satu pertanyaan, satu penemuan kecil. Ruang gelap yang fokus, planet mungil, dan flip seperti berputar di orbit.",
+        traits: ["Reverse flip", "Space explorer"],
+        duration: 760,
+        art: '<circle cx="33" cy="29" r="21" fill="#c5b8f3"/><path d="M13 27C-19 47 42 62 64 20C69 9 55 9 48 13" fill="none" stroke="#d7e1ff" stroke-width="3"/><path d="m4 4 2 5 5 2-5 2-2 5-2-5-5-2 5-2Z" fill="#ebd893"/><circle cx="49" cy="-1" r="2" fill="#fff"/>',
+      },
+      ticket: {
+        title: "Quiz Ticket",
+        description:
+          "Tiket kecil untuk momen “aku tahu!”. Tipografi tegas, potongan karcis, dan flip yang mendarat sedikit miring.",
+        traits: ["Playful landing", "Arcade ticket"],
+        duration: 640,
+        art: '<path d="m35 1-22 30h17l-5 25 29-35H36l8-20Z" fill="#e9aa36" stroke="#af5534" stroke-width="2"/><path d="M5 11 12 17M60 40l7 5M9 43l7-3" stroke="#b35534" stroke-width="2" stroke-linecap="round"/>',
+      },
+    };
+    const cards = [
+      {
+        q: "Kenapa mitokondria disebut “pembangkit energi” sel?",
+        a: "Karena mitokondria menghasilkan sebagian besar ATP melalui respirasi sel.",
+        e: "ATP adalah molekul pembawa energi yang dipakai sel untuk bergerak, tumbuh, dan menjalankan fungsinya.",
+      },
+      {
+        q: "Apa yang membuat membran sel bersifat selektif permeabel?",
+        a: "Lapisan fosfolipid dan protein membran mengatur zat yang bisa lewat.",
+        e: "Molekul kecil nonpolar lebih mudah menembus lapisan lipid. Ion dan banyak molekul polar memerlukan protein transpor.",
+      },
+      {
+        q: "Apa perbedaan utama sel prokariotik dan eukariotik?",
+        a: "Sel eukariotik punya inti bermembran. Sel prokariotik tidak.",
+        e: "DNA prokariotik berada di daerah nukleoid. Eukariotik juga memiliki organel bermembran, seperti mitokondria.",
+      },
+    ];
+    let variant = "stack",
+      index = 0,
+      flipped = false;
+    const keys = Object.keys(variants),
+      card = $("#card");
+    function showState() {
+      $("#state").textContent =
+        `${keys.indexOf(variant) + 1} dari 4 variasi · Kartu ${index + 1} · ${flipped ? "Jawaban" : "Pertanyaan"}`;
+    }
+    function side() {
+      card.classList.toggle("flipped", flipped);
+      card.setAttribute("aria-pressed", String(flipped));
+      $(".front").setAttribute("aria-hidden", String(flipped));
+      $(".back").setAttribute("aria-hidden", String(!flipped));
+      card.setAttribute(
+        "aria-label",
+        flipped ? "Balik kartu untuk melihat pertanyaan" : "Balik kartu untuk melihat jawaban",
+      );
+      showState();
+    }
+    function flip() {
+      flipped = !flipped;
+      side();
+      $("#announcement").textContent = flipped
+        ? `${cards[index].a} ${cards[index].e}`
+        : cards[index].q;
+    }
+    function renderCard() {
+      card.style.transition = "none";
+      flipped = false;
+      side();
+      $("#question").textContent = cards[index].q;
+      $("#answer").textContent = cards[index].a;
+      $("#explanation").textContent = cards[index].e;
+      $("#counter").textContent = `0${index + 1} / 03`;
+      $("#prev").disabled = index === 0;
+      $("#next").disabled = index === cards.length - 1;
+      document.querySelectorAll(".dot").forEach((d, i) => {
+        d.classList.toggle("current", i === index);
+      });
+      void card.offsetWidth;
+      card.style.transition = "";
+    }
+    function selectVariant(key, updateURL = true) {
+      variant = keys.includes(key) ? key : "stack";
+      const v = variants[variant];
+      document.body.className = variant;
+      $("#variant-number").textContent = `DIRECTION 0${keys.indexOf(variant) + 1}`;
+      $("#variant-title").textContent = v.title;
+      $("#variant-description").textContent = v.description;
+      $("#traits").replaceChildren(
+        ...v.traits.map((text) => {
+          const el = document.createElement("span");
+          el.textContent = text;
+          return el;
+        }),
+      );
+      $(".motif").innerHTML =
+        `<svg viewBox="0 0 72 62" fill="none" xmlns="http://www.w3.org/2000/svg">${v.art}</svg>`;
+      document.querySelectorAll("[data-variant]").forEach((b) => {
+        b.setAttribute("aria-pressed", String(b.dataset.variant === variant));
+      });
+      duration();
+      renderCard();
+      if (updateURL) {
+        const url = new URL(location.href);
+        url.searchParams.set("variant", variant);
+        try {
+          history.replaceState(null, "", url);
+        } catch {
+          /* Some file:// browsers disallow history replacement. */
+        }
+      }
+    }
+    function duration() {
+      document.documentElement.style.setProperty(
+        "--flip",
+        `${variants[variant].duration * ($("#slow").checked ? 2.5 : 1)}ms`,
+      );
+    }
+    function cycle(delta) {
+      selectVariant(keys[(keys.indexOf(variant) + delta + keys.length) % keys.length]);
+    }
+    card.addEventListener("click", flip);
+    $("#prev").addEventListener("click", () => {
+      if (index > 0) {
+        index--;
+        renderCard();
+        $("#announcement").textContent = cards[index].q;
+      }
+    });
+    $("#next").addEventListener("click", () => {
+      if (index < cards.length - 1) {
+        index++;
+        renderCard();
+        $("#announcement").textContent = cards[index].q;
+      }
+    });
+    document.querySelectorAll("[data-variant]").forEach((b) => {
+      b.addEventListener("click", () => selectVariant(b.dataset.variant));
+    });
+    $("#variant-prev").addEventListener("click", () => cycle(-1));
+    $("#variant-next").addEventListener("click", () => cycle(1));
+    $("#slow").addEventListener("change", duration);
+    document.addEventListener("keydown", (e) => {
+      if (
+        e.target.matches('input,textarea,select,[contenteditable="true"]') ||
+        e.altKey ||
+        e.ctrlKey ||
+        e.metaKey
+      )
+        return;
+      if (e.code === "Space" && e.target.tagName !== "BUTTON") {
+        e.preventDefault();
+        if (!e.repeat) flip();
+      }
+      if (e.code === "ArrowLeft" || e.code === "ArrowRight") {
+        e.preventDefault();
+        cycle(e.code === "ArrowLeft" ? -1 : 1);
+      }
+    });
+    window.addEventListener("popstate", () =>
+      selectVariant(new URLSearchParams(location.search).get("variant"), false),
+    );
+    selectVariant(new URLSearchParams(location.search).get("variant"), false);
+    </script>
+  </body>
+</html>

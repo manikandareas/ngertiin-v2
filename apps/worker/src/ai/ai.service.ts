@@ -1,10 +1,12 @@
 import { getRetryable } from "@langchain/core/errors";
 import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import { OutputParserException } from "@langchain/core/output_parsers";
-import { ChatOpenAI } from "@langchain/openai";
+import { ChatOpenAI, OpenAIEmbeddings } from "@langchain/openai";
 import { Inject, Injectable } from "@nestjs/common";
 import type { WorkerEnvironment } from "@ngertiin/contracts/environment";
+import { validateEmbeddings } from "@ngertiin/shared/knowledge";
 import { ZodError, type ZodType } from "zod";
+import { WORKER_ENV } from "../config.js";
 import { AiError, type AiErrorCategory } from "./ai.error.js";
 
 export const AI_MODEL = Symbol("AI_MODEL");
@@ -94,7 +96,22 @@ export function createModel(environment: WorkerEnvironment): AiModel {
 
 @Injectable()
 export class AiService {
-  constructor(@Inject(AI_MODEL) private readonly model: AiModel) {}
+  constructor(
+    @Inject(AI_MODEL) private readonly model: AiModel,
+    @Inject(WORKER_ENV) private readonly env: WorkerEnvironment,
+  ) {}
+
+  async embedMaterials(texts: string[], model: string, dimensions: number): Promise<number[][]> {
+    const client = new OpenAIEmbeddings({
+      apiKey: this.env.OPENAI_API_KEY,
+      model,
+      dimensions,
+      timeout: 60000,
+      maxRetries: 1,
+      batchSize: this.env.KNOWLEDGE_EMBEDDING_BATCH_SIZE,
+    });
+    return validateEmbeddings(await client.embedDocuments(texts), texts.length, dimensions);
+  }
 
   async generateObject<OutputValue extends Record<string, unknown>>(
     request: GenerateObjectRequest<OutputValue>,

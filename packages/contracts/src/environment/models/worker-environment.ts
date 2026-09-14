@@ -1,7 +1,9 @@
 import { z } from "zod";
 import { infrastructureEnvSchema } from "./infrastructure-environment.js";
+import { knowledgeEnvironment } from "./knowledge-environment.js";
 
 export const workerEnvSchema = infrastructureEnvSchema.extend({
+  ...knowledgeEnvironment,
   OPENAI_API_KEY: z.string().min(1),
   AI_IMAGE_INPUT_ENABLED: z
     .enum(["true", "false"])

@@ -139,6 +139,17 @@ export class ProductErrorFilter implements ExceptionFilter {
     }
 
     const definition = definitionFor(exception);
+    if (
+      definition.status === 413 &&
+      request.path.replace(/\/$/, "") === "/api/v1/chat/attachments"
+    ) {
+      Object.assign(definition, {
+        code: "VALIDATION_ERROR",
+        type: "attachment-too-large",
+        title: "Attachment too large",
+        detail: "Ukuran lampiran maksimal 10 MB per file.",
+      });
+    }
     const requestId = getRequestId(request);
     const instance = request.originalUrl.split("?", 1)[0] ?? request.path;
     const problem: ProblemDetail = problemDetailSchema.parse({

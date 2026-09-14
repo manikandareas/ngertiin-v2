@@ -43,9 +43,18 @@
   --success: #58cc02;
   --success-foreground: #234700;
   --success-subtle: #d7ffb8;
-  --border: #e5e5e5;
+  --border: #eeeeee;
   --input: #afafaf;
   --ring: #0077ad;
+  /* Decorative flashcard themes do not communicate assessment status. */
+  --flashcard-blue-surface: var(--secondary);
+  --flashcard-blue-ink: var(--secondary-foreground);
+  --flashcard-lavender-surface: #f1eaff;
+  --flashcard-lavender-ink: #62418c;
+  --flashcard-peach-surface: #fff0e5;
+  --flashcard-peach-ink: #8b4b2c;
+  --flashcard-yellow-surface: var(--adaptive-subtle);
+  --flashcard-yellow-ink: var(--adaptive-foreground);
   --radius: 0.75rem;
   --sidebar: var(--background);
   --sidebar-foreground: var(--foreground);
@@ -163,9 +172,17 @@
   --card-foreground: #f2f2f2;
   --popover: #262626;
   --popover-foreground: #f2f2f2;
+  --flashcard-blue-surface: #244b66;
+  --flashcard-blue-ink: var(--foreground);
+  --flashcard-lavender-surface: #4b3863;
+  --flashcard-lavender-ink: var(--foreground);
+  --flashcard-peach-surface: #70452f;
+  --flashcard-peach-ink: var(--foreground);
+  --flashcard-yellow-surface: #64501f;
+  --flashcard-yellow-ink: var(--foreground);
   --muted: #262626;
   --muted-foreground: #a3a3a3;
-  --border: #3c3c3c;
+  --border: #282828;
   --input: #595959;
   --accent: #202a30;
   --accent-foreground: #83d4ff;
@@ -189,9 +206,17 @@
     --card-foreground: #f2f2f2;
     --popover: #262626;
     --popover-foreground: #f2f2f2;
+    --flashcard-blue-surface: #244b66;
+    --flashcard-blue-ink: var(--foreground);
+    --flashcard-lavender-surface: #4b3863;
+    --flashcard-lavender-ink: var(--foreground);
+    --flashcard-peach-surface: #70452f;
+    --flashcard-peach-ink: var(--foreground);
+    --flashcard-yellow-surface: #64501f;
+    --flashcard-yellow-ink: var(--foreground);
     --muted: #262626;
     --muted-foreground: #a3a3a3;
-    --border: #3c3c3c;
+    --border: #282828;
     --input: #595959;
     --accent: #202a30;
     --accent-foreground: #83d4ff;
@@ -555,4 +580,112 @@
     opacity: 0;
     transform: translate(var(--confetti-x), var(--confetti-y)) rotate(var(--confetti-rotation));
   }
+}
+
+@keyframes chat-mascot-thinking {
+  0%,
+  50%,
+  100% {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  25% {
+    transform: scale(1.25);
+    opacity: 1;
+  }
+}
+
+/* Desktop player columns collapse independently of the viewport when chat is open. */
+@custom-variant node-compact {
+  @media (min-width: 768px) {
+    @container node-player (width < 900px) {
+      @slot;
+    }
+  }
+}
+
+/* Theme assignments and derived materials are shared by both flashcard faces. */
+.flashcard-theme {
+  --flashcard-surface: var(--flashcard-blue-surface);
+  --flashcard-ink: var(--flashcard-blue-ink);
+  --flashcard-edge: color-mix(in srgb, var(--flashcard-ink) 22%, var(--flashcard-surface));
+  --flashcard-badge-edge: color-mix(in srgb, var(--flashcard-ink) 20%, transparent);
+  --flashcard-layer: color-mix(in srgb, var(--flashcard-surface) 65%, var(--background));
+  --flashcard-answer: color-mix(in srgb, var(--flashcard-surface) 88%, var(--color-night-ink));
+}
+
+.flashcard-theme[data-theme="lavender"] {
+  --flashcard-surface: var(--flashcard-lavender-surface);
+  --flashcard-ink: var(--flashcard-lavender-ink);
+}
+
+.flashcard-theme[data-theme="peach"] {
+  --flashcard-surface: var(--flashcard-peach-surface);
+  --flashcard-ink: var(--flashcard-peach-ink);
+}
+
+.flashcard-theme[data-theme="yellow"] {
+  --flashcard-surface: var(--flashcard-yellow-surface);
+  --flashcard-ink: var(--flashcard-yellow-ink);
+}
+
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .flashcard-button:hover .flashcard-rotor[data-flipped="false"] {
+    transform: translateY(-3px) rotateY(-2deg);
+  }
+}
+
+/* Small, occasional gestures for Timo on the new-chat welcome screen. */
+@keyframes chat-mascot-nod {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  30%,
+  65% {
+    transform: translateY(2px) scale(1.02, 0.97);
+  }
+  48% {
+    transform: translateY(-1px) scale(1);
+  }
+}
+
+@keyframes chat-mascot-tilt {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  30%,
+  65% {
+    transform: rotate(-7deg);
+  }
+}
+
+@keyframes chat-mascot-sway {
+  0%,
+  100% {
+    transform: translateX(0) rotate(0deg);
+  }
+  30% {
+    transform: translateX(-2px) rotate(-4deg);
+  }
+  65% {
+    transform: translateX(2px) rotate(4deg);
+  }
+}
+
+@keyframes chat-mascot-lift {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  30%,
+  55% {
+    transform: translateY(-4px) scale(1.03);
+  }
+}
+
+::highlight(ngertiin-citation) {
+  background-color: var(--accent);
+  color: var(--accent-foreground);
 }

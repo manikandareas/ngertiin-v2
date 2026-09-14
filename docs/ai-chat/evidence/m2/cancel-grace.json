@@ -1,0 +1,159 @@
+[
+  {
+    "name": "hang-provider",
+    "pass": true,
+    "accepted": {
+      "data": {
+        "id": "5c32b4fc-b990-4829-9f45-36ec45c6a36e",
+        "threadId": "9fcc5524-00e7-4d6d-b2fb-6bc4de5aeb71",
+        "messageId": "ebb9c153-3e27-48c6-a335-b792b28f4f86",
+        "assistantMessageId": "39b1c2e2-1644-4c59-8bb9-a84f4291c0d5",
+        "status": "cancelling",
+        "createdAt": "2026-09-11T11:08:53.855Z",
+        "startedAt": "2026-09-11T11:08:53.928Z",
+        "finishedAt": null,
+        "errorCode": null,
+        "usage": {
+          "inputTokens": null,
+          "outputTokens": null,
+          "totalTokens": null,
+          "coverage": "unavailable"
+        }
+      }
+    },
+    "final": {
+      "id": "5c32b4fc-b990-4829-9f45-36ec45c6a36e",
+      "threadId": "9fcc5524-00e7-4d6d-b2fb-6bc4de5aeb71",
+      "messageId": "ebb9c153-3e27-48c6-a335-b792b28f4f86",
+      "assistantMessageId": "39b1c2e2-1644-4c59-8bb9-a84f4291c0d5",
+      "status": "cancelled",
+      "createdAt": "2026-09-11T11:08:53.855Z",
+      "startedAt": "2026-09-11T11:08:53.928Z",
+      "finishedAt": "2026-09-11T11:08:54.350Z",
+      "errorCode": "USER_CANCELLED",
+      "usage": {
+        "inputTokens": null,
+        "outputTokens": null,
+        "totalTokens": null,
+        "coverage": "partial"
+      }
+    },
+    "history": {
+      "data": [
+        {
+          "id": "39b1c2e2-1644-4c59-8bb9-a84f4291c0d5",
+          "threadId": "9fcc5524-00e7-4d6d-b2fb-6bc4de5aeb71",
+          "runId": "5c32b4fc-b990-4829-9f45-36ec45c6a36e",
+          "sequence": 2,
+          "role": "assistant",
+          "parts": [
+            {
+              "type": "text",
+              "text": "Parsial "
+            },
+            {
+              "type": "data-run-status",
+              "data": {
+                "status": "cancelled",
+                "errorCode": "USER_CANCELLED"
+              }
+            }
+          ],
+          "contexts": [],
+          "createdAt": "2026-09-11T11:08:53.935Z",
+          "availability": "available"
+        },
+        {
+          "id": "ebb9c153-3e27-48c6-a335-b792b28f4f86",
+          "threadId": "9fcc5524-00e7-4d6d-b2fb-6bc4de5aeb71",
+          "runId": "5c32b4fc-b990-4829-9f45-36ec45c6a36e",
+          "sequence": 1,
+          "role": "user",
+          "parts": [
+            {
+              "type": "text",
+              "text": "hang-provider"
+            }
+          ],
+          "contexts": [],
+          "createdAt": "2026-09-11T11:08:53.855Z",
+          "availability": "available"
+        }
+      ],
+      "pageInfo": {
+        "hasNextPage": false,
+        "nextCursor": null
+      }
+    },
+    "elapsedMs": 288
+  },
+  {
+    "name": "provider-timeout",
+    "pass": true,
+    "final": {
+      "id": "272ae8fc-a8c7-4453-b62e-248ae5512b08",
+      "threadId": "a0d42464-edec-4a3d-ae72-7e83ee8e8e12",
+      "messageId": "050b61ee-4209-46ba-9c78-26410e3cee99",
+      "assistantMessageId": "084e1a77-6ccc-4209-8a7c-9a0e8a16267e",
+      "status": "timed_out",
+      "createdAt": "2026-09-11T11:08:54.581Z",
+      "startedAt": "2026-09-11T11:08:54.611Z",
+      "finishedAt": "2026-09-11T11:08:54.658Z",
+      "errorCode": "RUN_TIMEOUT",
+      "usage": {
+        "inputTokens": null,
+        "outputTokens": null,
+        "totalTokens": null,
+        "coverage": "unavailable"
+      }
+    },
+    "history": {
+      "data": [
+        {
+          "id": "084e1a77-6ccc-4209-8a7c-9a0e8a16267e",
+          "threadId": "a0d42464-edec-4a3d-ae72-7e83ee8e8e12",
+          "runId": "272ae8fc-a8c7-4453-b62e-248ae5512b08",
+          "sequence": 2,
+          "role": "assistant",
+          "parts": [
+            {
+              "type": "text",
+              "text": ""
+            },
+            {
+              "type": "data-run-status",
+              "data": {
+                "status": "timed_out",
+                "errorCode": "RUN_TIMEOUT"
+              }
+            }
+          ],
+          "contexts": [],
+          "createdAt": "2026-09-11T11:08:54.621Z",
+          "availability": "available"
+        },
+        {
+          "id": "050b61ee-4209-46ba-9c78-26410e3cee99",
+          "threadId": "a0d42464-edec-4a3d-ae72-7e83ee8e8e12",
+          "runId": "272ae8fc-a8c7-4453-b62e-248ae5512b08",
+          "sequence": 1,
+          "role": "user",
+          "parts": [
+            {
+              "type": "text",
+              "text": "provider-timeout"
+            }
+          ],
+          "contexts": [],
+          "createdAt": "2026-09-11T11:08:54.581Z",
+          "availability": "available"
+        }
+      ],
+      "pageInfo": {
+        "hasNextPage": false,
+        "nextCursor": null
+      }
+    },
+    "elapsedMs": 15
+  }
+]

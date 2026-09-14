@@ -16,14 +16,14 @@ export function UsageBanner() {
       aria-label="Kuota belajar mingguan"
       className="overflow-hidden rounded-xl bg-primary text-primary-foreground dark:bg-[color-mix(in_srgb,var(--primary)_85%,black)]"
     >
-      <div className="px-4 pb-4 pt-3.5">
+      <div className="p-3">
         <h2 className="flex items-center text-xs font-semibold gap-0.5">
           Usage minggu ini
           <UsageInfoTooltip />
         </h2>
         {usage ? (
           <>
-            <dl className="mt-4 grid grid-cols-2 gap-4">
+            <dl className="mt-3 grid grid-cols-2 gap-3">
               {(
                 [
                   ["Modul", usage.modules],
@@ -66,7 +66,7 @@ export function UsageBanner() {
           </div>
         )}
       </div>
-      <div className="relative border-t border-dashed border-[#bfba94] dark:border-[#79714b] bg-[#f3e3a1] dark:bg-[#4c442d] px-4 py-3 text-[#6b582c] dark:text-[#ecdaa0]">
+      <div className="relative border-t border-dashed border-[#bfba94] dark:border-[#79714b] bg-[#f3e3a1] dark:bg-[#4c442d] px-3 py-2.5 text-[#6b582c] dark:text-[#ecdaa0]">
         <span
           aria-hidden="true"
           className="pointer-events-none absolute -left-1.5 -top-1.5 size-3 rounded-full bg-sidebar"

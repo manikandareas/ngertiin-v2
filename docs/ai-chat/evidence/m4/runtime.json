@@ -1,0 +1,194 @@
+{
+  "date": "2026-09-11T17:14:14.479Z",
+  "database": "isolated PostgreSQL 17",
+  "extension": [
+    {
+      "extversion": "0.8.2"
+    }
+  ],
+  "dimensions": [
+    {
+      "dimensions": 1536
+    }
+  ],
+  "checks": {
+    "hybrid": {
+      "status": "ready",
+      "degraded": false,
+      "snapshots": [
+        {
+          "citation": {
+            "id": "a7ee7504-063c-4d48-9f46-d1b67740a151",
+            "origin": "generated_material",
+            "title": "Fotosintesis",
+            "reference": {
+              "kind": "activity",
+              "nodeId": "3c7c27e6-c167-48fd-9cc9-7f619ead4e7c",
+              "activityId": "d400a649-d1a7-4122-a762-627a9047ddc4",
+              "contentRevision": "9b8082c96681b53d12b48596f1f8cd1e9834f811a74bf9b380a34a85b9e07147",
+              "startCodePoint": 0,
+              "endCodePoint": 79
+            },
+            "excerpt": "Klorofil\n\nKlorofil adalah pigmen hijau yang menyerap cahaya untuk fotosintesis.",
+            "pageNumber": null,
+            "sectionTitle": "Aktivitas 1"
+          },
+          "text": "Klorofil\n\nKlorofil adalah pigmen hijau yang menyerap cahaya untuk fotosintesis.",
+          "startCodePoint": 0,
+          "capturedAt": "2026-09-11T17:14:12.255Z"
+        },
+        {
+          "citation": {
+            "id": "f1a6d5ee-fc92-4451-aa3b-386d98ae0be9",
+            "origin": "original_source",
+            "title": "Buku fotosintesis",
+            "reference": {
+              "kind": "source",
+              "sourceId": "117eb678-176d-4adf-8b33-bdfd3774cad9",
+              "sourceContentId": "b4276bb4-0310-4be5-b594-0da4c30f2b0c",
+              "contentRevision": "f78b62c91f0d249bbaa4f916001f1143542f5b0d4329785e8284370093e14d86",
+              "startCodePoint": 0,
+              "endCodePoint": 163
+            },
+            "excerpt": "Fotosintesis mengubah energi cahaya menjadi energi kimia. Klorofil menyerap cahaya matahari. Air dan karbon dioksida digunakan untuk membentuk glukosa dan oksigen.",
+            "pageNumber": 7,
+            "sectionTitle": "Energi tumbuhan"
+          },
+          "text": "Fotosintesis mengubah energi cahaya menjadi energi kimia. Klorofil menyerap cahaya matahari. Air dan karbon dioksida digunakan untuk membentuk glukosa dan oksigen.",
+          "startCodePoint": 0,
+          "capturedAt": "2026-09-11T17:14:12.261Z"
+        }
+      ]
+    },
+    "crossUser": "PASS",
+    "duplicateReadyNoEmbedding": "PASS",
+    "lexicalFallback": {
+      "status": "ready",
+      "degraded": true,
+      "snapshots": [
+        {
+          "citation": {
+            "id": "dcef8699-5319-480a-98d8-db1788bc05a3",
+            "origin": "generated_material",
+            "title": "Fotosintesis",
+            "reference": {
+              "kind": "activity",
+              "nodeId": "3c7c27e6-c167-48fd-9cc9-7f619ead4e7c",
+              "activityId": "d400a649-d1a7-4122-a762-627a9047ddc4",
+              "contentRevision": "9b8082c96681b53d12b48596f1f8cd1e9834f811a74bf9b380a34a85b9e07147",
+              "startCodePoint": 0,
+              "endCodePoint": 79
+            },
+            "excerpt": "Klorofil\n\nKlorofil adalah pigmen hijau yang menyerap cahaya untuk fotosintesis.",
+            "pageNumber": null,
+            "sectionTitle": "Aktivitas 1"
+          },
+          "text": "Klorofil\n\nKlorofil adalah pigmen hijau yang menyerap cahaya untuk fotosintesis.",
+          "startCodePoint": 0,
+          "capturedAt": "2026-09-11T17:14:12.339Z"
+        },
+        {
+          "citation": {
+            "id": "41894094-2eca-458d-9bba-e613a23dd0ad",
+            "origin": "original_source",
+            "title": "Buku fotosintesis",
+            "reference": {
+              "kind": "source",
+              "sourceId": "117eb678-176d-4adf-8b33-bdfd3774cad9",
+              "sourceContentId": "b4276bb4-0310-4be5-b594-0da4c30f2b0c",
+              "contentRevision": "f78b62c91f0d249bbaa4f916001f1143542f5b0d4329785e8284370093e14d86",
+              "startCodePoint": 0,
+              "endCodePoint": 163
+            },
+            "excerpt": "Fotosintesis mengubah energi cahaya menjadi energi kimia. Klorofil menyerap cahaya matahari. Air dan karbon dioksida digunakan untuk membentuk glukosa dan oksigen.",
+            "pageNumber": 7,
+            "sectionTitle": "Energi tumbuhan"
+          },
+          "text": "Fotosintesis mengubah energi cahaya menjadi energi kimia. Klorofil menyerap cahaya matahari. Air dan karbon dioksida digunakan untuk membentuk glukosa dan oksigen.",
+          "startCodePoint": 0,
+          "capturedAt": "2026-09-11T17:14:12.348Z"
+        }
+      ]
+    },
+    "immediateInvalidation": "PASS",
+    "revisionReplacement": "PASS",
+    "deletedLink": "PASS",
+    "progressionUnchanged": "PASS",
+    "unicodeChunking": "PASS",
+    "versionCutover": "PASS",
+    "immutableVersion": "PASS"
+  },
+  "embeddingRequests": [
+    {
+      "model": "text-embedding-3-small",
+      "dimensions": 1536,
+      "inputs": 1,
+      "latencyMs": 3523
+    },
+    {
+      "model": "text-embedding-3-small",
+      "dimensions": 1536,
+      "inputs": 1,
+      "latencyMs": 927
+    },
+    {
+      "model": "text-embedding-3-small",
+      "dimensions": 1536,
+      "inputs": 1,
+      "latencyMs": 372
+    },
+    {
+      "model": "text-embedding-3-small",
+      "dimensions": 1536,
+      "inputs": 1,
+      "latencyMs": 299
+    },
+    {
+      "model": "text-embedding-3-small",
+      "dimensions": 1536,
+      "inputs": 1,
+      "latencyMs": 349
+    },
+    {
+      "model": "text-embedding-3-small",
+      "dimensions": 1536,
+      "inputs": 1,
+      "latencyMs": 361
+    },
+    {
+      "model": "text-embedding-3-small",
+      "dimensions": 1536,
+      "inputs": 1,
+      "latencyMs": 294
+    },
+    {
+      "model": "text-embedding-3-small",
+      "dimensions": 1536,
+      "inputs": 1,
+      "latencyMs": 348
+    },
+    {
+      "model": "text-embedding-3-small",
+      "dimensions": 1536,
+      "inputs": 1,
+      "latencyMs": 348
+    }
+  ],
+  "rows": [
+    {
+      "index_version_id": 1,
+      "status": "obsolete",
+      "chunks": 2
+    },
+    {
+      "index_version_id": 1,
+      "status": "ready",
+      "chunks": 2
+    },
+    {
+      "index_version_id": 2,
+      "status": "ready",
+      "chunks": 2
+    }
+  ]
+}

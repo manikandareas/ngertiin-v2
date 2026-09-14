@@ -1,0 +1,120 @@
+{
+  "checks": [
+    {
+      "name": "Create standalone nullable module",
+      "pass": true
+    },
+    {
+      "name": "Create module thread canonical",
+      "pass": true
+    },
+    {
+      "name": "Legacy create supported",
+      "pass": true
+    },
+    {
+      "name": "Global list includes module and standalone",
+      "pass": true
+    },
+    {
+      "name": "Module list excludes standalone",
+      "pass": true
+    },
+    {
+      "name": "Recent cursor pagination advances",
+      "pass": true
+    },
+    {
+      "name": "Foreign owner denied",
+      "pass": true
+    },
+    {
+      "name": "Legacy mismatched module denied",
+      "pass": true
+    },
+    {
+      "name": "Standalone rejects page context",
+      "pass": true
+    },
+    {
+      "name": "Thread module immutable",
+      "pass": true
+    },
+    {
+      "name": "Standalone message accepted",
+      "pass": true
+    },
+    {
+      "name": "Standalone replay same run",
+      "pass": true
+    },
+    {
+      "name": "Standalone durable SSE completes",
+      "pass": true
+    },
+    {
+      "name": "Standalone assistant persisted",
+      "pass": true
+    },
+    {
+      "name": "Standalone has no fabricated citations",
+      "pass": true
+    },
+    {
+      "name": "Module preview available",
+      "pass": true
+    },
+    {
+      "name": "Legacy events URL preserved",
+      "pass": true
+    },
+    {
+      "name": "Replay across route aliases is one run",
+      "pass": true
+    },
+    {
+      "name": "Module stream finishes",
+      "pass": true
+    },
+    {
+      "name": "Module answer has stored citation",
+      "pass": true
+    },
+    {
+      "name": "Canonical citation snapshot readable",
+      "pass": true
+    },
+    {
+      "name": "Citation foreign owner denied",
+      "pass": true
+    },
+    {
+      "name": "Rename standalone",
+      "pass": true
+    },
+    {
+      "name": "Rename refreshes recent order",
+      "pass": true
+    },
+    {
+      "name": "Delete standalone",
+      "pass": true
+    },
+    {
+      "name": "Deleted detail unavailable",
+      "pass": true
+    }
+  ],
+  "standaloneThreadId": "72e9c86d-9736-444c-8f67-232fe50a1c07",
+  "moduleThreadId": "82024093-884d-4f00-bb00-e7806ee7e4be",
+  "fixture": {
+    "userId": "06125ed6-0886-4dc8-81d5-4a3e52bbeb27",
+    "otherUserId": "196b6da6-1b2e-4b15-af06-a2bacef4b3f1",
+    "moduleId": "39c22fbb-1206-443a-bd67-06cfa09b868c",
+    "nodeId": "fe1e4c94-e4c9-490d-91f1-e9d7eee3a861",
+    "activityId": "3bd01617-9435-49b7-9927-8dfd33792b7f"
+  },
+  "clerk": "NOT RUN - fixture guard",
+  "provider": "real configured provider",
+  "database": "isolated local scratch"
+}

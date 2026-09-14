@@ -47,6 +47,7 @@ export function SourcePdfPage({
         element.current = node;
         register(node);
       }}
+      data-citation-page={number}
       className="scroll-mt-20"
     >
       <div className="mb-3 flex items-center gap-3 text-[10px] font-semibold tracking-wide text-muted-foreground">

@@ -1,12 +1,12 @@
 import type { PublicLessonImage } from "@ngertiin/contracts/api";
 import { type JSX, useRef, useState } from "react";
 
-interface LessonImageProps {
-  image: PublicLessonImage;
+interface WikimediaImageProps {
+  image: Omit<PublicLessonImage, "id">;
   refresh: () => Promise<string>;
 }
 
-export function LessonImage({ image, refresh }: LessonImageProps): JSX.Element | null {
+export function WikimediaImage({ image, refresh }: WikimediaImageProps): JSX.Element | null {
   const retried = useRef(false);
   const [url, setUrl] = useState(image.url);
   const [hidden, setHidden] = useState(false);

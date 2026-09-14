@@ -1,0 +1,12 @@
+{
+  "date": "2026-09-14T05:20:10.560Z",
+  "baseCommit": "0df1883f169b6934147cee2e19d173c87c8efd5d",
+  "environment": "isolated local PostgreSQL and real Redis/storage; actual Nest HTTP controllers/interceptors/lifecycle; fixture identity guard, not Clerk; app.close completed",
+  "checks": [
+    {
+      "name": "HTTP controllers multipart bounds, rate rejection, cancel and owner checks (fixture identity)",
+      "status": "PASS"
+    }
+  ],
+  "evaluations": []
+}

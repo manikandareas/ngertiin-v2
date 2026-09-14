@@ -1,0 +1,26 @@
+{
+  "date": "2026-09-14T05:21:30.764Z",
+  "environment": "local actual budget and environment implementation; no provider invocation",
+  "checks": [
+    {
+      "name": "model step boundary",
+      "status": "PASS"
+    },
+    {
+      "name": "shared output budget boundary",
+      "status": "PASS"
+    },
+    {
+      "name": "tool call boundary",
+      "status": "PASS"
+    },
+    {
+      "name": "mandatory text context boundary",
+      "status": "PASS"
+    },
+    {
+      "name": "shutdown configuration fits container stop grace",
+      "status": "PASS"
+    }
+  ]
+}

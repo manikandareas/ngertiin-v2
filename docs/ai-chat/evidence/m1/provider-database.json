@@ -1,0 +1,58 @@
+[
+  {
+    "case": "two threads, rename, cursor",
+    "pass": true
+  },
+  {
+    "case": "cross-user",
+    "pass": true
+  },
+  {
+    "case": "same key replay",
+    "pass": true
+  },
+  {
+    "case": "provider greeting without subscriber",
+    "status": "completed",
+    "usage": {
+      "inputTokens": 231,
+      "outputTokens": 25,
+      "totalTokens": 256,
+      "coverage": "complete"
+    },
+    "runId": "ae3ede79-649b-40e1-a44e-c00dff012df1",
+    "assistant": [
+      {
+        "type": "text",
+        "text": "Hai, Nara! Senang bertemu denganmu 😊 Ada yang ingin kamu pelajari hari ini?"
+      },
+      {
+        "type": "data-run-status",
+        "data": {
+          "status": "completed",
+          "errorCode": null
+        }
+      }
+    ]
+  },
+  {
+    "case": "follow-up remembers history",
+    "status": "completed",
+    "pass": true,
+    "usage": {
+      "inputTokens": 268,
+      "outputTokens": 9,
+      "totalTokens": 277,
+      "coverage": "complete"
+    },
+    "runId": "0d05716f-4bb5-4921-b3b7-ee9ca75851be"
+  },
+  {
+    "case": "message pagination no duplicates",
+    "pass": true
+  },
+  {
+    "case": "delete tombstone",
+    "pass": true
+  }
+]

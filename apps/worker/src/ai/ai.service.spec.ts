@@ -1,12 +1,17 @@
+import assert from "node:assert/strict";
+import { describe, test } from "node:test";
 import { stampRetryable } from "@langchain/core/errors";
 import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import { OutputParserException } from "@langchain/core/output_parsers";
 import type { WorkerEnvironment } from "@ngertiin/contracts/environment";
-import assert from "node:assert/strict";
-import { describe, test } from "node:test";
 import { z } from "zod";
 import { AiError } from "./ai.error.js";
-import { AiService, type AiModel, createModel } from "./ai.service.js";
+import { type AiModel, AiService, createModel } from "./ai.service.js";
+
+const embeddingEnvironment = {
+  OPENAI_API_KEY: "test-key",
+  KNOWLEDGE_EMBEDDING_BATCH_SIZE: 32,
+} as WorkerEnvironment;
 
 const outputSchema = z.object({ value: z.string() }).strict();
 
@@ -19,7 +24,7 @@ function createService(error: unknown): AiService {
     }),
   } as unknown as BaseChatModel;
   const model: AiModel = { client, provider: "openai", modelId: "test-model" };
-  return new AiService(model);
+  return new AiService(model, embeddingEnvironment);
 }
 
 describe("AiService", () => {
@@ -36,7 +41,10 @@ describe("AiService", () => {
         },
       }),
     } as unknown as BaseChatModel;
-    const service = new AiService({ client, provider: "openai", modelId: "test-model" });
+    const service = new AiService(
+      { client, provider: "openai", modelId: "test-model" },
+      embeddingEnvironment,
+    );
     const retryLogs: string[] = [];
     const originalConsoleWarn = console.warn;
     console.warn = (...values: unknown[]) => retryLogs.push(values.map(String).join(" "));
@@ -148,7 +156,7 @@ describe("AiService", () => {
         OPENAI_API_KEY: "test-key",
         OPENAI_MODEL: "gpt-5.6-luna",
       } as WorkerEnvironment);
-      const service = new AiService(model);
+      const service = new AiService(model, embeddingEnvironment);
 
       assert.deepEqual(
         await service.generateObject({

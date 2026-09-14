@@ -1,0 +1,44 @@
+{
+  "checks": [
+    {
+      "name": "Citation remains immutable after material edit",
+      "pass": true
+    },
+    {
+      "name": "New send rejects stale excerpt",
+      "pass": true
+    },
+    {
+      "name": "Owner can read archived module citation",
+      "pass": true
+    },
+    {
+      "name": "Foreign module cannot be attached",
+      "pass": true
+    },
+    {
+      "name": "Legacy creation-order cursor scope preserved",
+      "pass": true
+    },
+    {
+      "name": "Legacy cursor next page supported",
+      "pass": true
+    },
+    {
+      "name": "Cancel fixture admitted",
+      "pass": true
+    },
+    {
+      "name": "Standalone cancellation accepted",
+      "pass": true
+    },
+    {
+      "name": "Standalone run cancelled durably",
+      "pass": true
+    },
+    {
+      "name": "Foreign run denied",
+      "pass": true
+    }
+  ]
+}

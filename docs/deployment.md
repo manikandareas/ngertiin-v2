@@ -4,6 +4,8 @@ Dokumen ini menjelaskan deployment production yang diterapkan pada **10 Septembe
 
 **Status:** landing, web, API, worker, autentikasi, backup, dan CI frontend sudah terpasang. Pengguna melaporkan telah menguji E2E dan **“all good”**. Rincian kasus E2E tidak disertakan, sehingga laporan ini tidak dianggap sebagai bukti setiap skenario failure/recovery telah diuji.
 
+> Untuk rilis AI Chat, gunakan [panduan deployment chat](ai-chat/production-deploy.md). Snapshot di bawah mendahului chat: API kini menerima key OpenAI/Mistral dan PostgreSQL memerlukan pgvector sebelum migrasi `0019`.
+
 ## Daftar isi
 
 1. [Arsitektur dan alasan pemilihan](#1-arsitektur-dan-alasan-pemilihan)

@@ -1,0 +1,7 @@
+{
+  "name": "Redis admission fail closed",
+  "pass": true,
+  "code": "CHAT_UNAVAILABLE",
+  "before": 27,
+  "after": 27
+}

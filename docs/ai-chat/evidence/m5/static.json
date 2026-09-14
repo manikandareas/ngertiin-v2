@@ -1,0 +1,53 @@
+{
+  "capturedAt": "2026-09-14T05:29:46.188672+00:00",
+  "baseCommit": "0df1883f169b6934147cee2e19d173c87c8efd5d",
+  "worktreeUncommitted": true,
+  "checks": {
+    "workspaceTypecheck": "PASS",
+    "workspaceBuild": "PASS",
+    "finalApiTypecheck": "PASS",
+    "scopedBiome": "PASS",
+    "databaseMigrationConsistency": "PASS",
+    "localCompose": "PASS",
+    "productionCompose": "PASS with nonsecret placeholders; not deployment",
+    "documentationFileLinks": "PASS",
+    "diffWhitespace": "PASS",
+    "globalLint": {
+      "status": "FAIL baseline",
+      "errors": 53,
+      "warnings": 118,
+      "infos": 60,
+      "errorFiles": [
+        "docs/prototype/ai-chat-notion-prototype.html",
+        "docs/prototype/chat-citation-compact-prototype.html",
+        "docs/prototype/chat-mascot-prototype.html"
+      ]
+    },
+    "finalApiBuild": "PASS"
+  },
+  "sourceSha256": {
+    ".env.example": "9dfbb3c14836945fb8dbe9923ff30d7d6636b820d13bdb307ecad8a29e1468a7",
+    "apps/api/src/app.module.ts": "e2c031be0844db3fd7b1047b37fb7f34fab5bcf5308193ddf168ce975faf4a35",
+    "apps/api/src/chat/chat-attachments.controller.ts": "d0e8b36b4132a3bff811b543206cc5e8c893ea8da855af44da9a76f1920e4765",
+    "apps/api/src/chat/chat.controller.ts": "81d3ea1f636ade1111d858c289a359f53f825a12884f7487285910b1dc27d0de",
+    "apps/api/src/chat/chat.execution.ts": "49ff0db8dd6506706455075a816e2ed75c51065446168009e972bd1b7517588d",
+    "apps/api/src/chat/chat.service.ts": "f2a9510be1409bd7d9738e4361b001491311b60e0e0adc899eaa8a108ddab33d",
+    "apps/api/src/chat/prompts/learning.prompt.ts": "632c640ea40d55a2d59f6fbb9dc6c072ea34cba3af64700bfa38cb795ec776f9",
+    "apps/api/src/chat/tools/search-wikimedia-images.tool.ts": "7171f8892d3a00f82768554f53dc35ae16fc7d47b3172ac641e8e15cf4983eb4",
+    "apps/api/src/health/health.controller.ts": "1baa668ac59bb3f66d7b3ccd3f1ffee0d315053f6d341a66f9dfe0fb5c54f733",
+    "apps/api/src/http/request-policy.interceptor.ts": "f20fa018abf7712c1ce7957e1c88e56b0503b32956ad0beb1a0a4273bd9cc228",
+    "apps/api/src/infrastructure/infrastructure.service.ts": "20eec90bc2015367c7b820eee43d6722991e75c83a2223e11d2a163a6dce63f6",
+    "apps/api/src/main.ts": "a2162d1be5c24220d64b7f831b4ecb4df2457a5b85481c5526464c81df9f620c",
+    "apps/web/src/features/chat/components/chat-markdown.tsx": "f90d164a1b60200500d9cb9c4c32c220f3ac05b04699df4576dcb7b62580f778",
+    "compose.production.yml": "867fa2b1774f99c39a0001930061acfc291c07c081f75fbe0a7a95f5a7a96fee",
+    "docs/ai-chat/README.md": "4f167769ff2d323376b5457d0e4ab98af67241e17d11555297768acca37353b9",
+    "docs/ai-chat/contracts.md": "e1f8e03ace0523deb274ce190bb64a508ffe27db1930cf5f55fee11467b8c3e3",
+    "docs/ai-chat/implementation.md": "9e535f9f0a1eac38149fb04877bdc507a141f28271947135919cb384e07ca3b1",
+    "packages/contracts/src/environment/models/api-environment.ts": "b24fc77139201ee9cbeb0ad714655589054a65d4882858fdfa9c3486627472ee",
+    "apps/api/src/http/http-shutdown.service.ts": "dd095f377f8551be8dd952ab1a4a1372d7700d96029111efe0370dacb4f5fce6",
+    "scripts/chat-operations.mjs": "5ddedec53ea4d71dbf424046bb4dbbc55d871292240c85bc3a2a02bb61356e2e",
+    "docs/ai-chat/m5-operations.sql": "013c0c1e4116259151c53b46760e963aae41a5abe3f6119252394df9405ed965",
+    "docs/ai-chat/m5-runbook.md": "1e895289e1378c6ea106f7224651a859463a8f4ba22a3ddf70c68fa5b679ac0f",
+    "docs/ai-chat/m5-verification.md": "24cbc6be519e16a125dbbe8dc8955707f5b07aea919ab4db9fd69f49e5777253"
+  }
+}

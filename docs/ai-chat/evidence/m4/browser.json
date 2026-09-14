@@ -1,0 +1,17 @@
+{
+  "date": "2026-09-12 Asia/Makassar",
+  "scope": "Production ChatCitedAnswer/reader components with fixture API; citations and answer from faults-agent.json. No Clerk or production HTTP.",
+  "checks": {
+    "providerAnswerRenders": "PASS",
+    "bothOrigins": "PASS",
+    "sourcePage7": "PASS",
+    "readerHighlightMatchesSnapshot": "PASS",
+    "nextCitation": "PASS",
+    "desktop": "PASS",
+    "mobile390x844NoOverflow": "PASS",
+    "escapeClosesAndRestoresFocus": "PASS",
+    "browserErrors": []
+  },
+  "screenshots": ["reader-desktop.png", "reader-mobile.png"],
+  "notRun": ["authenticated Clerk", "full durable chat SSE with M4", "browser degradation response"]
+}

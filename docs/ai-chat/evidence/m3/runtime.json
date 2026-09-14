@@ -1,0 +1,877 @@
+{
+  "checks": [
+    "safe projection excludes private config",
+    "assessment excluded from picker",
+    "cross user denied",
+    "cross module denied",
+    "locked node denied",
+    "assessment reference denied",
+    "provider run completed: Jelaskan kutipan terlampir dal",
+    "provider citation backed by snapshot",
+    "Unicode highlight matches original",
+    "SSE snapshot includes citation",
+    "provider run completed: Beri satu contoh sederhana dar",
+    "snapshot unchanged after material update",
+    "idempotent replay survives material revision",
+    "new stale reference rejected",
+    "provider run completed: Jelaskan sumber ini singkat de",
+    "source citation present",
+    "archived source/module snapshot readable",
+    "provider run completed: Gunakan read_excerpt untuk mem",
+    "provider run completed: Baca progres belajarku menggun",
+    "read_excerpt tool returns safe evidence",
+    "provider run completed: Aku sedang mengerjakan assessm",
+    "attempt progression mastery XP unchanged",
+    "revocation hides dependent history including follow-up",
+    "revoked citation reader denied",
+    "revoked stream denied"
+  ],
+  "runs": [
+    {
+      "run": {
+        "id": "0a2a1563-c283-4ecd-8fda-cb1b49d288ab",
+        "threadId": "6f7b6628-bdd7-4a6e-b5ec-8b362af97208",
+        "messageId": "5b35c562-fc63-463d-96ce-81d75892b11b",
+        "assistantMessageId": "02c1420a-1757-47c4-a6a5-57f87100740c",
+        "status": "completed",
+        "createdAt": "2026-09-11T16:06:18.655Z",
+        "startedAt": "2026-09-11T16:06:19.769Z",
+        "finishedAt": "2026-09-11T16:06:22.720Z",
+        "errorCode": null,
+        "usage": {
+          "inputTokens": 1363,
+          "outputTokens": 104,
+          "totalTokens": 1467,
+          "coverage": "complete"
+        }
+      },
+      "answer": {
+        "id": "02c1420a-1757-47c4-a6a5-57f87100740c",
+        "threadId": "6f7b6628-bdd7-4a6e-b5ec-8b362af97208",
+        "runId": "0a2a1563-c283-4ecd-8fda-cb1b49d288ab",
+        "sequence": 2,
+        "role": "assistant",
+        "parts": [
+          {
+            "type": "text",
+            "text": "Energi dalam ekosistem dipakai makhluk hidup untuk menjalankan proses kehidupan, sementara sebagian berubah dan dilepaskan sebagai panas. Akibatnya, energi yang tersedia semakin berkurang pada setiap tingkat trofik [[cite:23e8e501-2a91-4e41-835c-fdca1ed05a84]]."
+          },
+          {
+            "type": "data-citation",
+            "id": "23e8e501-2a91-4e41-835c-fdca1ed05a84",
+            "data": {
+              "id": "23e8e501-2a91-4e41-835c-fdca1ed05a84",
+              "origin": "generated_material",
+              "title": "Aliran energi",
+              "reference": {
+                "kind": "activity",
+                "nodeId": "18dacd02-57d0-48bf-ae75-692a915d2807",
+                "activityId": "e0dd6cd4-7790-4df8-8df5-55c1096ac74c",
+                "contentRevision": "48432158b954146bdb98f0ce13aaea7e5441350bde38c0d02f56f5a0bc949e12",
+                "startCodePoint": 0,
+                "endCodePoint": 70
+              },
+              "excerpt": "Energi digunakan untuk hidup 🌱 dan sebagian dilepaskan sebagai panas.\n",
+              "pageNumber": null,
+              "sectionTitle": "Aktivitas 1"
+            }
+          },
+          {
+            "type": "data-run-status",
+            "data": {
+              "status": "completed",
+              "errorCode": null
+            }
+          }
+        ],
+        "contexts": [],
+        "references": [],
+        "createdAt": "2026-09-11T16:06:20.039Z",
+        "availability": "available"
+      },
+      "stream": "data: {\"type\":\"start\",\"messageId\":\"02c1420a-1757-47c4-a6a5-57f87100740c\",\"messageMetadata\":{\"runId\":\"0a2a1563-c283-4ecd-8fda-cb1b49d288ab\",\"status\":\"running\"}}\n\ndata: {\"type\":\"text-start\",\"id\":\"answer\"}\n\ndata: {\"type\":\"text-delta\",\"id\":\"answer\",\"delta\":\"Ener\"}\n\ndata: {\"type\":\"text-delta\",\"id\":\"answer\",\"delta\":\"gi dalam ekosistem dipakai makhluk hidup untuk menjalankan proses kehidupan, sementara sebagian berubah dan dilepaskan sebagai panas. Akibatnya, energi yang tersedia semakin berkurang pada setiap tingkat trofik [[cite:23e8\"}\n\ndata: {\"type\":\"text-delta\",\"id\":\"answer\",\"delta\":\"e501-2a91-4e41-835c-fdca1ed05a84]].\"}\n\ndata: {\"type\":\"data-citation\",\"id\":\"23e8e501-2a91-4e41-835c-fdca1ed05a84\",\"data\":{\"id\":\"23e8e501-2a91-4e41-835c-fdca1ed05a84\",\"origin\":\"generated_material\",\"title\":\"Aliran energi\",\"reference\":{\"kind\":\"activity\",\"nodeId\":\"18dacd02-57d0-48bf-ae75-692a915d2807\",\"activityId\":\"e0dd6cd4-7790-4df8-8df5-55c1096ac74c\",\"contentRevision\":\"48432158b954146bdb98f0ce13aaea7e5441350bde38c0d02f56f5a0bc949e12\",\"startCodePoint\":0,\"endCodePoint\":70},\"excerpt\":\"Energi digunakan untuk hidup 🌱 dan sebagian dilepaskan sebagai panas.\\n\",\"pageNumber\":null,\"sectionTitle\":\"Aktivitas 1\"}}\n\ndata: {\"type\":\"text-end\",\"id\":\"answer\"}\n\ndata: {\"type\":\"data-run-status\",\"data\":{\"status\":\"completed\",\"errorCode\":null}}\n\ndata: {\"type\":\"finish\",\"messageMetadata\":{\"runId\":\"0a2a1563-c283-4ecd-8fda-cb1b49d288ab\",\"status\":\"completed\"}}\n\ndata: [DONE]\n\n",
+      "streamClosed": true
+    },
+    {
+      "run": {
+        "id": "3c7c2a19-b93f-49b2-9bde-142dea16e814",
+        "threadId": "6f7b6628-bdd7-4a6e-b5ec-8b362af97208",
+        "messageId": "8263563c-5a15-4951-a626-3bb8280cc244",
+        "assistantMessageId": "449d3177-ae06-4a3e-a5de-1c27460baa67",
+        "status": "completed",
+        "createdAt": "2026-09-11T16:06:23.268Z",
+        "startedAt": "2026-09-11T16:06:23.320Z",
+        "finishedAt": "2026-09-11T16:06:26.061Z",
+        "errorCode": null,
+        "usage": {
+          "inputTokens": 1431,
+          "outputTokens": 97,
+          "totalTokens": 1528,
+          "coverage": "complete"
+        }
+      },
+      "answer": {
+        "id": "449d3177-ae06-4a3e-a5de-1c27460baa67",
+        "threadId": "6f7b6628-bdd7-4a6e-b5ec-8b362af97208",
+        "runId": "3c7c2a19-b93f-49b2-9bde-142dea16e814",
+        "sequence": 4,
+        "role": "assistant",
+        "parts": [
+          {
+            "type": "text",
+            "text": "Contohnya, rumput menggunakan energi matahari untuk tumbuh, lalu belalang memakannya; sebagian energi dipakai untuk hidup dan sebagian dilepaskan sebagai panas [[cite:23e8e501-2a91-4e41-835c-fdca1ed05a84]]."
+          },
+          {
+            "type": "data-citation",
+            "id": "23e8e501-2a91-4e41-835c-fdca1ed05a84",
+            "data": {
+              "id": "23e8e501-2a91-4e41-835c-fdca1ed05a84",
+              "origin": "generated_material",
+              "title": "Aliran energi",
+              "reference": {
+                "kind": "activity",
+                "nodeId": "18dacd02-57d0-48bf-ae75-692a915d2807",
+                "activityId": "e0dd6cd4-7790-4df8-8df5-55c1096ac74c",
+                "contentRevision": "48432158b954146bdb98f0ce13aaea7e5441350bde38c0d02f56f5a0bc949e12",
+                "startCodePoint": 0,
+                "endCodePoint": 70
+              },
+              "excerpt": "Energi digunakan untuk hidup 🌱 dan sebagian dilepaskan sebagai panas.\n",
+              "pageNumber": null,
+              "sectionTitle": "Aktivitas 1"
+            }
+          },
+          {
+            "type": "data-run-status",
+            "data": {
+              "status": "completed",
+              "errorCode": null
+            }
+          }
+        ],
+        "contexts": [],
+        "references": [],
+        "createdAt": "2026-09-11T16:06:23.327Z",
+        "availability": "available"
+      },
+      "stream": "data: {\"type\":\"start\",\"messageId\":\"449d3177-ae06-4a3e-a5de-1c27460baa67\",\"messageMetadata\":{\"runId\":\"3c7c2a19-b93f-49b2-9bde-142dea16e814\",\"status\":\"running\"}}\n\ndata: {\"type\":\"text-start\",\"id\":\"answer\"}\n\ndata: {\"type\":\"text-delta\",\"id\":\"answer\",\"delta\":\"Cont\"}\n\ndata: {\"type\":\"text-delta\",\"id\":\"answer\",\"delta\":\"ohnya, rumput menggunakan energi matahari untuk tumbuh, lalu bel\"}\n\ndata: {\"type\":\"text-delta\",\"id\":\"answer\",\"delta\":\"alang memakannya; sebagian energi dipakai untuk hidup dan sebagian dilepaskan sebagai panas [[cite:23e8e501-2a91-4e41-835c-fdca\"}\n\ndata: {\"type\":\"text-delta\",\"id\":\"answer\",\"delta\":\"1\"}\n\ndata: {\"type\":\"text-delta\",\"id\":\"answer\",\"delta\":\"ed05a84]].\"}\n\ndata: {\"type\":\"data-citation\",\"id\":\"23e8e501-2a91-4e41-835c-fdca1ed05a84\",\"data\":{\"id\":\"23e8e501-2a91-4e41-835c-fdca1ed05a84\",\"origin\":\"generated_material\",\"title\":\"Aliran energi\",\"reference\":{\"kind\":\"activity\",\"nodeId\":\"18dacd02-57d0-48bf-ae75-692a915d2807\",\"activityId\":\"e0dd6cd4-7790-4df8-8df5-55c1096ac74c\",\"contentRevision\":\"48432158b954146bdb98f0ce13aaea7e5441350bde38c0d02f56f5a0bc949e12\",\"startCodePoint\":0,\"endCodePoint\":70},\"excerpt\":\"Energi digunakan untuk hidup 🌱 dan sebagian dilepaskan sebagai panas.\\n\",\"pageNumber\":null,\"sectionTitle\":\"Aktivitas 1\"}}\n\ndata: {\"type\":\"text-end\",\"id\":\"answer\"}\n\ndata: {\"type\":\"data-run-status\",\"data\":{\"status\":\"completed\",\"errorCode\":null}}\n\ndata: {\"type\":\"finish\",\"messageMetadata\":{\"runId\":\"3c7c2a19-b93f-49b2-9bde-142dea16e814\",\"status\":\"completed\"}}\n\ndata: [DONE]\n\n",
+      "streamClosed": true
+    },
+    {
+      "run": {
+        "id": "5adb362d-ac26-4f07-88c3-8c9933c2e639",
+        "threadId": "6f7b6628-bdd7-4a6e-b5ec-8b362af97208",
+        "messageId": "c5263e2b-f11d-48d4-9e02-bd9fb9b43968",
+        "assistantMessageId": "39458c58-e7f5-4fcb-bad3-648966e1baf5",
+        "status": "completed",
+        "createdAt": "2026-09-11T16:06:26.466Z",
+        "startedAt": "2026-09-11T16:06:26.511Z",
+        "finishedAt": "2026-09-11T16:06:28.415Z",
+        "errorCode": null,
+        "usage": {
+          "inputTokens": 2062,
+          "outputTokens": 84,
+          "totalTokens": 2146,
+          "coverage": "complete"
+        }
+      },
+      "answer": {
+        "id": "39458c58-e7f5-4fcb-bad3-648966e1baf5",
+        "threadId": "6f7b6628-bdd7-4a6e-b5ec-8b362af97208",
+        "runId": "5adb362d-ac26-4f07-88c3-8c9933c2e639",
+        "sequence": 6,
+        "role": "assistant",
+        "parts": [
+          {
+            "type": "text",
+            "text": "Sumber ini menjelaskan bahwa energi mengalir melalui ekosistem, tetapi sebagian digunakan untuk aktivitas hidup dan dilepaskan sebagai panas. Karena itu, energi yang tersedia semakin berkurang pada tingkat trofik berikutnya [[cite:1390d7d4-207a-4816-b873-aa849ada3397]]."
+          },
+          {
+            "type": "data-citation",
+            "id": "1390d7d4-207a-4816-b873-aa849ada3397",
+            "data": {
+              "id": "1390d7d4-207a-4816-b873-aa849ada3397",
+              "origin": "original_source",
+              "title": "Biologi dasar",
+              "reference": {
+                "kind": "source",
+                "sourceId": "ba8f3e23-4cbf-4887-9633-3c6bcfe10c0e",
+                "sourceContentId": "47663bbd-757f-4af9-a71e-375c9da57ddf",
+                "contentRevision": "87120d9f85eb994568ad343efc709ff56889f83b8c738b004423610993af1e76",
+                "startCodePoint": 0,
+                "endCodePoint": 185
+              },
+              "excerpt": "Energi 🌱 mengalir dalam ekosistem. Sebagian energi digunakan organisme untuk aktivitas hidup dan dilepaskan sebagai panas. Energi yang tersedia berkurang pada tingkat trofik berikutnya.",
+              "pageNumber": null,
+              "sectionTitle": "Aliran energi"
+            }
+          },
+          {
+            "type": "data-run-status",
+            "data": {
+              "status": "completed",
+              "errorCode": null
+            }
+          }
+        ],
+        "contexts": [],
+        "references": [],
+        "createdAt": "2026-09-11T16:06:26.523Z",
+        "availability": "available"
+      },
+      "stream": "data: {\"type\":\"start\",\"messageId\":\"39458c58-e7f5-4fcb-bad3-648966e1baf5\",\"messageMetadata\":{\"runId\":\"5adb362d-ac26-4f07-88c3-8c9933c2e639\",\"status\":\"running\"}}\n\ndata: {\"type\":\"text-start\",\"id\":\"answer\"}\n\ndata: {\"type\":\"text-delta\",\"id\":\"answer\",\"delta\":\"S\"}\n\ndata: {\"type\":\"text-delta\",\"id\":\"answer\",\"delta\":\"umber ini menjelaskan bahwa energi mengalir melalui ekosistem, tetapi sebagian digunakan untuk aktivitas hidup dan dilepaskan sebagai panas. Karena\"}\n\ndata: {\"type\":\"text-delta\",\"id\":\"answer\",\"delta\":\" itu, energi yang tersedia semakin berkurang pada tingkat trofik berikutnya [[cite:1390d7d4-207a-4816-b873-aa849ada3397]].\"}\n\ndata: {\"type\":\"data-citation\",\"id\":\"1390d7d4-207a-4816-b873-aa849ada3397\",\"data\":{\"id\":\"1390d7d4-207a-4816-b873-aa849ada3397\",\"origin\":\"original_source\",\"title\":\"Biologi dasar\",\"reference\":{\"kind\":\"source\",\"sourceId\":\"ba8f3e23-4cbf-4887-9633-3c6bcfe10c0e\",\"sourceContentId\":\"47663bbd-757f-4af9-a71e-375c9da57ddf\",\"contentRevision\":\"87120d9f85eb994568ad343efc709ff56889f83b8c738b004423610993af1e76\",\"startCodePoint\":0,\"endCodePoint\":185},\"excerpt\":\"Energi 🌱 mengalir dalam ekosistem. Sebagian energi digunakan organisme untuk aktivitas hidup dan dilepaskan sebagai panas. Energi yang tersedia berkurang pada tingkat trofik berikutnya.\",\"pageNumber\":null,\"sectionTitle\":\"Aliran energi\"}}\n\ndata: {\"type\":\"text-end\",\"id\":\"answer\"}\n\ndata: {\"type\":\"data-run-status\",\"data\":{\"status\":\"completed\",\"errorCode\":null}}\n\ndata: {\"type\":\"finish\",\"messageMetadata\":{\"runId\":\"5adb362d-ac26-4f07-88c3-8c9933c2e639\",\"status\":\"completed\"}}\n\ndata: [DONE]\n\n",
+      "streamClosed": true
+    },
+    {
+      "run": {
+        "id": "ac4f92c2-5b81-462b-b37d-e18dedde434d",
+        "threadId": "6f7b6628-bdd7-4a6e-b5ec-8b362af97208",
+        "messageId": "be3be9ff-6ebb-4cc1-a538-8943088a94b5",
+        "assistantMessageId": "1b41303a-9c60-4d1c-b6dd-ab859fe91337",
+        "status": "completed",
+        "createdAt": "2026-09-11T16:06:28.637Z",
+        "startedAt": "2026-09-11T16:06:28.675Z",
+        "finishedAt": "2026-09-11T16:06:32.683Z",
+        "errorCode": null,
+        "usage": {
+          "inputTokens": 5244,
+          "outputTokens": 226,
+          "totalTokens": 5470,
+          "coverage": "complete"
+        }
+      },
+      "answer": {
+        "id": "1b41303a-9c60-4d1c-b6dd-ab859fe91337",
+        "threadId": "6f7b6628-bdd7-4a6e-b5ec-8b362af97208",
+        "runId": "ac4f92c2-5b81-462b-b37d-e18dedde434d",
+        "sequence": 8,
+        "role": "assistant",
+        "parts": [
+          {
+            "type": "text",
+            "text": "Sumber ini menjelaskan bahwa energi mengalir dalam ekosistem, tetapi sebagian digunakan untuk aktivitas hidup dan dilepaskan sebagai panas. Akibatnya, energi yang tersedia berkurang pada tingkat trofik berikutnya [[cite:81bb37a2-fffc-45da-bf86-c4120ab4e2b5]]."
+          },
+          {
+            "type": "data-citation",
+            "id": "81bb37a2-fffc-45da-bf86-c4120ab4e2b5",
+            "data": {
+              "id": "81bb37a2-fffc-45da-bf86-c4120ab4e2b5",
+              "origin": "original_source",
+              "title": "Biologi dasar",
+              "reference": {
+                "kind": "source",
+                "sourceId": "ba8f3e23-4cbf-4887-9633-3c6bcfe10c0e",
+                "sourceContentId": "47663bbd-757f-4af9-a71e-375c9da57ddf",
+                "contentRevision": "87120d9f85eb994568ad343efc709ff56889f83b8c738b004423610993af1e76",
+                "startCodePoint": 0,
+                "endCodePoint": 185
+              },
+              "excerpt": "Energi 🌱 mengalir dalam ekosistem. Sebagian energi digunakan organisme untuk aktivitas hidup dan dilepaskan sebagai panas. Energi yang tersedia berkurang pada tingkat trofik berikutnya.",
+              "pageNumber": null,
+              "sectionTitle": "Aliran energi"
+            }
+          },
+          {
+            "type": "data-run-status",
+            "data": {
+              "status": "completed",
+              "errorCode": null
+            }
+          }
+        ],
+        "contexts": [],
+        "references": [],
+        "createdAt": "2026-09-11T16:06:28.689Z",
+        "availability": "available"
+      },
+      "stream": "data: {\"type\":\"start\",\"messageId\":\"1b41303a-9c60-4d1c-b6dd-ab859fe91337\",\"messageMetadata\":{\"runId\":\"ac4f92c2-5b81-462b-b37d-e18dedde434d\",\"status\":\"running\"}}\n\ndata: {\"type\":\"text-start\",\"id\":\"answer\"}\n\ndata: {\"type\":\"text-delta\",\"id\":\"answer\",\"delta\":\"S\"}\n\ndata: {\"type\":\"text-delta\",\"id\":\"answer\",\"delta\":\"umber ini menjelaskan bahwa energi mengalir dalam ekosistem, tetapi sebagian digunakan untuk aktivitas hidup dan dilepaskan sebagai panas. Akibatnya,\"}\n\ndata: {\"type\":\"text-delta\",\"id\":\"answer\",\"delta\":\" energi yang tersedia berkurang pada tingkat trofik berikutnya [[cite:81bb37a2-fffc-45da-bf86-c4120ab4e2b5]].\"}\n\ndata: {\"type\":\"data-citation\",\"id\":\"81bb37a2-fffc-45da-bf86-c4120ab4e2b5\",\"data\":{\"id\":\"81bb37a2-fffc-45da-bf86-c4120ab4e2b5\",\"origin\":\"original_source\",\"title\":\"Biologi dasar\",\"reference\":{\"kind\":\"source\",\"sourceId\":\"ba8f3e23-4cbf-4887-9633-3c6bcfe10c0e\",\"sourceContentId\":\"47663bbd-757f-4af9-a71e-375c9da57ddf\",\"contentRevision\":\"87120d9f85eb994568ad343efc709ff56889f83b8c738b004423610993af1e76\",\"startCodePoint\":0,\"endCodePoint\":185},\"excerpt\":\"Energi 🌱 mengalir dalam ekosistem. Sebagian energi digunakan organisme untuk aktivitas hidup dan dilepaskan sebagai panas. Energi yang tersedia berkurang pada tingkat trofik berikutnya.\",\"pageNumber\":null,\"sectionTitle\":\"Aliran energi\"}}\n\ndata: {\"type\":\"text-end\",\"id\":\"answer\"}\n\ndata: {\"type\":\"data-run-status\",\"data\":{\"status\":\"completed\",\"errorCode\":null}}\n\ndata: {\"type\":\"finish\",\"messageMetadata\":{\"runId\":\"ac4f92c2-5b81-462b-b37d-e18dedde434d\",\"status\":\"completed\"}}\n\ndata: [DONE]\n\n",
+      "streamClosed": true
+    },
+    {
+      "run": {
+        "id": "dea569b1-22dd-4542-bf4b-f21282b5463a",
+        "threadId": "6f7b6628-bdd7-4a6e-b5ec-8b362af97208",
+        "messageId": "ec000ff8-9700-4458-be27-e7cfbad4c5cf",
+        "assistantMessageId": "ec0e1b65-bb9a-4d97-82d6-d91a352230c3",
+        "status": "completed",
+        "createdAt": "2026-09-11T16:06:32.791Z",
+        "startedAt": "2026-09-11T16:06:32.837Z",
+        "finishedAt": "2026-09-11T16:06:36.480Z",
+        "errorCode": null,
+        "usage": {
+          "inputTokens": 6724,
+          "outputTokens": 56,
+          "totalTokens": 6780,
+          "coverage": "complete"
+        }
+      },
+      "answer": {
+        "id": "ec0e1b65-bb9a-4d97-82d6-d91a352230c3",
+        "threadId": "6f7b6628-bdd7-4a6e-b5ec-8b362af97208",
+        "runId": "dea569b1-22dd-4542-bf4b-f21282b5463a",
+        "sequence": 10,
+        "role": "assistant",
+        "parts": [
+          {
+            "type": "text",
+            "text": "Kamu sudah menyelesaikan **0 node**. Dari total 2 node, 1 tersedia dan 1 masih terkunci."
+          },
+          {
+            "type": "data-run-status",
+            "data": {
+              "status": "completed",
+              "errorCode": null
+            }
+          }
+        ],
+        "contexts": [],
+        "references": [],
+        "createdAt": "2026-09-11T16:06:32.845Z",
+        "availability": "available"
+      },
+      "stream": "data: {\"type\":\"start\",\"messageId\":\"ec0e1b65-bb9a-4d97-82d6-d91a352230c3\",\"messageMetadata\":{\"runId\":\"dea569b1-22dd-4542-bf4b-f21282b5463a\",\"status\":\"running\"}}\n\ndata: {\"type\":\"text-start\",\"id\":\"answer\"}\n\ndata: {\"type\":\"text-delta\",\"id\":\"answer\",\"delta\":\"K\"}\n\ndata: {\"type\":\"text-delta\",\"id\":\"answer\",\"delta\":\"amu sudah menyelesaikan **0 node**. Dari total 2 node, 1 tersedia dan 1 masih terkunci.\"}\n\ndata: {\"type\":\"text-end\",\"id\":\"answer\"}\n\ndata: {\"type\":\"data-run-status\",\"data\":{\"status\":\"completed\",\"errorCode\":null}}\n\ndata: {\"type\":\"finish\",\"messageMetadata\":{\"runId\":\"dea569b1-22dd-4542-bf4b-f21282b5463a\",\"status\":\"completed\"}}\n\ndata: [DONE]\n\n",
+      "streamClosed": true
+    },
+    {
+      "run": {
+        "id": "98304350-0542-4e26-813a-a955edbe7aa3",
+        "threadId": "6f7b6628-bdd7-4a6e-b5ec-8b362af97208",
+        "messageId": "936178cd-3f42-4cc5-94d1-c8ea93048969",
+        "assistantMessageId": "9df7ccf5-351a-4dd3-9e8d-6aea7e643f23",
+        "status": "completed",
+        "createdAt": "2026-09-11T16:06:36.973Z",
+        "startedAt": "2026-09-11T16:06:37.008Z",
+        "finishedAt": "2026-09-11T16:06:40.151Z",
+        "errorCode": null,
+        "usage": {
+          "inputTokens": 4171,
+          "outputTokens": 161,
+          "totalTokens": 4332,
+          "coverage": "complete"
+        }
+      },
+      "answer": {
+        "id": "9df7ccf5-351a-4dd3-9e8d-6aea7e643f23",
+        "threadId": "6f7b6628-bdd7-4a6e-b5ec-8b362af97208",
+        "runId": "98304350-0542-4e26-813a-a955edbe7aa3",
+        "sequence": 12,
+        "role": "assistant",
+        "parts": [
+          {
+            "type": "text",
+            "text": "Pikirkan: saat energi digunakan untuk aktivitas hidup dan sebagian dilepaskan sebagai panas, apakah seluruh energi itu tetap tersedia untuk tingkat trofik berikutnya?"
+          },
+          {
+            "type": "data-run-status",
+            "data": {
+              "status": "completed",
+              "errorCode": null
+            }
+          }
+        ],
+        "contexts": [],
+        "references": [],
+        "createdAt": "2026-09-11T16:06:37.019Z",
+        "availability": "available"
+      },
+      "stream": "data: {\"type\":\"start\",\"messageId\":\"9df7ccf5-351a-4dd3-9e8d-6aea7e643f23\",\"messageMetadata\":{\"runId\":\"98304350-0542-4e26-813a-a955edbe7aa3\",\"status\":\"running\"}}\n\ndata: {\"type\":\"text-start\",\"id\":\"answer\"}\n\ndata: {\"type\":\"text-delta\",\"id\":\"answer\",\"delta\":\"P\"}\n\ndata: {\"type\":\"text-delta\",\"id\":\"answer\",\"delta\":\"ikirkan: saat energi digunakan untuk aktivitas hidup dan sebagian dilepaskan sebagai panas, apakah seluruh energi itu tetap tersedia untuk tingkat trofik berikutnya?\"}\n\ndata: {\"type\":\"text-end\",\"id\":\"answer\"}\n\ndata: {\"type\":\"data-run-status\",\"data\":{\"status\":\"completed\",\"errorCode\":null}}\n\ndata: {\"type\":\"finish\",\"messageMetadata\":{\"runId\":\"98304350-0542-4e26-813a-a955edbe7aa3\",\"status\":\"completed\"}}\n\ndata: [DONE]\n\n",
+      "streamClosed": true
+    }
+  ],
+  "preview": {
+    "target": {
+      "kind": "activity",
+      "nodeId": "18dacd02-57d0-48bf-ae75-692a915d2807",
+      "activityId": "e0dd6cd4-7790-4df8-8df5-55c1096ac74c"
+    },
+    "title": "Aliran energi",
+    "pageNumber": null,
+    "sectionTitle": "Aktivitas 1",
+    "text": "Energi digunakan untuk hidup 🌱 dan sebagian dilepaskan sebagai panas.\n\nEnergi berkurang di setiap tingkat trofik.",
+    "totalCodePoints": 113,
+    "reference": {
+      "kind": "activity",
+      "nodeId": "18dacd02-57d0-48bf-ae75-692a915d2807",
+      "activityId": "e0dd6cd4-7790-4df8-8df5-55c1096ac74c",
+      "contentRevision": "48432158b954146bdb98f0ce13aaea7e5441350bde38c0d02f56f5a0bc949e12",
+      "startCodePoint": 0,
+      "endCodePoint": 113
+    }
+  },
+  "thread": {
+    "id": "6f7b6628-bdd7-4a6e-b5ec-8b362af97208",
+    "moduleId": "5a9efcb3-1cf5-4167-974e-bdb38865dd89",
+    "title": "M3 verification",
+    "createdAt": "2026-09-11T16:06:18.629Z",
+    "updatedAt": "2026-09-11T16:06:18.628Z",
+    "activeRunId": null
+  },
+  "snapshot": {
+    "citation": {
+      "id": "23e8e501-2a91-4e41-835c-fdca1ed05a84",
+      "origin": "generated_material",
+      "title": "Aliran energi",
+      "reference": {
+        "kind": "activity",
+        "nodeId": "18dacd02-57d0-48bf-ae75-692a915d2807",
+        "activityId": "e0dd6cd4-7790-4df8-8df5-55c1096ac74c",
+        "contentRevision": "48432158b954146bdb98f0ce13aaea7e5441350bde38c0d02f56f5a0bc949e12",
+        "startCodePoint": 0,
+        "endCodePoint": 70
+      },
+      "excerpt": "Energi digunakan untuk hidup 🌱 dan sebagian dilepaskan sebagai panas.\n",
+      "pageNumber": null,
+      "sectionTitle": "Aktivitas 1"
+    },
+    "text": "Energi digunakan untuk hidup 🌱 dan sebagian dilepaskan sebagai panas.\n\nEnergi berkurang di setiap tingkat trofik.",
+    "startCodePoint": 0,
+    "capturedAt": "2026-09-11T16:06:18.882Z"
+  },
+  "progression": {
+    "before": {
+      "attempts": [],
+      "attempt_responses": [],
+      "node_progress": [
+        {
+          "id": "059c1b03-4d3b-4638-b790-1bb3d1a5b592",
+          "user_id": "05f7a44f-5070-4bb0-ac18-48ac4459838f",
+          "node_id": "0f9d6c6b-14e5-4ee3-88ae-cdf746a16119",
+          "status": "available",
+          "best_score": null,
+          "attempt_count": 0,
+          "started_at": null,
+          "completed_at": null,
+          "updated_at": "2026-09-11 16:03:26.688395+00"
+        },
+        {
+          "id": "08561c72-9cec-4908-b601-c13c24036f93",
+          "user_id": "05f7a44f-5070-4bb0-ac18-48ac4459838f",
+          "node_id": "fc3c6b24-c2a3-4488-8744-07030171f112",
+          "status": "locked",
+          "best_score": null,
+          "attempt_count": 0,
+          "started_at": null,
+          "completed_at": null,
+          "updated_at": "2026-09-11 16:03:26.688395+00"
+        },
+        {
+          "id": "2dbe4ee7-9ed0-4361-b561-6ee322311676",
+          "user_id": "72448853-4d59-4d80-89c3-138a3b4ad6cb",
+          "node_id": "f712b98e-eb2e-4917-aac5-2c13a2c2980f",
+          "status": "locked",
+          "best_score": null,
+          "attempt_count": 0,
+          "started_at": null,
+          "completed_at": null,
+          "updated_at": "2026-09-11 16:04:18.638637+00"
+        },
+        {
+          "id": "451b3970-03ba-43ce-bc28-5f66b908a731",
+          "user_id": "28db31c2-d487-43dd-a87e-1f7891b53c2a",
+          "node_id": "fef7b947-4c36-441d-be28-0ce103f8395c",
+          "status": "available",
+          "best_score": null,
+          "attempt_count": 0,
+          "started_at": null,
+          "completed_at": null,
+          "updated_at": "2026-09-11 16:00:28.898825+00"
+        },
+        {
+          "id": "49d8cd2c-caba-4a0b-a2fb-b71145bc9339",
+          "user_id": "979f06a5-6a0f-4fa8-a461-7b68f4193b87",
+          "node_id": "2724dfdb-c966-4759-90f2-47b510777e1d",
+          "status": "available",
+          "best_score": null,
+          "attempt_count": 0,
+          "started_at": null,
+          "completed_at": null,
+          "updated_at": "2026-09-11 16:00:28.93952+00"
+        },
+        {
+          "id": "5fda435f-0266-41c0-81f5-b76dd522769c",
+          "user_id": "d397e2d2-8c64-4c45-bb92-bc5bf57d01d4",
+          "node_id": "a1d0d8e9-0449-42f9-8d88-a5f6626dde27",
+          "status": "available",
+          "best_score": null,
+          "attempt_count": 0,
+          "started_at": null,
+          "completed_at": null,
+          "updated_at": "2026-09-11 16:04:18.678054+00"
+        },
+        {
+          "id": "665aa421-8bdf-4eb1-80e8-6775bbb0d0e4",
+          "user_id": "67252f48-c674-4a07-9fa0-3033a81ff898",
+          "node_id": "de81c27b-fb93-4e0e-825e-4aa47648dcd9",
+          "status": "available",
+          "best_score": null,
+          "attempt_count": 0,
+          "started_at": null,
+          "completed_at": null,
+          "updated_at": "2026-09-11 16:03:26.652639+00"
+        },
+        {
+          "id": "780ec081-e8df-47fd-8637-aba126b46cfe",
+          "user_id": "28db31c2-d487-43dd-a87e-1f7891b53c2a",
+          "node_id": "8efbf341-236d-4bbd-9467-823a4275302e",
+          "status": "locked",
+          "best_score": null,
+          "attempt_count": 0,
+          "started_at": null,
+          "completed_at": null,
+          "updated_at": "2026-09-11 16:00:28.898825+00"
+        },
+        {
+          "id": "9979c6d0-af2c-454f-9a57-740d0835d8da",
+          "user_id": "58fd0624-8bb5-468b-83d0-1cf7f8ac0b30",
+          "node_id": "18dacd02-57d0-48bf-ae75-692a915d2807",
+          "status": "available",
+          "best_score": null,
+          "attempt_count": 0,
+          "started_at": null,
+          "completed_at": null,
+          "updated_at": "2026-09-11 16:06:17.457415+00"
+        },
+        {
+          "id": "ce6a70e2-b084-4c4c-93b0-6ae1f6a65c4f",
+          "user_id": "67252f48-c674-4a07-9fa0-3033a81ff898",
+          "node_id": "0f57e117-df1d-4ebe-a412-4fdbfbee2659",
+          "status": "locked",
+          "best_score": null,
+          "attempt_count": 0,
+          "started_at": null,
+          "completed_at": null,
+          "updated_at": "2026-09-11 16:03:26.652639+00"
+        },
+        {
+          "id": "d62cb036-0dfe-4a99-aa03-08d48949dd2e",
+          "user_id": "979f06a5-6a0f-4fa8-a461-7b68f4193b87",
+          "node_id": "202d0ca8-8243-4497-bc87-3e15211346d9",
+          "status": "locked",
+          "best_score": null,
+          "attempt_count": 0,
+          "started_at": null,
+          "completed_at": null,
+          "updated_at": "2026-09-11 16:00:28.93952+00"
+        },
+        {
+          "id": "e339d466-174b-42f4-aecc-f91824c36150",
+          "user_id": "58fd0624-8bb5-468b-83d0-1cf7f8ac0b30",
+          "node_id": "78a8046c-657f-417e-9bcd-5f4825184931",
+          "status": "locked",
+          "best_score": null,
+          "attempt_count": 0,
+          "started_at": null,
+          "completed_at": null,
+          "updated_at": "2026-09-11 16:06:17.457415+00"
+        },
+        {
+          "id": "e36db63e-eae1-40c8-aaed-497341f82b18",
+          "user_id": "d397e2d2-8c64-4c45-bb92-bc5bf57d01d4",
+          "node_id": "2b75869d-0d15-4e93-902a-d78b0e092c5f",
+          "status": "locked",
+          "best_score": null,
+          "attempt_count": 0,
+          "started_at": null,
+          "completed_at": null,
+          "updated_at": "2026-09-11 16:04:18.678054+00"
+        },
+        {
+          "id": "e75c09ac-4b56-425f-9dcc-f02b912ae9e6",
+          "user_id": "72448853-4d59-4d80-89c3-138a3b4ad6cb",
+          "node_id": "cc867220-eed0-4029-9920-7498e34ee054",
+          "status": "available",
+          "best_score": null,
+          "attempt_count": 0,
+          "started_at": null,
+          "completed_at": null,
+          "updated_at": "2026-09-11 16:04:18.638637+00"
+        },
+        {
+          "id": "f0b6abff-eed8-4450-b512-cf883c405d8c",
+          "user_id": "c453ccf7-0333-4615-9293-4ada73b3d533",
+          "node_id": "a4074ea0-99e5-452e-97e7-666c0afbca30",
+          "status": "locked",
+          "best_score": null,
+          "attempt_count": 0,
+          "started_at": null,
+          "completed_at": null,
+          "updated_at": "2026-09-11 16:06:17.519388+00"
+        },
+        {
+          "id": "fe4bc5e5-f8c0-4332-8081-cf8863f4712b",
+          "user_id": "c453ccf7-0333-4615-9293-4ada73b3d533",
+          "node_id": "a5de8d71-bafd-4a6c-89fe-d0b6553bd2d3",
+          "status": "available",
+          "best_score": null,
+          "attempt_count": 0,
+          "started_at": null,
+          "completed_at": null,
+          "updated_at": "2026-09-11 16:06:17.519388+00"
+        }
+      ],
+      "user_module_progress": [],
+      "user_concept_mastery": [],
+      "xp_events": []
+    },
+    "after": {
+      "attempts": [],
+      "attempt_responses": [],
+      "node_progress": [
+        {
+          "id": "059c1b03-4d3b-4638-b790-1bb3d1a5b592",
+          "user_id": "05f7a44f-5070-4bb0-ac18-48ac4459838f",
+          "node_id": "0f9d6c6b-14e5-4ee3-88ae-cdf746a16119",
+          "status": "available",
+          "best_score": null,
+          "attempt_count": 0,
+          "started_at": null,
+          "completed_at": null,
+          "updated_at": "2026-09-11 16:03:26.688395+00"
+        },
+        {
+          "id": "08561c72-9cec-4908-b601-c13c24036f93",
+          "user_id": "05f7a44f-5070-4bb0-ac18-48ac4459838f",
+          "node_id": "fc3c6b24-c2a3-4488-8744-07030171f112",
+          "status": "locked",
+          "best_score": null,
+          "attempt_count": 0,
+          "started_at": null,
+          "completed_at": null,
+          "updated_at": "2026-09-11 16:03:26.688395+00"
+        },
+        {
+          "id": "2dbe4ee7-9ed0-4361-b561-6ee322311676",
+          "user_id": "72448853-4d59-4d80-89c3-138a3b4ad6cb",
+          "node_id": "f712b98e-eb2e-4917-aac5-2c13a2c2980f",
+          "status": "locked",
+          "best_score": null,
+          "attempt_count": 0,
+          "started_at": null,
+          "completed_at": null,
+          "updated_at": "2026-09-11 16:04:18.638637+00"
+        },
+        {
+          "id": "451b3970-03ba-43ce-bc28-5f66b908a731",
+          "user_id": "28db31c2-d487-43dd-a87e-1f7891b53c2a",
+          "node_id": "fef7b947-4c36-441d-be28-0ce103f8395c",
+          "status": "available",
+          "best_score": null,
+          "attempt_count": 0,
+          "started_at": null,
+          "completed_at": null,
+          "updated_at": "2026-09-11 16:00:28.898825+00"
+        },
+        {
+          "id": "49d8cd2c-caba-4a0b-a2fb-b71145bc9339",
+          "user_id": "979f06a5-6a0f-4fa8-a461-7b68f4193b87",
+          "node_id": "2724dfdb-c966-4759-90f2-47b510777e1d",
+          "status": "available",
+          "best_score": null,
+          "attempt_count": 0,
+          "started_at": null,
+          "completed_at": null,
+          "updated_at": "2026-09-11 16:00:28.93952+00"
+        },
+        {
+          "id": "5fda435f-0266-41c0-81f5-b76dd522769c",
+          "user_id": "d397e2d2-8c64-4c45-bb92-bc5bf57d01d4",
+          "node_id": "a1d0d8e9-0449-42f9-8d88-a5f6626dde27",
+          "status": "available",
+          "best_score": null,
+          "attempt_count": 0,
+          "started_at": null,
+          "completed_at": null,
+          "updated_at": "2026-09-11 16:04:18.678054+00"
+        },
+        {
+          "id": "665aa421-8bdf-4eb1-80e8-6775bbb0d0e4",
+          "user_id": "67252f48-c674-4a07-9fa0-3033a81ff898",
+          "node_id": "de81c27b-fb93-4e0e-825e-4aa47648dcd9",
+          "status": "available",
+          "best_score": null,
+          "attempt_count": 0,
+          "started_at": null,
+          "completed_at": null,
+          "updated_at": "2026-09-11 16:03:26.652639+00"
+        },
+        {
+          "id": "780ec081-e8df-47fd-8637-aba126b46cfe",
+          "user_id": "28db31c2-d487-43dd-a87e-1f7891b53c2a",
+          "node_id": "8efbf341-236d-4bbd-9467-823a4275302e",
+          "status": "locked",
+          "best_score": null,
+          "attempt_count": 0,
+          "started_at": null,
+          "completed_at": null,
+          "updated_at": "2026-09-11 16:00:28.898825+00"
+        },
+        {
+          "id": "9979c6d0-af2c-454f-9a57-740d0835d8da",
+          "user_id": "58fd0624-8bb5-468b-83d0-1cf7f8ac0b30",
+          "node_id": "18dacd02-57d0-48bf-ae75-692a915d2807",
+          "status": "available",
+          "best_score": null,
+          "attempt_count": 0,
+          "started_at": null,
+          "completed_at": null,
+          "updated_at": "2026-09-11 16:06:17.457415+00"
+        },
+        {
+          "id": "ce6a70e2-b084-4c4c-93b0-6ae1f6a65c4f",
+          "user_id": "67252f48-c674-4a07-9fa0-3033a81ff898",
+          "node_id": "0f57e117-df1d-4ebe-a412-4fdbfbee2659",
+          "status": "locked",
+          "best_score": null,
+          "attempt_count": 0,
+          "started_at": null,
+          "completed_at": null,
+          "updated_at": "2026-09-11 16:03:26.652639+00"
+        },
+        {
+          "id": "d62cb036-0dfe-4a99-aa03-08d48949dd2e",
+          "user_id": "979f06a5-6a0f-4fa8-a461-7b68f4193b87",
+          "node_id": "202d0ca8-8243-4497-bc87-3e15211346d9",
+          "status": "locked",
+          "best_score": null,
+          "attempt_count": 0,
+          "started_at": null,
+          "completed_at": null,
+          "updated_at": "2026-09-11 16:00:28.93952+00"
+        },
+        {
+          "id": "e339d466-174b-42f4-aecc-f91824c36150",
+          "user_id": "58fd0624-8bb5-468b-83d0-1cf7f8ac0b30",
+          "node_id": "78a8046c-657f-417e-9bcd-5f4825184931",
+          "status": "locked",
+          "best_score": null,
+          "attempt_count": 0,
+          "started_at": null,
+          "completed_at": null,
+          "updated_at": "2026-09-11 16:06:17.457415+00"
+        },
+        {
+          "id": "e36db63e-eae1-40c8-aaed-497341f82b18",
+          "user_id": "d397e2d2-8c64-4c45-bb92-bc5bf57d01d4",
+          "node_id": "2b75869d-0d15-4e93-902a-d78b0e092c5f",
+          "status": "locked",
+          "best_score": null,
+          "attempt_count": 0,
+          "started_at": null,
+          "completed_at": null,
+          "updated_at": "2026-09-11 16:04:18.678054+00"
+        },
+        {
+          "id": "e75c09ac-4b56-425f-9dcc-f02b912ae9e6",
+          "user_id": "72448853-4d59-4d80-89c3-138a3b4ad6cb",
+          "node_id": "cc867220-eed0-4029-9920-7498e34ee054",
+          "status": "available",
+          "best_score": null,
+          "attempt_count": 0,
+          "started_at": null,
+          "completed_at": null,
+          "updated_at": "2026-09-11 16:04:18.638637+00"
+        },
+        {
+          "id": "f0b6abff-eed8-4450-b512-cf883c405d8c",
+          "user_id": "c453ccf7-0333-4615-9293-4ada73b3d533",
+          "node_id": "a4074ea0-99e5-452e-97e7-666c0afbca30",
+          "status": "locked",
+          "best_score": null,
+          "attempt_count": 0,
+          "started_at": null,
+          "completed_at": null,
+          "updated_at": "2026-09-11 16:06:17.519388+00"
+        },
+        {
+          "id": "fe4bc5e5-f8c0-4332-8081-cf8863f4712b",
+          "user_id": "c453ccf7-0333-4615-9293-4ada73b3d533",
+          "node_id": "a5de8d71-bafd-4a6c-89fe-d0b6553bd2d3",
+          "status": "available",
+          "best_score": null,
+          "attempt_count": 0,
+          "started_at": null,
+          "completed_at": null,
+          "updated_at": "2026-09-11 16:06:17.519388+00"
+        }
+      ],
+      "user_module_progress": [],
+      "user_concept_mastery": [],
+      "xp_events": []
+    }
+  },
+  "status": "PASS",
+  "executionLogs": [
+    {
+      "level": "log",
+      "event": "chat.run_finished",
+      "status": "completed",
+      "errorCode": null,
+      "durationMs": 2934,
+      "runId": "0a2a1563-c283-4ecd-8fda-cb1b49d288ab",
+      "threadId": "6f7b6628-bdd7-4a6e-b5ec-8b362af97208",
+      "modelCallCount": 1,
+      "toolCallCount": 0,
+      "usageCoverage": "complete"
+    },
+    {
+      "level": "log",
+      "event": "chat.run_finished",
+      "status": "completed",
+      "errorCode": null,
+      "durationMs": 2748,
+      "runId": "3c7c2a19-b93f-49b2-9bde-142dea16e814",
+      "threadId": "6f7b6628-bdd7-4a6e-b5ec-8b362af97208",
+      "modelCallCount": 1,
+      "toolCallCount": 0,
+      "usageCoverage": "complete"
+    },
+    {
+      "level": "log",
+      "event": "chat.run_finished",
+      "status": "completed",
+      "errorCode": null,
+      "durationMs": 1927,
+      "runId": "5adb362d-ac26-4f07-88c3-8c9933c2e639",
+      "threadId": "6f7b6628-bdd7-4a6e-b5ec-8b362af97208",
+      "modelCallCount": 1,
+      "toolCallCount": 0,
+      "usageCoverage": "complete"
+    },
+    {
+      "level": "log",
+      "event": "chat.run_finished",
+      "status": "completed",
+      "errorCode": null,
+      "durationMs": 4017,
+      "runId": "ac4f92c2-5b81-462b-b37d-e18dedde434d",
+      "threadId": "6f7b6628-bdd7-4a6e-b5ec-8b362af97208",
+      "modelCallCount": 2,
+      "toolCallCount": 1,
+      "usageCoverage": "complete"
+    },
+    {
+      "level": "log",
+      "event": "chat.run_finished",
+      "status": "completed",
+      "errorCode": null,
+      "durationMs": 3651,
+      "runId": "dea569b1-22dd-4542-bf4b-f21282b5463a",
+      "threadId": "6f7b6628-bdd7-4a6e-b5ec-8b362af97208",
+      "modelCallCount": 2,
+      "toolCallCount": 1,
+      "usageCoverage": "complete"
+    },
+    {
+      "level": "log",
+      "event": "chat.run_finished",
+      "status": "completed",
+      "errorCode": null,
+      "durationMs": 3147,
+      "runId": "98304350-0542-4e26-813a-a955edbe7aa3",
+      "threadId": "6f7b6628-bdd7-4a6e-b5ec-8b362af97208",
+      "modelCallCount": 1,
+      "toolCallCount": 0,
+      "usageCoverage": "complete"
+    }
+  ]
+}

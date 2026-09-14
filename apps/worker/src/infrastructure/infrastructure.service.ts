@@ -13,6 +13,7 @@ export class InfrastructureService implements OnModuleInit, OnApplicationShutdow
   readonly storage: S3StorageService;
   readonly redis: Redis;
   readonly sourceProcessingQueue: Queue;
+  readonly knowledgeIndexingQueue: Queue;
   readonly moduleGenerationQueue: Queue;
   readonly adaptiveGenerationQueue: Queue;
   readonly attemptEvaluationQueue: Queue;
@@ -34,6 +35,10 @@ export class InfrastructureService implements OnModuleInit, OnApplicationShutdow
       retryStrategy: (attempt) => Math.min(attempt * 200, 2_000),
     });
     this.redis.on("error", () => undefined);
+    this.knowledgeIndexingQueue = new Queue(QUEUE_NAMES.knowledgeIndexing, {
+      connection: this.redis,
+    });
+    this.knowledgeIndexingQueue.on("error", () => undefined);
     this.sourceProcessingQueue = new Queue(QUEUE_NAMES.sourceProcessing, {
       connection: this.redis,
     });
@@ -64,6 +69,7 @@ export class InfrastructureService implements OnModuleInit, OnApplicationShutdow
           this.redis.ping(),
           this.storage.check(),
           this.sourceProcessingQueue.waitUntilReady(),
+          this.knowledgeIndexingQueue.waitUntilReady(),
           this.moduleGenerationQueue.waitUntilReady(),
           this.adaptiveGenerationQueue.waitUntilReady(),
           this.attemptEvaluationQueue.waitUntilReady(),
@@ -107,6 +113,7 @@ export class InfrastructureService implements OnModuleInit, OnApplicationShutdow
   private async logQueueSnapshot(): Promise<void> {
     try {
       const queues = [
+        this.knowledgeIndexingQueue,
         this.sourceProcessingQueue,
         this.moduleGenerationQueue,
         this.attemptEvaluationQueue,
@@ -133,6 +140,7 @@ export class InfrastructureService implements OnModuleInit, OnApplicationShutdow
   }
 
   private async close(): Promise<void> {
+    await this.knowledgeIndexingQueue.close();
     await this.sourceProcessingQueue.close();
     await this.moduleGenerationQueue.close();
     await this.adaptiveGenerationQueue.close();

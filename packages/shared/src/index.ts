@@ -1,4 +1,5 @@
 export const QUEUE_NAMES = {
+  knowledgeIndexing: "knowledge-indexing",
   sourceProcessing: "source-processing",
   moduleGeneration: "module-generation",
   adaptiveGeneration: "adaptive-generation",

@@ -1,0 +1,31 @@
+{
+  "date": "2026-09-14",
+  "baseCommit": "0df1883f169b6934147cee2e19d173c87c8efd5d",
+  "environment": "isolated local PostgreSQL; real Redis/storage/provider; service and stream-response fixtures",
+  "checks": [
+    {
+      "name": "global limit across service instances and different users",
+      "status": "PASS"
+    },
+    {
+      "name": "25 MiB exact total accepted; one byte over rejected before binding",
+      "status": "PASS"
+    },
+    {
+      "name": "mention scopes outside origin module, inheritance and foreign owner denial",
+      "status": "PASS"
+    },
+    {
+      "name": "drain deadline interrupts real provider; no late terminal overwrite",
+      "status": "PASS"
+    },
+    {
+      "name": "active cancellation from another instance remains cancelled",
+      "status": "PASS"
+    },
+    {
+      "name": "SSE disconnect leaves provider running; late subscriber reads durable image once",
+      "status": "PASS"
+    }
+  ]
+}

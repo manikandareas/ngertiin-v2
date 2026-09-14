@@ -1,0 +1,11 @@
+{
+  "checks": [
+    "Redis validates citation and source-document",
+    "ordered batches authorize without dropping concurrent publication",
+    "no duplicate citation frames",
+    "stream reaches finish",
+    "revoked subscriber emits no new content",
+    "bounded subscriber buffer closes on oversized event"
+  ],
+  "status": "PASS"
+}

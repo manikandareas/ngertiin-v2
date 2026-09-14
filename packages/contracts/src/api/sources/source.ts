@@ -202,6 +202,7 @@ export const sourcePreviewResponseSchema = successEnvelopeSchema(
     text: z.string().nullable(),
     sections: z.array(
       z.object({
+        id: uuidSchema.optional(),
         position: z.number().int().positive(),
         pageNumber: z.number().int().positive().nullable(),
         heading: z.string().nullable(),

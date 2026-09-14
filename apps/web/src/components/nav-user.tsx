@@ -1,4 +1,4 @@
-import { LogOut, MoreVertical, Settings } from "lucide-react";
+import { LogOut, Settings } from "lucide-react";
 import { AlertDialog } from "radix-ui";
 import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
@@ -27,7 +27,6 @@ export type NavUserProps = {
 
 export function NavUser({
   name,
-  email,
   avatarUrl,
   onLogout,
   collapsed = false,
@@ -39,11 +38,11 @@ export function NavUser({
   const [signingOut, setSigningOut] = useState(false);
   const [logoutError, setLogoutError] = useState(false);
   const avatar = avatarUrl ? (
-    <UserAvatar avatarUrl={avatarUrl} name={name} className="size-9 rounded-lg" />
+    <UserAvatar avatarUrl={avatarUrl} name={name} className="size-8 rounded-lg" />
   ) : (
     <span
       aria-hidden="true"
-      className="grid size-9 shrink-0 place-items-center rounded-lg bg-muted font-bold text-muted-foreground"
+      className="grid size-8 shrink-0 place-items-center rounded-lg bg-muted font-bold text-muted-foreground"
     >
       {Array.from(name.trim() || "?")[0]?.toLocaleUpperCase("id-ID")}
     </span>
@@ -53,11 +52,6 @@ export function NavUser({
       <p className="truncate text-sm font-semibold" title={name}>
         {name}
       </p>
-      {email && (
-        <p className="truncate text-xs text-muted-foreground" title={email}>
-          {email}
-        </p>
-      )}
     </div>
   );
 
@@ -84,17 +78,12 @@ export function NavUser({
           aria-label={`Menu akun ${name}`}
           title={collapsed ? name : undefined}
           className={cn(
-            "flex min-h-12 w-full items-center gap-3 rounded-lg p-2 text-sidebar-foreground transition-colors hover:bg-sidebar-accent data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring motion-reduce:transition-none",
+            "flex min-h-11 w-full items-center gap-2.5 rounded-lg p-2 text-sidebar-foreground transition-colors hover:bg-sidebar-accent data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring motion-reduce:transition-none",
             collapsed && "justify-center px-0",
           )}
         >
           {avatar}
-          {!collapsed && (
-            <>
-              {identity}
-              <MoreVertical className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-            </>
-          )}
+          {!collapsed && identity}
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent

@@ -1,0 +1,98 @@
+[
+  {
+    "name": "exhausted step budget terminal fault",
+    "pass": true,
+    "final": {
+      "id": "7fefe92e-cc0a-4dd3-9da3-7d24b30c826f",
+      "threadId": "8da74fd0-89e4-419a-8818-ed522dc42868",
+      "messageId": "a9da52dd-2c7b-49b2-b5a2-0b71f521b45e",
+      "assistantMessageId": "95a8cb72-94b2-4afc-b771-481415c13762",
+      "status": "failed",
+      "createdAt": "2026-09-11T11:13:17.636Z",
+      "startedAt": "2026-09-11T11:13:17.689Z",
+      "finishedAt": "2026-09-11T11:13:17.736Z",
+      "errorCode": "STEP_LIMIT",
+      "usage": {
+        "inputTokens": null,
+        "outputTokens": null,
+        "totalTokens": null,
+        "coverage": "unavailable"
+      }
+    }
+  },
+  {
+    "name": "one allowed model call completes",
+    "pass": true,
+    "final": {
+      "id": "c5beef23-56d3-4335-bdf2-c803bc3c2aa5",
+      "threadId": "a7b93c68-b98b-4523-b9de-d6beef06df1c",
+      "messageId": "bce4c731-6d36-4364-93b1-a42d4b46e513",
+      "assistantMessageId": "b941dbab-801b-40a2-a3c2-c05c2d7304b6",
+      "status": "completed",
+      "createdAt": "2026-09-11T11:13:17.763Z",
+      "startedAt": "2026-09-11T11:13:17.782Z",
+      "finishedAt": "2026-09-11T11:13:18.342Z",
+      "errorCode": null,
+      "usage": {
+        "inputTokens": 17,
+        "outputTokens": 8,
+        "totalTokens": 25,
+        "coverage": "complete"
+      }
+    }
+  },
+  {
+    "name": "cancel completion race first lock wins",
+    "pass": true,
+    "race": [
+      {
+        "accepted": "cancelling",
+        "terminal": "cancelled",
+        "stableText": true,
+        "pass": true
+      },
+      {
+        "accepted": "cancelling",
+        "terminal": "cancelled",
+        "stableText": true,
+        "pass": true
+      },
+      {
+        "accepted": "cancelling",
+        "terminal": "cancelled",
+        "stableText": true,
+        "pass": true
+      },
+      {
+        "accepted": "cancelling",
+        "terminal": "cancelled",
+        "stableText": true,
+        "pass": true
+      },
+      {
+        "accepted": "cancelling",
+        "terminal": "cancelled",
+        "stableText": true,
+        "pass": true
+      },
+      {
+        "accepted": "cancelling",
+        "terminal": "cancelled",
+        "stableText": true,
+        "pass": true
+      },
+      {
+        "accepted": "cancelling",
+        "terminal": "cancelled",
+        "stableText": true,
+        "pass": true
+      },
+      {
+        "accepted": "cancelling",
+        "terminal": "cancelled",
+        "stableText": true,
+        "pass": true
+      }
+    ]
+  }
+]

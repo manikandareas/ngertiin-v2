@@ -4,6 +4,8 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { lazy, Suspense, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { Button } from "../components/ui/button";
+import { CitationContent } from "../features/chat/components/citation-content";
+import { useCitationLocation } from "../features/chat/use-citation-location";
 import { useSource } from "../features/sources/api/use-sources";
 import { SourceItemContent } from "../features/sources/source-item-content";
 import { sourceMetadata, sourceTitle } from "../features/sources/source-presentation";
@@ -19,6 +21,10 @@ export default function SourceDetailPage() {
 
 function SourceDetail({ id }: { id: string | undefined }) {
   const query = useSource(id);
+  const citation = useCitationLocation();
+  const reference = citation.data?.citation.reference;
+  const snapshot =
+    reference?.kind === "source" && reference.sourceId === id ? citation.data : undefined;
   const [dirty, setDirty] = useState(false);
   const source = query.data;
   const location = useLocation();
@@ -104,10 +110,26 @@ function SourceDetail({ id }: { id: string | undefined }) {
             </header>
             {source.type === "pdf" ? (
               <Suspense fallback={<p role="status">Memuat pembaca PDF…</p>}>
-                <SourcePdfViewer id={source.id} />
+                {snapshot ? (
+                  <CitationContent
+                    snapshot={snapshot}
+                    selector={
+                      snapshot.citation.pageNumber
+                        ? `[data-citation-page="${snapshot.citation.pageNumber}"] .react-pdf__Page__textContent`
+                        : "[data-citation-missing-page]"
+                    }
+                  >
+                    <SourcePdfViewer
+                      id={source.id}
+                      initialPage={snapshot.citation.pageNumber ?? undefined}
+                    />
+                  </CitationContent>
+                ) : (
+                  <SourcePdfViewer id={source.id} />
+                )}
               </Suspense>
             ) : (
-              <SourceReadingContent source={source} onDirtyChange={setDirty} />
+              <SourceReadingContent source={source} onDirtyChange={setDirty} citation={snapshot} />
             )}
           </section>
         </div>

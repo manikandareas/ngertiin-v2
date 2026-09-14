@@ -16,12 +16,13 @@ const pdfOptions = {
   wasmUrl: `${import.meta.env.BASE_URL}pdfjs/wasm/`,
 };
 
-export default function SourcePdfViewer({ id }: { id: string }) {
+export default function SourcePdfViewer({ id, initialPage }: { id: string; initialPage?: number }) {
   const file = useSourceFile(id);
   const container = useRef<HTMLDivElement>(null);
   const pageElements = useRef(new Map<number, HTMLElement>());
   const [width, setWidth] = useState(0);
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(initialPage ?? 1);
+  const openedCitationPage = useRef(false);
   const [pages, setPages] = useState(0);
   const [zoom, setZoom] = useState(1);
   const [attempt, setAttempt] = useState(0);
@@ -35,6 +36,14 @@ export default function SourcePdfViewer({ id }: { id: string }) {
     observer.observe(element);
     return () => observer.disconnect();
   }, []);
+  useEffect(() => {
+    if (!initialPage || pages === 0 || openedCitationPage.current) return;
+    const element = pageElements.current.get(initialPage);
+    if (!element) return;
+    openedCitationPage.current = true;
+    element.scrollIntoView({ block: "start" });
+    setPage(initialPage);
+  }, [initialPage, pages]);
   function goTo(next: number) {
     const target = Math.max(1, Math.min(pages, next));
     setPage(target);
