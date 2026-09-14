@@ -684,13 +684,7 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
             .limit(1);
           if (!thread) this.notFound();
           const attachmentIds = input.attachmentIds ?? [];
-          const attachmentRows = await this.attachments.admit(
-            tx,
-            userId,
-            threadId,
-            input,
-            this.env.CHAT_PROMPT_MAX_TOKENS - mandatory.totalCount,
-          );
+          const attachmentRows = await this.attachments.admit(tx, userId, threadId, input);
 
           const [active] = await tx
             .select({ id: chat_runs.id })

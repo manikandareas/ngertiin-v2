@@ -23,7 +23,7 @@ export function readUtf8(bytes: Uint8Array): string {
 }
 export async function validateAttachment(
   file: AttachmentUpload,
-): Promise<{ mime: string; contextTokens: number; filename: string }> {
+): Promise<{ mime: string; filename: string }> {
   if (!file.buffer.length || file.buffer.length > CHAT_ATTACHMENT_MAX_BYTES)
     invalidAttachment("File harus berisi data dan maksimal 10 MB.");
   const extension = extname(file.originalname).slice(1).toLowerCase();
@@ -41,7 +41,6 @@ export async function validateAttachment(
     )
   )
     invalidAttachment("Jenis file tidak cocok dengan isinya.");
-  let contextTokens = 0;
   try {
     if (mime.startsWith("image/")) {
       const image = sharp(file.buffer, { limitInputPixels: 40_000_000, failOn: "warning" });
@@ -49,16 +48,14 @@ export async function validateAttachment(
       if (`image/${metadata.format}` !== mime || (metadata.pages ?? 1) > 1)
         throw new Error("Invalid image");
       await image.stats(); // Decode pixels, not just the header.
-      contextTokens = 2048;
     } else if (mime === "application/pdf") {
       if (!file.buffer.subarray(0, 5).equals(Buffer.from("%PDF-"))) throw new Error("Invalid PDF");
       const pdf = await PDFDocument.load(file.buffer, { throwOnInvalidObject: true });
       if (!pdf.getPageCount()) throw new Error("Empty PDF");
-      contextTokens = Math.max(1, pdf.getPageCount()) * 2048 + Math.ceil(file.buffer.length / 4);
     } else if (mime.startsWith("text/")) {
-      contextTokens = readUtf8(file.buffer).length;
+      readUtf8(file.buffer);
     } else {
-      contextTokens = validateOffice(file.buffer, extension);
+      validateOffice(file.buffer, extension);
     }
   } catch {
     invalidAttachment("File rusak, terenkripsi, atau isinya tidak sesuai format. Pilih file lain.");
@@ -67,13 +64,11 @@ export async function validateAttachment(
   const safeName = file.originalname.replace(/[\x00-\x1f/\\]/g, "_");
   return {
     mime,
-    contextTokens,
     filename: `${safeName.slice(0, -(extension.length + 1)).slice(0, 230)}.${extension}`,
   };
 }
 
-function validateOffice(binary: Uint8Array, extension: string): number {
-  let contextTokens = 0;
+function validateOffice(binary: Uint8Array, extension: string): void {
   let expanded = 0;
   let entries = 0;
   const files = unzipSync(binary, {
@@ -113,8 +108,6 @@ function validateOffice(binary: Uint8Array, extension: string): number {
       const xml = readUtf8(bytes);
       if (/<!DOCTYPE|<!ENTITY/i.test(xml) || XMLValidator.validate(xml) !== true)
         throw new Error("Invalid XML");
-      contextTokens += xml.replace(/<[^>]*>/g, "").length;
     }
   }
-  return Math.max(1024, contextTokens);
 }

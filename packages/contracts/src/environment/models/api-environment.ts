@@ -5,6 +5,7 @@ import { knowledgeEnvironment } from "./knowledge-environment.js";
 export const apiEnvSchema = infrastructureEnvSchema
   .extend({
     ...knowledgeEnvironment,
+    NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
     USAGE_MODULES_WEEKLY_LIMIT: z.coerce.number().int().positive().default(10),
     USAGE_SOURCES_WEEKLY_LIMIT: z.coerce.number().int().positive().default(40),
     MISTRAL_API_KEY: z.string().min(1).optional(),

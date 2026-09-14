@@ -75,13 +75,7 @@ export class ChatAttachmentsService implements OnApplicationBootstrap, OnModuleD
     @Inject(InfrastructureService) private readonly infrastructure: InfrastructureService,
     @Inject(API_ENV) private readonly env: ApiEnvironment,
   ) {}
-  async admit(
-    tx: DatabaseTransaction,
-    userId: string,
-    threadId: string,
-    input: SendChatMessage,
-    availableTokens: number,
-  ) {
+  async admit(tx: DatabaseTransaction, userId: string, threadId: string, input: SendChatMessage) {
     const ids = input.attachmentIds ?? [];
     if (!ids.length) return [];
     const rows = await tx
@@ -124,13 +118,6 @@ export class ChatAttachmentsService implements OnApplicationBootstrap, OnModuleD
     }
     if (rows.reduce((sum, row) => sum + row.size, 0) > CHAT_ATTACHMENT_TOTAL_BYTES)
       invalidAttachment("Total lampiran maksimal 25 MB.");
-    if (
-      rows.reduce((sum, row) => sum + (row.extraction_text?.length ?? row.context_tokens), 0) >
-      availableTokens
-    )
-      invalidAttachment(
-        "Lampiran terbaru melebihi kapasitas konteks. Gunakan file yang lebih kecil.",
-      );
     return rows;
   }
   async upload(userId: string, file?: AttachmentUpload) {
@@ -148,7 +135,8 @@ export class ChatAttachmentsService implements OnApplicationBootstrap, OnModuleD
         filename: validated.filename,
         mime_type: validated.mime,
         size: file.buffer.length,
-        context_tokens: validated.contextTokens,
+        // Legacy column retained for database compatibility; provider budgets native files.
+        context_tokens: 0,
         content_hash: createHash("sha256").update(file.buffer).digest("hex"),
       })
       .returning();
@@ -254,6 +242,22 @@ export class ChatAttachmentsService implements OnApplicationBootstrap, OnModuleD
         );
       }
     }
+  }
+  async modelFileSource(row: AttachmentRow, signal: AbortSignal) {
+    signal.throwIfAborted();
+    if (this.env.NODE_ENV === "development") {
+      return {
+        source_type: "base64" as const,
+        data: Buffer.from(await this.bytes(row, signal)).toString("base64"),
+      };
+    }
+    return {
+      source_type: "url" as const,
+      url: await this.infrastructure.storage.createSignedUrl(
+        row.object_key,
+        Math.ceil(this.env.CHAT_RUN_TIMEOUT_MS / 1000) + 60,
+      ),
+    };
   }
   async bytes(row: AttachmentRow, signal: AbortSignal) {
     signal.throwIfAborted();

@@ -22,10 +22,9 @@ export function isAttachmentRejection(error: unknown): boolean {
   );
 }
 export async function promptTokenCount(model: ChatOpenAI, messages: BaseMessage[]) {
-  // Tokenizers treat base64 as text. Pass text-only clones and reserve validated file estimates.
-  let files = 0;
+  // Budget text locally. Native file/image context is validated by the provider,
+  // which reads the actual contents; base64 and local file heuristics are not tokens.
   const textMessages = messages.map((message) => {
-    files += Number(message.additional_kwargs.attachmentTokens ?? 0);
     if (typeof message.content === "string") return message;
     const clone = Object.assign(
       Object.create(Object.getPrototypeOf(message)),
@@ -34,7 +33,7 @@ export async function promptTokenCount(model: ChatOpenAI, messages: BaseMessage[
     clone.content = message.content.filter((p) => p.type === "text");
     return clone;
   });
-  return (await model.getNumTokensFromMessages(textMessages)).totalCount + files;
+  return (await model.getNumTokensFromMessages(textMessages)).totalCount;
 }
 export class ChatMultimodal {
   readonly rows = new Map<string, AttachmentRow>();
@@ -62,35 +61,32 @@ export class ChatMultimodal {
           text || "Kenali isi lampiran secara singkat, lalu tanyakan bantuan apa yang diperlukan.",
       },
     ];
-    let tokens = 0;
     for (const row of rows) {
       this.rows.set(row.id, row);
       if (row.extraction_status === "ready" && row.extraction_text !== null) {
         content.push({ type: "text", text: extractionPrompt(row, row.extraction_text) });
         continue;
       }
-      tokens += row.context_tokens;
-      const binary = await this.attachments.bytes(row, this.signal);
-      content.push(
-        row.mime_type.startsWith("image/")
-          ? {
-              type: "image_url",
-              image_url: {
-                url: `data:${row.mime_type};base64,${Buffer.from(binary).toString("base64")}`,
-              },
-              attachmentId: row.id,
-            }
-          : {
-              type: "file",
-              source_type: "base64",
-              mime_type: row.mime_type,
-              data: Buffer.from(binary).toString("base64"),
-              metadata: { filename: row.filename },
-              attachmentId: row.id,
-            },
-      );
+      if (row.mime_type.startsWith("image/")) {
+        const binary = await this.attachments.bytes(row, this.signal);
+        content.push({
+          type: "image_url",
+          image_url: {
+            url: `data:${row.mime_type};base64,${Buffer.from(binary).toString("base64")}`,
+          },
+          attachmentId: row.id,
+        });
+      } else {
+        content.push({
+          type: "file",
+          ...(await this.attachments.modelFileSource(row, this.signal)),
+          mime_type: row.mime_type,
+          metadata: { filename: row.filename },
+          attachmentId: row.id,
+        });
+      }
     }
-    return new HumanMessage({ content, additional_kwargs: { attachmentTokens: tokens } });
+    return new HumanMessage({ content });
   }
   async fallback(messages: BaseMessage[]): Promise<BaseMessage[]> {
     const result: BaseMessage[] = [];
