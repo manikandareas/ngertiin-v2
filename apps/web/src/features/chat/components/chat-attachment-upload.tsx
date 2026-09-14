@@ -11,6 +11,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "../../../components/ui/button";
 import type { TokenResolver } from "../../../lib/api";
 import { chatApi } from "../api/chat-api";
+import { ChatFileBadge, chatFileChipClassName } from "./chat-file-badge";
 
 type Upload = { key: string; file: File; status: "uploading" | "failed"; error?: string };
 export function useAttachmentUpload(
@@ -139,10 +140,7 @@ export function useAttachmentUpload(
       {attachments.length || uploads.length ? (
         <div className="mb-2 flex flex-wrap gap-2">
           {attachments.map((item) => (
-            <div
-              key={item.id}
-              className="max-w-full rounded-lg border border-border/60 p-2 text-xs"
-            >
+            <div key={item.id} className="min-w-0 max-w-full text-xs">
               {previews.current.get(item.id) ? (
                 <img
                   src={previews.current.get(item.id)}
@@ -150,28 +148,40 @@ export function useAttachmentUpload(
                   className="mb-1 h-16 max-w-40 rounded object-contain"
                 />
               ) : null}
-              <span className="inline-block max-w-48 truncate align-middle">{item.filename}</span>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="size-7"
-                disabled={disabled || removing.includes(item.id)}
-                aria-label={`Hapus ${item.filename}`}
-                onClick={() => void removeAttachment(item.id)}
-              >
-                <X />
-              </Button>
+              <div className={chatFileChipClassName}>
+                <ChatFileBadge filename={item.filename} />
+                <span className="min-w-0 max-w-48 truncate" title={item.filename}>
+                  {item.filename}
+                </span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="size-6 shrink-0 cursor-pointer rounded-full hover:bg-background disabled:cursor-not-allowed"
+                  disabled={disabled || removing.includes(item.id)}
+                  aria-label={`Hapus ${item.filename}`}
+                  onClick={() => void removeAttachment(item.id)}
+                >
+                  <X />
+                </Button>
+              </div>
               {chatAttachmentNote(item.filename) ? (
-                <p className="max-w-64 text-muted-foreground">
+                <p className="mt-1 max-w-64 px-2 text-muted-foreground">
                   {chatAttachmentNote(item.filename)}
                 </p>
               ) : null}
             </div>
           ))}
           {uploads.map((item) => (
-            <div key={item.key} className="max-w-full rounded-lg border p-2 text-xs" role="status">
-              <span className="inline-block max-w-48 truncate">{item.file.name}</span>
+            <div
+              key={item.key}
+              className="max-w-full rounded-2xl border bg-zinc-200 p-2 text-xs dark:bg-zinc-800"
+              role="status"
+            >
+              <div className="flex min-w-0 items-center gap-2">
+                <ChatFileBadge filename={item.file.name} />
+                <span className="min-w-0 max-w-48 truncate">{item.file.name}</span>
+              </div>
               <p>{item.status === "uploading" ? "Mengunggah…" : item.error}</p>
               {item.status === "failed" ? (
                 <button type="button" className="mr-3 underline" onClick={() => void upload(item)}>

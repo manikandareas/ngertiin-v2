@@ -1,7 +1,10 @@
 import { type ChatAttachment, chatAttachmentNote } from "@ngertiin/contracts/api";
+import { ArrowUpRight } from "lucide-react";
 import { type ReactElement, useState } from "react";
 import type { TokenResolver } from "../../../lib/api";
+import { cn } from "../../../lib/utils";
 import { chatApi } from "../api/chat-api";
+import { ChatFileBadge, chatFileChipClassName } from "./chat-file-badge";
 
 type ChatAttachmentCardProps = {
   attachment: ChatAttachment;
@@ -15,6 +18,11 @@ export function ChatAttachmentCard({
   const [error, setError] = useState("");
   const [preview, setPreview] = useState<string>();
   const note = chatAttachmentNote(attachment.filename);
+  const fileSize =
+    attachment.size < 1024 * 1024
+      ? `${Math.ceil(attachment.size / 1024)} KB`
+      : `${(attachment.size / 1024 / 1024).toFixed(1)} MB`;
+
   async function openAttachment(): Promise<void> {
     setError("");
     try {
@@ -33,16 +41,19 @@ export function ChatAttachmentCard({
   }
 
   return (
-    <div className="my-2 rounded-lg border border-border/60 p-2 text-xs">
+    <div className="my-2 min-w-0 max-w-full text-xs">
       <button
         type="button"
-        className="max-w-full truncate underline underline-offset-4"
+        className={cn(
+          chatFileChipClassName,
+          "w-fit max-w-[min(100%,16rem)] cursor-pointer text-left transition-colors hover:bg-zinc-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 dark:hover:bg-zinc-700",
+        )}
+        title={`${attachment.filename} · ${fileSize}`}
         onClick={() => void openAttachment()}
       >
-        {attachment.filename} ·{" "}
-        {attachment.size < 1024 * 1024
-          ? `${Math.ceil(attachment.size / 1024)} KB`
-          : `${(attachment.size / 1024 / 1024).toFixed(1)} MB`}
+        <ChatFileBadge filename={attachment.filename} />
+        <span className="min-w-0 truncate">{attachment.filename}</span>
+        <ArrowUpRight className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
       </button>
       {preview ? (
         <img
