@@ -1,8 +1,8 @@
 # Implementasi AI Chat
 
-Status: **M1–M4 diimplementasikan; bukti lokal: [M1](./m1-verification.md), [M2](./m2-verification.md), [M3](./m3-verification.md), dan [M4](./m4-verification.md). M5 belum dimulai.**
+Status: **M1–M4 diimplementasikan; bukti lokal: [M1](./m1-verification.md), [M2](./m2-verification.md), [M3](./m3-verification.md), dan [M4](./m4-verification.md). Implementasi M5 tersedia; acceptance rilis belum lengkap. Lihat [bukti M5](./m5-verification.md).**
 
-UI/UX: arah prototype sidebar/floating dan maskot **Kumo primary** dipilih pengguna. Redesign diterapkan pada web; review hasil integrasi masih pending. Lihat [verifikasi UI](./ui-redesign-verification.md).
+UI/UX: pengguna menyatakan arah chat saat ini sudah cukup untuk masuk M5 (14 September 2026). Perilaku terbaru—chat mandiri, mention lintas modul, attachment/OCR, Wikimedia, dan budget terbaru—menjadi baseline penerimaan. Bukti UI lama tetap historis, bukan instruksi mengembalikan desain. Lihat [verifikasi UI](./ui-redesign-verification.md).
 
 Dedicated Chat menambahkan `/chat`, detail thread, scope module opsional, dan perpindahan Full Screen. Lihat [verifikasi dedicated chat](./dedicated-chat-verification.md) untuk file, migrasi, dan bukti implementasi.
 
@@ -75,13 +75,15 @@ M1 telah memverifikasi peer dependency adapter serta `createAgent` + Responses A
 
 ## M5 — Kesiapan rilis
 
+**Delivery:** rate policy upload/cancel terpisah, batas upload inklusif, graceful drain/readiness/penutupan HTTP, log tersanitasi dan korelasi request/run, dashboard operasional, evaluasi kualitas dan runbook selesai diimplementasikan. Bukti lokal tercatat di [verifikasi M5](./m5-verification.md); [runbook operator](./m5-runbook.md) memuat rehearsal staging. Tidak ada deployment/push. Acceptance rilis tetap terbuka sampai gate environment terpenuhi.
+
 **Prasyarat:** M1–M4 memenuhi acceptance; staging menyerupai deployment; seluruh default dapat dikonfigurasi.
 
 **Deliverable:** rate policy route chat, metrik/log, evaluasi kualitas, rehearsal deploy/drain/rollback, dokumentasi operator dan bukti release. Tidak menambahkan kuota harian atau subscription.
 
 **Acceptance:** semua batas kontrak diuji pada boundary; limit lintas instance bekerja; logs tidak membocorkan prompt/kunci/konten pribadi; cancellation dan disconnect tidak disalahklasifikasikan; graceful shutdown menolak admission baru pada instance yang berhenti dan run aktif tetap difinalisasi. Semua skenario wajib di tabel berikut memiliki bukti sebelum perluasan rollout; kegagalan akses/assessment leakage menghalangi rilis.
 
-**Bukti yang harus dicatat:** konfigurasi nonsecret, build/typecheck, hasil evaluasi manual berlabel, dashboard status/latency/tool count/usage/queue age/lease expired/index coverage, browser authenticated, provider dan database staging, serta deployment rollback rehearsal. Status: **NOT RUN**.
+**Bukti yang harus dicatat:** konfigurasi nonsecret, build/typecheck, hasil evaluasi manual berlabel, dashboard status/latency/tool count/usage/queue age/lease expired/index coverage, browser authenticated, provider dan database staging, serta deployment rollback rehearsal. Status: **PASS lokal parsial; staging/rollout/rollback NOT RUN**, lihat [bukti M5](./m5-verification.md).
 
 ## Migrasi dan backfill
 
@@ -97,7 +99,7 @@ Chat, retrieval, dan indexing tersedia untuk seluruh pengguna yang berhak mengak
 
 Log terstruktur menggunakan requestId, runId, threadId, status, duration, jumlah model/tool call, usage coverage, errorCode dan indexVersion. Konten pesan, tool body, token Clerk, API key, dan chain-of-thought tidak dicatat secara default. Penggunaan token untuk observability, bukan penagihan atau kuota pengguna. Rate limiter existing perlu klasifikasi khusus chat; cancellation tetap tersedia ketika send admission ditutup.
 
-API di-deploy dengan scheduler in-process dan graceful shutdown: berhenti claim/admission lokal, drain hingga deadline; run yang tidak selesai dipulihkan lewat lease/sweep. Proxy SSE dan Redis harus diuji pada jalur production. Frontend memakai workflow manual [frontend-deploy.yml](../../.github/workflows/frontend-deploy.yml), bukan asumsi push otomatis deploy; API/worker mengikuti [compose production](../../compose.production.yml). Dokumen ini tidak menjalankan deployment.
+API di-deploy dengan scheduler in-process dan graceful shutdown: readiness 503, berhenti claim/admission lokal, drain hingga deadline, lalu tutup koneksi HTTP setelah hook drain; run yang tidak selesai dipulihkan lewat lease/sweep. Proxy SSE dan Redis harus diuji pada jalur production. Frontend memakai workflow manual [frontend-deploy.yml](../../.github/workflows/frontend-deploy.yml), bukan asumsi push otomatis deploy; API/worker mengikuti [compose production](../../compose.production.yml). Dokumen ini tidak menjalankan deployment.
 
 Rollback dilakukan melalui deploy versi aplikasi yang kompatibel setelah drain; tidak ada toggle fitur. Untuk gangguan indeks, respons `INDEX_NOT_READY` atau lexical fallback tetap membatasi bukti yang belum tersedia. Pertahankan migrasi additive, data, dan snapshot citation. Jangan mengembalikan pointer indeks ke versi yang revision/model-nya tidak lagi cocok; perbaiki atau rebuild indeks. Rehearsal restore merupakan bukti tersendiri.
 
@@ -122,8 +124,8 @@ Tabel berikut mempertahankan gate rilis lintas milestone; bukti lokal parsial M1
 | Subscriber terlambat/gap/slow client tidak menggandakan teks | Browser + Redis fault + database | M2 | PASS lokal; lihat bukti M2 |
 | Reindex tidak membaca chunk lama/duplikasi embedding row | Worker + provider + database | M4 | PASS lokal; race dan BullMQ fixture |
 | Indeks belum siap dan lexical fallback | Provider fault + browser | M4 | PASS tool/service; browser pesan degradasi NOT RUN |
-| Batas rate/context/token/konkurensi dan graceful shutdown | HTTP + provider + database | M5 | NOT RUN |
-| Build/typecheck dependency chat implementasi | Static | M1–M5 | PASS M1–M4; M5 NOT RUN |
+| Batas rate/context/token/konkurensi dan graceful shutdown | HTTP + provider + database | M5 | PASS lokal pada kasus tercatat; SIGTERM multi-process/staging NOT RUN |
+| Build/typecheck dependency chat implementasi | Static | M1–M5 | PASS lokal; rincian M5 di verification |
 | SSE proxy, graceful drain, rollout dan rollback | Deployment | M5 | NOT RUN |
 
 Evaluasi kualitas memakai kumpulan contoh Bahasa Indonesia yang mencakup sapaan, follow-up, kutipan, lintas sumber, bukti kurang, prompt injection dalam materi, assessment aktif, dan akses tercabut. Reviewer mencatat apakah tool diperlukan, bukti mendukung klaim, lokasi citation benar, dan jawaban membantu belajar. Larangan akses merupakan gate tanpa toleransi kebocoran; skor kualitas, latency, token dan biaya harus dilaporkan dari sampel nyata sebelum menetapkan target operasional.

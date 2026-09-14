@@ -1,0 +1,14 @@
+{
+  "date": "2026-09-14T05:27:59.641Z",
+  "environment": "real local Redis and dependency readiness; no database writes",
+  "checks": [
+    {
+      "name": "concurrent first Redis connection shares initialization; upload boundary preserved",
+      "status": "PASS"
+    },
+    {
+      "name": "draining readiness 503 preserves existing health DTO and dependency states",
+      "status": "PASS"
+    }
+  ]
+}

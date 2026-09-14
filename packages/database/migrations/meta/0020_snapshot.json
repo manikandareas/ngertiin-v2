@@ -96,12 +96,8 @@
           "name": "activities_node_id_module_nodes_id_fk",
           "tableFrom": "activities",
           "tableTo": "module_nodes",
-          "columnsFrom": [
-            "node_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["node_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -164,12 +160,8 @@
           "name": "adaptive_intervention_concepts_adaptive_intervention_id_adaptive_interventions_id_fk",
           "tableFrom": "adaptive_intervention_concepts",
           "tableTo": "adaptive_interventions",
-          "columnsFrom": [
-            "adaptive_intervention_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["adaptive_intervention_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -177,12 +169,8 @@
           "name": "adaptive_intervention_concepts_concept_id_module_concepts_id_fk",
           "tableFrom": "adaptive_intervention_concepts",
           "tableTo": "module_concepts",
-          "columnsFrom": [
-            "concept_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["concept_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -190,10 +178,7 @@
       "compositePrimaryKeys": {
         "adaptive_intervention_concepts_adaptive_intervention_id_concept_id_pk": {
           "name": "adaptive_intervention_concepts_adaptive_intervention_id_concept_id_pk",
-          "columns": [
-            "adaptive_intervention_id",
-            "concept_id"
-          ]
+          "columns": ["adaptive_intervention_id", "concept_id"]
         }
       },
       "uniqueConstraints": {},
@@ -345,12 +330,8 @@
           "name": "adaptive_interventions_user_id_users_id_fk",
           "tableFrom": "adaptive_interventions",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -358,12 +339,8 @@
           "name": "adaptive_interventions_module_id_modules_id_fk",
           "tableFrom": "adaptive_interventions",
           "tableTo": "modules",
-          "columnsFrom": [
-            "module_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["module_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -371,12 +348,8 @@
           "name": "adaptive_interventions_trigger_node_id_module_nodes_id_fk",
           "tableFrom": "adaptive_interventions",
           "tableTo": "module_nodes",
-          "columnsFrom": [
-            "trigger_node_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["trigger_node_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -384,12 +357,8 @@
           "name": "adaptive_interventions_trigger_attempt_id_attempts_id_fk",
           "tableFrom": "adaptive_interventions",
           "tableTo": "attempts",
-          "columnsFrom": [
-            "trigger_attempt_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["trigger_attempt_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -397,12 +366,8 @@
           "name": "adaptive_interventions_resume_node_id_module_nodes_id_fk",
           "tableFrom": "adaptive_interventions",
           "tableTo": "module_nodes",
-          "columnsFrom": [
-            "resume_node_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["resume_node_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -460,12 +425,8 @@
           "name": "attempt_concept_results_attempt_id_attempts_id_fk",
           "tableFrom": "attempt_concept_results",
           "tableTo": "attempts",
-          "columnsFrom": [
-            "attempt_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["attempt_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -473,12 +434,8 @@
           "name": "attempt_concept_results_concept_id_module_concepts_id_fk",
           "tableFrom": "attempt_concept_results",
           "tableTo": "module_concepts",
-          "columnsFrom": [
-            "concept_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["concept_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -486,10 +443,7 @@
       "compositePrimaryKeys": {
         "attempt_concept_results_attempt_id_concept_id_pk": {
           "name": "attempt_concept_results_attempt_id_concept_id_pk",
-          "columns": [
-            "attempt_id",
-            "concept_id"
-          ]
+          "columns": ["attempt_id", "concept_id"]
         }
       },
       "uniqueConstraints": {},
@@ -584,12 +538,8 @@
           "name": "attempt_responses_attempt_id_attempts_id_fk",
           "tableFrom": "attempt_responses",
           "tableTo": "attempts",
-          "columnsFrom": [
-            "attempt_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["attempt_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -597,12 +547,8 @@
           "name": "attempt_responses_activity_id_activities_id_fk",
           "tableFrom": "attempt_responses",
           "tableTo": "activities",
-          "columnsFrom": [
-            "activity_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["activity_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -610,10 +556,7 @@
       "compositePrimaryKeys": {
         "attempt_responses_attempt_id_activity_id_pk": {
           "name": "attempt_responses_attempt_id_activity_id_pk",
-          "columns": [
-            "attempt_id",
-            "activity_id"
-          ]
+          "columns": ["attempt_id", "activity_id"]
         }
       },
       "uniqueConstraints": {},
@@ -849,12 +792,8 @@
           "name": "attempts_user_id_users_id_fk",
           "tableFrom": "attempts",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -862,12 +801,8 @@
           "name": "attempts_module_id_modules_id_fk",
           "tableFrom": "attempts",
           "tableTo": "modules",
-          "columnsFrom": [
-            "module_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["module_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -875,12 +810,8 @@
           "name": "attempts_node_id_module_nodes_id_fk",
           "tableFrom": "attempts",
           "tableTo": "module_nodes",
-          "columnsFrom": [
-            "node_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["node_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1003,12 +934,8 @@
           "name": "chat_message_contexts_message_id_chat_messages_id_fk",
           "tableFrom": "chat_message_contexts",
           "tableTo": "chat_messages",
-          "columnsFrom": [
-            "message_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["message_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1125,12 +1052,8 @@
           "name": "chat_messages_thread_id_chat_threads_id_fk",
           "tableFrom": "chat_messages",
           "tableTo": "chat_threads",
-          "columnsFrom": [
-            "thread_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["thread_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1138,12 +1061,8 @@
           "name": "chat_messages_run_id_chat_runs_id_fk",
           "tableFrom": "chat_messages",
           "tableTo": "chat_runs",
-          "columnsFrom": [
-            "run_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["run_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1222,12 +1141,8 @@
           "name": "chat_run_usage_run_id_chat_runs_id_fk",
           "tableFrom": "chat_run_usage",
           "tableTo": "chat_runs",
-          "columnsFrom": [
-            "run_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["run_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1235,10 +1150,7 @@
       "compositePrimaryKeys": {
         "chat_run_usage_run_id_call_id_pk": {
           "name": "chat_run_usage_run_id_call_id_pk",
-          "columns": [
-            "run_id",
-            "call_id"
-          ]
+          "columns": ["run_id", "call_id"]
         }
       },
       "uniqueConstraints": {},
@@ -1424,12 +1336,8 @@
           "name": "chat_runs_thread_id_chat_threads_id_fk",
           "tableFrom": "chat_runs",
           "tableTo": "chat_threads",
-          "columnsFrom": [
-            "thread_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["thread_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1437,12 +1345,8 @@
           "name": "chat_runs_user_message_id_chat_messages_id_fk",
           "tableFrom": "chat_runs",
           "tableTo": "chat_messages",
-          "columnsFrom": [
-            "user_message_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_message_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1450,12 +1354,8 @@
           "name": "chat_runs_assistant_message_id_chat_messages_id_fk",
           "tableFrom": "chat_runs",
           "tableTo": "chat_messages",
-          "columnsFrom": [
-            "assistant_message_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["assistant_message_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1463,12 +1363,8 @@
           "name": "chat_runs_retry_of_run_id_chat_runs_id_fk",
           "tableFrom": "chat_runs",
           "tableTo": "chat_runs",
-          "columnsFrom": [
-            "retry_of_run_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["retry_of_run_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1637,12 +1533,8 @@
           "name": "chat_threads_user_id_users_id_fk",
           "tableFrom": "chat_threads",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -1650,12 +1542,8 @@
           "name": "chat_threads_module_id_modules_id_fk",
           "tableFrom": "chat_threads",
           "tableTo": "modules",
-          "columnsFrom": [
-            "module_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["module_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -1757,12 +1645,8 @@
           "name": "generation_request_sources_generation_request_id_generation_requests_id_fk",
           "tableFrom": "generation_request_sources",
           "tableTo": "generation_requests",
-          "columnsFrom": [
-            "generation_request_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["generation_request_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1770,12 +1654,8 @@
           "name": "generation_request_sources_source_id_sources_id_fk",
           "tableFrom": "generation_request_sources",
           "tableTo": "sources",
-          "columnsFrom": [
-            "source_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["source_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1783,10 +1663,7 @@
       "compositePrimaryKeys": {
         "generation_request_sources_generation_request_id_source_id_pk": {
           "name": "generation_request_sources_generation_request_id_source_id_pk",
-          "columns": [
-            "generation_request_id",
-            "source_id"
-          ]
+          "columns": ["generation_request_id", "source_id"]
         }
       },
       "uniqueConstraints": {},
@@ -1853,12 +1730,8 @@
           "name": "generation_requests_user_id_users_id_fk",
           "tableFrom": "generation_requests",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1958,12 +1831,8 @@
           "name": "generation_run_steps_generation_run_id_generation_runs_id_fk",
           "tableFrom": "generation_run_steps",
           "tableTo": "generation_runs",
-          "columnsFrom": [
-            "generation_run_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["generation_run_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2152,12 +2021,8 @@
           "name": "generation_runs_user_id_users_id_fk",
           "tableFrom": "generation_runs",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -2165,12 +2030,8 @@
           "name": "generation_runs_module_id_modules_id_fk",
           "tableFrom": "generation_runs",
           "tableTo": "modules",
-          "columnsFrom": [
-            "module_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["module_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -2178,12 +2039,8 @@
           "name": "generation_runs_generation_request_id_generation_requests_id_fk",
           "tableFrom": "generation_runs",
           "tableTo": "generation_requests",
-          "columnsFrom": [
-            "generation_request_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["generation_request_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -2191,12 +2048,8 @@
           "name": "generation_runs_adaptive_intervention_id_adaptive_interventions_id_fk",
           "tableFrom": "generation_runs",
           "tableTo": "adaptive_interventions",
-          "columnsFrom": [
-            "adaptive_intervention_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["adaptive_intervention_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2338,12 +2191,8 @@
           "name": "idempotency_records_user_id_users_id_fk",
           "tableFrom": "idempotency_records",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2455,12 +2304,8 @@
           "name": "knowledge_chunks_document_revision_id_knowledge_document_revisions_id_fk",
           "tableFrom": "knowledge_chunks",
           "tableTo": "knowledge_document_revisions",
-          "columnsFrom": [
-            "document_revision_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["document_revision_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2561,12 +2406,8 @@
           "name": "knowledge_document_revisions_document_id_knowledge_documents_id_fk",
           "tableFrom": "knowledge_document_revisions",
           "tableTo": "knowledge_documents",
-          "columnsFrom": [
-            "document_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["document_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2574,12 +2415,8 @@
           "name": "knowledge_document_revisions_index_version_id_knowledge_index_versions_id_fk",
           "tableFrom": "knowledge_document_revisions",
           "tableTo": "knowledge_index_versions",
-          "columnsFrom": [
-            "index_version_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["index_version_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2698,12 +2535,8 @@
           "name": "knowledge_documents_module_id_modules_id_fk",
           "tableFrom": "knowledge_documents",
           "tableTo": "modules",
-          "columnsFrom": [
-            "module_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["module_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2711,12 +2544,8 @@
           "name": "knowledge_documents_source_content_id_source_contents_id_fk",
           "tableFrom": "knowledge_documents",
           "tableTo": "source_contents",
-          "columnsFrom": [
-            "source_content_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["source_content_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2724,12 +2553,8 @@
           "name": "knowledge_documents_node_id_module_nodes_id_fk",
           "tableFrom": "knowledge_documents",
           "tableTo": "module_nodes",
-          "columnsFrom": [
-            "node_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["node_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2737,12 +2562,8 @@
           "name": "knowledge_documents_activity_id_activities_id_fk",
           "tableFrom": "knowledge_documents",
           "tableTo": "activities",
-          "columnsFrom": [
-            "activity_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["activity_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2924,12 +2745,8 @@
           "name": "module_concepts_module_id_modules_id_fk",
           "tableFrom": "module_concepts",
           "tableTo": "modules",
-          "columnsFrom": [
-            "module_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["module_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -3103,12 +2920,8 @@
           "name": "module_nodes_module_id_modules_id_fk",
           "tableFrom": "module_nodes",
           "tableTo": "modules",
-          "columnsFrom": [
-            "module_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["module_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -3116,12 +2929,8 @@
           "name": "module_nodes_adaptive_intervention_id_adaptive_interventions_id_fk",
           "tableFrom": "module_nodes",
           "tableTo": "adaptive_interventions",
-          "columnsFrom": [
-            "adaptive_intervention_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["adaptive_intervention_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -3307,12 +3116,8 @@
           "name": "modules_owner_id_users_id_fk",
           "tableFrom": "modules",
           "tableTo": "users",
-          "columnsFrom": [
-            "owner_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["owner_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -3320,12 +3125,8 @@
           "name": "modules_generation_request_id_generation_requests_id_fk",
           "tableFrom": "modules",
           "tableTo": "generation_requests",
-          "columnsFrom": [
-            "generation_request_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["generation_request_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -3377,12 +3178,8 @@
           "name": "node_concepts_node_id_module_nodes_id_fk",
           "tableFrom": "node_concepts",
           "tableTo": "module_nodes",
-          "columnsFrom": [
-            "node_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["node_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -3390,12 +3187,8 @@
           "name": "node_concepts_concept_id_module_concepts_id_fk",
           "tableFrom": "node_concepts",
           "tableTo": "module_concepts",
-          "columnsFrom": [
-            "concept_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["concept_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -3403,10 +3196,7 @@
       "compositePrimaryKeys": {
         "node_concepts_node_id_concept_id_pk": {
           "name": "node_concepts_node_id_concept_id_pk",
-          "columns": [
-            "node_id",
-            "concept_id"
-          ]
+          "columns": ["node_id", "concept_id"]
         }
       },
       "uniqueConstraints": {},
@@ -3505,12 +3295,8 @@
           "name": "node_progress_user_id_users_id_fk",
           "tableFrom": "node_progress",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -3518,12 +3304,8 @@
           "name": "node_progress_node_id_module_nodes_id_fk",
           "tableFrom": "node_progress",
           "tableTo": "module_nodes",
-          "columnsFrom": [
-            "node_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["node_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -3654,12 +3436,8 @@
           "name": "source_contents_source_id_sources_id_fk",
           "tableFrom": "source_contents",
           "tableTo": "sources",
-          "columnsFrom": [
-            "source_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["source_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -3816,12 +3594,8 @@
           "name": "source_processing_runs_source_id_sources_id_fk",
           "tableFrom": "source_processing_runs",
           "tableTo": "sources",
-          "columnsFrom": [
-            "source_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["source_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -4017,12 +3791,8 @@
           "name": "sources_user_id_users_id_fk",
           "tableFrom": "sources",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -4109,12 +3879,8 @@
           "name": "user_concept_mastery_user_id_users_id_fk",
           "tableFrom": "user_concept_mastery",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -4122,12 +3888,8 @@
           "name": "user_concept_mastery_module_id_modules_id_fk",
           "tableFrom": "user_concept_mastery",
           "tableTo": "modules",
-          "columnsFrom": [
-            "module_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["module_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -4135,12 +3897,8 @@
           "name": "user_concept_mastery_concept_id_module_concepts_id_fk",
           "tableFrom": "user_concept_mastery",
           "tableTo": "module_concepts",
-          "columnsFrom": [
-            "concept_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["concept_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -4148,11 +3906,7 @@
       "compositePrimaryKeys": {
         "user_concept_mastery_user_id_module_id_concept_id_pk": {
           "name": "user_concept_mastery_user_id_module_id_concept_id_pk",
-          "columns": [
-            "user_id",
-            "module_id",
-            "concept_id"
-          ]
+          "columns": ["user_id", "module_id", "concept_id"]
         }
       },
       "uniqueConstraints": {},
@@ -4296,12 +4050,8 @@
           "name": "user_module_progress_user_id_users_id_fk",
           "tableFrom": "user_module_progress",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -4309,12 +4059,8 @@
           "name": "user_module_progress_module_id_modules_id_fk",
           "tableFrom": "user_module_progress",
           "tableTo": "modules",
-          "columnsFrom": [
-            "module_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["module_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -4322,12 +4068,8 @@
           "name": "user_module_progress_current_node_id_module_nodes_id_fk",
           "tableFrom": "user_module_progress",
           "tableTo": "module_nodes",
-          "columnsFrom": [
-            "current_node_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["current_node_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -4407,12 +4149,8 @@
           "name": "user_stats_user_id_users_id_fk",
           "tableFrom": "user_stats",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -4628,12 +4366,8 @@
           "name": "xp_events_user_id_users_id_fk",
           "tableFrom": "xp_events",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -4641,12 +4375,8 @@
           "name": "xp_events_module_id_modules_id_fk",
           "tableFrom": "xp_events",
           "tableTo": "modules",
-          "columnsFrom": [
-            "module_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["module_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -4662,13 +4392,7 @@
     "public.activity_type": {
       "name": "activity_type",
       "schema": "public",
-      "values": [
-        "lesson",
-        "flashcard",
-        "multiple_choice",
-        "true_false",
-        "short_answer"
-      ]
+      "values": ["lesson", "flashcard", "multiple_choice", "true_false", "short_answer"]
     },
     "public.adaptive_status": {
       "name": "adaptive_status",
@@ -4686,20 +4410,12 @@
     "public.attempt_evaluation_status": {
       "name": "attempt_evaluation_status",
       "schema": "public",
-      "values": [
-        "evaluating",
-        "completed",
-        "failed"
-      ]
+      "values": ["evaluating", "completed", "failed"]
     },
     "public.attempt_policy_outcome": {
       "name": "attempt_policy_outcome",
       "schema": "public",
-      "values": [
-        "continue",
-        "optional_review",
-        "required_intervention"
-      ]
+      "values": ["continue", "optional_review", "required_intervention"]
     },
     "public.chat_run_status": {
       "name": "chat_run_status",
@@ -4718,145 +4434,77 @@
     "public.concept_relation": {
       "name": "concept_relation",
       "schema": "public",
-      "values": [
-        "teach",
-        "review",
-        "assess"
-      ]
+      "values": ["teach", "review", "assess"]
     },
     "public.generation_status": {
       "name": "generation_status",
       "schema": "public",
-      "values": [
-        "queued",
-        "processing",
-        "completed",
-        "failed"
-      ]
+      "values": ["queued", "processing", "completed", "failed"]
     },
     "public.generation_step_status": {
       "name": "generation_step_status",
       "schema": "public",
-      "values": [
-        "pending",
-        "processing",
-        "completed",
-        "failed"
-      ]
+      "values": ["pending", "processing", "completed", "failed"]
     },
     "public.generation_type": {
       "name": "generation_type",
       "schema": "public",
-      "values": [
-        "module",
-        "adaptive"
-      ]
+      "values": ["module", "adaptive"]
     },
     "public.module_difficulty": {
       "name": "module_difficulty",
       "schema": "public",
-      "values": [
-        "beginner",
-        "intermediate",
-        "advanced"
-      ]
+      "values": ["beginner", "intermediate", "advanced"]
     },
     "public.module_progress_status": {
       "name": "module_progress_status",
       "schema": "public",
-      "values": [
-        "not_started",
-        "in_progress",
-        "completed"
-      ]
+      "values": ["not_started", "in_progress", "completed"]
     },
     "public.module_status": {
       "name": "module_status",
       "schema": "public",
-      "values": [
-        "generating",
-        "ready",
-        "failed",
-        "archived"
-      ]
+      "values": ["generating", "ready", "failed", "archived"]
     },
     "public.node_origin": {
       "name": "node_origin",
       "schema": "public",
-      "values": [
-        "core",
-        "adaptive"
-      ]
+      "values": ["core", "adaptive"]
     },
     "public.node_progress_status": {
       "name": "node_progress_status",
       "schema": "public",
-      "values": [
-        "locked",
-        "available",
-        "in_progress",
-        "completed"
-      ]
+      "values": ["locked", "available", "in_progress", "completed"]
     },
     "public.node_type": {
       "name": "node_type",
       "schema": "public",
-      "values": [
-        "lesson",
-        "flashcard",
-        "quiz",
-        "checkpoint",
-        "review",
-        "practice",
-        "remedial_quiz"
-      ]
+      "values": ["lesson", "flashcard", "quiz", "checkpoint", "review", "practice", "remedial_quiz"]
     },
     "public.source_content_type": {
       "name": "source_content_type",
       "schema": "public",
-      "values": [
-        "page",
-        "section",
-        "content"
-      ]
+      "values": ["page", "section", "content"]
     },
     "public.source_processing_status": {
       "name": "source_processing_status",
       "schema": "public",
-      "values": [
-        "queued",
-        "processing",
-        "completed",
-        "failed"
-      ]
+      "values": ["queued", "processing", "completed", "failed"]
     },
     "public.source_role": {
       "name": "source_role",
       "schema": "public",
-      "values": [
-        "primary",
-        "reference",
-        "supplementary"
-      ]
+      "values": ["primary", "reference", "supplementary"]
     },
     "public.source_status": {
       "name": "source_status",
       "schema": "public",
-      "values": [
-        "pending",
-        "processing",
-        "ready",
-        "failed"
-      ]
+      "values": ["pending", "processing", "ready", "failed"]
     },
     "public.source_type": {
       "name": "source_type",
       "schema": "public",
-      "values": [
-        "pdf",
-        "url",
-        "text"
-      ]
+      "values": ["pdf", "url", "text"]
     },
     "public.xp_reason": {
       "name": "xp_reason",

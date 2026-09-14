@@ -6,6 +6,7 @@ import { ChatModule } from "./chat/chat.module.js";
 import { ConfigModule } from "./config.module.js";
 import { DashboardModule } from "./dashboard/dashboard.module.js";
 import { HealthModule } from "./health/health.module.js";
+import { HttpShutdownService } from "./http/http-shutdown.service.js";
 import { RequestPolicyInterceptor } from "./http/request-policy.interceptor.js";
 import { InfrastructureModule } from "./infrastructure/infrastructure.module.js";
 import { LeaderboardModule } from "./leaderboard/leaderboard.module.js";
@@ -27,6 +28,9 @@ import { UsersModule } from "./users/users.module.js";
     AttemptsModule,
     AdaptiveModule,
   ],
-  providers: [{ provide: APP_INTERCEPTOR, useClass: RequestPolicyInterceptor }],
+  providers: [
+    HttpShutdownService,
+    { provide: APP_INTERCEPTOR, useClass: RequestPolicyInterceptor },
+  ],
 })
 export class AppModule {}

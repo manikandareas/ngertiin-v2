@@ -65,7 +65,7 @@ import { ModulesService } from "../modules/modules.service.js";
 import { ChatExecutionBudget } from "./chat.budget.js";
 import { resolveMessageScope } from "./chat.context.js";
 import { LearningRunError } from "./chat.errors.js";
-import { chatFailureStatus, withAbortGrace } from "./chat.execution.js";
+import { chatFailureStatus, settleBefore, withAbortGrace } from "./chat.execution.js";
 import { chatPage, readChatCursor } from "./chat.pagination.js";
 import { ChatPubSub } from "./chat.pubsub.js";
 import {
@@ -131,11 +131,28 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
   }
   async onModuleDestroy() {
     this.stopping = true;
+    this.infrastructure.draining = true;
     clearInterval(this.scheduler);
-    while (this.ticking) await new Promise((resolve) => setTimeout(resolve, 25));
+    const startedAt = Date.now();
+    this.log("chat.drain_started", { activeRuns: this.executions.size });
+    // Wait for the current claim and allow active providers to finish naturally.
+    while (this.ticking && Date.now() - startedAt < this.env.CHAT_SHUTDOWN_DRAIN_MS)
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    await settleBefore(
+      Promise.allSettled([...this.executions.values()].map((e) => e.done)),
+      this.env.CHAT_SHUTDOWN_DRAIN_MS - (Date.now() - startedAt),
+    );
     for (const execution of this.executions.values())
       execution.abort.abort(new LearningRunError("PROCESS_INTERRUPTED"));
-    await Promise.allSettled([...this.executions.values()].map((e) => e.done));
+    await settleBefore(
+      Promise.allSettled([...this.executions.values()].map((e) => e.done)),
+      this.env.CHAT_CANCEL_GRACE_MS + 5000,
+    );
+    this.log("chat.drain_finished", {
+      durationMs: Date.now() - startedAt,
+      remainingRuns: this.executions.size,
+      claimPending: this.ticking,
+    });
     this.pubsub.close();
   }
   private log(event: string, data: Record<string, unknown> = {}) {
@@ -804,6 +821,7 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
             reservation = undefined;
             this.rateLimited(retryAfter);
           }
+          if (this.stopping) this.unavailable();
           const runId = randomUUID(),
             messageId = randomUUID();
           await tx.insert(chat_runs).values({
@@ -959,6 +977,9 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
           return updated;
         });
         if (!claimed) break;
+        // A claim already in flight may return after the drain deadline. Leave it
+        // to lease recovery rather than starting a provider during shutdown.
+        if (this.stopping) break;
         const abort = new AbortController();
         const done = this.execute(claimed, abort)
           .catch(() => this.log("chat.execution_failed", { runId: claimed.id }))
@@ -1276,7 +1297,14 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
       }
       return snapshots;
     });
-    for (const { snapshot, previous } of committed) await this.publish(snapshot, previous);
+    for (const { snapshot, previous } of committed) {
+      this.log("chat.run_recovered", {
+        runId: snapshot.run.id,
+        status: snapshot.run.status,
+        errorCode: snapshot.run.errorCode,
+      });
+      await this.publish(snapshot, previous);
+    }
   }
   private async execute(run: RunRow, abort: AbortController) {
     const startedAt = performance.now();
@@ -1593,6 +1621,9 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
         imageStatus: imageDiagnostic.status,
         imageCount: images.length,
         usageCoverage: this.ai.aggregateUsage([...calls.values()]).coverage,
+        ...this.ai.aggregateUsage([...calls.values()]),
+        queueMs: run.started_at ? run.started_at.getTime() - run.created_at.getTime() : null,
+        indexVersion: this.env.KNOWLEDGE_INDEX_VERSION,
       });
     }
   }

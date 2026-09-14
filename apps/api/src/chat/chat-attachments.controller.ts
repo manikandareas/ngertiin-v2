@@ -33,7 +33,9 @@ export class ChatAttachmentsController {
   @Post()
   @UseInterceptors(
     FileInterceptor("file", {
-      limits: { fileSize: CHAT_ATTACHMENT_MAX_BYTES, files: 1, fields: 0 },
+      // Busboy emits its limit event at equality; the public maximum is inclusive.
+      // Validation still rejects anything above MAX_BYTES before storage.
+      limits: { fileSize: CHAT_ATTACHMENT_MAX_BYTES + 1, files: 1, fields: 0 },
     }),
   )
   async upload(@Req() req: ProductRequest, @UploadedFile() file?: AttachmentUpload) {

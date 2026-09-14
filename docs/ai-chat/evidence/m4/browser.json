@@ -12,13 +12,6 @@
     "escapeClosesAndRestoresFocus": "PASS",
     "browserErrors": []
   },
-  "screenshots": [
-    "reader-desktop.png",
-    "reader-mobile.png"
-  ],
-  "notRun": [
-    "authenticated Clerk",
-    "full durable chat SSE with M4",
-    "browser degradation response"
-  ]
+  "screenshots": ["reader-desktop.png", "reader-mobile.png"],
+  "notRun": ["authenticated Clerk", "full durable chat SSE with M4", "browser degradation response"]
 }

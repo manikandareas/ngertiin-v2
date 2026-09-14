@@ -27,6 +27,7 @@ export class HealthController {
     ]);
     const response: ReadyHealth = readyHealthSchema.parse({
       status:
+        !this.infrastructure.draining &&
         postgres.status === "fulfilled" &&
         redis.status === "fulfilled" &&
         storage.status === "fulfilled"

@@ -1,6 +1,6 @@
 # Blueprint AI Chat Ngerti.in
 
-Status: **M1–M4 diimplementasikan; M5 tetap blueprint**. Diperbarui 12 September 2026.
+Status: **M1–M4 dan tambahan produk setelah M4 diimplementasikan; M5 dalam verifikasi rilis**. Diperbarui 14 September 2026. Lihat [bukti M5](./m5-verification.md).
 Batas implementasi dan bukti aktual berada di [verifikasi M1](./m1-verification.md) [verifikasi M2](./m2-verification.md), [verifikasi M3](./m3-verification.md), dan [verifikasi M4](./m4-verification.md). Chat, retrieval, dan indexing selalu aktif tanpa feature flag. Deployment production belum dijalankan.
 
 ## Otoritas dokumen
@@ -12,17 +12,19 @@ Batas implementasi dan bukti aktual berada di [verifikasi M1](./m1-verification.
 | [implementation.md](./implementation.md) | Urutan implementasi, dependency, migrasi, rollout, rollback, acceptance dan bukti |
 
 Konvensi HTTP, autentikasi, envelope, error, identifier, dan idempotency umum mengikuti [API Contract §3](../API_CONTRACT.md#3-protocol-conventions). Schema executable chat berada di `packages/contracts/src/api/chat`; konteks materi dan tools read-only tersedia di M3; retrieval mengikuti M4.
-**Keputusan final** adalah aturan normatif di blueprint. **Default operasional** diberi label di kontrak dan dapat dituning. Kualitas retrieval, latency, throughput, dan biaya adalah **belum diukur**, bukan janji produk.
+**Keputusan pengguna terbaru dan perilaku produk yang disetujui setelah M4 mengungguli blueprint lama. Dokumen ini diselaraskan dengan arah tersebut; perbedaan historis bukan alasan untuk menghapus fitur.** **Default operasional** diberi label di kontrak dan dapat dituning. Kualitas retrieval, latency, throughput, dan biaya adalah **belum diukur**, bukan janji produk.
 
 ## Perilaku produk dan konteks
 
-Chat dapat berdiri sendiri tanpa modul, atau terikat pada satu modul. Menu Chat selalu tersedia; `/chat` menampilkan chat baru dan `/chat/:threadId` menampilkan detail. Tombol Chat baru dan daftar seluruh thread pengguna hanya muncul pada sidebar aplikasi di halaman Chat. Thread baru dibuat saat pesan pertama dikirim; module bisa dipilih/dihapus sebelum itu. Mengubah konteks module setelah thread dibuat membuka chat baru, tanpa memindahkan pesan lama.
+Chat dapat berdiri sendiri tanpa modul. `/chat` menampilkan chat baru dan `/chat/:threadId` detail percakapan. Thread dibuat saat pesan pertama dikirim. Module asal thread adalah metadata navigasi/kompatibilitas, bukan batas retrieval. Composer memakai mention `@` modul dan pilihan lesson/flashcard; maksimal delapan mention per pesan, termasuk lintas modul milik pengguna. Mention baru menggantikan cakupan sebelumnya; pesan tanpa mention meneruskan cakupan terakhir. Pesan modern pertama tanpa mention bersifat mandiri. Mengganti cakupan tidak membuat thread baru atau mengubah konteks pesan lama. Lihat [verifikasi mention](./mentions-verification.md).
 
 Journey dan Node tetap memakai panel kanan dengan mode Sidebar/Overlay. Full Screen pada dropdown panel membuka detail thread yang sama; detail Chat tidak memiliki dropdown mode dan header module tidak memiliki tombol Buka Chat. Draft, cuplikan, serta pending acknowledgment berada dalam cache sesi pengguna, sehingga navigasi tidak mengirim ulang pesan atau membatalkan run. Pesan/run pulih dari database setelah refresh; draft belum dijamin bertahan setelah refresh. Kutipan di dedicated page memakai panel kanan desktop dan drawer mobile; panel module tetap memakai reader dialog.
 
-Chat mandiri menggunakan pengetahuan umum tanpa tools materi/progress. Thread dengan module dapat memakai tools existing dan materi dalam scope tersebut. Tidak ada pencarian web, upload langsung, atau thread lintas module pada versi ini. Detail implementasi dan bukti ada di [Dedicated Chat](./dedicated-chat-verification.md).
+Chat tanpa cakupan materi menggunakan pengetahuan umum; tools materi/progress tersedia bila cakupan pesan berisi modul yang diotorisasi server. Tool Wikimedia tersedia pada chat mandiri maupun bermodul: agent dapat mencari ilustrasi secara proaktif, memeriksa kecocokan visual, lalu menyimpan satu gambar beserta atribusi. Tidak ada pencarian web umum. Kegagalan ilustrasi tetap menghasilkan jawaban teks. Lihat [verifikasi Wikimedia](./wikimedia-verification.md).
 
-Konteks halaman bersifat sementara: halaman Journey atau Node yang sedang dibuka tidak otomatis menambahkan seluruh isinya ke prompt. Konteks percakapan berasal dari pesan tersimpan dan referensi yang dipilih untuk pesan tersebut. Saat mengirim, server menyimpan snapshot konteks halaman yang telah divalidasi sebagai metadata pesan; konten pilihan dan kutipan terikat pada pesan pemakainya. Pindah halaman tidak menulis ulang konteks pesan lama. Client mengirim identifier dan rentang, bukan isi node atau objek riwayat yang dipercaya server.
+Lampiran privat mendukung gambar, PDF, Office, serta teks. Model membaca input native terlebih dahulu; OCR Mistral hanya fallback untuk penolakan format/modalitas/keterbacaan terstruktur, sebelum streaming atau tool berjalan. Attachment-only diperbolehkan. File tidak otomatis menjadi Sources atau materi modul. Lihat [verifikasi attachment](./attachments-verification.md) dan [kontrak](./contracts.md#lampiran-dan-gambar).
+
+Panel Journey/Node memasang mention konteks halaman yang terkunci; fullscreen membukanya untuk diedit. Konteks halaman bersifat sementara: halaman Journey atau Node yang sedang dibuka tidak otomatis menambahkan seluruh isinya ke prompt. Konteks percakapan berasal dari pesan tersimpan dan referensi yang dipilih untuk pesan tersebut. Saat mengirim, server menyimpan snapshot konteks halaman yang telah divalidasi sebagai metadata pesan; konten pilihan dan kutipan terikat pada pesan pemakainya. Pindah halaman tidak menulis ulang konteks pesan lama. Client mengirim identifier dan rentang, bukan isi node atau objek riwayat yang dipercaya server.
 
 Agent menjawab sapaan dan percakapan sederhana langsung. Tidak ada tahap wajib planning, retrieval, atau tool call. Pertanyaan lanjutan menggunakan riwayat yang relevan dahulu. Konteks pilihan dapat dibaca langsung; pencarian diperlukan ketika bukti tambahan dibutuhkan. Jawaban berbasis materi menampilkan rujukan yang dapat dibuka ke lokasi asal. Bila bukti tidak tersedia, agent menyatakan keterbatasan dan dapat memberi penjelasan umum tanpa mengklaimnya berasal dari materi modul.
 
@@ -30,7 +32,7 @@ Riwayat disimpan sebagai pesan, tanpa vectorization. Pemilihan riwayat mengikuti
 
 ## Batas akses dan assessment
 
-Semua jalur baca menerapkan identitas server dan kepemilikan thread. Untuk thread dengan module, kepemilikan modul, relasi materi, dan akses terkini juga diperiksa: pengambilan konteks, history, tool, retrieval, dan pembukaan kutipan. Identifier dalam tool tidak boleh mengubah user/module scope. Status node diperiksa melalui aturan domain progression existing, bukan keputusan model.
+Semua jalur baca menerapkan identitas server dan kepemilikan thread. Untuk setiap modul dalam cakupan pesan dan dependensi history, kepemilikan modul, relasi materi, dan akses terkini juga diperiksa: pengambilan konteks, history, tool, retrieval, dan pembukaan kutipan. Identifier dalam tool tidak boleh mengubah user/module scope. Status node diperiksa melalui aturan domain progression existing, bukan keputusan model.
 
 - Isi node `locked` tidak boleh masuk prompt, hasil tool, chunk yang dikembalikan, atau snapshot history yang ditampilkan. Metadata progres aman boleh menyebut status terkunci tanpa isi aktivitas.
 - `activities.evaluation_config`, kunci jawaban, rubrik privat, dan konfigurasi penilaian tidak pernah diindeks atau diteruskan kepada agent. Proyeksi data menggunakan allowlist, bukan menyerialisasikan row database.
@@ -46,11 +48,12 @@ History lama diperiksa kembali; pesan yang hak akses materinya dicabut tidak dir
 
 Agent menggunakan `createAgent` dari `langchain`, berjalan di atas LangGraph OSS dalam proses NestJS API. Tools opsional; tidak menggunakan planner atau graph supervisor terpisah. API memakai `ChatOpenAI` dengan pola integrasi existing dan konfigurasi model chat tersendiri. Frontend memakai AI SDK UI; konversi stream API memakai adapter resmi `@ai-sdk/langchain`.
 
-API memiliki domain `chat`, `knowledge`, dan `ai`, masing-masing **satu service**. Controller hanya autentikasi, validasi DTO, dan delegasi. Lifecycle hooks/scheduler dapat memanggil service tanpa menjadi service orchestration tambahan.
+API memiliki domain `chat`, `knowledge`, dan `ai`, dengan service domain dan helper sesuai tanggung jawabnya. Controller hanya autentikasi, validasi DTO, dan delegasi. Lifecycle hooks/scheduler dapat memanggil service tanpa menjadi service orchestration tambahan.
 
 | Pemilik | Tanggung jawab |
 | --- | --- |
 | API `ChatService` | Thread, history, konteks pesan, admission/idempotency run, executor dan lease, cancellation, persistence, adapter streaming |
+| API `ChatAttachmentsService` | Validasi/upload privat, download terotorisasi, OCR dan cleanup objek |
 | API `KnowledgeService` | Pembacaan konteks/kutipan dan hybrid search; filter akses melalui domain existing; proyeksi materi aman |
 | API `AiService` | Konfigurasi `ChatOpenAI`, embedding query, normalisasi error dan usage provider |
 | API `ModulesService` existing | Kepemilikan dan proyeksi materi/progres yang aman; perluasan read method bila diperlukan |
@@ -97,9 +100,10 @@ packages/database/migrations/
 | --- | --- | --- | --- |
 | `search_module_materials` | `query` | `KnowledgeService.search` | Cuplikan, citation ID, lokasi, origin, status indeks |
 | `read_excerpt` | Referensi materi dan rentang | `KnowledgeService.readExcerpt` | Kutipan tervalidasi, lokasi dan versi konten |
+| `search_wikimedia_images` | Query, fallback query dan tujuan ilustrasi | Commons, visual review model, storage | Satu gambar terverifikasi, caption, alt dan atribusi |
 | `read_progress` | Tidak ada scope dari model | `ModulesService` | Ringkasan progres, status node, tanpa isi terkunci atau evaluasi privat |
 
-Kontrak bentuk referensi mengikuti [model konteks](./contracts.md#payload-dan-pagination). Semua tools read-only, dibatasi runtime budget, dan memakai scope dari server. Direct context hydration oleh server bukan tool call model; sapaan tanpa referensi tidak melakukan hydration materi.
+Kontrak bentuk referensi mengikuti [model konteks](./contracts.md#payload-dan-pagination). Tools materi read-only dan memakai scope dari server. Wikimedia boleh menulis objek ilustrasi privat untuk jawaban; tidak menulis progres atau assessment. Semua tool dibatasi runtime budget. Direct context hydration oleh server bukan tool call model; sapaan tanpa referensi tidak melakukan hydration materi.
 
 ## Retrieval dan indexing
 
@@ -113,7 +117,7 @@ Pemotongan mengikuti paragraph/section, tidak mencampur dokumen atau origin. Ren
 
 ## Dasar repo dan sumber resmi
 
-Pemeriksaan checkout menemukan NestJS/Express di [API package](../../apps/api/package.json), `ChatOpenAI` dan `useResponsesApi` di [worker AiService](../../apps/worker/src/ai/ai.service.ts), model generation di [worker environment](../../packages/contracts/src/environment/models/worker-environment.ts), serta tabel materi/progres di [schema](../../packages/database/src/schema.ts). Dependency chat M1 sudah terpasang dan dipin. [Request policy](../../apps/api/src/http/request-policy.interceptor.ts) perlu mengenali route chat; SSE generation existing bukan wire protocol chat.
+Pemeriksaan checkout menemukan NestJS/Express di [API package](../../apps/api/package.json), `ChatOpenAI` dan `useResponsesApi` di [worker AiService](../../apps/worker/src/ai/ai.service.ts), model generation di [worker environment](../../packages/contracts/src/environment/models/worker-environment.ts), serta tabel materi/progres di [schema](../../packages/database/src/schema.ts). Dependency chat M1 sudah terpasang dan dipin. [Request policy](../../apps/api/src/http/request-policy.interceptor.ts) mengenali upload/cancel chat secara terpisah dan stream chat; SSE generation existing bukan wire protocol chat.
 
 Sumber resmi diakses saat penyusunan; dukungan dokumentasi bukan hasil uji integrasi:
 

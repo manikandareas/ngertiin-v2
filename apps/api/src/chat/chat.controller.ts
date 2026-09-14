@@ -36,7 +36,7 @@ import {
 import { z } from "zod";
 import { ClerkAuthGuard } from "../auth/clerk-auth.guard.js";
 import { IdempotencyKeyPipe } from "../http/idempotency-key.pipe.js";
-import { getLocalUserId, type ProductRequest } from "../http/request-context.js";
+import { getLocalUserId, getRequestId, type ProductRequest } from "../http/request-context.js";
 import { ZodValidationPipe } from "../http/zod-validation.pipe.js";
 import { ChatService } from "./chat.service.js";
 import type { ChatEventResponse } from "./chat.stream.js";
@@ -200,6 +200,16 @@ export class ChatController {
       ),
     );
     const route = p.moduleId ? `/modules/${p.moduleId}/chat` : "/chat";
+    console.log(
+      JSON.stringify({
+        level: "log",
+        event: "chat.send_acknowledged",
+        requestId: getRequestId(req),
+        threadId: p.threadId,
+        runId: response.data.runId,
+        messageId: response.data.messageId,
+      }),
+    );
     return chatSendResponseSchema.parse({
       ...response,
       data: {

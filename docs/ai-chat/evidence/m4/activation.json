@@ -1,11 +1,7 @@
 {
   "date": "2026-09-12T04:50:19.579Z",
   "scope": "Local application database ngertiin; production not deployed",
-  "removedFlags": [
-    "CHAT_ENABLED",
-    "CHAT_RETRIEVAL_ENABLED",
-    "KNOWLEDGE_INDEXING_ENABLED"
-  ],
+  "removedFlags": ["CHAT_ENABLED", "CHAT_RETRIEVAL_ENABLED", "KNOWLEDGE_INDEXING_ENABLED"],
   "legacyFalseValuesIgnored": true,
   "providerConfigurationRequired": true,
   "postgresImage": "ngertiin-postgres:17-vector",
@@ -48,10 +44,7 @@
     "status": "ready",
     "degraded": false,
     "citations": 6,
-    "origins": [
-      "original_source",
-      "generated_material"
-    ]
+    "origins": ["original_source", "generated_material"]
   },
   "checks": {
     "typecheck": "PASS api/worker/contracts",
@@ -60,8 +53,5 @@
     "drizzle": "PASS",
     "compose": "PASS"
   },
-  "notRun": [
-    "production deployment",
-    "Clerk browser"
-  ]
+  "notRun": ["production deployment", "Clerk browser"]
 }

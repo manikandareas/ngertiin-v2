@@ -10,6 +10,8 @@ import { requestContextMiddleware } from "./http/request-context.js";
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, {
     logger: new ConsoleLogger({ json: true, colors: false }),
+    // Close lingering SSE/keep-alive sockets only after module drain hooks finish.
+    forceCloseConnections: true,
   });
   const environment = app.get<ApiEnvironment>(API_ENV);
   app.setGlobalPrefix("api/v1", {

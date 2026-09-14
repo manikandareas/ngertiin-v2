@@ -1,0 +1,54 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chat operations snapshot</title><style>body{font:16px system-ui;background:#f6f5f2;color:#222;margin:32px auto;padding:0 20px;max-width:1100px}main{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}section{background:white;padding:20px;border:1px solid #ddd;border-radius:12px}h1{font-size:26px}h2{font-size:18px}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px}p{line-height:1.5}</style>
+<h1>Chat operations snapshot</h1><p>Captured 2026-09-14T05:07:15.685765+00:00. Database window: 24 hours. Terminal latency includes queue time. Cancellation and interruption are separate from failures.</p>
+<main><section><h2>Run status and latency</h2><pre>[
+  {
+    &quot;runs&quot;: 41,
+    &quot;p50_ms&quot;: 4712.262,
+    &quot;p95_ms&quot;: 20342.774,
+    &quot;status&quot;: &quot;completed&quot;,
+    &quot;error_code&quot;: null
+  },
+  {
+    &quot;runs&quot;: 1,
+    &quot;p50_ms&quot;: 18084.339,
+    &quot;p95_ms&quot;: 18084.339,
+    &quot;status&quot;: &quot;failed&quot;,
+    &quot;error_code&quot;: &quot;OUTPUT_LIMIT&quot;
+  }
+]</pre></section><section><h2>Queue and leases</h2><pre>{
+  &quot;active&quot;: 0,
+  &quot;queued&quot;: 0,
+  &quot;pastDeadline&quot;: 0,
+  &quot;expiredLeases&quot;: 0,
+  &quot;oldestQueuedMs&quot;: 0
+}</pre></section><section><h2>Provider usage</h2><pre>[
+  {
+    &quot;calls&quot;: 73,
+    &quot;model&quot;: &quot;gpt-5.6-luna&quot;,
+    &quot;coverage&quot;: &quot;complete&quot;,
+    &quot;provider&quot;: &quot;openai&quot;,
+    &quot;input_tokens&quot;: 318730,
+    &quot;total_tokens&quot;: 333127,
+    &quot;output_tokens&quot;: 14397
+  }
+]</pre></section><section><h2>Index coverage</h2><pre>[
+  {
+    &quot;ready&quot;: 593,
+    &quot;failed&quot;: 0,
+    &quot;pending&quot;: 0,
+    &quot;index_version&quot;: 1,
+    &quot;version_status&quot;: &quot;active&quot;,
+    &quot;eligible_documents&quot;: 593
+  }
+]</pre></section><section><h2>OCR</h2><pre>[]</pre></section><section><h2>Attachment cleanup pending</h2><pre>0</pre></section><section><h2>Supplied log sample</h2><pre>{
+  &quot;sampledRuns&quot;: 15,
+  &quot;modelCalls&quot;: 21,
+  &quot;toolCalls&quot;: 3,
+  &quot;imageOutcomes&quot;: {
+    &quot;not_requested&quot;: 12,
+    &quot;FOUND&quot;: 3
+  },
+  &quot;recoveredRuns&quot;: 2
+}</pre></section></main>
+<p>Logs and database may cover different periods. Usage with partial/unavailable coverage is not a complete bill. Cost requires the actual provider tariff/invoice; no price or throughput target is inferred here. This file is an offline snapshot, not a live monitoring service.</p></html>

@@ -10,7 +10,7 @@ import { InfrastructureService } from "../infrastructure/infrastructure.service.
 import { ProductError } from "./product-error.js";
 import type { ProductRequest } from "./request-context.js";
 
-type RateLimitCategory = "read" | "mutation" | "expensive" | "stream";
+type RateLimitCategory = "read" | "mutation" | "expensive" | "stream" | "chatUpload" | "chatCancel";
 type HttpRequest = ProductRequest & {
   method: string;
 };
@@ -48,9 +48,13 @@ export class RequestPolicyInterceptor implements NestInterceptor {
       "interventionId",
       "threadId",
       "runId",
+      "messageId",
+      "imageId",
     ] as const) {
       const value = request.params?.[key];
-      if (value) resourceIds[key] = value;
+      // Route params are untrusted until pipes run; never log arbitrary input as an ID.
+      if (value && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value))
+        resourceIds[key] = value;
     }
     if (request.requestContext) {
       request.requestContext.route = request.route?.path ?? request.path;
@@ -60,7 +64,13 @@ export class RequestPolicyInterceptor implements NestInterceptor {
     if (userId) {
       const path = (request.route?.path ?? request.path).replace(/\/+$/, "").toLowerCase();
       let category: RateLimitCategory = "mutation";
-      if (
+      if (request.method === "POST" && path === "/api/v1/chat/attachments") category = "chatUpload";
+      else if (
+        request.method === "POST" &&
+        /\/chat\/threads\/[^/]+\/runs\/[^/]+\/cancel$/.test(path)
+      )
+        category = "chatCancel";
+      else if (
         path.endsWith("/generation/events") ||
         (path.includes("/chat/") && path.endsWith("/events"))
       )
@@ -68,6 +78,13 @@ export class RequestPolicyInterceptor implements NestInterceptor {
       else if (request.method === "GET" || request.method === "HEAD") category = "read";
       else if (expensiveRoutes.some((route) => route.test(path))) category = "expensive";
       const limit = await this.infrastructure.consumeRateLimit(userId, category);
+      if (limit.unavailable)
+        throw new ProductError(
+          503,
+          "CHAT_UNAVAILABLE",
+          "Chat unavailable",
+          "Upload belum tersedia. Coba lagi nanti.",
+        );
       if (!limit.allowed) {
         response.setHeader("Retry-After", String(limit.retryAfterSeconds));
         throw new ProductError(

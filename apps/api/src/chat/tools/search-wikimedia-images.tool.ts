@@ -19,7 +19,6 @@ type ImageSearchStatus = "not_requested" | "FOUND" | "NO_MATCH" | "UNAVAILABLE" 
 export type ChatImageDiagnostic = {
   status: ImageSearchStatus;
   searches: {
-    query: string;
     candidates: number;
     inspected: number;
     selected: string | null;
@@ -62,7 +61,6 @@ export function searchWikimediaImagesTool(options: {
           diagnostic.stage = "search";
           const { candidates } = await searchCommons(search, signal, options.userAgent);
           const attempt = {
-            query: search,
             candidates: candidates.length,
             inspected: 0,
             selected: null as string | null,
@@ -98,11 +96,12 @@ export function searchWikimediaImagesTool(options: {
             inspected,
             signal,
           );
-          attempt.reason = selection.reason;
           const selected =
             selection.matchesPurpose && selection.index !== null
               ? inspected[selection.index]
               : undefined;
+          // Model queries/review prose may repeat private input. Log fixed outcomes only.
+          attempt.reason = selected ? "visual_match" : "visual_rejected";
           if (!selected) {
             diagnostic.status = "NO_MATCH";
             continue; // Try the distinct fallback query after visual rejection too.

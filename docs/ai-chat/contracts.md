@@ -1,6 +1,6 @@
 # Kontrak AI Chat
 
-Status: **M1–M4 diimplementasikan; chat/retrieval/indexing selalu aktif**. Lihat [verifikasi M4](./m4-verification.md) untuk bukti retrieval dan batas pengujian.
+Status: **Kontrak diselaraskan dengan produk 14 September 2026; verifikasi M5 berjalan. Chat/retrieval/indexing selalu aktif**. Lihat [verifikasi M4](./m4-verification.md) untuk bukti retrieval dan batas pengujian.
 
 Dokumen ini otoritatif untuk DTO, persistence, streaming, lifecycle, dan konfigurasi chat. Perilaku/otorisasi agent mengikuti [README](./README.md#batas-akses-dan-assessment); urutan delivery dan bukti ada di [implementation](./implementation.md). Konvensi existing dirujuk dari [API Contract §3](../API_CONTRACT.md#3-protocol-conventions), tanpa mendefinisikan ulang envelope/auth/error umum.
 
@@ -30,9 +30,9 @@ Thread yang dihapus tidak terlihat lagi. DELETE ulang pada tombstone milik pengg
 
 ## Payload dan pagination
 
-`Thread = {id,moduleId,moduleTitle?,title,createdAt,updatedAt,activeRunId}`; `moduleId`, `moduleTitle`, dan `activeRunId` nullable. Module thread tetap setelah dibuat; PATCH hanya menerima title. Tanpa module, server menolak pageContext/references dan tidak memasang tools module. UI membuat thread saat pesan pertama dikirim, dengan judul dari 80 code points pertama pesan. Title default `Percakapan baru`, trim, panjang 1–120 Unicode code points, tanpa pemanggilan model untuk judul otomatis.
+`Thread = {id,moduleId,moduleTitle?,title,createdAt,updatedAt,activeRunId}`; `moduleId`, `moduleTitle`, dan `activeRunId` nullable. Module thread tetap setelah dibuat; PATCH hanya menerima title. Module asal bukan pembatas cakupan pesan: `mentions` mengotorisasi scope lintas modul. Tanpa scope aktif, tools materi/progres tidak dipasang; Wikimedia tetap tersedia. Legacy pageContext/references masih memerlukan module asal. UI membuat thread saat pesan pertama dikirim, dengan judul dari 80 code points pertama pesan. Title default `Percakapan baru`, trim, panjang 1–120 Unicode code points, tanpa pemanggilan model untuk judul otomatis.
 
-`Message = {id,threadId,runId,sequence,role,parts,contexts,references,createdAt,availability}`. `runId` selalu ada; role `user | assistant`; `availability = available | unavailable`. `parts` adalah subset `UIMessage.parts`: text, tool parts aman, source-document, dan data-citation. System prompt/raw provider transcript tidak dikirim ke browser. `references` memuat referensi eksplisit pesan user, untuk retry dengan konteks asal. `unavailable` memberi `parts: []`, `references: []` dan konteks tanpa body/rentang sensitif, sesuai kebijakan README. Metadata `runId` dan status dipasang saat DTO dikonversi menjadi `UIMessage`.
+`Message = {id,threadId,runId,sequence,role,parts,contexts,references,mentions,scopes,createdAt,availability}`. `runId` selalu ada; role `user | assistant`; `availability = available | unavailable`. `parts` adalah subset `UIMessage.parts`: text, data-attachment, data-image, data-citation, dan data-run-status; SSE juga dapat mengirim source-document. System prompt/raw provider transcript tidak dikirim ke browser. `references` memuat referensi eksplisit pesan user, untuk retry dengan konteks asal. `unavailable` memberi `parts: []`, `references: []` dan konteks tanpa body/rentang sensitif, sesuai kebijakan README. Metadata `runId` dan status dipasang saat DTO dikonversi menjadi `UIMessage`.
 
 `ContextReference` memakai discriminated union:
 
@@ -41,7 +41,7 @@ Thread yang dihapus tidak terlihat lagi. DELETE ulang pada tombstone milik pengg
 
 Rentang `[startCodePoint,endCodePoint)` terhadap teks normalisasi server, bukan offset HTML/UTF-16. `contentRevision` adalah hash SHA-256 teks normalisasi beserta versi normalizer. Normalizer M3 mengganti CRLF/CR menjadi LF lalu NFC, dengan hash `SHA256("chat-material-v1\n" + text)`. Server memastikan revision dan rentang untuk pembacaan baru masih cocok; mismatch `409 CONTEXT_STALE`. Pembukaan citation lama membaca snapshot, bukan memvalidasi revision terhadap materi terbaru. Page/section diambil dari server, tidak dipercaya dari client.
 
-`SendMessage` berisi `text` nonempty setelah trim, `pageContext?` berupa `{surface:"journey"}` atau `{surface:"node",nodeId}`, `references?` berupa array `ContextReference`, dan `retryOfRunId?`. Page context hanya metadata; node identifier diverifikasi tanpa memuat isi otomatis. Retry eksplisit terminal run membuat pesan/run baru dengan key baru, menyertakan `retryOfRunId`; tidak melanjutkan checkpoint lama. Target retry harus pada thread yang sama dan terminal selain `completed`.
+`SendMessage` berisi `text` setelah trim (boleh kosong jika ada lampiran), `attachmentIds?` (maksimal lima UUID berbeda), `mentions?` (maksimal delapan `{moduleId,nodeId?,label}`), `pageContext?` berupa `{surface:"journey"}` atau `{surface:"node",nodeId}`, `references?` berupa array `ContextReference`, dan `retryOfRunId?`. Page context hanya metadata; node identifier diverifikasi tanpa memuat isi otomatis. Retry eksplisit terminal run membuat pesan/run baru dengan key baru, menyertakan `retryOfRunId`; tidak melanjutkan checkpoint lama. Target retry harus pada thread yang sama dan terminal selain `completed`.
 
 ```json
 {
@@ -68,9 +68,29 @@ Contoh response send (UUID ilustratif):
 
 Daftar thread canonical diurutkan `(updatedAt DESC,id DESC)`, dengan precision millisecond dan index pengguna/module. Client melakukan deduplikasi berdasarkan ID setelah refetch ketika urutan berubah. Adapter route module lama mempertahankan `(createdAt DESC,id DESC)` dan scope cursor lama; pesan `(sequence DESC,id DESC)`, ditampilkan frontend dalam urutan kronologis. Limit default 20, maksimum 100; cursor opaque mengikat scope dan pasangan urutan terakhir. Halaman pertama history memuat pesan terbaru. Contoh response kosong: `{"data":[],"pageInfo":{"nextCursor":null,"hasNextPage":false}}`. Cursor invalid atau scope berbeda menghasilkan validation error baseline. Snapshot pagination tidak dijanjikan; pesan baru diambil dengan refetch halaman pertama dan deduplikasi ID.
 
+## Cakupan pesan
+
+Server menyimpan `{mentions,scopes}` dalam context kind `scope` secara atomik. Mention baru mengganti cakupan, tanpa mention mewarisi cakupan sebelumnya. Retry memakai scope run asal. Label hanya untuk tampilan; otorisasi memakai UUID. Snapshot citation baru menyimpan moduleId setiap sumber; snapshot lama memakai fallback module asal. Menghapus chip tidak menghapus history atau dependensi yang sudah tersimpan.
+
+## Lampiran dan gambar
+
+Endpoint `/api/v1/chat/attachments`: POST multipart `file`, GET `/:id` metadata, GET `/:id/download` URL privat 60 detik, DELETE `/:id` draft saja. Semuanya memeriksa owner; download `no-store`. Format: JPEG/PNG/WebP, PDF, DOCX/PPTX/XLSX, UTF-8 TXT/Markdown/CSV. Maksimal 5 file/pesan, 10 MiB/file dan 25 MiB total; history file yang dibawa model juga dibatasi 25 MiB. Draft kedaluwarsa setelah 24 jam. Row tombstone dipertahankan sampai cleanup objek berhasil.
+
+Migration `0021_pale_morbius` menyimpan metadata/ID/owner/binding dan cache OCR dalam `chat_attachments`. Base64 dan signed URL tidak disimpan dalam parts pesan. File memakai input native model (PDF dapat memakai URL privat); gambar memakai bytes. Batas token lokal menghitung teks saja: tidak ada estimasi token berbasis ukuran file. Provider menilai konteks file aktual; overflow menjadi `CONTEXT_LIMIT`. Cache OCR yang sudah tersedia masuk anggaran teks. Kolom `context_tokens` legacy dipertahankan untuk kompatibilitas, bernilai 0 pada upload baru.
+
+OCR fallback hanya sekali, pada penolakan format/modalitas/keterbacaan allowlist dengan HTTP 400/415/422 di call pertama sebelum stream/tool. Auth, rate limit, timeout, corrupt input dan context overflow tidak memicu OCR. Ekstraksi di-cache dan dilindungi lease/epoch/deadline/cancel; usage OCR dipisah dari token OpenAI. Office diberi catatan keterbatasan visual/spreadsheet.
+
+Tool `search_wikimedia_images` tersedia terlepas dari module asal. Maksimal satu invocation/run, dua query berbeda, tiga gambar diinspeksi per query dan satu gambar dipilih. Deadline tool 30 detik termasuk review/storage; review memakai budget model dan output yang sama. Review dibatasi 400 token dengan ruang untuk jawaban utama. Hanya referensi gambar terdaftar pada pesan yang dirender: bentuk canonical `chat-image-ID`; UUID tanpa prefix dinormalisasi hanya jika ID tersebut terdaftar. URL/ID asing tetap ditolak. Metadata `data-image` disimpan sebelum dipublikasikan melalui SSE/Redis. GET `/threads/:threadId/messages/:messageId/images/:imageId` memeriksa owner dan dependensi pesan lalu mengeluarkan URL storage baru. Caption/alt/atribusi tersedia setelah reload; kegagalan pencarian tetap memberi jawaban teks.
+
+## Rate policy dan shutdown
+
+Send baru memakai rolling window Redis serta slot PostgreSQL lintas instance; replay tidak memakai slot send baru tetapi masih tunduk baseline HTTP mutation. Read/history/download memakai baseline read; events memakai stream; CRUD/preview memakai mutation. Upload dan cancel memakai kategori terpisah, termasuk cancel lewat alias route module. Upload fail-closed saat Redis tidak tersedia; baseline HTTP dan cancel mempertahankan fail-open existing. Tidak ada kuota harian atau subscription.
+
+Saat shutdown, readiness menjadi 503, claim/admission lokal dihentikan, run aktif ditunggu hingga `CHAT_SHUTDOWN_DRAIN_MS`. Setelah itu abort `PROCESS_INTERRUPTED`, tunggu cancellation grace + 5 detik finalisasi. Claim yang selesai terlambat tidak memulai provider. Sisa pekerjaan dipulihkan lease/sweep instance sehat. `stop_grace_period` Compose 120 detik harus lebih besar daripada batas shutdown. Disconnect SSE tidak membatalkan run.
+
 ## Admission dan error
 
-Validasi server dilakukan sebelum admission: auth/scope, schema, batas input, referensi, idempotency, lalu konflik run dan admission budget. Kunci mengikuti scope baseline; hash mencakup teks, pageContext, references yang dinormalisasi, dan retryOfRunId. Transaksi menyimpan kunci, pesan user, run queued, dan sequence secara atomik. Replay key/payload sama mengembalikan response `202` awal beserta ID sama, sekalipun run kini terminal; baca status untuk keadaan terbaru. Replay tidak mengonsumsi slot run baru. Konflik payload memakai `IDEMPOTENCY_CONFLICT` baseline.
+Validasi server dilakukan sebelum admission: auth/scope, schema, batas input, referensi, idempotency, lalu konflik run dan admission budget. Kunci mengikuti scope baseline; hash mencakup teks, attachmentIds, mentions, pageContext, references yang dinormalisasi, dan retryOfRunId. Transaksi menyimpan kunci, pesan user, run queued, dan sequence secara atomik. Replay key/payload sama mengembalikan response `202` awal beserta ID sama, sekalipun run kini terminal; baca status untuk keadaan terbaru. Replay tidak mengonsumsi slot run baru. Konflik payload memakai `IDEMPOTENCY_CONFLICT` baseline.
 
 Lock row thread serta row pengguna saat admission; lock singleton slot global untuk batas lintas pengguna dengan urutan konsisten global → user → thread. Partial unique index melarang dua run aktif per thread. Dua send berbeda secara bersamaan: satu diterima; lainnya `409 CHAT_RUN_ACTIVE`, tanpa menyimpan pesan/kunci send yang ditolak. Client mempertahankan draft, mengambil run aktif, dan meminta kirim ulang setelah terminal. Tidak ada antrean pesan tersembunyi per thread.
 
@@ -199,13 +219,16 @@ Nilai berikut **default operasional awal**, bukan hasil benchmark. Validasi envi
 | `CHAT_CONTEXT_MAX_REFERENCES` | `5` | Menjaga fokus konteks eksplisit |
 | `CHAT_CONTEXT_MAX_CODE_POINTS` | `12000` | Total teks selected context tervalidasi |
 | `CHAT_PROMPT_MAX_TOKENS` | `16000` | Total system, history, selected context dan hasil tools per model call |
-| `CHAT_OUTPUT_MAX_TOKENS` | `2048` | Total output provider seluruh call run; sisa budget diterapkan pada call berikutnya |
+| `CHAT_OUTPUT_MAX_TOKENS` | `8192` | Total output provider seluruh call run; sisa budget diterapkan pada call berikutnya |
 | `CHAT_AGENT_MAX_STEPS` | `6` | Maksimum model invocation; bukan nilai recursionLimit LangGraph yang dihitung berbeda |
 | `CHAT_TOOL_MAX_CALLS` | `8` | Mencegah banyak tool paralel melewati batas langkah |
-| `CHAT_RUN_TIMEOUT_MS` | `120000` | Deadline dari admission, termasuk queued dan retry |
-| `CHAT_PROVIDER_TIMEOUT_MS` | `60000` | Dibatasi lagi sisa deadline run |
+| `CHAT_RUN_TIMEOUT_MS` | `240000` | Deadline dari admission, termasuk queued dan retry |
+| `CHAT_PROVIDER_TIMEOUT_MS` | `180000` | Dibatasi lagi sisa deadline run |
 | `CHAT_PROVIDER_MAX_RETRIES` | `1` | Hanya kegagalan transient sebelum output; budget run tetap berlaku |
 | `CHAT_RATE_LIMIT_PER_MINUTE` | `10` | Send baru per user, rolling window Redis; baseline HTTP limiter tetap berlaku |
+| `CHAT_UPLOAD_RATE_LIMIT_PER_MINUTE` | `10` | Upload per user pada window 60 detik; Redis gagal menolak upload sebelum buffering file |
+| `CHAT_CANCEL_RATE_LIMIT_PER_MINUTE` | `60` | Window cancel terpisah dari send/upload/mutation; Redis gagal tetap mengizinkan cancellation terotorisasi |
+| `CHAT_SHUTDOWN_DRAIN_MS` | `30000` | Waktu menyelesaikan run aktif sebelum abort; 0–90000 ms, ditambah cancellation grace dan 5 detik finalisasi harus <110 detik |
 | `CHAT_MAX_ACTIVE_RUNS_PER_USER` | `2` | Lintas thread dan instance |
 | `CHAT_MAX_ACTIVE_RUNS_GLOBAL` | `20` | Batas deployment termasuk queued/cancelling |
 | `CHAT_MAX_EXECUTING_RUNS_PER_INSTANCE` | `4` | Melindungi proses; global admission tetap otoritatif |

@@ -1,9 +1,6 @@
 {
   "environment": "Real React components and HTTP API on local scratch DB; Clerk hook/guard fixtures; configured real provider",
-  "viewports": [
-    "1440x900",
-    "390x844"
-  ],
+  "viewports": ["1440x900", "390x844"],
   "checks": [
     {
       "name": "Chat baru mengirim pesan ke provider dan berpindah ke detail thread",
@@ -70,9 +67,5 @@
       "pass": true
     }
   ],
-  "notRun": [
-    "Real Clerk authentication",
-    "Physical mobile keyboard",
-    "Production deployment/proxy"
-  ]
+  "notRun": ["Real Clerk authentication", "Physical mobile keyboard", "Production deployment/proxy"]
 }

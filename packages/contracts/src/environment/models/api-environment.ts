@@ -24,6 +24,9 @@ export const apiEnvSchema = infrastructureEnvSchema
     CHAT_AGENT_MAX_STEPS: z.coerce.number().int().positive().default(6),
     CHAT_TOOL_MAX_CALLS: z.coerce.number().int().positive().default(8),
     CHAT_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().positive().default(10),
+    CHAT_UPLOAD_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().positive().default(10),
+    CHAT_CANCEL_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().positive().default(60),
+    CHAT_SHUTDOWN_DRAIN_MS: z.coerce.number().int().min(0).max(90000).default(30000),
     CHAT_MAX_ACTIVE_RUNS_PER_USER: z.coerce.number().int().positive().default(2),
     CHAT_MAX_ACTIVE_RUNS_GLOBAL: z.coerce.number().int().positive().default(20),
     CHAT_CANCEL_POLL_MS: z.coerce.number().int().positive().default(1000),
@@ -51,6 +54,13 @@ export const apiEnvSchema = infrastructureEnvSchema
     RATE_LIMIT_STREAM_MAX: z.coerce.number().int().positive().default(10),
   })
   .superRefine((value, context) => {
+    if (value.CHAT_SHUTDOWN_DRAIN_MS + value.CHAT_CANCEL_GRACE_MS + 5000 >= 110000)
+      context.addIssue({
+        code: "custom",
+        path: ["CHAT_SHUTDOWN_DRAIN_MS"],
+        message:
+          "Drain plus cancellation grace and finalization must fit below 110 seconds (container stop grace: 120 seconds).",
+      });
     if (value.CHAT_HEARTBEAT_MS >= value.CHAT_LEASE_MS / 3)
       context.addIssue({
         code: "custom",

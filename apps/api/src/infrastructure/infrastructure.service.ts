@@ -7,9 +7,11 @@ import { API_ENV } from "../config.js";
 
 @Injectable()
 export class InfrastructureService implements OnApplicationShutdown {
+  draining = false;
   readonly database: DatabaseClient;
   readonly storage: S3StorageService;
   private redis?: Redis;
+  private connectingRedis?: Promise<Redis>;
 
   constructor(@Inject(API_ENV) private readonly environment: ApiEnvironment) {
     this.database = new DatabaseClient(environment.DATABASE_URL);
@@ -28,21 +30,20 @@ export class InfrastructureService implements OnApplicationShutdown {
   }
 
   async checkRedis(): Promise<void> {
-    const redis = this.ensureRedis();
-    if (redis.status === "wait") {
-      await redis.connect();
-    }
+    const redis = await this.connectedRedis();
     await redis.ping();
   }
 
   async consumeRateLimit(
     userId: string,
-    category: "read" | "mutation" | "expensive" | "stream",
-  ): Promise<{ allowed: boolean; retryAfterSeconds: number }> {
+    category: "read" | "mutation" | "expensive" | "stream" | "chatUpload" | "chatCancel",
+  ): Promise<{ allowed: boolean; retryAfterSeconds: number; unavailable?: boolean }> {
     try {
-      const redis = this.ensureRedis();
-      if (redis.status === "wait") await redis.connect();
-      const windowSeconds = this.environment.RATE_LIMIT_WINDOW_SECONDS;
+      const redis = await this.connectedRedis();
+      const windowSeconds =
+        category === "chatUpload" || category === "chatCancel"
+          ? 60
+          : this.environment.RATE_LIMIT_WINDOW_SECONDS;
       const windowMilliseconds = windowSeconds * 1_000;
       const window = Math.floor(Date.now() / windowMilliseconds);
       const limit = {
@@ -50,6 +51,8 @@ export class InfrastructureService implements OnApplicationShutdown {
         mutation: this.environment.RATE_LIMIT_MUTATION_MAX,
         expensive: this.environment.RATE_LIMIT_EXPENSIVE_MAX,
         stream: this.environment.RATE_LIMIT_STREAM_MAX,
+        chatUpload: this.environment.CHAT_UPLOAD_RATE_LIMIT_PER_MINUTE,
+        chatCancel: this.environment.CHAT_CANCEL_RATE_LIMIT_PER_MINUTE,
       }[category];
       const result = await redis.eval(
         "local count = redis.call('INCR', KEYS[1]); if count == 1 then redis.call('EXPIRE', KEYS[1], ARGV[1]) end; return count",
@@ -70,12 +73,17 @@ export class InfrastructureService implements OnApplicationShutdown {
       console.warn(
         JSON.stringify({
           level: "warn",
-          event: "api.rate_limit_fail_open",
+          event:
+            category === "chatUpload" ? "api.rate_limit_unavailable" : "api.rate_limit_fail_open",
           category,
           errorType: error instanceof Error ? error.name : "UnknownError",
         }),
       );
-      return { allowed: true, retryAfterSeconds: 0 };
+      return {
+        allowed: category !== "chatUpload",
+        retryAfterSeconds: 0,
+        ...(category === "chatUpload" ? { unavailable: true } : {}),
+      };
     }
   }
 
@@ -96,12 +104,27 @@ export class InfrastructureService implements OnApplicationShutdown {
     console.log(JSON.stringify({ level: "log", event: "api.shutdown_complete" }));
   }
 
+  private async connectedRedis(): Promise<Redis> {
+    if (this.connectingRedis) return this.connectingRedis;
+    const redis = this.ensureRedis();
+    if (redis.status === "ready") return redis;
+    this.connectingRedis = redis
+      .connect()
+      .then(() => redis)
+      .finally(() => {
+        this.connectingRedis = undefined;
+      });
+    return this.connectingRedis;
+  }
+
   private ensureRedis(): Redis {
     if (this.redis && this.redis.status !== "end") return this.redis;
     this.redis = new Redis(this.environment.REDIS_URL, {
       lazyConnect: true,
       enableOfflineQueue: false,
       maxRetriesPerRequest: 1,
+      connectTimeout: 1000,
+      commandTimeout: 1000,
       retryStrategy: () => null,
     });
     this.redis.on("error", () => undefined);

@@ -66,9 +66,16 @@ function remarkChatCitations({ ids }: { ids: string[] }) {
 }
 
 function remarkRegisteredImages({ ids }: { ids: string[] }) {
+  const registered = new Set(ids);
   const allowed = new Set(ids.map((id) => `chat-image-${id}`));
   return function visit(node: MarkdownNode): void {
     if (!node.children) return;
+    for (const child of node.children) {
+      // Models sometimes omit the prefix. Resolve only IDs registered on this
+      // message; never turn an arbitrary URL or another message's ID into an image.
+      if (child.type === "image" && child.url && registered.has(child.url))
+        child.url = `chat-image-${child.url}`;
+    }
     node.children = node.children.filter(
       (child) =>
         child.type !== "imageReference" && (child.type !== "image" || allowed.has(child.url ?? "")),

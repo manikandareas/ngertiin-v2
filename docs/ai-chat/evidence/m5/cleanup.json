@@ -1,0 +1,8 @@
+{
+  "date": "2026-09-14T05:26:27.028Z",
+  "fixtureAttachmentKeysRemoved": 13,
+  "fixtureImageKeysRemoved": 3,
+  "scope": "only fixture users in disposable ngertiin_m5_verify; original objects and database preserved",
+  "disposableDatabaseRemoved": true,
+  "disposableHarnessesRemoved": true
+}
