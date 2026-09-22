@@ -31,12 +31,31 @@
   "backend": {
     "semaphore_task": 6,
     "github_run": 35716785702,
-    "result": "running"
+    "result": "success"
   },
   "all": {
     "result": "not run live; execution order tested locally; redundant deployment skipped at operator request"
   },
   "authenticated_smoke": "not run: browser connection unavailable",
   "unit_tests": 14,
-  "semaphore_restore": "passed: SQLite, administrator login, encrypted task secret and unresolved-release gate"
+  "semaphore_restore": "passed: SQLite, administrator login, encrypted task secret and unresolved-release gate",
+  "enabled_apps": [
+    "www",
+    "web",
+    "backend",
+    "all"
+  ],
+  "semaphore_source_commit": "ad97f2b",
+  "backup_deployment": {
+    "id": "FNPKMGq6lsPgHPm02A5xl",
+    "status": "done"
+  },
+  "migration_deployment": {
+    "id": "p7cR-daVu7alIJe9ykskM",
+    "status": "done"
+  },
+  "backend_deployment": {
+    "id": "CRtsZqKKWS0Q6Jx4pwKRh",
+    "status": "done"
+  }
 }

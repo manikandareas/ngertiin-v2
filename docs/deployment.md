@@ -152,7 +152,7 @@ Dashboard: `https://dokploy.aqshara.com`. Versi yang diamati saat setup: **0.29.
 | --- | --- |
 | Project / environment | `ngertiin` / `production` |
 | Backend Compose | `ngertiin-backend`; app name `ngertiin-ngertiinbackend-wmkjjx` |
-| Source backend | `https://github.com/manikandareas/ngertiin-v2.git`, provider Git, branch `main`, path `./compose.production.yml` |
+| Source backend | Sejak aktivasi Semaphore: raw Compose dari SHA rilis; sumber file tetap `compose.production.yml` di repository |
 | Auto-deploy backend | Nonaktif; deploy dilakukan setelah migrasi siap |
 | PostgreSQL | `ngertiin-postgres`, image `postgres:17-alpine`, database/user `ngertiin` |
 | Host PostgreSQL internal | `ngertiin-ngertiinpostgres-ton2ja:5432` |
@@ -420,7 +420,7 @@ RELEASE_TAG=SHA_CANDIDATE docker compose --env-file .env.production -f compose.p
 
 Jalankan hanya satu metode migrasi pada satu waktu. Profile `release` sengaja tidak aktif pada restart/deploy normal. Laptop tidak dapat memakai hostname database internal VPS tanpa akses jaringan yang sesuai.
 
-Setelah migrasi sukses, ubah `RELEASE_TAG` di Environment backend Dokploy ke SHA kandidat dan deploy. Source Compose di Dokploy masih branch `main`; pastikan perubahan Compose pada branch itu cocok dengan image release, atau gunakan ref release yang dipin. Tag image yang immutable tidak otomatis mem-pin file Compose.
+Pada alur Semaphore, setelah migrasi sukses koordinator memasang raw Compose dari SHA kandidat, mengubah hanya `RELEASE_TAG`, lalu deploy. Untuk recovery manual, gunakan Compose dan SHA yang berpasangan dari jurnal rilis; jangan kembali mengambil branch `main` yang bergerak. Tag image yang immutable tidak otomatis mem-pin file Compose.
 
 Untuk perubahan schema yang tidak kompatibel dengan aplikasi lama, jadwalkan maintenance: hentikan penerimaan job baru, drain pekerjaan aktif, stop API/worker, lakukan migrasi, lalu deploy versi baru. Jangan mengandalkan rollback image untuk memperbaiki schema yang sudah berubah.
 
@@ -508,7 +508,7 @@ Mode trust pada contoh hanya untuk container uji tanpa network dan tanpa port pu
 | Token CI | Perbarui GitHub environment secret, jalankan workflow untuk verifikasi sebelum mencabut token lama |
 | Domain aplikasi | Selaraskan Wrangler, env frontend, CORS API/R2, Clerk/OAuth, DNS, dan rule hostname Cloudflare |
 
-**Rollback backend:** set `RELEASE_TAG` ke image sebelumnya lalu redeploy, hanya jika schema dan payload job masih kompatibel. Migrasi schema tidak otomatis di-rollback.
+**Rollback backend:** pulihkan raw Compose sebelumnya dan set `RELEASE_TAG` ke SHA sebelumnya dari jurnal, lalu redeploy, hanya jika schema dan payload job masih kompatibel. Migrasi schema tidak otomatis di-rollback.
 
 **Rollback frontend:** gunakan artifact `dist` dari run sebelumnya bersama konfigurasi Wrangler commit yang sesuai. Ekstrak artifact agar `dist/index.html` berada tepat di direktori yang diharapkan, lalu `bun run deploy` dari app terkait. Artifact CI tersedia 30 hari. Rebuild source lama dengan environment baru dapat menghasilkan perilaku berbeda dari release lama; catat env publik dan version ID saat rilis.
 
