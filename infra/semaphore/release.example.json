@@ -17,5 +17,7 @@
   "www_url": "https://ngertiin.whoismanik.dev",
   "state_dir": "/var/lib/semaphore/releases",
   "activation_verified": false,
-  "enabled_apps": []
+  "enabled_apps": [],
+  "project_id": "OQJrui6Kd_g2M17RSFL6b",
+  "environment_id": "SvdWz5Bb4YwTKW0gJmAAG"
 }

@@ -4,7 +4,11 @@ Semaphore Community **2.19.12** coordinates GitHub Actions and Dokploy at
 <https://deploy.whoismanik.dev>. The application build stays on GitHub runners.
 One `Ngerti.in Production` project has Deploy Backend, Deploy Web, Deploy WWW,
 and Deploy All. `release_ref` defaults to `main`; the coordinator resolves it
-once to a full SHA. Git pushes do not deploy production.
+once to a full SHA. Git pushes do not deploy production. Installation IDs and
+acceptance evidence are recorded in [installation.json](installation.json).
+The installed controller currently uses branch `ops/semaphore-ui`; keep that
+branch available until `workflow_ref` is intentionally moved to another reviewed
+ref. Application `release_ref` still defaults to `main`.
 
 ## Installation
 
@@ -16,7 +20,7 @@ published database port. Dokploy provides Traefik routing to service `semaphore`
 port 3000, HTTPS/Let's Encrypt, hostname `deploy.whoismanik.dev`.
 
 1. Create a **separate** Dokploy docker-compose resource in the production
-   environment. Disable auto-deploy. Set its command to `--force-recreate` so
+   environment. Disable auto-deploy. Set its command to `compose -p <appName> -f docker-compose.yml up -d --force-recreate --remove-orphans` so
    changes to mounted configuration take effect on deployment.
 2. Copy `release.example.json` to a private `release.json`, fill in the release
    backup ID, and keep `activation_verified=false` until acceptance is complete.
@@ -108,7 +112,8 @@ restart can leave remote work running. Every failure retains `active.json` and
 5. Only when remote operations are terminal and application state is understood,
    record operator, timestamp, observed operation IDs/results and recovery in the
    journal. Under the shared lock, archive it as `<release_id>.reconciled.json`.
-   Keep the record; do not erase history. Frontend-only can then repair a failed
+   Keep the record; do not erase history. Record explicit evidence for every intent
+   without a returned operation ID, even if a later API call reports no running job. Frontend-only can then repair a failed
    frontend release.
 
 ## Semaphore backup and restore
@@ -135,18 +140,24 @@ with the primary instance.
 
 ```sh
 python3 -m unittest discover -s infra/semaphore/tests -v
+python3 infra/semaphore/tests/semaphore-restore.py
 bash infra/semaphore/tests/disposable.sh
+bash infra/semaphore/tests/application-migration.sh
 python3 infra/semaphore/render-compose.py --config /private/release.json > /tmp/semaphore.yml
 # Set dummy setup variables, then docker compose -f /tmp/semaphore.yml config --quiet
 ```
 
 The disposable test uses a local pgvector image, an isolated network, tmpfs storage,
-PostgreSQL custom backup/restore, and successful/failed SQL migrations. It does not
-claim a provider-backed application E2E test. Verify live resource IDs, Dokploy
+PostgreSQL custom backup/restore, and successful/failed SQL migrations. The application-migration test also runs all repository Drizzle migrations and
+restores their complete schema into a second disposable database. Neither test
+claims a provider-backed application E2E test. Verify live resource IDs, Dokploy
 version/API, PostgreSQL image and pgvector, VPS capacity and backup destination
 before activation. Publish controller workflows before enabling task execution.
 Validate in order: read-only preflight, WWW, Web, Backend, then All using an
-explicit candidate. Finally smoke-test login, a worker job, and chat/SSE. HTTP 200
+explicit candidate when an additional complete deployment is warranted. The
+operator requested no redundant live verification during this installation, so
+All uses the locally tested sequence without repeating the successful component
+deployments. Authenticated smoke tests cover login, a worker job, and chat/SSE. HTTP 200
 alone does not certify those authenticated flows.
 
 References: [Semaphore Docker](https://semaphoreui.com/docs/admin-guide/installation/docker),

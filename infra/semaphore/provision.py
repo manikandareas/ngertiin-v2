@@ -13,7 +13,8 @@ def provision():
     marker = Path(os.getenv('PROVISION_MARKER', '/var/lib/semaphore/provisioned.json'))
     if marker.exists():
         return
-    opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
+    cookies = http.cookiejar.CookieJar()
+    opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cookies))
 
     def call(path, data=None, method=None):
         body = None if data is None else json.dumps(data).encode()
@@ -30,6 +31,11 @@ def provision():
     for _ in range(60):
         try:
             call('/auth/login', {'auth': 'admin', 'password': os.environ['SEMAPHORE_ADMIN_PASSWORD']})
+            # WEB_ROOT is HTTPS, so the session cookie is Secure. Only this
+            # in-container loopback client may send it over local HTTP.
+            if os.getenv('SEMAPHORE_URL', 'http://127.0.0.1:3000') == 'http://127.0.0.1:3000':
+                for cookie in cookies:
+                    cookie.secure = False
             break
         except urllib.error.URLError:
             time.sleep(2)

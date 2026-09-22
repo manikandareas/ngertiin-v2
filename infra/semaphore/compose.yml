@@ -25,6 +25,8 @@ services:
         target: /opt/ngertiin/release.py
       - source: bootstrap
         target: /opt/ngertiin/bootstrap.py
+      - source: snapshot
+        target: /opt/ngertiin/snapshot.py
       - source: provision
         target: /opt/ngertiin/provision.py
       - source: release-config
@@ -58,3 +60,5 @@ configs:
     file: ./release.example.json
   provision:
     file: ./provision.py
+  snapshot:
+    file: ./snapshot.py

@@ -8,7 +8,7 @@ parser.add_argument('--config', default=str(Path(__file__).with_name('release.ex
 args = parser.parse_args()
 root = Path(__file__).parent
 text = (root / 'compose.yml').read_text()
-for name, path in [('release.py', root / 'release.py'), ('provision.py', root / 'provision.py'), ('bootstrap.py', root / 'bootstrap.py'), ('release.example.json', Path(args.config))]:
+for name, path in [('release.py', root / 'release.py'), ('provision.py', root / 'provision.py'), ('snapshot.py', root / 'snapshot.py'), ('bootstrap.py', root / 'bootstrap.py'), ('release.example.json', Path(args.config))]:
     content = ''.join('      ' + line + '\n' for line in path.read_text().replace('$', '$$').splitlines())
     text = text.replace('    file: ./' + name, '    content: |\n' + content.rstrip('\n'))
 print(text, end='')

@@ -209,7 +209,9 @@ class Dokploy:
         return backend, migration
 
     def deploy(self, resource, title, journal):
-        op = journal.intent(title, resource=resource)
+        url = self.base + "/dashboard/project/" + self.config["project_id"] + "/environment/" + self.config["environment_id"] + "/services/compose/" + resource
+        op = journal.intent(title, resource=resource, url=url)
+        print(url, flush=True)
         self.call("compose.deploy", {"composeId": resource, "title": title, "description": journal.state["sha"]})
         journal.record(op, status="dispatched")
 
@@ -325,10 +327,11 @@ class Coordinator:
         # Dedicated one-shot Compose; keep database env, resource identity and network.
         migration_compose = "services:\n  migrate:\n    image: " + image + "\n    restart: 'no'\n    environment:\n      NODE_ENV: production\n      DATABASE_URL: ${DATABASE_URL:?Set database URL}\n    networks: [backend]\nnetworks:\n  backend:\n    external: true\n    name: " + cfg["network"] + "\n"
         op = j.intent("migration-source", previous_ids=old_ids, image=image)
-        self.dk.call("compose.update", {"composeId": cfg["migration_id"], "sourceType": "raw", "composeFile": migration_compose, "command": "--force-recreate"})
+        self.dk.call("compose.update", {"composeId": cfg["migration_id"], "sourceType": "raw", "composeFile": migration_compose, "command": "compose -p " + cfg["migration_project"] + " -f docker-compose.yml up -d --force-recreate --remove-orphans"})
         j.record(op, status="done")
+        migration_started = time.monotonic()
         self.dk.deploy(cfg["migration_id"], "migration-" + j.state["release_id"], j)
-        result = wait(lambda: migration_done(inspect(cfg, "migration"), image, old_ids), 1800)
+        result = wait(lambda: migration_done(inspect(cfg, "migration"), image, old_ids), max(0, 1800 - (time.monotonic() - migration_started)))
         j.save(migration_container=result["id"])
         op = j.intent("backend-source")
         current = self.dk.compose(cfg["backend_id"])

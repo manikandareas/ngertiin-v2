@@ -6,7 +6,7 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from release import Coordinator, GitHub, Journal, ReleaseError, healthy, migration_done, replace_tag, wait
@@ -124,6 +124,50 @@ class ReleaseTests(unittest.TestCase):
                 gh.run('frontend-deploy.yml', 'www', j)
             self.assertEqual(j.state['operations'][0]['run_id'], 12)
             self.assertNotIn('secret', logs.getvalue())
+
+    def test_github_completed_failure_and_failed_job_are_rejected(self):
+        for conclusion, job_conclusion in [('failure', 'success'), ('success', 'skipped')]:
+            with self.subTest(conclusion=conclusion, job=job_conclusion), tempfile.TemporaryDirectory() as directory, patch.dict('os.environ', {'GITHUB_TOKEN': 'secret'}):
+                j = Journal(directory)
+                j.begin('web', SHA)
+                gh = GitHub({'repository': 'owner/repo', 'workflow_ref': 'main'})
+                title = f"frontend web release={j.state['release_id']} sha={SHA}"
+                def call(path, data=None):
+                    if path.endswith('/dispatches'): return None
+                    if '/jobs?' in path:
+                        return {'total_count': 1, 'jobs': [{'name': 'deploy', 'conclusion': job_conclusion}]}
+                    return {'workflow_runs': [{'id': 1, 'display_title': title, 'status': 'completed',
+                                              'conclusion': conclusion, 'html_url': 'https://github.com/run/1'}]}
+                with patch.object(gh, 'call', call), contextlib.redirect_stdout(io.StringIO()):
+                    with self.assertRaises(ReleaseError): gh.run('frontend-deploy.yml', 'web', j)
+
+    def test_real_backend_order_stops_before_backend_mutation(self):
+        for failure in ['build', 'backup', 'migration']:
+            with self.subTest(failure=failure), tempfile.TemporaryDirectory() as directory:
+                cfg = {'backend_id': 'backend', 'migration_id': 'migration', 'image_prefix': 'image',
+                       'migration_project': 'migration-project', 'network': 'network'}
+                j = Journal(directory)
+                j.begin('backend', SHA)
+                gh, dk = Mock(), Mock()
+                gh.file.return_value = 'services: {}'
+                dk.preflight.return_value = ({'env': 'RELEASE_TAG=' + 'b' * 40,
+                                              'composeFile': 'old compose', 'sourceType': 'raw'}, {})
+                if failure == 'build':
+                    gh.run.side_effect = ReleaseError('build failed')
+                if failure == 'backup':
+                    dk.backup.side_effect = ReleaseError('backup failed')
+                rows = [[], [{'id': 'candidate', 'image': 'image-migrate:' + SHA,
+                              'restarts': 0, 'status': 'exited', 'exit_code': 1}]]
+                with patch('release.inspect', side_effect=rows), contextlib.redirect_stdout(io.StringIO()):
+                    with self.assertRaises(ReleaseError):
+                        Coordinator(cfg, gh, dk, j).backend()
+                backend_writes = [call for call in dk.call.call_args_list
+                                  if len(call.args) > 1 and call.args[1].get('composeId') == 'backend']
+                self.assertEqual(backend_writes, [])
+                if failure == 'build':
+                    dk.backup.assert_not_called()
+                if failure in ['build', 'backup']:
+                    dk.deploy.assert_not_called()
 
     def test_disabled_activation_has_no_remote_calls(self):
         with tempfile.TemporaryDirectory() as directory:

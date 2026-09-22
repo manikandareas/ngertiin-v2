@@ -1,0 +1,42 @@
+{
+  "checked_at": "2026-09-22",
+  "url": "https://deploy.whoismanik.dev",
+  "image": "semaphoreui/semaphore:v2.19.12@sha256:3996804607ebb63690528185bb9adc3507ee896851098e4453975f2ce7f8b435",
+  "dokploy_version": "v0.29.11",
+  "semaphore_compose_id": "OholN00VLvBA2dcu2dDss",
+  "semaphore_app_name": "ngertiin-semaphore-pg1y8f",
+  "project_id": 1,
+  "templates": {
+    "backend": 1,
+    "web": 2,
+    "www": 3,
+    "all": 4
+  },
+  "backup_id": "LT2E9_RFVU6LtivNNY1aE",
+  "controller_ref": "ops/semaphore-ui",
+  "candidate_sha": "9a77223e10951b05971e5d3e32109ba886607011",
+  "pgvector": "0.8.2",
+  "disposable_restored_tables": 35,
+  "disposable_restored_migrations": 22,
+  "www": {
+    "semaphore_task": 4,
+    "github_run": 35716134752,
+    "result": "success"
+  },
+  "web": {
+    "semaphore_task": 5,
+    "github_run": 35716466382,
+    "result": "success"
+  },
+  "backend": {
+    "semaphore_task": 6,
+    "github_run": 35716785702,
+    "result": "running"
+  },
+  "all": {
+    "result": "not run live; execution order tested locally; redundant deployment skipped at operator request"
+  },
+  "authenticated_smoke": "not run: browser connection unavailable",
+  "unit_tests": 14,
+  "semaphore_restore": "passed: SQLite, administrator login, encrypted task secret and unresolved-release gate"
+}
