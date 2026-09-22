@@ -1,6 +1,5 @@
 import { uuidSchema } from "@ngertiin/contracts/api";
 import { useQuery } from "@tanstack/react-query";
-import { MessageSquarePlus } from "lucide-react";
 import { type ReactNode, useMemo } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { AppShell } from "../components/app-shell";
@@ -89,16 +88,6 @@ function ConnectedChatDetailPage() {
             {thread?.title ?? (unavailable ? "Percakapan tidak tersedia" : "Memuat percakapan…")}
           </h1>
           <div className="pointer-events-auto flex shrink-0 items-center gap-2 sm:gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-9 shrink-0 rounded-lg text-muted-foreground"
-              asChild
-            >
-              <Link to="/chat" aria-label="Percakapan baru" title="Percakapan baru">
-                <MessageSquarePlus className="size-4" />
-              </Link>
-            </Button>
             {thread ? (
               <ChatThreadActions
                 thread={thread}
