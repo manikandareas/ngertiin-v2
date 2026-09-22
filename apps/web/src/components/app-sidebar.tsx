@@ -15,7 +15,13 @@ import { SidebarContent } from "./sidebar-content";
 
 const focus = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
 
-export function ConnectedAppSidebar({ unsavedChanges = false }: { unsavedChanges?: boolean }) {
+export function ConnectedAppSidebar({
+  unsavedChanges = false,
+  hideMobileHeader = false,
+}: {
+  unsavedChanges?: boolean;
+  hideMobileHeader?: boolean;
+}) {
   useUsageSync();
   const client = useQueryClient();
   const user = useCurrentUser();
@@ -38,6 +44,7 @@ export function ConnectedAppSidebar({ unsavedChanges = false }: { unsavedChanges
           pageContext: undefined,
         })
       }
+      hideMobileHeader={hideMobileHeader}
     />
   );
 }
@@ -46,12 +53,14 @@ type AppSidebarProps = {
   user?: Omit<NavUserProps, "collapsed" | "side">;
   usageBanner?: ReactNode;
   onNewChat?: () => void;
+  hideMobileHeader?: boolean;
 };
 
 export function AppSidebar({
   user = { name: "Akun belajar" },
   usageBanner,
   onNewChat,
+  hideMobileHeader = false,
 }: AppSidebarProps) {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
@@ -67,11 +76,16 @@ export function AppSidebar({
     desktop.addEventListener("change", closeOnDesktop);
     return () => desktop.removeEventListener("change", closeOnDesktop);
   }, []);
+  useEffect(() => {
+    const openMenu = () => setMenuOpen(true);
+    window.addEventListener("ngertiin:open-mobile-sidebar", openMenu);
+    return () => window.removeEventListener("ngertiin:open-mobile-sidebar", openMenu);
+  }, []);
   return (
     <>
       <aside
         aria-label="Sidebar"
-        className={`sticky top-0 hidden h-dvh shrink-0 flex-col overflow-hidden border-r bg-sidebar text-sidebar-foreground xl:flex ${collapsed ? "w-16" : "w-64"}`}
+        className={`sticky top-0 hidden h-dvh shrink-0 flex-col overflow-hidden border-r bg-sidebar text-sidebar-foreground xl:flex ${collapsed ? "w-16" : "w-[18rem]"}`}
       >
         <div
           className={`flex shrink-0 items-center gap-2 py-3 ${collapsed ? "flex-col px-2" : "px-3"}`}
@@ -96,7 +110,9 @@ export function AppSidebar({
         </div>
         <SidebarContent collapsed={collapsed} usageBanner={usageBanner} onNewChat={onNewChat} />
       </aside>
-      <header className="flex shrink-0 items-center justify-between gap-2 border-b bg-background px-3 py-2 xl:hidden">
+      <header
+        className={`${hideMobileHeader ? "hidden" : "flex"} shrink-0 items-center justify-between gap-2 border-b bg-background px-3 py-2 xl:hidden`}
+      >
         <div className="min-w-0 max-w-64 flex-1">
           <NavUser {...user} side="bottom" />
         </div>
@@ -114,7 +130,7 @@ export function AppSidebar({
             <Dialog.Overlay className="fixed inset-0 z-50 bg-black/40" />
             <Dialog.Content
               aria-describedby={undefined}
-              className="fixed inset-y-0 left-0 z-50 flex w-80 max-w-[calc(100%-2rem)] flex-col overflow-hidden border-r bg-sidebar text-sidebar-foreground shadow-xl data-[state=open]:animate-in data-[state=open]:slide-in-from-left duration-200 motion-reduce:animate-none"
+              className="fixed inset-y-0 left-0 z-50 flex w-full flex-col overflow-hidden border-r bg-sidebar text-sidebar-foreground shadow-xl data-[state=open]:animate-in data-[state=open]:slide-in-from-left duration-200 motion-reduce:animate-none"
             >
               <Dialog.Title className="sr-only">Navigasi ngerti.in</Dialog.Title>
               <div className="flex shrink-0 items-center gap-2 px-3 py-3">

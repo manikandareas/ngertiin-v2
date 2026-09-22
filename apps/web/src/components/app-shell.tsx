@@ -8,20 +8,25 @@ export function AppShell({
   rightSidebar,
   workspace = false,
   unsavedChanges = false,
+  hideMobileSidebarHeader = false,
 }: {
   children: ReactNode;
   sidebar?: ReactNode;
   rightSidebar?: ReactNode;
   workspace?: boolean;
   unsavedChanges?: boolean;
+  hideMobileSidebarHeader?: boolean;
 }) {
   return (
     <div className="fixed inset-0 flex h-dvh flex-col overflow-hidden bg-background text-foreground xl:flex-row">
       {sidebar ??
         (isClerkConfigured ? (
-          <ConnectedAppSidebar unsavedChanges={unsavedChanges} />
+          <ConnectedAppSidebar
+            unsavedChanges={unsavedChanges}
+            hideMobileHeader={hideMobileSidebarHeader}
+          />
         ) : (
-          <AppSidebar />
+          <AppSidebar hideMobileHeader={hideMobileSidebarHeader} />
         ))}
       <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
         <main
