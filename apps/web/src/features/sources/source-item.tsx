@@ -57,6 +57,7 @@ export function SourceItem({ source, onPreview, onAction }: SourceItemProps) {
                 </DropdownMenu.Trigger>
                 <DropdownMenu.Portal>
                   <DropdownMenu.Content
+                    collisionPadding={12}
                     className={menuContentClassName}
                     align="end"
                     onCloseAutoFocus={closeMenu}
@@ -70,7 +71,11 @@ export function SourceItem({ source, onPreview, onAction }: SourceItemProps) {
         </article>
       </ContextMenu.Trigger>
       <ContextMenu.Portal>
-        <ContextMenu.Content className={menuContentClassName} onCloseAutoFocus={closeMenu}>
+        <ContextMenu.Content
+          className={menuContentClassName}
+          collisionPadding={12}
+          onCloseAutoFocus={closeMenu}
+        >
           <SourceActionItems menu="context" source={source} onAction={openAction} />
         </ContextMenu.Content>
       </ContextMenu.Portal>

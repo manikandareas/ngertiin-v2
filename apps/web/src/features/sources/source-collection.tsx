@@ -86,6 +86,7 @@ export function SourceCollection() {
             </DropdownMenu.Trigger>
             <DropdownMenu.Portal>
               <DropdownMenu.Content
+                collisionPadding={12}
                 className={menuContentClassName}
                 align="end"
                 onCloseAutoFocus={(event) => {
@@ -156,6 +157,7 @@ export function SourceCollection() {
             </ContextMenu.Trigger>
             <ContextMenu.Portal>
               <ContextMenu.Content
+                collisionPadding={12}
                 className={menuContentClassName}
                 onCloseAutoFocus={(event) => {
                   if (add) event.preventDefault();

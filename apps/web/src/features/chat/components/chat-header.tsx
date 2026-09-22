@@ -52,50 +52,53 @@ export function ChatHeader({ chat, title, busy, onCreate, onFullScreen }: ChatHe
           <Popover.Content
             align="start"
             sideOffset={8}
-            className={`${menuContentClassName} w-80`}
+            collisionPadding={12}
+            className={`${menuContentClassName} flex w-80 flex-col`}
             aria-label="Riwayat percakapan"
           >
-            <p className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            <p className="shrink-0 px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
               Percakapan di modul ini
             </p>
-            {chat.list.map((thread) => (
-              <div
-                key={thread.id}
-                className={`flex items-center rounded-lg ${thread.id === chat.selectedId ? "bg-accent" : ""}`}
-              >
-                <button
-                  type="button"
-                  className="min-w-0 flex-1 truncate p-3 text-left text-xs"
-                  onClick={() => {
-                    chat.select(thread.id);
-                    setListOpen(false);
-                  }}
+            <div className="min-h-0 overflow-y-auto overscroll-contain">
+              {chat.list.map((thread) => (
+                <div
+                  key={thread.id}
+                  className={`flex items-center rounded-lg ${thread.id === chat.selectedId ? "bg-accent" : ""}`}
                 >
-                  {thread.title}
-                </button>
-                <ChatThreadActions
-                  thread={thread}
-                  api={chat.api}
-                  root={chat.root}
-                  onDeleted={() => {
-                    if (thread.id === chat.selectedId) chat.select(null);
-                  }}
-                />
-              </div>
-            ))}
-            {!chat.list.length ? (
-              <p className="p-3 text-xs text-muted-foreground">Belum ada percakapan.</p>
-            ) : null}
-            {chat.threads.hasNextPage ? (
-              <Button
-                size="sm"
-                variant="link"
-                onClick={() => void chat.threads.fetchNextPage()}
-                disabled={chat.threads.isFetchingNextPage}
-              >
-                Muat percakapan lainnya
-              </Button>
-            ) : null}
+                  <button
+                    type="button"
+                    className="min-w-0 flex-1 truncate p-3 text-left text-xs"
+                    onClick={() => {
+                      chat.select(thread.id);
+                      setListOpen(false);
+                    }}
+                  >
+                    {thread.title}
+                  </button>
+                  <ChatThreadActions
+                    thread={thread}
+                    api={chat.api}
+                    root={chat.root}
+                    onDeleted={() => {
+                      if (thread.id === chat.selectedId) chat.select(null);
+                    }}
+                  />
+                </div>
+              ))}
+              {!chat.list.length ? (
+                <p className="p-3 text-xs text-muted-foreground">Belum ada percakapan.</p>
+              ) : null}
+              {chat.threads.hasNextPage ? (
+                <Button
+                  size="sm"
+                  variant="link"
+                  onClick={() => void chat.threads.fetchNextPage()}
+                  disabled={chat.threads.isFetchingNextPage}
+                >
+                  Muat percakapan lainnya
+                </Button>
+              ) : null}
+            </div>
           </Popover.Content>
         </Popover.Portal>
       </Popover.Root>

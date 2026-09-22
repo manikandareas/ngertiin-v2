@@ -83,6 +83,7 @@ export function MaterialBoard({
                   </DropdownMenu.Trigger>
                   <DropdownMenu.Portal>
                     <DropdownMenu.Content
+                      collisionPadding={12}
                       className={menuContentClassName}
                       align="end"
                       sideOffset={8}
@@ -137,7 +138,7 @@ export function MaterialBoard({
           </section>
         </ContextMenu.Trigger>
         <ContextMenu.Portal>
-          <ContextMenu.Content className={menuContentClassName}>
+          <ContextMenu.Content className={menuContentClassName} collisionPadding={12}>
             <SourceMenu menu="context" library={library} open={open} disabled={locked} />
           </ContextMenu.Content>
         </ContextMenu.Portal>

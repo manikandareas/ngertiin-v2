@@ -71,7 +71,7 @@ export function AppSidebar({
     <>
       <aside
         aria-label="Sidebar"
-        className={`sticky top-0 hidden h-dvh shrink-0 flex-col overflow-hidden border-r bg-sidebar text-sidebar-foreground xl:flex ${collapsed ? "w-16" : "w-72"}`}
+        className={`sticky top-0 hidden h-dvh shrink-0 flex-col overflow-hidden border-r bg-sidebar text-sidebar-foreground xl:flex ${collapsed ? "w-16" : "w-64"}`}
       >
         <div
           className={`flex shrink-0 items-center gap-2 py-3 ${collapsed ? "flex-col px-2" : "px-3"}`}
@@ -98,7 +98,7 @@ export function AppSidebar({
       </aside>
       <header className="flex shrink-0 items-center justify-between gap-2 border-b bg-background px-3 py-2 xl:hidden">
         <div className="min-w-0 max-w-64 flex-1">
-          <NavUser {...user} />
+          <NavUser {...user} side="bottom" />
         </div>
         <Dialog.Root open={menuOpen} onOpenChange={setMenuOpen}>
           <Dialog.Trigger asChild>
@@ -119,7 +119,7 @@ export function AppSidebar({
               <Dialog.Title className="sr-only">Navigasi ngerti.in</Dialog.Title>
               <div className="flex shrink-0 items-center gap-2 px-3 py-3">
                 <div className="min-w-0 flex-1">
-                  <NavUser {...user} />
+                  <NavUser {...user} side="bottom" />
                 </div>
                 <Dialog.Close asChild>
                   <button

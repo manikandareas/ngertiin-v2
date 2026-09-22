@@ -104,8 +104,8 @@ export function ChatMentionMenu({
   }));
   const source = module ? journey : modules;
   return (
-    <div className="rounded-xl border bg-popover p-1.5 text-popover-foreground shadow-lg">
-      <div className="px-2.5 py-2 text-xs text-muted-foreground">
+    <div className="flex min-h-0 flex-col rounded-xl border bg-popover p-1.5 text-popover-foreground shadow-lg">
+      <div className="shrink-0 truncate px-2.5 py-2 text-xs text-muted-foreground">
         {module ? `Materi · ${module.label}` : "Modul kamu"}
       </div>
       <div
@@ -113,7 +113,7 @@ export function ChatMentionMenu({
         id={id}
         role="listbox"
         aria-label={module ? "Pilih materi" : "Pilih modul"}
-        className="max-h-[min(16rem,35dvh)] overflow-y-auto"
+        className="min-h-0 max-h-64 overflow-y-auto overscroll-contain"
       >
         {items.map((item, index) => (
           <button
@@ -162,7 +162,7 @@ export function ChatMentionMenu({
           </button>
         ) : null}
       </div>
-      <div className="mt-1 border-t px-2.5 py-2 text-[11px] text-muted-foreground">
+      <div className="mt-1 shrink-0 border-t px-2.5 py-2 text-[11px] text-muted-foreground">
         {module ? "Enter untuk pilih materi" : "Pilih modul, lalu ketik : untuk pilih materi"}
       </div>
     </div>

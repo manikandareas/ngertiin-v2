@@ -16,6 +16,7 @@ export function DropdownMenuContent({
       <DropdownMenuPrimitive.Content
         data-slot="dropdown-menu-content"
         sideOffset={sideOffset}
+        collisionPadding={12}
         className={cn(menuContentClassName, className)}
         {...props}
       />

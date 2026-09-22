@@ -61,7 +61,13 @@ export function ChatMentionInput({
   lockedContext,
 }: ChatMentionInputProps) {
   const [trigger, setTrigger] = useState<Trigger | null>(null);
-  const [position, setPosition] = useState({ left: 0, top: 0, width: 0 });
+  const [position, setPosition] = useState({
+    left: 0,
+    top: 0,
+    width: 0,
+    maxHeight: 0,
+    above: false,
+  });
   const host = useRef<HTMLDivElement>(null);
   const menu = useRef<MentionMenuHandle>(null);
   const [activeOption, setActiveOption] = useState<string | null>(null);
@@ -163,17 +169,37 @@ export function ChatMentionInput({
     if (!menuOpen) return;
     const update = () => {
       const rect = host.current?.getBoundingClientRect();
-      if (rect)
-        setPosition({
-          left: Math.max(8, rect.left),
-          top: rect.top,
-          width: Math.min(rect.width, window.innerWidth - 16),
-        });
+      if (!rect) return;
+      const viewport = window.visualViewport;
+      const left = (viewport?.offsetLeft ?? 0) + 12;
+      const top = (viewport?.offsetTop ?? 0) + 12;
+      const right = left + (viewport?.width ?? window.innerWidth) - 24;
+      const bottom = top + (viewport?.height ?? window.innerHeight) - 24;
+      const aboveSpace = Math.max(0, Math.min(rect.top - 8, bottom) - top);
+      const belowSpace = Math.max(0, bottom - Math.max(rect.bottom + 8, top));
+      const above = aboveSpace >= belowSpace;
+      const width = Math.max(0, Math.min(rect.width, right - left));
+      setPosition({
+        left: Math.max(left, Math.min(rect.left, right - width)),
+        top: above
+          ? Math.max(top, Math.min(rect.top - 8, bottom))
+          : Math.min(bottom, Math.max(rect.bottom + 8, top)),
+        width,
+        maxHeight: above ? aboveSpace : belowSpace,
+        above,
+      });
     };
     update();
+    const observer = new ResizeObserver(update);
+    if (host.current) observer.observe(host.current);
+    window.visualViewport?.addEventListener("resize", update);
+    window.visualViewport?.addEventListener("scroll", update);
     window.addEventListener("resize", update);
     window.addEventListener("scroll", update, true);
     return () => {
+      observer.disconnect();
+      window.visualViewport?.removeEventListener("resize", update);
+      window.visualViewport?.removeEventListener("scroll", update);
       window.removeEventListener("resize", update);
       window.removeEventListener("scroll", update, true);
     };
@@ -196,18 +222,18 @@ export function ChatMentionInput({
         </span>
       ) : null}
       <EditorContent editor={editor} />
-      {trigger && editor && position.width
+      {trigger && editor && position.width > 0 && position.maxHeight > 0
         ? createPortal(
             <div
               style={{
                 position: "fixed",
                 left: position.left,
                 width: position.width,
-                ...(position.top > 260
-                  ? { bottom: window.innerHeight - position.top + 8 }
-                  : { top: (host.current?.getBoundingClientRect().bottom ?? position.top) + 8 }),
+                top: position.top,
+                maxHeight: position.maxHeight,
+                transform: position.above ? "translateY(-100%)" : undefined,
               }}
-              className="z-[80]"
+              className="z-[80] flex flex-col overflow-y-auto overscroll-contain"
             >
               {limitReached && !trigger.module ? (
                 <div role="status" className="rounded-xl border bg-popover p-3 text-sm shadow-lg">

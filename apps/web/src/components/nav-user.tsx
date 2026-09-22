@@ -22,7 +22,7 @@ export type NavUserProps = {
   onLogout?: () => Promise<void>;
   collapsed?: boolean;
   unsavedChanges?: boolean;
-  side?: "right" | "top";
+  side?: "right" | "top" | "bottom";
 };
 
 export function NavUser({
@@ -88,7 +88,7 @@ export function NavUser({
       </DropdownMenuTrigger>
       <DropdownMenuContent
         side={side}
-        align="end"
+        align={side === "bottom" ? "start" : "end"}
         sideOffset={8}
         collisionPadding={12}
         className="w-64"
