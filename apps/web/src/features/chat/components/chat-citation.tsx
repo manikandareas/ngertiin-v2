@@ -4,8 +4,10 @@ import type { ChatCitation, ChatImage } from "@ngertiin/contracts/api";
 import { ArrowUpRight, Check, ChevronDown, Copy } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { cn } from "../../../lib/utils";
 import { citationLink } from "../citation-location";
 import { useStreamedText } from "../use-streamed-text";
+import { chatFileChipClassName } from "./chat-file-badge";
 import { ChatMarkdown } from "./chat-markdown";
 
 export function ChatCitedAnswer({
@@ -88,7 +90,7 @@ export function ChatCitedAnswer({
       {citations.length > 0 && !presentation.revealing && sourcesOpen ? (
         <section
           id={`sources-${messageId}`}
-          className="mt-1.5 flex min-w-0 flex-col gap-1 rounded-xl bg-muted p-1 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200"
+          className="mt-2 flex min-w-0 flex-wrap gap-2 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200"
           aria-label="Rujukan jawaban"
         >
           {citations.map((citation, index) => (
@@ -97,34 +99,34 @@ export function ChatCitedAnswer({
               href={href(citation)}
               target="_blank"
               rel="noopener noreferrer"
-              className="group block w-full min-w-0 rounded-lg p-2.5 text-left text-muted-foreground transition-colors hover:bg-background hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              className={cn(
+                chatFileChipClassName,
+                "w-fit max-w-[min(100%,16rem)] text-left transition-colors hover:bg-zinc-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transition-none dark:hover:bg-zinc-700",
+              )}
+              title={`${citation.origin === "original_source" ? "Sumber" : "Modul"}: ${citation.title}${citation.sectionTitle && citation.sectionTitle !== citation.title ? ` · ${citation.sectionTitle}` : ""}${citation.pageNumber ? ` · Hal. ${citation.pageNumber}` : ""}`}
               aria-label={`Buka rujukan ${index + 1}: ${citation.title} di tab baru`}
             >
-              <div className="flex items-start gap-3">
-                <span className="min-w-0 flex-1 line-clamp-2 break-words text-xs font-semibold leading-5 [overflow-wrap:anywhere]">
-                  {citation.sectionTitle ?? citation.title}
-                </span>
-                <span className="shrink-0 text-[10px] tabular-nums opacity-75">{index + 1}</span>
-                <ArrowUpRight className="size-3.5 shrink-0 opacity-75" aria-hidden="true" />
-              </div>
-              <div className="mt-2 flex min-w-0 items-center gap-1.5 border-t border-current/15 pt-2 text-[10px]">
+              <span
+                className={cn(
+                  "flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-white",
+                  citation.origin === "original_source" ? "bg-orange-600" : "bg-teal-600",
+                )}
+              >
                 <HugeiconsIcon
                   icon={citation.origin === "original_source" ? File01Icon : Book02Icon}
                   size={14}
                   strokeWidth={1.5}
-                  className="shrink-0"
                   aria-hidden="true"
                 />
-                <span className="shrink-0 opacity-75">
-                  {citation.origin === "original_source" ? "Sumber" : "Modul"}
-                </span>
-                <span className="min-w-0 truncate font-medium" title={citation.title}>
-                  {citation.title}
-                </span>
-                {citation.pageNumber ? (
-                  <span className="ml-auto shrink-0 opacity-75">Hal. {citation.pageNumber}</span>
-                ) : null}
-              </div>
+              </span>
+              <span className="min-w-0 truncate">{citation.sectionTitle ?? citation.title}</span>
+              <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">
+                {index + 1}
+              </span>
+              <ArrowUpRight
+                className="size-3.5 shrink-0 text-muted-foreground"
+                aria-hidden="true"
+              />
             </a>
           ))}
         </section>
