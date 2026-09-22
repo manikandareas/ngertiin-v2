@@ -8,6 +8,7 @@ import { type Editor, EditorContent, type JSONContent, useEditor } from "@tiptap
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { TokenResolver } from "../../../lib/api";
+import { cn } from "../../../lib/utils";
 import { draftMentions, textDocument } from "../chat-draft";
 import { CHAT_AGENT_NAME } from "../constants";
 import { lockedContextExtension, lockedContextKey } from "../locked-context";
@@ -47,6 +48,8 @@ type ChatMentionInputProps = {
   getToken: TokenResolver;
   fullPage?: boolean;
   lockedContext?: ChatMention;
+  className?: string;
+  onExpandedChange?: (expanded: boolean) => void;
 };
 
 export function ChatMentionInput({
@@ -59,6 +62,8 @@ export function ChatMentionInput({
   getToken,
   fullPage,
   lockedContext,
+  className,
+  onExpandedChange,
 }: ChatMentionInputProps) {
   const [trigger, setTrigger] = useState<Trigger | null>(null);
   const [position, setPosition] = useState({
@@ -101,7 +106,7 @@ export function ChatMentionInput({
         "aria-label": `Pesan untuk ${CHAT_AGENT_NAME}`,
         "aria-multiline": "true",
         class:
-          "min-h-16 max-h-48 overflow-y-auto whitespace-pre-wrap break-words px-0.5 py-2 outline-none [&_p]:m-0",
+          "min-h-8 max-h-40 overflow-y-auto overscroll-contain whitespace-pre-wrap [overflow-wrap:anywhere] px-1 py-1.5 outline-none [&_p]:m-0",
       },
       handleKeyDown: (view, event) => {
         if (view.composing || event.isComposing) return false;
@@ -140,6 +145,47 @@ export function ChatMentionInput({
     onFocus: ({ editor }) => syncTrigger(editor),
     onBlur: () => setTrigger(null),
   });
+  useLayoutEffect(() => {
+    const container = host.current;
+    const grid = container?.parentElement;
+    if (!editor || !container || !grid || !onExpandedChange) return;
+    // Measure the unwrapped content even when expanded, so deleting text can
+    // collapse the composer without moving or remounting the actual editor.
+    const measure = () => {
+      const clone = editor.view.dom.cloneNode(true) as HTMLElement;
+      clone.removeAttribute("role");
+      clone.removeAttribute("id");
+      clone.setAttribute("aria-hidden", "true");
+      clone.inert = true;
+      const rem = Number.parseFloat(getComputedStyle(window.document.documentElement).fontSize);
+      Object.assign(clone.style, {
+        position: "absolute",
+        visibility: "hidden",
+        pointerEvents: "none",
+        width: "max-content",
+        maxWidth: "none",
+        whiteSpace: "pre",
+        maxHeight: "none",
+        top: "0",
+        left: "0",
+      });
+      container.appendChild(clone);
+      // Two 2rem controls and two .25rem gaps flank the compact input.
+      const multiline =
+        editor.getText({ blockSeparator: "\n" }).includes("\n") ||
+        clone.getBoundingClientRect().width > grid.clientWidth - 4.5 * rem;
+      clone.remove();
+      onExpandedChange(multiline);
+    };
+    measure();
+    editor.on("update", measure);
+    const observer = new ResizeObserver(measure);
+    observer.observe(grid);
+    return () => {
+      editor.off("update", measure);
+      observer.disconnect();
+    };
+  }, [editor, onExpandedChange]);
   useEffect(() => {
     if (!editor || editor.isDestroyed) return;
     const current = editor.getText({ blockSeparator: "\n" });
@@ -215,10 +261,13 @@ export function ChatMentionInput({
   }, [editor, menuOpen, menuId, activeOption]);
   const limitReached = draftMentions(document).length >= 8;
   return (
-    <div ref={host} className={`relative ${fullPage ? "text-base" : "text-sm"}`}>
+    <div
+      ref={host}
+      className={cn("relative min-w-0 leading-5", fullPage ? "text-sm" : "text-[13px]", className)}
+    >
       {!draft ? (
-        <span className="pointer-events-none absolute left-0.5 top-2 text-muted-foreground">
-          Tanyakan sesuatu, ketik @ untuk pilih modul…
+        <span className="pointer-events-none absolute inset-x-1 top-1.5 truncate text-muted-foreground">
+          Tanyakan sesuatu, @ untuk konteks…
         </span>
       ) : null}
       <EditorContent editor={editor} />

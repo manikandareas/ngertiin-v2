@@ -211,6 +211,7 @@ export function useAttachmentUpload(
       type="button"
       size="icon"
       variant="ghost"
+      className="size-8 rounded-lg text-muted-foreground hover:text-foreground"
       aria-label="Lampirkan file"
       title="Maksimal 5 file, 10 MB per file, total 25 MB"
       disabled={disabled}

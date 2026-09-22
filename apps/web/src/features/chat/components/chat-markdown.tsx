@@ -151,7 +151,7 @@ export function ChatMarkdown({
     [citations, citationHref, images, loadImage],
   );
   return (
-    <div className="lesson-markdown min-w-0 max-w-full text-sm leading-7 [&_h1]:text-xl [&_h2]:text-lg [&_h3]:text-base">
+    <div className="lesson-markdown min-w-0 max-w-full text-base leading-8 [&_h1]:text-xl [&_h2]:text-lg [&_h3]:text-base">
       {/* Streamdown 2.6 memoizes without components/remarkPlugins. Refresh when
           citation data arrives separately from the unchanged text chunk. */}
       <Streamdown

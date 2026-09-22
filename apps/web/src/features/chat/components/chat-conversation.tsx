@@ -314,7 +314,7 @@ export function ChatConversation({
         <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
           <div
             ref={contentRef}
-            className={`flex min-h-full flex-col px-6 pb-4 [&>*]:shrink-0 ${fullPage ? "pt-8 sm:pt-12" : "pt-5"}`}
+            className={`flex min-h-full flex-col px-6 pb-4 [&>*]:shrink-0 ${fullPage ? "pt-22 sm:pt-26" : "pt-5"}`}
             style={
               fullPage ? { paddingInline: "max(1rem, calc((100% - 48rem) / 2 + 1rem))" } : undefined
             }
@@ -356,8 +356,8 @@ export function ChatConversation({
                 key={message.id}
                 className={
                   message.role === "user"
-                    ? `ml-auto max-w-[90%] rounded-2xl bg-muted px-4 py-2.5 text-sm leading-7 ${fullPage ? "mb-10" : "mb-6 rounded-br-sm"}`
-                    : `${fullPage ? "mb-10" : "mb-7"} text-sm leading-7`
+                    ? `ml-auto max-w-[90%] rounded-2xl bg-muted px-4 py-2.5 text-base leading-8 ${fullPage ? "mb-10" : "mb-6 rounded-br-sm"}`
+                    : `${fullPage ? "mb-10" : "mb-7"} text-base leading-8`
                 }
               >
                 {message === activeAssistant ? (

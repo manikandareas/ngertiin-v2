@@ -3,7 +3,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import type { ChatAttachment, ChatMention } from "@ngertiin/contracts/api";
 import type { JSONContent } from "@tiptap/react";
 import { Square } from "lucide-react";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useState } from "react";
 import { Button } from "../../../components/ui/button";
 import type { TokenResolver } from "../../../lib/api";
 import { cn } from "../../../lib/utils";
@@ -49,6 +49,7 @@ export function ChatComposer({
   cancelling = false,
   onCancel,
 }: ChatComposerProps) {
+  const [expanded, setExpanded] = useState(false);
   const upload = useAttachmentUpload(
     attachments,
     onAttachmentsChange,
@@ -56,6 +57,7 @@ export function ChatComposer({
     Boolean(disabled || active),
   );
   const tooManyMentions = draftMentions(document).length > 8;
+  const wide = expanded || tooManyMentions;
   const canSend =
     (hasEditableDraft(document, draft) || attachments.length > 0) &&
     !upload.pending &&
@@ -91,73 +93,75 @@ export function ChatComposer({
         if (canSend) onSend();
       }}
     >
-      <div
-        className={
-          fullPage
-            ? "rounded-card border border-input/60 bg-background p-3 focus-within:border-ring focus-within:ring-1 focus-within:ring-ring"
-            : "rounded-card border bg-muted p-2.5 focus-within:border-input"
-        }
-      >
+      <div className="rounded-[14px] border border-input/60 bg-background p-1.5 motion-safe:transition-[border-color,box-shadow] focus-within:border-ring/60 focus-within:shadow-md">
         {upload.content}
-        <Suspense
-          fallback={
-            <div className="min-h-16 py-2 text-sm text-muted-foreground" role="status">
-              Menyiapkan kolom pesan…
-            </div>
-          }
-        >
-          <ChatMentionInput
-            draft={draft}
-            document={document}
-            lockedContext={lockedContext}
-            onChange={onDraftChange}
-            onSend={() => {
-              if (canSend) onSend();
-            }}
-            disabled={disabled || active}
-            root={root}
-            getToken={getToken}
-            fullPage={fullPage}
-          />
-        </Suspense>
-        <div className="flex items-center justify-between gap-2">
-          {upload.button}
-          <span
-            role={tooManyMentions ? "alert" : undefined}
-            className="flex-1 text-[10px] text-muted-foreground"
+        <div className="grid grid-cols-[2rem_minmax(0,1fr)_2rem] items-end gap-x-1 gap-y-1.5">
+          <div className={cn("col-start-1", wide ? "row-start-2" : "row-start-1")}>
+            {upload.button}
+          </div>
+          <Suspense
+            fallback={
+              <div
+                className="col-start-2 row-start-1 truncate py-1.5 text-sm text-muted-foreground"
+                role="status"
+              >
+                Menyiapkan kolom pesan…
+              </div>
+            }
           >
-            {tooManyMentions ? "Maksimal 8 konteks per pesan" : "Ketik @ untuk konteks"}
-          </span>
-          {active ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
+            <ChatMentionInput
+              draft={draft}
+              document={document}
+              lockedContext={lockedContext}
+              onChange={onDraftChange}
+              onSend={() => {
+                if (canSend) onSend();
+              }}
+              disabled={disabled || active}
+              root={root}
+              getToken={getToken}
+              fullPage={fullPage}
+              onExpandedChange={setExpanded}
+              className={wide ? "col-span-full col-start-1 row-start-1" : "col-start-2 row-start-1"}
+            />
+          </Suspense>
+          {wide ? (
+            <span
+              role={tooManyMentions ? "alert" : undefined}
               className={cn(
-                "rounded-full text-destructive hover:bg-destructive/10 hover:text-destructive",
-                fullPage ? "size-10" : "size-8",
+                "col-start-2 row-start-2 self-center text-[11px]",
+                tooManyMentions ? "text-destructive" : "text-muted-foreground",
               )}
-              aria-label="Hentikan jawaban"
-              title="Hentikan jawaban"
-              onClick={onCancel}
-              disabled={cancelling}
             >
-              <Square className="fill-current" aria-hidden="true" />
-            </Button>
-          ) : (
-            <Button
-              type="submit"
-              size="icon"
-              className={cn(
-                "rounded-full shadow-none disabled:text-muted-foreground",
-                fullPage ? "size-10 disabled:bg-muted" : "size-8 disabled:bg-border",
-              )}
-              aria-label="Kirim pesan"
-              disabled={!canSend}
-            >
-              <HugeiconsIcon icon={ArrowUp02Icon} strokeWidth={1.8} aria-hidden="true" />
-            </Button>
-          )}
+              {tooManyMentions ? "Maksimal 8 konteks per pesan" : "Ketik @ untuk konteks"}
+            </span>
+          ) : null}
+          <div className={cn("col-start-3", wide ? "row-start-2" : "row-start-1")}>
+            {active ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="size-8 rounded-lg text-destructive hover:bg-destructive/10 hover:text-destructive"
+                aria-label="Hentikan jawaban"
+                title="Hentikan jawaban"
+                onClick={onCancel}
+                disabled={cancelling}
+              >
+                <Square className="fill-current" aria-hidden="true" />
+              </Button>
+            ) : (
+              <Button
+                type="submit"
+                size="icon"
+                className="size-8 rounded-lg bg-foreground text-background shadow-none hover:bg-foreground/85 active:translate-y-0 active:scale-95 disabled:bg-muted disabled:text-muted-foreground disabled:opacity-100"
+                aria-label="Kirim pesan"
+                disabled={!canSend}
+              >
+                <HugeiconsIcon icon={ArrowUp02Icon} strokeWidth={1.8} aria-hidden="true" />
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </form>

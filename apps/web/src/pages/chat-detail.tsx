@@ -8,9 +8,7 @@ import { Button } from "../components/ui/button";
 import { isClerkConfigured } from "../config";
 import { chatApi } from "../features/chat/api/chat-api";
 import { ChatConversation } from "../features/chat/components/chat-conversation";
-import { ChatMascot } from "../features/chat/components/chat-mascot";
 import { ChatThreadActions } from "../features/chat/components/chat-thread-actions";
-import { CHAT_AGENT_NAME } from "../features/chat/constants";
 import { useChatThreads } from "../features/chat/use-chat-threads";
 import { ApiProblemError } from "../lib/api";
 
@@ -82,41 +80,37 @@ function ConnectedChatDetailPage() {
   }
   return (
     <AppShell workspace>
-      <header className="flex h-14 shrink-0 items-center gap-2 px-4 sm:gap-3 sm:px-6">
-        <Link
-          to="/chat"
-          className="flex shrink-0 items-center gap-2 rounded-lg py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-ring"
-          aria-label="Kembali ke chat baru"
-        >
-          <ChatMascot className="size-7" />
-          <span className="hidden sm:inline">{CHAT_AGENT_NAME}</span>
-        </Link>
-        <span aria-hidden="true" className="text-lg text-muted-foreground/50">
-          /
-        </span>
-        <h1 className="min-w-0 flex-1 truncate text-sm font-medium" title={thread?.title}>
-          {thread?.title ?? (unavailable ? "Percakapan tidak tersedia" : "Memuat percakapan…")}
-        </h1>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="size-9 shrink-0 rounded-lg text-muted-foreground"
-          asChild
-        >
-          <Link to="/chat" aria-label="Percakapan baru" title="Percakapan baru">
-            <MessageSquarePlus className="size-4" />
-          </Link>
-        </Button>
-        {thread ? (
-          <ChatThreadActions
-            thread={thread}
-            api={chat.api}
-            root={chat.root}
-            onDeleted={() => navigate("/chat", { replace: true })}
-          />
-        ) : null}
-      </header>
-      {renderContent()}
+      <div className="relative flex min-h-0 flex-1 flex-col">
+        <header className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-center gap-2 bg-transparent px-4 py-2.5 sm:gap-3 sm:px-6">
+          <h1
+            className="pointer-events-auto mr-auto min-w-0 max-w-[min(60%,24rem)] truncate text-sm font-medium"
+            title={thread?.title}
+          >
+            {thread?.title ?? (unavailable ? "Percakapan tidak tersedia" : "Memuat percakapan…")}
+          </h1>
+          <div className="pointer-events-auto flex shrink-0 items-center gap-2 sm:gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-9 shrink-0 rounded-lg text-muted-foreground"
+              asChild
+            >
+              <Link to="/chat" aria-label="Percakapan baru" title="Percakapan baru">
+                <MessageSquarePlus className="size-4" />
+              </Link>
+            </Button>
+            {thread ? (
+              <ChatThreadActions
+                thread={thread}
+                api={chat.api}
+                root={chat.root}
+                onDeleted={() => navigate("/chat", { replace: true })}
+              />
+            ) : null}
+          </div>
+        </header>
+        {renderContent()}
+      </div>
     </AppShell>
   );
 }
