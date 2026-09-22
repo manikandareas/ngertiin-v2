@@ -1,0 +1,21 @@
+{
+  "repository": "manikandareas/ngertiin-v2",
+  "workflow_ref": "main",
+  "dokploy_url": "https://dokploy.aqshara.com",
+  "dokploy_version": "v0.29.11",
+  "backend_id": "bpHUlH1swMNlb6wLY90oO",
+  "backend_project": "ngertiin-ngertiinbackend-wmkjjx",
+  "migration_id": "embPHU2s7sRAYmY3GpSpS",
+  "migration_project": "compose-bypass-back-end-microchip-119zpo",
+  "postgres_id": "z6aEhce32la8xWxnaJpUS",
+  "postgres_image": "ghcr.io/manikandareas/ngertiin-v2-postgres:b7a2eca29006e89372a18652b75e3a937a6998c2",
+  "backup_id": "SET_RELEASE_BACKUP_ID",
+  "image_prefix": "ghcr.io/manikandareas/ngertiin-v2",
+  "network": "dokploy-network",
+  "api_url": "https://api-ngertiin.whoismanik.dev",
+  "web_url": "https://app-ngertiin.whoismanik.dev",
+  "www_url": "https://ngertiin.whoismanik.dev",
+  "state_dir": "/var/lib/semaphore/releases",
+  "activation_verified": false,
+  "enabled_apps": []
+}

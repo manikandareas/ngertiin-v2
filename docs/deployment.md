@@ -339,6 +339,22 @@ API expose port 3000 pada jaringan container, tanpa publish host port 3000. Heal
 
 ## 7. CI dan urutan release
 
+### Semaphore UI (22 September 2026)
+
+Koordinator terpusat tersedia di `https://deploy.whoismanik.dev`, dengan project
+`Ngerti.in Production` dan task Deploy Backend, Deploy Web, Deploy WWW, serta
+Deploy All. Setup, batas aktivasi, pengujian, dan recovery dijelaskan dalam
+[runbook Semaphore](../infra/semaphore/README.md). Git push tetap tidak memicu
+deployment; build tetap dilakukan GitHub Actions. Snapshot manual di bawah tetap
+berguna untuk recovery, tetapi alur Semaphore memakai SHA kandidat tetap dan
+mengganti source backend menjadi **raw Compose dari SHA tersebut** saat rilis.
+
+Workflow menerima `release_sha` dan `release_id` opsional. Untuk run terkoordinasi,
+SHA pada nama image/artifact berasal dari checkout kandidat; `headSha` workflow
+pengendali tidak selalu sama dengan SHA aplikasi. Jangan memilih run terbaru
+sebagai bukti rilis. Periksa run/deployment ID yang dicatat koordinator.
+
+
 Kedua workflow memakai **`workflow_dispatch`**, bukan auto-deploy setiap push. Build image backend tidak otomatis menyalakan container di Dokploy. Environment GitHub dan Dokploy terpisah.
 
 ### Backend: source → GHCR → Dokploy

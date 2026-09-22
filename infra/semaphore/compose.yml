@@ -1,0 +1,60 @@
+services:
+  semaphore:
+    image: semaphoreui/semaphore:v2.19.12@sha256:3996804607ebb63690528185bb9adc3507ee896851098e4453975f2ce7f8b435
+    restart: unless-stopped
+    command: ["/bin/sh", "-c", "python3 /opt/ngertiin/bootstrap.py && (python3 /opt/ngertiin/provision.py & exec /usr/local/bin/server-wrapper)"]
+    environment:
+      SEMAPHORE_DB_DIALECT: sqlite
+      SEMAPHORE_DB_HOST: /var/lib/semaphore/database.sqlite
+      SEMAPHORE_ADMIN: admin
+      SEMAPHORE_ADMIN_NAME: Ngerti.in Operator
+      SEMAPHORE_ADMIN_EMAIL: deploy@whoismanik.dev
+      SEMAPHORE_ADMIN_PASSWORD: ${SEMAPHORE_ADMIN_PASSWORD:?Set administrator password}
+      SEMAPHORE_ACCESS_KEY_ENCRYPTION: ${SEMAPHORE_ACCESS_KEY_ENCRYPTION:?Set persistent encryption key}
+      SEMAPHORE_WEB_ROOT: https://deploy.whoismanik.dev
+      SEMAPHORE_MAX_PARALLEL_TASKS: "1"
+      RELEASE_CONFIG: /opt/ngertiin/release.json
+      BOOTSTRAP_GITHUB_TOKEN: ${BOOTSTRAP_GITHUB_TOKEN:-}
+      BOOTSTRAP_DOKPLOY_TOKEN: ${BOOTSTRAP_DOKPLOY_TOKEN:-}
+      TZ: UTC
+    volumes:
+      - semaphore-data:/var/lib/semaphore
+      - semaphore-config:/etc/semaphore
+    configs:
+      - source: coordinator
+        target: /opt/ngertiin/release.py
+      - source: bootstrap
+        target: /opt/ngertiin/bootstrap.py
+      - source: provision
+        target: /opt/ngertiin/provision.py
+      - source: release-config
+        target: /opt/ngertiin/release.json
+    networks: [dokploy-network]
+    expose: ["3000"]
+    mem_limit: 512m
+    cpus: 0.5
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:3000/api/ping', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+volumes:
+  semaphore-data:
+  semaphore-config:
+networks:
+  dokploy-network:
+    external: true
+configs:
+  coordinator:
+    file: ./release.py
+  bootstrap:
+    file: ./bootstrap.py
+  release-config:
+    file: ./release.example.json
+  provision:
+    file: ./provision.py

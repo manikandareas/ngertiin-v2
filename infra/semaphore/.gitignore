@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+.env
+release.json
+*.tar.gz
