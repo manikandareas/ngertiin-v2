@@ -189,7 +189,7 @@ function ModuleOptions({
   const select = useSelectCurrentModule();
   const items = modules.data?.pages[0]?.data.slice(0, 6) ?? [];
   return (
-    <div className="min-h-0 overflow-y-auto overscroll-contain py-1">
+    <div className="min-h-0 overflow-y-auto overscroll-contain py-2 space-y-2">
       {modules.isPending ? (
         <p role="status" className="px-2.5 py-3 text-[13px] text-muted-foreground">
           Memuat modul…
