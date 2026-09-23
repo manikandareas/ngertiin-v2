@@ -233,6 +233,26 @@
   }
 }
 
+/* Sidebar uses the prototype's charcoal surface in both workspace themes.
+   Scope tokens here so portaled menus retain the workspace theme. */
+.app-sidebar-surface {
+  --background: #1d1d1d;
+  --foreground: #f5f5f5;
+  --muted: #292929;
+  --muted-foreground: #aaaaaa;
+  --accent: #303030;
+  --accent-foreground: #f5f5f5;
+  --border: #383838;
+  --input: #595959;
+  --ring: #83d4ff;
+  --sidebar: var(--background);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-accent: var(--accent);
+  --sidebar-accent-foreground: var(--accent-foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
+}
+
 /* Decorative book materials stay consistent across light and dark workspaces. */
 @theme {
   --color-book-blue: #cfdfec;

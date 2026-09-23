@@ -85,10 +85,10 @@ export function AppSidebar({
     <>
       <aside
         aria-label="Sidebar"
-        className={`sticky top-0 hidden h-dvh shrink-0 flex-col overflow-hidden border-r bg-sidebar text-sidebar-foreground xl:flex ${collapsed ? "w-16" : "w-[18rem]"}`}
+        className={`app-sidebar-surface sticky top-0 hidden h-dvh shrink-0 flex-col overflow-hidden border-r bg-sidebar text-sidebar-foreground xl:flex ${collapsed ? "w-16" : "w-60"}`}
       >
         <div
-          className={`flex shrink-0 items-center gap-2 py-3 ${collapsed ? "flex-col px-2" : "px-3"}`}
+          className={`flex shrink-0 items-center gap-1 px-2 py-2 ${collapsed ? "flex-col" : ""}`}
         >
           <div className={collapsed ? "w-full" : "min-w-0 flex-1"}>
             <NavUser {...user} collapsed={collapsed} />
@@ -130,7 +130,7 @@ export function AppSidebar({
             <Dialog.Overlay className="fixed inset-0 z-50 bg-black/40" />
             <Dialog.Content
               aria-describedby={undefined}
-              className="fixed inset-y-0 left-0 z-50 flex w-full flex-col overflow-hidden border-r bg-sidebar text-sidebar-foreground shadow-xl data-[state=open]:animate-in data-[state=open]:slide-in-from-left duration-200 motion-reduce:animate-none"
+              className="app-sidebar-surface fixed inset-y-0 left-0 z-50 flex w-full flex-col overflow-hidden border-r bg-sidebar text-sidebar-foreground shadow-xl data-[state=open]:animate-in data-[state=open]:slide-in-from-left duration-200 motion-reduce:animate-none"
             >
               <Dialog.Title className="sr-only">Navigasi ngerti.in</Dialog.Title>
               <div className="flex shrink-0 items-center gap-2 px-3 py-3">
