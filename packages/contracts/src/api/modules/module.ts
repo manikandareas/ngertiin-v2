@@ -53,6 +53,7 @@ export const moduleSummarySchema = z.object({
   id: uuidSchema,
   title: z.string().nullable(),
   description: z.string().nullable(),
+  imageUrl: z.url().nullable(),
   difficulty: z.enum(["beginner", "intermediate", "advanced"]).nullable(),
   status: moduleStatusSchema,
   estimatedMinutes: z.number().int().positive().nullable(),

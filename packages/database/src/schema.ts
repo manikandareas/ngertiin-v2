@@ -301,6 +301,7 @@ export const modules = pgTable(
       .references(() => generation_requests.id),
     title: varchar(),
     description: text(),
+    image_url: varchar(),
     difficulty: module_difficulty(),
     status: module_status().notNull(),
     estimated_minutes: integer(),

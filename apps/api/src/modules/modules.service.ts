@@ -84,6 +84,7 @@ type ModuleRow = {
   id: string;
   title: string | null;
   description: string | null;
+  imageUrl: string | null;
   difficulty: "beginner" | "intermediate" | "advanced" | null;
   status: "generating" | "ready" | "failed" | "archived";
   estimatedMinutes: number | null;
@@ -322,6 +323,7 @@ export class ModulesService {
         await this.usage.assertSlot(transaction, userId);
         const generationRequestId = randomUUID();
         const moduleId = randomUUID();
+        const imageUrl = `https://api.dicebear.com/10.x/glass/svg?tags=animation&seed=${moduleId}`;
         await transaction.insert(generation_requests).values({
           id: generationRequestId,
           user_id: userId,
@@ -344,6 +346,7 @@ export class ModulesService {
           owner_id: userId,
           generation_request_id: generationRequestId,
           title: null,
+          image_url: imageUrl,
           status: "generating",
           created_at: now,
           updated_at: now,
@@ -362,6 +365,7 @@ export class ModulesService {
                 id: moduleId,
                 title: null,
                 description: null,
+                imageUrl,
                 difficulty: null,
                 status: "generating",
                 estimatedMinutes: null,
@@ -434,6 +438,7 @@ export class ModulesService {
         id: modules.id,
         title: modules.title,
         description: modules.description,
+        imageUrl: modules.image_url,
         difficulty: modules.difficulty,
         status: modules.status,
         estimatedMinutes: modules.estimated_minutes,
@@ -486,6 +491,7 @@ export class ModulesService {
       id: modules.id,
       title: modules.title,
       description: modules.description,
+      imageUrl: modules.image_url,
       difficulty: modules.difficulty,
       status: modules.status,
       estimatedMinutes: modules.estimated_minutes,
@@ -583,6 +589,7 @@ export class ModulesService {
         id: modules.id,
         title: modules.title,
         description: modules.description,
+        imageUrl: modules.image_url,
         difficulty: modules.difficulty,
         status: modules.status,
         estimatedMinutes: modules.estimated_minutes,
@@ -1284,6 +1291,7 @@ export class ModulesService {
             generationRequestId: modules.generation_request_id,
             title: modules.title,
             description: modules.description,
+            imageUrl: modules.image_url,
             difficulty: modules.difficulty,
             estimatedMinutes: modules.estimated_minutes,
             status: modules.status,
@@ -1346,6 +1354,7 @@ export class ModulesService {
                 id: module.id,
                 title: module.title,
                 description: module.description,
+                imageUrl: module.imageUrl,
                 difficulty: module.difficulty,
                 status: "generating",
                 estimatedMinutes: module.estimatedMinutes,
@@ -1463,6 +1472,7 @@ export class ModulesService {
         id: row.id,
         title: row.title,
         description: row.description,
+        imageUrl: row.imageUrl,
         difficulty: row.difficulty,
         status: row.status,
         estimatedMinutes: row.estimatedMinutes,

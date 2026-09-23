@@ -162,6 +162,13 @@
       "when": 1790157337629,
       "tag": "0022_white_rictor",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1790167704667,
+      "tag": "0023_quiet_susan_delgado",
+      "breakpoints": true
     }
   ]
 }
