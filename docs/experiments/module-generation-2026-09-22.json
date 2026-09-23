@@ -1,0 +1,880 @@
+{
+  "runs": [
+    {
+      "run": "long-mixed-A-1",
+      "fixture": "long-mixed",
+      "variant": "A",
+      "repetition": 1,
+      "seconds": 417.665,
+      "nodes": 13,
+      "failed": 0,
+      "activities": 62,
+      "activityTypes": {
+        "lesson": 13,
+        "flashcard": 13,
+        "multiple_choice": 18,
+        "true_false": 9,
+        "short_answer": 9
+      },
+      "learnerContentCharacters": 86079,
+      "flashcards": 80,
+      "characters": 112060,
+      "images": 14,
+      "summedTextSeconds": 275.86,
+      "summedImageSeconds": 141.733,
+      "escalatedNodes": 0,
+      "verifierErrors": [],
+      "modelCalls": 33,
+      "loggedInvalidOutputRetries": 0,
+      "imageSkipReasons": {
+        "no_search_results": 3,
+        "visual_rejected": 6,
+        "no_eligible_candidates": 9
+      },
+      "referenceErrors": [],
+      "usageCoveredCalls": 33,
+      "inputTokens": 489532,
+      "outputTokens": 31220,
+      "cachedInputTokens": 13358,
+      "fixtureHash": "233bea5e402c7cbdc660de36601f997c43fd7fe67998f0104e57d01637e369ae",
+      "requestHashes": [
+        "74ab7b2e6e1bd01e3dec96582c30a8a282ae4572d1760a1f23392237ba34abaa",
+        "a86e215a8351dff27d7214c1d5602cabd6de2aa04c20bae0391a5926c43211ab",
+        "38ae334e38685fa9b62ddceade3047b041499a7a1aaf01523d5a196109833eb7",
+        "830f2c9f26932befd2c5a1fbcd3bbeb0936b81bb7c3660ac9a994e60cfe73ad9",
+        "28900603fcabdbd323f24a12cb66152c0111c53afe02adac733dd6a4eb284209",
+        "90e7af88907a7252ac9b70b60cac144398e26ccc3eb45dddd160e070e794bbbd",
+        "4ebd289553087b5abc6fe1699e528847a073b47ea055a7d9ed27f43f7a863e67",
+        "e0fb6712b4840cbeed3ed57b9ecef185c575527324d760409cec987ed38a6d7b",
+        "98aed53f9e0056801aa45470460e45c01288f4dc1ea34521dea9872a2b14353f",
+        "056d0095b64fabec164bb9022441e696b9c4a82eaf2666ce7859b21831c7a09c",
+        "296aefe377ac9e6bc684fa1df79b0bd1b281f5ffeadcde1ec7fb55256e00c924",
+        "f3c0c8daf5b18f61cae22b0d4244ea2694ff54a6048d69ff5199a026b7905607",
+        "bf986bf741de6cbe19005fd53da01f21fb816d383f5e7da97df1660d2c25bbcf"
+      ],
+      "simulatedThreeSlotsSeconds": 162.526
+    },
+    {
+      "run": "long-mixed-A-2",
+      "fixture": "long-mixed",
+      "variant": "A",
+      "repetition": 2,
+      "seconds": 287.012,
+      "nodes": 13,
+      "failed": 0,
+      "activities": 61,
+      "activityTypes": {
+        "lesson": 13,
+        "flashcard": 13,
+        "multiple_choice": 16,
+        "true_false": 10,
+        "short_answer": 9
+      },
+      "learnerContentCharacters": 83186,
+      "flashcards": 81,
+      "characters": 107868,
+      "images": 12,
+      "summedTextSeconds": 186.614,
+      "summedImageSeconds": 100.319,
+      "escalatedNodes": 0,
+      "verifierErrors": [],
+      "modelCalls": 30,
+      "loggedInvalidOutputRetries": 0,
+      "imageSkipReasons": {
+        "no_search_results": 3,
+        "visual_rejected": 5,
+        "no_eligible_candidates": 12
+      },
+      "referenceErrors": [],
+      "usageCoveredCalls": 30,
+      "inputTokens": 474136,
+      "outputTokens": 29915,
+      "cachedInputTokens": 412658,
+      "fixtureHash": "233bea5e402c7cbdc660de36601f997c43fd7fe67998f0104e57d01637e369ae",
+      "requestHashes": [
+        "74ab7b2e6e1bd01e3dec96582c30a8a282ae4572d1760a1f23392237ba34abaa",
+        "a86e215a8351dff27d7214c1d5602cabd6de2aa04c20bae0391a5926c43211ab",
+        "38ae334e38685fa9b62ddceade3047b041499a7a1aaf01523d5a196109833eb7",
+        "830f2c9f26932befd2c5a1fbcd3bbeb0936b81bb7c3660ac9a994e60cfe73ad9",
+        "28900603fcabdbd323f24a12cb66152c0111c53afe02adac733dd6a4eb284209",
+        "90e7af88907a7252ac9b70b60cac144398e26ccc3eb45dddd160e070e794bbbd",
+        "4ebd289553087b5abc6fe1699e528847a073b47ea055a7d9ed27f43f7a863e67",
+        "e0fb6712b4840cbeed3ed57b9ecef185c575527324d760409cec987ed38a6d7b",
+        "98aed53f9e0056801aa45470460e45c01288f4dc1ea34521dea9872a2b14353f",
+        "056d0095b64fabec164bb9022441e696b9c4a82eaf2666ce7859b21831c7a09c",
+        "296aefe377ac9e6bc684fa1df79b0bd1b281f5ffeadcde1ec7fb55256e00c924",
+        "f3c0c8daf5b18f61cae22b0d4244ea2694ff54a6048d69ff5199a026b7905607",
+        "bf986bf741de6cbe19005fd53da01f21fb816d383f5e7da97df1660d2c25bbcf"
+      ],
+      "simulatedThreeSlotsSeconds": 101.699
+    },
+    {
+      "run": "long-mixed-B-1",
+      "fixture": "long-mixed",
+      "variant": "B",
+      "repetition": 1,
+      "seconds": 127.598,
+      "nodes": 13,
+      "failed": 0,
+      "activities": 60,
+      "activityTypes": {
+        "lesson": 13,
+        "flashcard": 13,
+        "multiple_choice": 15,
+        "true_false": 10,
+        "short_answer": 9
+      },
+      "learnerContentCharacters": 80051,
+      "flashcards": 78,
+      "characters": 103888,
+      "images": 11,
+      "summedTextSeconds": 247.19,
+      "summedImageSeconds": 101.047,
+      "escalatedNodes": 0,
+      "verifierErrors": [],
+      "modelCalls": 29,
+      "loggedInvalidOutputRetries": 0,
+      "imageSkipReasons": {
+        "no_search_results": 4,
+        "visual_rejected": 5,
+        "no_eligible_candidates": 9
+      },
+      "referenceErrors": [],
+      "usageCoveredCalls": 29,
+      "inputTokens": 467104,
+      "outputTokens": 28906,
+      "cachedInputTokens": 412658,
+      "fixtureHash": "233bea5e402c7cbdc660de36601f997c43fd7fe67998f0104e57d01637e369ae",
+      "requestHashes": [
+        "74ab7b2e6e1bd01e3dec96582c30a8a282ae4572d1760a1f23392237ba34abaa",
+        "a86e215a8351dff27d7214c1d5602cabd6de2aa04c20bae0391a5926c43211ab",
+        "38ae334e38685fa9b62ddceade3047b041499a7a1aaf01523d5a196109833eb7",
+        "830f2c9f26932befd2c5a1fbcd3bbeb0936b81bb7c3660ac9a994e60cfe73ad9",
+        "28900603fcabdbd323f24a12cb66152c0111c53afe02adac733dd6a4eb284209",
+        "90e7af88907a7252ac9b70b60cac144398e26ccc3eb45dddd160e070e794bbbd",
+        "4ebd289553087b5abc6fe1699e528847a073b47ea055a7d9ed27f43f7a863e67",
+        "e0fb6712b4840cbeed3ed57b9ecef185c575527324d760409cec987ed38a6d7b",
+        "98aed53f9e0056801aa45470460e45c01288f4dc1ea34521dea9872a2b14353f",
+        "056d0095b64fabec164bb9022441e696b9c4a82eaf2666ce7859b21831c7a09c",
+        "296aefe377ac9e6bc684fa1df79b0bd1b281f5ffeadcde1ec7fb55256e00c924",
+        "f3c0c8daf5b18f61cae22b0d4244ea2694ff54a6048d69ff5199a026b7905607",
+        "bf986bf741de6cbe19005fd53da01f21fb816d383f5e7da97df1660d2c25bbcf"
+      ]
+    },
+    {
+      "run": "long-mixed-B-2",
+      "fixture": "long-mixed",
+      "variant": "B",
+      "repetition": 2,
+      "seconds": 116.757,
+      "nodes": 13,
+      "failed": 0,
+      "activities": 61,
+      "activityTypes": {
+        "lesson": 13,
+        "flashcard": 13,
+        "multiple_choice": 16,
+        "true_false": 10,
+        "short_answer": 9
+      },
+      "learnerContentCharacters": 80629,
+      "flashcards": 75,
+      "characters": 105872,
+      "images": 12,
+      "summedTextSeconds": 169.805,
+      "summedImageSeconds": 130.344,
+      "escalatedNodes": 0,
+      "verifierErrors": [],
+      "modelCalls": 31,
+      "loggedInvalidOutputRetries": 0,
+      "imageSkipReasons": {
+        "no_search_results": 5,
+        "visual_rejected": 6,
+        "no_eligible_candidates": 12
+      },
+      "referenceErrors": [],
+      "usageCoveredCalls": 31,
+      "inputTokens": 471939,
+      "outputTokens": 29499,
+      "cachedInputTokens": 416832,
+      "fixtureHash": "233bea5e402c7cbdc660de36601f997c43fd7fe67998f0104e57d01637e369ae",
+      "requestHashes": [
+        "74ab7b2e6e1bd01e3dec96582c30a8a282ae4572d1760a1f23392237ba34abaa",
+        "a86e215a8351dff27d7214c1d5602cabd6de2aa04c20bae0391a5926c43211ab",
+        "38ae334e38685fa9b62ddceade3047b041499a7a1aaf01523d5a196109833eb7",
+        "830f2c9f26932befd2c5a1fbcd3bbeb0936b81bb7c3660ac9a994e60cfe73ad9",
+        "28900603fcabdbd323f24a12cb66152c0111c53afe02adac733dd6a4eb284209",
+        "90e7af88907a7252ac9b70b60cac144398e26ccc3eb45dddd160e070e794bbbd",
+        "4ebd289553087b5abc6fe1699e528847a073b47ea055a7d9ed27f43f7a863e67",
+        "e0fb6712b4840cbeed3ed57b9ecef185c575527324d760409cec987ed38a6d7b",
+        "98aed53f9e0056801aa45470460e45c01288f4dc1ea34521dea9872a2b14353f",
+        "056d0095b64fabec164bb9022441e696b9c4a82eaf2666ce7859b21831c7a09c",
+        "296aefe377ac9e6bc684fa1df79b0bd1b281f5ffeadcde1ec7fb55256e00c924",
+        "f3c0c8daf5b18f61cae22b0d4244ea2694ff54a6048d69ff5199a026b7905607",
+        "bf986bf741de6cbe19005fd53da01f21fb816d383f5e7da97df1660d2c25bbcf"
+      ]
+    },
+    {
+      "run": "quiz-only-A-1",
+      "fixture": "quiz-only",
+      "variant": "A",
+      "repetition": 1,
+      "seconds": 38.094,
+      "nodes": 5,
+      "failed": 0,
+      "activities": 18,
+      "activityTypes": {
+        "multiple_choice": 9,
+        "true_false": 5,
+        "short_answer": 4
+      },
+      "learnerContentCharacters": 5695,
+      "flashcards": 0,
+      "characters": 14660,
+      "images": 0,
+      "summedTextSeconds": 38.075,
+      "summedImageSeconds": 0.002,
+      "escalatedNodes": 0,
+      "verifierErrors": [],
+      "modelCalls": 5,
+      "loggedInvalidOutputRetries": 0,
+      "imageSkipReasons": {},
+      "referenceErrors": [],
+      "usageCoveredCalls": 0,
+      "inputTokens": null,
+      "outputTokens": null,
+      "cachedInputTokens": null,
+      "fixtureHash": "454ebd3e730eedc2ceffb869817ecc678267613a9e0af33969784fd8b91d97ad",
+      "requestHashes": [
+        "662c48fcca7aedd4947444a45baae6ef586c7222929d9cc2ff9aa3e67a60c0c4",
+        "ba0245e341a1a87a02560faddad495a36ea61978a2bda7a5683ef503f51eca8d",
+        "02990dc3514d5fb43c3f0164b0dcecc22d6c666c00c1643d4cdbf1a38712ae32",
+        "4589cd2ce34bd3561e65501b4bbade163e53c6489a16b73a7e9762919c9ed82c",
+        "09110279d797fe1bc5ea664c5ef8155c48e34f79beea4144ec095568d07dbc47"
+      ],
+      "simulatedThreeSlotsSeconds": 15.0
+    },
+    {
+      "run": "quiz-only-A-2",
+      "fixture": "quiz-only",
+      "variant": "A",
+      "repetition": 2,
+      "seconds": 29.2,
+      "nodes": 5,
+      "failed": 0,
+      "activities": 15,
+      "activityTypes": {
+        "multiple_choice": 8,
+        "short_answer": 3,
+        "true_false": 4
+      },
+      "learnerContentCharacters": 4030,
+      "flashcards": 0,
+      "characters": 10464,
+      "images": 0,
+      "summedTextSeconds": 29.182,
+      "summedImageSeconds": 0.002,
+      "escalatedNodes": 0,
+      "verifierErrors": [],
+      "modelCalls": 5,
+      "loggedInvalidOutputRetries": 0,
+      "imageSkipReasons": {},
+      "referenceErrors": [],
+      "usageCoveredCalls": 5,
+      "inputTokens": 37412,
+      "outputTokens": 2428,
+      "cachedInputTokens": 36762,
+      "fixtureHash": "454ebd3e730eedc2ceffb869817ecc678267613a9e0af33969784fd8b91d97ad",
+      "requestHashes": [
+        "662c48fcca7aedd4947444a45baae6ef586c7222929d9cc2ff9aa3e67a60c0c4",
+        "ba0245e341a1a87a02560faddad495a36ea61978a2bda7a5683ef503f51eca8d",
+        "02990dc3514d5fb43c3f0164b0dcecc22d6c666c00c1643d4cdbf1a38712ae32",
+        "4589cd2ce34bd3561e65501b4bbade163e53c6489a16b73a7e9762919c9ed82c",
+        "09110279d797fe1bc5ea664c5ef8155c48e34f79beea4144ec095568d07dbc47"
+      ],
+      "simulatedThreeSlotsSeconds": 11.699
+    },
+    {
+      "run": "quiz-only-B-1",
+      "fixture": "quiz-only",
+      "variant": "B",
+      "repetition": 1,
+      "seconds": 12.883,
+      "nodes": 5,
+      "failed": 0,
+      "activities": 17,
+      "activityTypes": {
+        "multiple_choice": 8,
+        "true_false": 5,
+        "short_answer": 4
+      },
+      "learnerContentCharacters": 4606,
+      "flashcards": 0,
+      "characters": 12292,
+      "images": 0,
+      "summedTextSeconds": 30.245,
+      "summedImageSeconds": 0.002,
+      "escalatedNodes": 0,
+      "verifierErrors": [],
+      "modelCalls": 5,
+      "loggedInvalidOutputRetries": 0,
+      "imageSkipReasons": {},
+      "referenceErrors": [],
+      "usageCoveredCalls": 0,
+      "inputTokens": null,
+      "outputTokens": null,
+      "cachedInputTokens": null,
+      "fixtureHash": "454ebd3e730eedc2ceffb869817ecc678267613a9e0af33969784fd8b91d97ad",
+      "requestHashes": [
+        "662c48fcca7aedd4947444a45baae6ef586c7222929d9cc2ff9aa3e67a60c0c4",
+        "ba0245e341a1a87a02560faddad495a36ea61978a2bda7a5683ef503f51eca8d",
+        "02990dc3514d5fb43c3f0164b0dcecc22d6c666c00c1643d4cdbf1a38712ae32",
+        "4589cd2ce34bd3561e65501b4bbade163e53c6489a16b73a7e9762919c9ed82c",
+        "09110279d797fe1bc5ea664c5ef8155c48e34f79beea4144ec095568d07dbc47"
+      ]
+    },
+    {
+      "run": "quiz-only-B-2",
+      "fixture": "quiz-only",
+      "variant": "B",
+      "repetition": 2,
+      "seconds": 16.939,
+      "nodes": 5,
+      "failed": 0,
+      "activities": 19,
+      "activityTypes": {
+        "multiple_choice": 9,
+        "short_answer": 5,
+        "true_false": 5
+      },
+      "learnerContentCharacters": 4821,
+      "flashcards": 0,
+      "characters": 13503,
+      "images": 0,
+      "summedTextSeconds": 38.952,
+      "summedImageSeconds": 0.002,
+      "escalatedNodes": 0,
+      "verifierErrors": [],
+      "modelCalls": 5,
+      "loggedInvalidOutputRetries": 0,
+      "imageSkipReasons": {},
+      "referenceErrors": [],
+      "usageCoveredCalls": 5,
+      "inputTokens": 37412,
+      "outputTokens": 3046,
+      "cachedInputTokens": 36762,
+      "fixtureHash": "454ebd3e730eedc2ceffb869817ecc678267613a9e0af33969784fd8b91d97ad",
+      "requestHashes": [
+        "662c48fcca7aedd4947444a45baae6ef586c7222929d9cc2ff9aa3e67a60c0c4",
+        "ba0245e341a1a87a02560faddad495a36ea61978a2bda7a5683ef503f51eca8d",
+        "02990dc3514d5fb43c3f0164b0dcecc22d6c666c00c1643d4cdbf1a38712ae32",
+        "4589cd2ce34bd3561e65501b4bbade163e53c6489a16b73a7e9762919c9ed82c",
+        "09110279d797fe1bc5ea664c5ef8155c48e34f79beea4144ec095568d07dbc47"
+      ]
+    },
+    {
+      "run": "quiz-only-C-1",
+      "fixture": "quiz-only",
+      "variant": "C",
+      "repetition": 1,
+      "seconds": 11.629,
+      "nodes": 5,
+      "failed": 0,
+      "activities": 16,
+      "activityTypes": {
+        "multiple_choice": 6,
+        "true_false": 5,
+        "short_answer": 5
+      },
+      "learnerContentCharacters": 3303,
+      "flashcards": 0,
+      "characters": 10112,
+      "images": 0,
+      "summedTextSeconds": 25.936,
+      "summedImageSeconds": 0.002,
+      "escalatedNodes": 0,
+      "verifierErrors": [],
+      "modelCalls": 5,
+      "loggedInvalidOutputRetries": 0,
+      "imageSkipReasons": {},
+      "referenceErrors": [],
+      "usageCoveredCalls": 5,
+      "inputTokens": 37412,
+      "outputTokens": 2794,
+      "cachedInputTokens": 35200,
+      "fixtureHash": "454ebd3e730eedc2ceffb869817ecc678267613a9e0af33969784fd8b91d97ad",
+      "requestHashes": [
+        "662c48fcca7aedd4947444a45baae6ef586c7222929d9cc2ff9aa3e67a60c0c4",
+        "ba0245e341a1a87a02560faddad495a36ea61978a2bda7a5683ef503f51eca8d",
+        "02990dc3514d5fb43c3f0164b0dcecc22d6c666c00c1643d4cdbf1a38712ae32",
+        "4589cd2ce34bd3561e65501b4bbade163e53c6489a16b73a7e9762919c9ed82c",
+        "09110279d797fe1bc5ea664c5ef8155c48e34f79beea4144ec095568d07dbc47"
+      ]
+    },
+    {
+      "run": "quiz-only-C-2",
+      "fixture": "quiz-only",
+      "variant": "C",
+      "repetition": 2,
+      "seconds": 10.406,
+      "nodes": 5,
+      "failed": 0,
+      "activities": 15,
+      "activityTypes": {
+        "multiple_choice": 5,
+        "true_false": 5,
+        "short_answer": 5
+      },
+      "learnerContentCharacters": 3534,
+      "flashcards": 0,
+      "characters": 10260,
+      "images": 0,
+      "summedTextSeconds": 26.534,
+      "summedImageSeconds": 0.001,
+      "escalatedNodes": 0,
+      "verifierErrors": [],
+      "modelCalls": 5,
+      "loggedInvalidOutputRetries": 0,
+      "imageSkipReasons": {},
+      "referenceErrors": [],
+      "usageCoveredCalls": 5,
+      "inputTokens": 37412,
+      "outputTokens": 2844,
+      "cachedInputTokens": 35200,
+      "fixtureHash": "454ebd3e730eedc2ceffb869817ecc678267613a9e0af33969784fd8b91d97ad",
+      "requestHashes": [
+        "662c48fcca7aedd4947444a45baae6ef586c7222929d9cc2ff9aa3e67a60c0c4",
+        "ba0245e341a1a87a02560faddad495a36ea61978a2bda7a5683ef503f51eca8d",
+        "02990dc3514d5fb43c3f0164b0dcecc22d6c666c00c1643d4cdbf1a38712ae32",
+        "4589cd2ce34bd3561e65501b4bbade163e53c6489a16b73a7e9762919c9ed82c",
+        "09110279d797fe1bc5ea664c5ef8155c48e34f79beea4144ec095568d07dbc47"
+      ]
+    },
+    {
+      "run": "quiz-only-D-1",
+      "fixture": "quiz-only",
+      "variant": "D",
+      "repetition": 1,
+      "seconds": 8.291,
+      "nodes": 5,
+      "failed": 0,
+      "activities": 15,
+      "activityTypes": {
+        "multiple_choice": 5,
+        "true_false": 5,
+        "short_answer": 5
+      },
+      "learnerContentCharacters": 3320,
+      "flashcards": 0,
+      "characters": 9993,
+      "images": 0,
+      "summedTextSeconds": 20.134,
+      "summedImageSeconds": 0.001,
+      "escalatedNodes": 0,
+      "verifierErrors": [],
+      "modelCalls": 5,
+      "loggedInvalidOutputRetries": 0,
+      "imageSkipReasons": {},
+      "referenceErrors": [],
+      "usageCoveredCalls": 5,
+      "inputTokens": 37412,
+      "outputTokens": 2814,
+      "cachedInputTokens": 4224,
+      "fixtureHash": "454ebd3e730eedc2ceffb869817ecc678267613a9e0af33969784fd8b91d97ad",
+      "requestHashes": [
+        "662c48fcca7aedd4947444a45baae6ef586c7222929d9cc2ff9aa3e67a60c0c4",
+        "ba0245e341a1a87a02560faddad495a36ea61978a2bda7a5683ef503f51eca8d",
+        "02990dc3514d5fb43c3f0164b0dcecc22d6c666c00c1643d4cdbf1a38712ae32",
+        "4589cd2ce34bd3561e65501b4bbade163e53c6489a16b73a7e9762919c9ed82c",
+        "09110279d797fe1bc5ea664c5ef8155c48e34f79beea4144ec095568d07dbc47"
+      ]
+    },
+    {
+      "run": "quiz-only-D-2",
+      "fixture": "quiz-only",
+      "variant": "D",
+      "repetition": 2,
+      "seconds": 8.198,
+      "nodes": 5,
+      "failed": 0,
+      "activities": 15,
+      "activityTypes": {
+        "multiple_choice": 5,
+        "true_false": 5,
+        "short_answer": 5
+      },
+      "learnerContentCharacters": 2912,
+      "flashcards": 0,
+      "characters": 9626,
+      "images": 0,
+      "summedTextSeconds": 20.041,
+      "summedImageSeconds": 0.002,
+      "escalatedNodes": 0,
+      "verifierErrors": [],
+      "modelCalls": 5,
+      "loggedInvalidOutputRetries": 0,
+      "imageSkipReasons": {},
+      "referenceErrors": [],
+      "usageCoveredCalls": 5,
+      "inputTokens": 37412,
+      "outputTokens": 2755,
+      "cachedInputTokens": 35200,
+      "fixtureHash": "454ebd3e730eedc2ceffb869817ecc678267613a9e0af33969784fd8b91d97ad",
+      "requestHashes": [
+        "662c48fcca7aedd4947444a45baae6ef586c7222929d9cc2ff9aa3e67a60c0c4",
+        "ba0245e341a1a87a02560faddad495a36ea61978a2bda7a5683ef503f51eca8d",
+        "02990dc3514d5fb43c3f0164b0dcecc22d6c666c00c1643d4cdbf1a38712ae32",
+        "4589cd2ce34bd3561e65501b4bbade163e53c6489a16b73a7e9762919c9ed82c",
+        "09110279d797fe1bc5ea664c5ef8155c48e34f79beea4144ec095568d07dbc47"
+      ]
+    },
+    {
+      "run": "short-visual-A-1",
+      "fixture": "short-visual",
+      "variant": "A",
+      "repetition": 1,
+      "seconds": 174.797,
+      "nodes": 5,
+      "failed": 0,
+      "activities": 26,
+      "activityTypes": {
+        "lesson": 5,
+        "flashcard": 5,
+        "multiple_choice": 7,
+        "true_false": 4,
+        "short_answer": 5
+      },
+      "learnerContentCharacters": 35229,
+      "flashcards": 29,
+      "characters": 45632,
+      "images": 4,
+      "summedTextSeconds": 130.326,
+      "summedImageSeconds": 44.446,
+      "escalatedNodes": 0,
+      "verifierErrors": [],
+      "modelCalls": 12,
+      "loggedInvalidOutputRetries": 0,
+      "imageSkipReasons": {
+        "no_eligible_candidates": 5,
+        "no_search_results": 2,
+        "visual_rejected": 3
+      },
+      "referenceErrors": [],
+      "usageCoveredCalls": 0,
+      "inputTokens": null,
+      "outputTokens": null,
+      "cachedInputTokens": null,
+      "fixtureHash": "587216a730a70580e13a0eb5fa5708a6275653a2bbb7bc408a3ae743422d1381",
+      "requestHashes": [
+        "ede7f929665005ead2e8b0a39499943cc1e7b107ff557ec97edde61bec57ad03",
+        "92aeac70799148d6c1e40ceb7f6be822f540bc38d7956811be1ab6ad1a11ccf6",
+        "69bfd0639934ef305bef52ce4ea444ee6548628f2bd44485eaef62fe3c42b2a7",
+        "dacb72a76f52cfe8602580045354fba44e2e01a5ac08fc67bb21e6c97acf8055",
+        "da636b425b40d210038059b84c35bb6aebebd735f5c58f0ca179db5baff4f530"
+      ],
+      "simulatedThreeSlotsSeconds": 71.409
+    },
+    {
+      "run": "short-visual-A-2",
+      "fixture": "short-visual",
+      "variant": "A",
+      "repetition": 2,
+      "seconds": 126.444,
+      "nodes": 5,
+      "failed": 0,
+      "activities": 24,
+      "activityTypes": {
+        "lesson": 5,
+        "flashcard": 5,
+        "multiple_choice": 8,
+        "short_answer": 4,
+        "true_false": 2
+      },
+      "learnerContentCharacters": 29986,
+      "flashcards": 28,
+      "characters": 40336,
+      "images": 5,
+      "summedTextSeconds": 65.05,
+      "summedImageSeconds": 61.368,
+      "escalatedNodes": 0,
+      "verifierErrors": [],
+      "modelCalls": 15,
+      "loggedInvalidOutputRetries": 0,
+      "imageSkipReasons": {
+        "visual_rejected": 5,
+        "no_search_results": 2,
+        "no_eligible_candidates": 5
+      },
+      "referenceErrors": [],
+      "usageCoveredCalls": 15,
+      "inputTokens": 181191,
+      "outputTokens": 11675,
+      "cachedInputTokens": 147040,
+      "fixtureHash": "587216a730a70580e13a0eb5fa5708a6275653a2bbb7bc408a3ae743422d1381",
+      "requestHashes": [
+        "ede7f929665005ead2e8b0a39499943cc1e7b107ff557ec97edde61bec57ad03",
+        "92aeac70799148d6c1e40ceb7f6be822f540bc38d7956811be1ab6ad1a11ccf6",
+        "69bfd0639934ef305bef52ce4ea444ee6548628f2bd44485eaef62fe3c42b2a7",
+        "dacb72a76f52cfe8602580045354fba44e2e01a5ac08fc67bb21e6c97acf8055",
+        "da636b425b40d210038059b84c35bb6aebebd735f5c58f0ca179db5baff4f530"
+      ],
+      "simulatedThreeSlotsSeconds": 58.983
+    },
+    {
+      "run": "short-visual-B-1",
+      "fixture": "short-visual",
+      "variant": "B",
+      "repetition": 1,
+      "seconds": 76.929,
+      "nodes": 5,
+      "failed": 0,
+      "activities": 26,
+      "activityTypes": {
+        "lesson": 5,
+        "flashcard": 5,
+        "multiple_choice": 7,
+        "true_false": 5,
+        "short_answer": 4
+      },
+      "learnerContentCharacters": 33534,
+      "flashcards": 29,
+      "characters": 45320,
+      "images": 6,
+      "summedTextSeconds": 124.181,
+      "summedImageSeconds": 64.558,
+      "escalatedNodes": 0,
+      "verifierErrors": [],
+      "modelCalls": 17,
+      "loggedInvalidOutputRetries": 0,
+      "imageSkipReasons": {
+        "no_eligible_candidates": 4,
+        "no_search_results": 2,
+        "visual_rejected": 6
+      },
+      "referenceErrors": [],
+      "usageCoveredCalls": 17,
+      "inputTokens": 186197,
+      "outputTokens": 13198,
+      "cachedInputTokens": 147040,
+      "fixtureHash": "587216a730a70580e13a0eb5fa5708a6275653a2bbb7bc408a3ae743422d1381",
+      "requestHashes": [
+        "ede7f929665005ead2e8b0a39499943cc1e7b107ff557ec97edde61bec57ad03",
+        "92aeac70799148d6c1e40ceb7f6be822f540bc38d7956811be1ab6ad1a11ccf6",
+        "69bfd0639934ef305bef52ce4ea444ee6548628f2bd44485eaef62fe3c42b2a7",
+        "dacb72a76f52cfe8602580045354fba44e2e01a5ac08fc67bb21e6c97acf8055",
+        "da636b425b40d210038059b84c35bb6aebebd735f5c58f0ca179db5baff4f530"
+      ]
+    },
+    {
+      "run": "short-visual-B-2",
+      "fixture": "short-visual",
+      "variant": "B",
+      "repetition": 2,
+      "seconds": 59.784,
+      "nodes": 5,
+      "failed": 0,
+      "activities": 21,
+      "activityTypes": {
+        "lesson": 5,
+        "flashcard": 5,
+        "multiple_choice": 4,
+        "true_false": 4,
+        "short_answer": 3
+      },
+      "learnerContentCharacters": 32404,
+      "flashcards": 29,
+      "characters": 40532,
+      "images": 4,
+      "summedTextSeconds": 98.903,
+      "summedImageSeconds": 49.708,
+      "escalatedNodes": 0,
+      "verifierErrors": [],
+      "modelCalls": 12,
+      "loggedInvalidOutputRetries": 0,
+      "imageSkipReasons": {
+        "no_eligible_candidates": 8,
+        "no_search_results": 2,
+        "visual_rejected": 3
+      },
+      "referenceErrors": [],
+      "usageCoveredCalls": 12,
+      "inputTokens": 171862,
+      "outputTokens": 11342,
+      "cachedInputTokens": 147040,
+      "fixtureHash": "587216a730a70580e13a0eb5fa5708a6275653a2bbb7bc408a3ae743422d1381",
+      "requestHashes": [
+        "ede7f929665005ead2e8b0a39499943cc1e7b107ff557ec97edde61bec57ad03",
+        "92aeac70799148d6c1e40ceb7f6be822f540bc38d7956811be1ab6ad1a11ccf6",
+        "69bfd0639934ef305bef52ce4ea444ee6548628f2bd44485eaef62fe3c42b2a7",
+        "dacb72a76f52cfe8602580045354fba44e2e01a5ac08fc67bb21e6c97acf8055",
+        "da636b425b40d210038059b84c35bb6aebebd735f5c58f0ca179db5baff4f530"
+      ]
+    }
+  ],
+  "comparisons": [
+    {
+      "fixture": "long-mixed",
+      "variants": {
+        "A": {
+          "samples": 2,
+          "meanSeconds": 352.339,
+          "reductionFromA": 0.0
+        },
+        "B": {
+          "samples": 2,
+          "meanSeconds": 122.178,
+          "reductionFromA": 0.6532
+        }
+      }
+    },
+    {
+      "fixture": "quiz-only",
+      "variants": {
+        "A": {
+          "samples": 2,
+          "meanSeconds": 33.647,
+          "reductionFromA": 0.0
+        },
+        "B": {
+          "samples": 2,
+          "meanSeconds": 14.911,
+          "reductionFromA": 0.5568
+        },
+        "C": {
+          "samples": 2,
+          "meanSeconds": 11.018,
+          "reductionFromA": 0.6726
+        },
+        "D": {
+          "samples": 2,
+          "meanSeconds": 8.245,
+          "reductionFromA": 0.755
+        }
+      }
+    },
+    {
+      "fixture": "short-visual",
+      "variants": {
+        "A": {
+          "samples": 2,
+          "meanSeconds": 150.62,
+          "reductionFromA": 0.0
+        },
+        "B": {
+          "samples": 2,
+          "meanSeconds": 68.356,
+          "reductionFromA": 0.5462
+        }
+      }
+    }
+  ],
+  "quality": [
+    {
+      "comparison": "A-B",
+      "variant": "A",
+      "nodesReviewed": 46,
+      "scores": {
+        "accuracy": 4.609,
+        "coverage": 4.739,
+        "pedagogy": 4.935,
+        "assessment": 4.935
+      },
+      "nodesWithCriticalIssues": 15,
+      "preferences": 10,
+      "ties": 21
+    },
+    {
+      "comparison": "A-B",
+      "variant": "B",
+      "nodesReviewed": 46,
+      "scores": {
+        "accuracy": 4.696,
+        "coverage": 4.848,
+        "pedagogy": 4.891,
+        "assessment": 4.978
+      },
+      "nodesWithCriticalIssues": 9,
+      "preferences": 15,
+      "ties": 21
+    },
+    {
+      "comparison": "B-C",
+      "variant": "B",
+      "nodesReviewed": 10,
+      "scores": {
+        "accuracy": 5,
+        "coverage": 4.8,
+        "pedagogy": 4.9,
+        "assessment": 4.9
+      },
+      "nodesWithCriticalIssues": 1,
+      "preferences": 9,
+      "ties": 1
+    },
+    {
+      "comparison": "B-C",
+      "variant": "C",
+      "nodesReviewed": 10,
+      "scores": {
+        "accuracy": 4.6,
+        "coverage": 4.1,
+        "pedagogy": 4.2,
+        "assessment": 4.3
+      },
+      "nodesWithCriticalIssues": 5,
+      "preferences": 0,
+      "ties": 1
+    },
+    {
+      "comparison": "C-D",
+      "variant": "C",
+      "nodesReviewed": 10,
+      "scores": {
+        "accuracy": 4.5,
+        "coverage": 3.9,
+        "pedagogy": 4.1,
+        "assessment": 4.3
+      },
+      "nodesWithCriticalIssues": 7,
+      "preferences": 4,
+      "ties": 2
+    },
+    {
+      "comparison": "C-D",
+      "variant": "D",
+      "nodesReviewed": 10,
+      "scores": {
+        "accuracy": 4.6,
+        "coverage": 3.7,
+        "pedagogy": 4.2,
+        "assessment": 4.6
+      },
+      "nodesWithCriticalIssues": 5,
+      "preferences": 4,
+      "ties": 2
+    }
+  ],
+  "jevControls": {
+    "simpleIndonesianRelations": {
+      "cases": 8,
+      "matchedExpected": 7
+    },
+    "indexBasedV1": {
+      "mutatedCases": 5,
+      "flaggedAtPointSeven": 3,
+      "badKeyProbabilities": [0.3, 0.79, 0.41, 0.75, 0.83]
+    },
+    "selectedAnswerV2": {
+      "mutatedCases": 10,
+      "flaggedAtPointSeven": 10,
+      "badKeyProbabilities": [0.98, 0.98, 0.94, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98, 0.98]
+    }
+  },
+  "limitations": [
+    "Activity-stage replay, not an end-to-end workflow benchmark.",
+    "Two repeats cannot establish p95 or statistical non-inferiority.",
+    "LLM review is text-only and is not independent human acceptance.",
+    "Internal SDK HTTP retries are not fully visible in application call logs.",
+    "Some initial runs lack usage callback coverage; do not infer complete cost."
+  ]
+}

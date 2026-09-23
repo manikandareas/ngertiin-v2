@@ -7,6 +7,7 @@ dist/
 .DS_Store
 .turbo/
 coverage/
+.experiments/
 
 # Production credentials and Cloudflare local state
 .env.*

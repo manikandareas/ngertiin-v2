@@ -78,6 +78,7 @@ export function findModuleGenerationFailure(
     const failure = mappedFailure(current, fallbackStep);
     if (failure) return failure;
     if (typeof current !== "object") continue;
+    if (current instanceof AggregateError) pending.push(...current.errors);
     if ("error" in current) pending.push(current.error);
     if ("cause" in current) pending.push(current.cause);
   }

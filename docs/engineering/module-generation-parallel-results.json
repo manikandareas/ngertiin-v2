@@ -1,0 +1,450 @@
+[
+  {
+    "fixture": "quiz-only",
+    "variant": "A",
+    "repetition": 1,
+    "queueMs": 4,
+    "processingMs": 68098,
+    "wallMs": 68126,
+    "stages": [
+      {
+        "step": "extract_sources",
+        "metadata": {
+          "chunkCount": 2
+        },
+        "duration_ms": "10.272000"
+      },
+      {
+        "step": "analyze_material",
+        "metadata": {
+          "chunkCount": 2
+        },
+        "duration_ms": "27414.020000"
+      },
+      {
+        "step": "create_concepts",
+        "metadata": {
+          "conceptCount": 6
+        },
+        "duration_ms": "5977.196000"
+      },
+      {
+        "step": "create_curriculum",
+        "metadata": {
+          "nodeCount": 4
+        },
+        "duration_ms": "6345.951000"
+      },
+      {
+        "step": "generate_activities",
+        "metadata": {
+          "nodeCount": 4
+        },
+        "duration_ms": "27610.407000"
+      },
+      {
+        "step": "validate_module",
+        "metadata": {
+          "validated": true
+        },
+        "duration_ms": "25.989000"
+      }
+    ],
+    "counts": {
+      "nodes": 4,
+      "activities": 12
+    },
+    "attempts": 1,
+    "failure": null,
+    "inputTokens": 41527,
+    "outputTokens": 4971,
+    "cachedInputTokens": 0,
+    "applicationRetries": 0,
+    "providerErrors": 0,
+    "imagesSelected": 0
+  },
+  {
+    "fixture": "quiz-only",
+    "variant": "B",
+    "repetition": 1,
+    "queueMs": 1,
+    "processingMs": 45875,
+    "wallMs": 45917,
+    "stages": [
+      {
+        "step": "extract_sources",
+        "metadata": {
+          "chunkCount": 2
+        },
+        "duration_ms": "8.052000"
+      },
+      {
+        "step": "analyze_material",
+        "metadata": {
+          "chunkCount": 2
+        },
+        "duration_ms": "16784.878000"
+      },
+      {
+        "step": "create_concepts",
+        "metadata": {
+          "conceptCount": 6
+        },
+        "duration_ms": "6381.549000"
+      },
+      {
+        "step": "create_curriculum",
+        "metadata": {
+          "nodeCount": 4
+        },
+        "duration_ms": "5255.386000"
+      },
+      {
+        "step": "generate_activities",
+        "metadata": {
+          "nodeCount": 4
+        },
+        "duration_ms": "17124.676000"
+      },
+      {
+        "step": "validate_module",
+        "metadata": {
+          "validated": true
+        },
+        "duration_ms": "20.502000"
+      }
+    ],
+    "counts": {
+      "nodes": 4,
+      "activities": 13
+    },
+    "attempts": 1,
+    "failure": null,
+    "inputTokens": 41715,
+    "outputTokens": 5356,
+    "cachedInputTokens": 5760,
+    "applicationRetries": 0,
+    "providerErrors": 0,
+    "imagesSelected": 0
+  },
+  {
+    "fixture": "quiz-only",
+    "variant": "B",
+    "repetition": 2,
+    "queueMs": 6,
+    "processingMs": 41180,
+    "wallMs": 41246,
+    "stages": [
+      {
+        "step": "extract_sources",
+        "metadata": {
+          "chunkCount": 2
+        },
+        "duration_ms": "10.846000"
+      },
+      {
+        "step": "analyze_material",
+        "metadata": {
+          "chunkCount": 2
+        },
+        "duration_ms": "15562.785000"
+      },
+      {
+        "step": "create_concepts",
+        "metadata": {
+          "conceptCount": 5
+        },
+        "duration_ms": "5154.914000"
+      },
+      {
+        "step": "create_curriculum",
+        "metadata": {
+          "nodeCount": 5
+        },
+        "duration_ms": "5536.041000"
+      },
+      {
+        "step": "generate_activities",
+        "metadata": {
+          "nodeCount": 5
+        },
+        "duration_ms": "14418.202000"
+      },
+      {
+        "step": "validate_module",
+        "metadata": {
+          "validated": true
+        },
+        "duration_ms": "24.849000"
+      }
+    ],
+    "counts": {
+      "nodes": 5,
+      "activities": 14
+    },
+    "attempts": 1,
+    "failure": null,
+    "inputTokens": 48656,
+    "outputTokens": 5325,
+    "cachedInputTokens": 5760,
+    "applicationRetries": 0,
+    "providerErrors": 0,
+    "imagesSelected": 0
+  },
+  {
+    "fixture": "quiz-only",
+    "variant": "A",
+    "repetition": 2,
+    "queueMs": 6,
+    "processingMs": 66568,
+    "wallMs": 66624,
+    "stages": [
+      {
+        "step": "extract_sources",
+        "metadata": {
+          "chunkCount": 2
+        },
+        "duration_ms": "12.193000"
+      },
+      {
+        "step": "analyze_material",
+        "metadata": {
+          "chunkCount": 2
+        },
+        "duration_ms": "16213.301000"
+      },
+      {
+        "step": "create_concepts",
+        "metadata": {
+          "conceptCount": 6
+        },
+        "duration_ms": "6709.391000"
+      },
+      {
+        "step": "create_curriculum",
+        "metadata": {
+          "nodeCount": 5
+        },
+        "duration_ms": "6362.921000"
+      },
+      {
+        "step": "generate_activities",
+        "metadata": {
+          "nodeCount": 5
+        },
+        "duration_ms": "36859.422000"
+      },
+      {
+        "step": "validate_module",
+        "metadata": {
+          "validated": true
+        },
+        "duration_ms": "18.688000"
+      }
+    ],
+    "counts": {
+      "nodes": 5,
+      "activities": 15
+    },
+    "attempts": 1,
+    "failure": null,
+    "inputTokens": 49025,
+    "outputTokens": 5651,
+    "cachedInputTokens": 5760,
+    "applicationRetries": 0,
+    "providerErrors": 0,
+    "imagesSelected": 0
+  },
+  {
+    "fixture": "short-visual",
+    "variant": "A",
+    "repetition": 1,
+    "queueMs": 13,
+    "processingMs": 226317,
+    "wallMs": 226350,
+    "stages": [
+      {
+        "step": "extract_sources",
+        "metadata": {
+          "chunkCount": 5
+        },
+        "duration_ms": "8.975000"
+      },
+      {
+        "step": "analyze_material",
+        "metadata": {
+          "chunkCount": 5
+        },
+        "duration_ms": "27017.842000"
+      },
+      {
+        "step": "create_concepts",
+        "metadata": {
+          "conceptCount": 8
+        },
+        "duration_ms": "10026.636000"
+      },
+      {
+        "step": "create_curriculum",
+        "metadata": {
+          "nodeCount": 5
+        },
+        "duration_ms": "9045.787000"
+      },
+      {
+        "step": "generate_activities",
+        "metadata": {
+          "nodeCount": 5
+        },
+        "duration_ms": "179041.832000"
+      },
+      {
+        "step": "validate_module",
+        "metadata": {
+          "validated": true
+        },
+        "duration_ms": "37.915000"
+      }
+    ],
+    "counts": {
+      "nodes": 5,
+      "activities": 24
+    },
+    "attempts": 1,
+    "failure": null,
+    "inputTokens": 211336,
+    "outputTokens": 18142,
+    "cachedInputTokens": 2404,
+    "applicationRetries": 0,
+    "providerErrors": 0,
+    "imagesSelected": 7
+  },
+  {
+    "fixture": "short-visual",
+    "variant": "B",
+    "repetition": 1,
+    "queueMs": 1,
+    "processingMs": 156064,
+    "wallMs": 156086,
+    "stages": [
+      {
+        "step": "extract_sources",
+        "metadata": {
+          "chunkCount": 5
+        },
+        "duration_ms": "5.252000"
+      },
+      {
+        "step": "analyze_material",
+        "metadata": {
+          "chunkCount": 5
+        },
+        "duration_ms": "23598.559000"
+      },
+      {
+        "step": "create_concepts",
+        "metadata": {
+          "conceptCount": 6
+        },
+        "duration_ms": "8389.174000"
+      },
+      {
+        "step": "create_curriculum",
+        "metadata": {
+          "nodeCount": 5
+        },
+        "duration_ms": "8945.062000"
+      },
+      {
+        "step": "generate_activities",
+        "metadata": {
+          "nodeCount": 5
+        },
+        "duration_ms": "114635.967000"
+      },
+      {
+        "step": "validate_module",
+        "metadata": {
+          "validated": true
+        },
+        "duration_ms": "17.499000"
+      }
+    ],
+    "counts": {
+      "nodes": 5,
+      "activities": 26
+    },
+    "attempts": 1,
+    "failure": null,
+    "inputTokens": 215038,
+    "outputTokens": 17520,
+    "cachedInputTokens": 34155,
+    "applicationRetries": 0,
+    "providerErrors": 0,
+    "imagesSelected": 6
+  },
+  {
+    "fixture": "short-visual",
+    "variant": "B",
+    "repetition": 2,
+    "queueMs": 4,
+    "processingMs": 119830,
+    "wallMs": 119853,
+    "stages": [
+      {
+        "step": "extract_sources",
+        "metadata": {
+          "chunkCount": 5
+        },
+        "duration_ms": "3.454000"
+      },
+      {
+        "step": "analyze_material",
+        "metadata": {
+          "chunkCount": 5
+        },
+        "duration_ms": "29396.452000"
+      },
+      {
+        "step": "create_concepts",
+        "metadata": {
+          "conceptCount": 7
+        },
+        "duration_ms": "9787.173000"
+      },
+      {
+        "step": "create_curriculum",
+        "metadata": {
+          "nodeCount": 5
+        },
+        "duration_ms": "7698.328000"
+      },
+      {
+        "step": "generate_activities",
+        "metadata": {
+          "nodeCount": 5
+        },
+        "duration_ms": "72452.085000"
+      },
+      {
+        "step": "validate_module",
+        "metadata": {
+          "validated": true
+        },
+        "duration_ms": "11.889000"
+      }
+    ],
+    "counts": {
+      "nodes": 5,
+      "activities": 23
+    },
+    "attempts": 1,
+    "failure": null,
+    "inputTokens": 214437,
+    "outputTokens": 17652,
+    "cachedInputTokens": 34155,
+    "applicationRetries": 0,
+    "providerErrors": 0,
+    "imagesSelected": 6
+  }
+]
