@@ -134,11 +134,6 @@ export function ChatNewConversation({
         onSend={() => void create()}
         disabled={session.sending}
       />
-      {session.sending ? (
-        <p role="status" className="pb-2 text-center text-xs text-muted-foreground">
-          Membuka percakapan…
-        </p>
-      ) : null}
     </>
   );
   return (
