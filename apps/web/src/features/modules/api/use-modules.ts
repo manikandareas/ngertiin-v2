@@ -2,6 +2,7 @@ import { useAuth } from "@clerk/react";
 import type {
   AdaptiveDecision,
   CreateModuleBodyInput,
+  CurrentUser,
   GenerationStatus,
   ListModulesQueryInput,
   ListModulesResponse,
@@ -422,6 +423,9 @@ export function useArchiveModule(moduleId: string) {
     mutationFn: () => archiveModule(getToken, moduleId),
     onSuccess: async (module) => {
       queryClient.setQueryData(moduleQueryKey(userId, moduleId), module);
+      queryClient.setQueryData<CurrentUser>(currentUserQueryKey(userId), (user) =>
+        user?.currentModuleId === moduleId ? { ...user, currentModuleId: null } : user,
+      );
       queryClient.setQueriesData<InfiniteData<ListModulesResponse>>(
         { queryKey: ["chat", userId, "mention-modules"] },
         (previous) =>
@@ -438,6 +442,7 @@ export function useArchiveModule(moduleId: string) {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["chat", userId, "mention-modules"] }),
         queryClient.invalidateQueries({ queryKey: journeyQueryKey(userId, moduleId) }),
+        queryClient.invalidateQueries({ queryKey: currentUserQueryKey(userId) }),
         invalidateModuleCollections(queryClient, userId),
       ]);
     },

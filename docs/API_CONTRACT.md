@@ -202,6 +202,7 @@ type CurrentUser = {
   hasCustomAvatar: boolean;
   timezone: string;
   defaultGenerationSettings: GenerationSettings;
+  currentModuleId: string | null;
   stats: {
     totalXp: number;
     currentStreak: number;
@@ -478,12 +479,15 @@ Content-Type: application/json
     "language": "id",
     "length": "auto",
     "activityTypes": ["lesson", "flashcard", "quiz"]
-  }
+  },
+  "currentModuleId": "00000000-0000-4000-8000-000000000001"
 }
 ```
 
-All three fields are optional, but at least one must be supplied. `displayName` may be explicitly set to
+All four fields are optional, but at least one must be supplied. `displayName` may be explicitly set to
 `null`; `timezone` must be a valid IANA timezone. Returns `200` with `CurrentUser`.
+`currentModuleId` may be set to `null` and must otherwise identify a non-archived module owned by
+the current user. Archiving the selected module clears this field.
 `defaultGenerationSettings` uses the existing `GenerationSettings` contract. Defaults are Indonesian,
 automatic length, and all activity types. They initialize only a new builder after the profile loads;
 refetches do not overwrite the current draft. Existing modules, retries, resumed generations, and

@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { Navigate, Outlet, Route, Routes } from "react-router-dom";
 import { AuthLayout } from "../components/auth-layout";
+import { CurrentModuleRouteSync } from "../features/current-user/current-module-route-sync";
 import { AuthenticatedRoute } from "./authenticated-route";
 
 const ChatCitationPage = lazy(() => import("../pages/chat-citation"));
@@ -34,6 +35,7 @@ export function AppRoutes() {
         <Route
           element={
             <AuthenticatedRoute>
+              <CurrentModuleRouteSync />
               <Outlet />
             </AuthenticatedRoute>
           }

@@ -3,6 +3,7 @@ import { BookOpen, ChevronRight, Clock3 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "../../../components/ui/button";
 import { Card } from "../../../components/ui/card";
+import { useSelectCurrentModule } from "../../current-user/api/use-select-current-module";
 import { getModuleStatus, moduleDifficulties, moduleDurationTone } from "../module-presentation";
 import { moduleOverviewRoute } from "../next-learning-route";
 
@@ -13,12 +14,17 @@ export function ModuleCard({ module }: { module: ModuleSummary }) {
   const destination = moduleOverviewRoute(module);
   const progress = module.progress;
   const status = getModuleStatus(module);
+  const select = useSelectCurrentModule();
+  const selectModule = () => {
+    if (module.status !== "archived") select.mutate(module.id);
+  };
 
   return (
     <Card className="before:absolute before:-top-[11px] before:-left-0.5 before:h-[11px] before:w-21 before:rounded-t-[10px_14px] before:border-2 before:border-border before:border-b-0 before:bg-card before:content-[''] motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-out motion-safe:hover:-translate-y-[3px] motion-safe:hover:rotate-[0.4deg] relative mt-3 min-w-0 gap-0 rounded-tl-none px-5 py-5 sm:px-6">
       <h2 className="min-h-12 text-base font-semibold leading-6 tracking-tight">
         <Link
           to={destination}
+          onClick={selectModule}
           title={module.title ?? "Modul baru"}
           className="line-clamp-2 wrap-anywhere rounded-sm hover:text-link focus-visible:outline-2 focus-visible:outline-ring"
         >
@@ -61,6 +67,7 @@ export function ModuleCard({ module }: { module: ModuleSummary }) {
         <Button asChild size="icon" className="ml-auto size-11 shrink-0">
           <Link
             to={destination}
+            onClick={selectModule}
             aria-label={`${module.status === "ready" || module.status === "archived" ? "Lihat journey" : "Lihat status"}: ${module.title ?? "Modul baru"}`}
             title={
               module.status === "ready" || module.status === "archived"

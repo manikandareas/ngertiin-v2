@@ -42,6 +42,7 @@ import {
   source_contents,
   sources,
   user_module_progress,
+  users,
 } from "@ngertiin/database";
 import {
   finalizeAdaptiveNodeProgress,
@@ -568,6 +569,10 @@ export class ModulesService {
         .update(modules)
         .set({ status: "archived", updated_at: new Date() })
         .where(eq(modules.id, moduleId));
+      await transaction
+        .update(users)
+        .set({ current_module_id: null })
+        .where(and(eq(users.id, userId), eq(users.current_module_id, moduleId)));
     });
     return this.getModule(userId, moduleId);
   }

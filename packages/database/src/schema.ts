@@ -125,6 +125,7 @@ export const users = pgTable(
     default_generation_settings: jsonb()
       .notNull()
       .default({ language: "id", length: "auto", activityTypes: ["lesson", "flashcard", "quiz"] }),
+    current_module_id: uuid().references((): AnyPgColumn => modules.id, { onDelete: "set null" }),
     profile_initialized_at: optionalTimestamp(),
     profile_retry_after: optionalTimestamp(),
     timezone: varchar().notNull().default("UTC"),

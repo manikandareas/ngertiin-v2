@@ -4,6 +4,8 @@ import { ArrowLeftRight, ArrowUpRight, FileText, Map as MapIcon, Plus, X } from 
 import { Popover } from "radix-ui";
 import { useEffect, useState } from "react";
 import { Link, useLocation, useMatch } from "react-router-dom";
+import { useCurrentUser } from "../features/current-user/api/use-current-user";
+import { useSelectCurrentModule } from "../features/current-user/api/use-select-current-module";
 import { useJourney, useModule, useModules } from "../features/modules/api/use-modules";
 import { Button } from "./ui/button";
 import {
@@ -35,10 +37,18 @@ export function SidebarModuleSection({
   const { pathname, search } = useLocation();
   const match = useMatch("/modules/:moduleId/*");
   const routeId = match?.params.moduleId;
-  const moduleId =
+  const currentUser = useCurrentUser();
+  const routeModuleId =
     (routeId === "new" ? undefined : routeId) ??
-    new URLSearchParams(search).get("moduleId") ??
+    (pathname === "/modules/new" || pathname === "/chat"
+      ? new URLSearchParams(search).get("moduleId")
+      : null) ??
     undefined;
+  const routeModule = useModule(routeModuleId);
+  const moduleId =
+    routeModule.data?.status === "archived"
+      ? (currentUser.data?.currentModuleId ?? undefined)
+      : (routeModuleId ?? currentUser.data?.currentModuleId ?? undefined);
   const module = useModule(moduleId);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -231,6 +241,7 @@ function ModuleOptions({
   onNavigate: () => void;
 }) {
   const modules = useModules(query.trim() ? { q: query.trim() } : {});
+  const select = useSelectCurrentModule();
   const items = modules.data?.pages[0]?.data.slice(0, 6) ?? [];
   return (
     <div className="min-h-0 overflow-y-auto overscroll-contain py-1">
@@ -256,7 +267,10 @@ function ModuleOptions({
         <Link
           key={item.id}
           to={item.status === "ready" ? `/modules/${item.id}/journey` : `/modules/${item.id}`}
-          onClick={onNavigate}
+          onClick={() => {
+            select.mutate(item.id);
+            onNavigate();
+          }}
           aria-current={item.id === selectedId ? "page" : undefined}
           className="flex min-h-11 items-center gap-2 rounded-lg px-2.5 py-1.5 hover:bg-muted aria-[current=page]:bg-accent focus-visible:outline-2 focus-visible:outline-ring"
         >

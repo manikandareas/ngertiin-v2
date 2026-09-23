@@ -29,6 +29,7 @@ export const currentUserSchema = z.object({
   timezone: ianaTimezoneSchema,
   hasCustomAvatar: z.boolean(),
   defaultGenerationSettings: generationSettingsSchema,
+  currentModuleId: uuidSchema.nullable(),
   stats: userStatsSchema,
 });
 
@@ -37,13 +38,15 @@ export const patchCurrentUserBodySchema = z
     displayName: z.string().nullable().optional(),
     timezone: ianaTimezoneSchema.optional(),
     defaultGenerationSettings: generationSettingsSchema.optional(),
+    currentModuleId: uuidSchema.nullable().optional(),
   })
   .strict()
   .superRefine((value, context) => {
     if (
       value.displayName === undefined &&
       value.timezone === undefined &&
-      value.defaultGenerationSettings === undefined
+      value.defaultGenerationSettings === undefined &&
+      value.currentModuleId === undefined
     ) {
       context.addIssue({
         code: "custom",
