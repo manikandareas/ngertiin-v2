@@ -14,7 +14,7 @@
   color-scheme: light;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
-  --background: #ffffff;
+  --background: #fdfbf7;
   --foreground: #4b4b4b;
   --card: #ffffff;
   --card-foreground: #4b4b4b;
@@ -166,7 +166,7 @@
 
 :root.dark {
   color-scheme: dark;
-  --background: #141414;
+  --background: #1d1d1d;
   --foreground: #f2f2f2;
   --card: #202020;
   --card-foreground: #f2f2f2;
@@ -200,7 +200,7 @@
 @media (prefers-color-scheme: dark) {
   :root:not(.light):not(.dark) {
     color-scheme: dark;
-    --background: #141414;
+    --background: #1d1d1d;
     --foreground: #f2f2f2;
     --card: #202020;
     --card-foreground: #f2f2f2;
