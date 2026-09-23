@@ -6,9 +6,10 @@ One `Ngerti.in Production` project has Deploy Backend, Deploy Web, Deploy WWW,
 and Deploy All. `release_ref` defaults to `main`; the coordinator resolves it
 once to a full SHA. Git pushes do not deploy production. Installation IDs and
 acceptance evidence are recorded in [installation.json](installation.json).
-The installed controller currently uses branch `ops/semaphore-ui`; keep that
-branch available until `workflow_ref` is intentionally moved to another reviewed
-ref. Application `release_ref` still defaults to `main`.
+The installation record used `ops/semaphore-ui` as `workflow_ref`. Verify the
+private live config before a release: that branch is no longer published, so
+move `workflow_ref` to the reviewed `main` workflow when upgrading the
+controller. Application `release_ref` still defaults to `main`.
 
 ## Installation
 
@@ -102,6 +103,9 @@ restart can leave remote work running. Every failure retains `active.json` and
    backup history. For a dispatch intent without an ID, find the corresponding
    unique release title (backup uses the recorded prior-ID set). An absent or
    ambiguous result is unresolved, not permission to retry.
+   If GitHub dispatch failed before returning an ID, check whether the configured
+   `workflow_ref` still exists and search GitHub runs for the exact release title.
+   Update a removed controller ref before starting another task.
 3. Check the exact migration image, new container ID, exited state and exit code.
    If the container was removed, recover logs/history and establish the result
    manually. **Never automatically repeat an ambiguous migration.**

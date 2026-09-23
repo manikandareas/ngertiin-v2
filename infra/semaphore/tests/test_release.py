@@ -52,6 +52,17 @@ class ReleaseTests(unittest.TestCase):
                 c.run('web', 'main')
             self.assertTrue(j.path.exists())
 
+    def test_missing_controller_ref_does_not_block_future_releases(self):
+        with tempfile.TemporaryDirectory() as directory:
+            gh = Mock()
+            gh.resolve.side_effect = ReleaseError('Controller ref unavailable')
+            j = Journal(directory)
+            c = Coordinator({'activation_verified': True, 'workflow_ref': 'ops/semaphore-ui'}, gh, None, j)
+            with self.assertRaisesRegex(ReleaseError, 'Controller ref unavailable'):
+                c.run('all', 'main')
+            gh.resolve.assert_called_once_with('ops/semaphore-ui')
+            self.assertFalse(j.path.exists())
+
     def test_old_container_does_not_prove_migration(self):
         row = {'id': 'old', 'image': 'candidate', 'restarts': 0, 'status': 'exited', 'exit_code': 0}
         self.assertFalse(migration_done([row], 'candidate', ['old']))

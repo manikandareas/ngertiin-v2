@@ -39,12 +39,7 @@
   "authenticated_smoke": "not run: browser connection unavailable",
   "unit_tests": 14,
   "semaphore_restore": "passed: SQLite, administrator login, encrypted task secret and unresolved-release gate",
-  "enabled_apps": [
-    "www",
-    "web",
-    "backend",
-    "all"
-  ],
+  "enabled_apps": ["www", "web", "backend", "all"],
   "semaphore_source_commit": "ad97f2b",
   "backup_deployment": {
     "id": "FNPKMGq6lsPgHPm02A5xl",

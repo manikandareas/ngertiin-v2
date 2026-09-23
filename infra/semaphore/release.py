@@ -357,7 +357,10 @@ class Coordinator:
         require(app in self.cfg.get("enabled_apps", ["backend", "web", "www", "all"]), "This deployment template is not activated yet")
         with self.journal.lock():
             require(not self.journal.path.exists(), "Unreconciled release blocks all templates")
-            sha = self.gh.resolve(ref)
+            # A missing controller ref must fail before creating a release journal.
+            workflow_ref = self.cfg.get("workflow_ref", ref)
+            workflow_sha = self.gh.resolve(workflow_ref)
+            sha = workflow_sha if ref == workflow_ref else self.gh.resolve(ref)
             self.journal.begin(app, sha)
             try:
                 if app in ("backend", "all"):
