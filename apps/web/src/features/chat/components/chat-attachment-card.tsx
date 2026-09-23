@@ -1,10 +1,11 @@
 import { type ChatAttachment, chatAttachmentNote } from "@ngertiin/contracts/api";
 import { ArrowUpRight } from "lucide-react";
 import { type ReactElement, useState } from "react";
+import { fileChipClassName } from "../../../components/ui/file-chip";
 import type { TokenResolver } from "../../../lib/api";
 import { cn } from "../../../lib/utils";
 import { chatApi } from "../api/chat-api";
-import { ChatFileBadge, chatFileChipClassName } from "./chat-file-badge";
+import { ChatFileBadge } from "./chat-file-badge";
 
 type ChatAttachmentCardProps = {
   attachment: ChatAttachment;
@@ -45,7 +46,7 @@ export function ChatAttachmentCard({
       <button
         type="button"
         className={cn(
-          chatFileChipClassName,
+          fileChipClassName,
           "w-fit max-w-[min(100%,16rem)] cursor-pointer text-left transition-colors hover:bg-zinc-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 dark:hover:bg-zinc-700",
         )}
         title={`${attachment.filename} · ${fileSize}`}

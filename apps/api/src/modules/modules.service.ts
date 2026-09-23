@@ -621,6 +621,7 @@ export class ModulesService {
     const [module] = await this.infrastructure.database.db
       .select({
         id: modules.id,
+        generationRequestId: modules.generation_request_id,
         title: modules.title,
         description: modules.description,
         difficulty: modules.difficulty,
@@ -657,6 +658,24 @@ export class ModulesService {
     ) {
       throw new Error("Ready Module is missing initialized learning state.");
     }
+
+    const sourceRows = await this.infrastructure.database.db
+      .select({
+        id: sources.id,
+        type: sources.type,
+        title: sources.title,
+        originalFilename: sources.original_filename,
+        originalUrl: sources.original_url,
+      })
+      .from(generation_request_sources)
+      .innerJoin(sources, eq(sources.id, generation_request_sources.source_id))
+      .where(
+        and(
+          eq(generation_request_sources.generation_request_id, module.generationRequestId),
+          eq(sources.user_id, userId),
+        ),
+      )
+      .orderBy(asc(generation_request_sources.priority));
 
     const rows: ProgressNodeRow[] = (await this.infrastructure.database.db
       .select({
@@ -721,6 +740,11 @@ export class ModulesService {
         difficulty: module.difficulty,
         estimatedMinutes: module.estimatedMinutes,
       },
+      sources: sourceRows.map((source) => ({
+        id: source.id,
+        type: source.type,
+        title: source.title || source.originalFilename || source.originalUrl || "Materi teks",
+      })),
       progress: mapModuleProgress(module.progressStatus, module.progressPercentage, coreRows),
       nodes: displayRows.map(mapJourneyNode),
       nextAction: selectNextAction({

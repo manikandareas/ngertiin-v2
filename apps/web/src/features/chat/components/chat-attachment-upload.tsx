@@ -9,9 +9,10 @@ import {
 import { Paperclip, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "../../../components/ui/button";
+import { fileChipClassName } from "../../../components/ui/file-chip";
 import type { TokenResolver } from "../../../lib/api";
 import { chatApi } from "../api/chat-api";
-import { ChatFileBadge, chatFileChipClassName } from "./chat-file-badge";
+import { ChatFileBadge } from "./chat-file-badge";
 
 type Upload = { key: string; file: File; status: "uploading" | "failed"; error?: string };
 export function useAttachmentUpload(
@@ -148,7 +149,7 @@ export function useAttachmentUpload(
                   className="mb-1 h-16 max-w-40 rounded object-contain"
                 />
               ) : null}
-              <div className={chatFileChipClassName}>
+              <div className={fileChipClassName}>
                 <ChatFileBadge filename={item.filename} />
                 <span className="min-w-0 max-w-48 truncate" title={item.filename}>
                   {item.filename}

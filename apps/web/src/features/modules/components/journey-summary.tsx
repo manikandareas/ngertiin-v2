@@ -3,6 +3,7 @@ import { ArrowRight, Check, Clock3, Layers } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "../../../components/ui/button";
 import { nextLearningRoute } from "../next-learning-route";
+import { JourneySourceChip } from "./journey-source-chip";
 
 export function JourneySummary({ data, status }: { data: JourneyData; status: ModuleStatus }) {
   const destination = nextLearningRoute(data.nextAction);
@@ -39,6 +40,15 @@ export function JourneySummary({ data, status }: { data: JourneyData; status: Mo
           </span>
         ) : null}
       </div>
+      {data.sources.length > 0 ? (
+        <div className="mt-5 min-w-0">
+          <div className="flex min-w-0 flex-wrap gap-2">
+            {data.sources.map((source, index) => (
+              <JourneySourceChip key={source.id} source={source} index={index} />
+            ))}
+          </div>
+        </div>
+      ) : null}
       <div className="mt-6">
         <div className="flex items-baseline justify-between gap-3">
           <p className="text-sm text-muted-foreground">

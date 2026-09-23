@@ -4,11 +4,11 @@ import type { ChatCitation, ChatImage } from "@ngertiin/contracts/api";
 import { ArrowUpRight, Check, ChevronDown, Copy } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { fileChipClassName } from "../../../components/ui/file-chip";
 import { cn } from "../../../lib/utils";
 import { citationLabel, citationLink } from "../citation-location";
 import { citationText } from "../citation-text";
 import { useStreamedText } from "../use-streamed-text";
-import { chatFileChipClassName } from "./chat-file-badge";
 import { ChatMarkdown } from "./chat-markdown";
 import { ChatSourceFavicon } from "./chat-source-favicon";
 
@@ -109,7 +109,7 @@ export function ChatCitedAnswer({
               target="_blank"
               rel="noopener noreferrer"
               className={cn(
-                chatFileChipClassName,
+                fileChipClassName,
                 "w-fit max-w-[min(100%,16rem)] text-left transition-colors hover:bg-zinc-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transition-none dark:hover:bg-zinc-700",
               )}
               title={

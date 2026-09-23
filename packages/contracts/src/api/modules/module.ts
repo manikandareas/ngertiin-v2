@@ -2,6 +2,7 @@ import { z } from "zod";
 import { MODULE_GENERATION_PHASES } from "../../jobs/module-generation.js";
 import { successEnvelopeSchema, timestampSchema, uuidSchema } from "../common/identifiers.js";
 import { paginatedSuccessEnvelopeSchema } from "../common/pagination.js";
+import { sourceTypeSchema } from "../sources/source.js";
 import { DEFAULT_GENERATION_SETTINGS, generationSettingsSchema } from "./generation-settings.js";
 
 const MAX_INSTRUCTION_CODE_POINTS = 4_000;
@@ -320,6 +321,7 @@ export const journeySummarySchema = z.object({
     difficulty: z.enum(["beginner", "intermediate", "advanced"]),
     estimatedMinutes: z.number().int().positive().nullable(),
   }),
+  sources: z.array(z.object({ id: uuidSchema, title: z.string(), type: sourceTypeSchema })),
   progress: moduleProgressSchema,
   nodes: z.array(journeyNodeSchema),
   nextAction: nextLearningActionSchema,
