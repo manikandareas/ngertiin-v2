@@ -1,6 +1,7 @@
 import { type ChatThread, chatTitleSchema } from "@ngertiin/contracts/api";
 import { useQueryClient } from "@tanstack/react-query";
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import type { ReactNode } from "react";
 import { useRef, useState } from "react";
 import { Button } from "../../../components/ui/button";
 import { DialogFrame } from "../../../components/ui/dialog-frame";
@@ -19,9 +20,16 @@ type ChatThreadActionsProps = {
   api: ReturnType<typeof chatApi>;
   root: readonly unknown[];
   onDeleted?: () => void;
+  triggerIcon?: ReactNode;
 };
 
-export function ChatThreadActions({ thread, api, root, onDeleted }: ChatThreadActionsProps) {
+export function ChatThreadActions({
+  thread,
+  api,
+  root,
+  onDeleted,
+  triggerIcon,
+}: ChatThreadActionsProps) {
   const client = useQueryClient();
   const trigger = useRef<HTMLSpanElement>(null);
   const [action, setAction] = useState<"rename" | "delete" | null>(null);
@@ -69,7 +77,7 @@ export function ChatThreadActions({ thread, api, root, onDeleted }: ChatThreadAc
               className="size-8 shrink-0"
               aria-label={`Aksi percakapan ${thread.title}`}
             >
-              <MoreHorizontal className="size-4" />
+              {triggerIcon ?? <MoreHorizontal className="size-4" />}
             </Button>
           </DropdownMenuTrigger>
         </span>
