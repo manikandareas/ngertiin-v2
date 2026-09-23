@@ -1,6 +1,7 @@
 import type { ChatCitation, ChatImage } from "@ngertiin/contracts/api";
 import { code } from "@streamdown/code";
 import { createMathPlugin } from "@streamdown/math";
+import { BookOpen, FileText } from "lucide-react";
 import { useMemo } from "react";
 import {
   type Components,
@@ -8,8 +9,11 @@ import {
   Streamdown,
   type StreamdownProps,
 } from "streamdown";
+import { citationLabel } from "../citation-location";
+import { citationText } from "../citation-text";
 import "katex/dist/katex.min.css";
 import { ChatImageView } from "./chat-image";
+import { ChatSourceFavicon } from "./chat-source-favicon";
 
 const math = createMathPlugin({ singleDollarTextMath: true });
 const plugins = { code, math };
@@ -117,15 +121,23 @@ export function ChatMarkdown({
         if (href?.startsWith(citationPrefix)) {
           const number = Number(href.slice(citationPrefix.length));
           const citation = Number.isInteger(number) ? citations[number - 1] : undefined;
+          const Icon = citation?.origin === "original_source" ? FileText : BookOpen;
           return citation ? (
             <a
+              data-chat-citation=""
               href={citationHref(citation)}
               target="_blank"
               rel="noopener noreferrer"
-              className="mx-1 inline-flex h-5 items-center rounded-md bg-muted px-1.5 align-middle text-[10px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-link"
-              aria-label={`Buka rujukan ${number} di tab baru`}
+              className="mx-1 inline-flex h-5 max-w-[min(14rem,75vw)] items-center gap-1 rounded-full bg-muted px-2 align-middle text-[11px] font-medium leading-none text-muted-foreground no-underline transition-colors hover:bg-accent hover:text-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              title={citation.title}
+              aria-label={`Buka rujukan ${number}: ${citation.title} di tab baru`}
             >
-              {number}
+              {citation.origin === "web" ? (
+                <ChatSourceFavicon url={citation.url} className="size-3" />
+              ) : (
+                <Icon className="size-3 shrink-0" aria-hidden="true" />
+              )}
+              <span className="truncate">{citationLabel(citation)}</span>
             </a>
           ) : null;
         }
@@ -155,9 +167,14 @@ export function ChatMarkdown({
       {/* Streamdown 2.6 memoizes without components/remarkPlugins. Refresh when
           citation data arrives separately from the unchanged text chunk. */}
       <Streamdown
-        key={[...citations.map((citation) => citation.id), ...images.map((image) => image.id)].join(
-          ",",
-        )}
+        key={[
+          ...citations.map((citation) =>
+            citation.origin === "web"
+              ? `${citation.id}:${citation.occurrences.length}`
+              : citation.id,
+          ),
+          ...images.map((image) => image.id),
+        ].join(",")}
         mode="streaming"
         isAnimating={isAnimating}
         animated={
@@ -183,7 +200,7 @@ export function ChatMarkdown({
         }}
         controls={{ code: true, table: false }}
       >
-        {text.replace(/\[\[cite:[^\]]*\]?$/, "")}
+        {citationText(text, citations).replace(/\[\[cite:[^\]]*\]?$/, "")}
       </Streamdown>
     </div>
   );

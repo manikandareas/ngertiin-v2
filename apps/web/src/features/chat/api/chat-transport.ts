@@ -6,6 +6,7 @@ import {
   type ChatMessage,
   type ChatPageContext,
   type ChatRunStatus,
+  type ChatWebSearchState,
   chatSendResponseSchema,
   sendChatMessageSchema,
 } from "@ngertiin/contracts/api";
@@ -26,6 +27,7 @@ export type LearningMessage = UIMessage<
     "run-status": { status: ChatRunStatus; errorCode: string | null };
     citation: ChatCitation;
     image: ChatImage;
+    "web-search": ChatWebSearchState;
   }
 >;
 export function toUIMessage(message: ChatMessage): LearningMessage {
@@ -33,19 +35,25 @@ export function toUIMessage(message: ChatMessage): LearningMessage {
   return {
     id: message.id,
     role: message.role,
-    parts: message.parts.flatMap((part): LearningMessage["parts"] =>
-      part.type === "data-citation"
-        ? [
-            {
-              type: "source-document",
-              sourceId: part.data.id,
-              mediaType: "text/plain",
-              title: part.data.title,
-            },
-            part,
-          ]
-        : [part],
-    ),
+    parts: message.parts.flatMap((part): LearningMessage["parts"] => {
+      if (part.type !== "data-citation") return [part];
+      const citation = part.data;
+      if (citation.origin === "web") {
+        return [
+          { type: "source-url", sourceId: citation.id, url: citation.url, title: citation.title },
+          part,
+        ];
+      }
+      return [
+        {
+          type: "source-document",
+          sourceId: citation.id,
+          mediaType: "text/plain",
+          title: citation.title,
+        },
+        part,
+      ];
+    }),
     metadata: {
       runId: message.runId,
       status: status?.type === "data-run-status" ? status.data.status : undefined,

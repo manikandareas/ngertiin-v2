@@ -3,6 +3,8 @@ import {
   chatImageSchema,
   chatRunDataSchema,
   chatRunStatusSchema,
+  chatWebCitationSchema,
+  chatWebSearchSchema,
 } from "@ngertiin/contracts/api";
 import type { UIMessageChunk } from "ai";
 import { Redis } from "ioredis";
@@ -19,6 +21,17 @@ const frameSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("text-delta"), id: z.string(), delta: z.string() }),
   z.object({ type: z.literal("text-end"), id: z.string() }),
   z.object({ type: z.literal("data-run-status"), data: chatRunDataSchema }),
+  z.object({
+    type: z.literal("data-web-search"),
+    id: z.literal("web-search"),
+    data: chatWebSearchSchema,
+  }),
+  z.object({
+    type: z.literal("source-url"),
+    sourceId: z.uuid(),
+    url: chatWebCitationSchema.shape.url,
+    title: z.string(),
+  }),
   z.object({
     type: z.literal("source-document"),
     sourceId: z.uuid(),

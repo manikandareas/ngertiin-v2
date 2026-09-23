@@ -330,7 +330,7 @@
 .lesson-markdown {
   overflow-wrap: anywhere;
 }
-.lesson-markdown a {
+.lesson-markdown a:not([data-chat-citation]) {
   color: var(--link);
   text-decoration: underline;
 }

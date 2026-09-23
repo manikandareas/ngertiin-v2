@@ -1,5 +1,4 @@
 import { createHash, randomUUID } from "node:crypto";
-import { toUIMessageStream } from "@ai-sdk/langchain";
 import { AIMessage, type BaseMessage, HumanMessage, SystemMessage } from "@langchain/core/messages";
 import {
   Inject,
@@ -20,6 +19,8 @@ import {
   type ChatRunStatus,
   type ChatScope,
   type ChatUsage,
+  type ChatWebCitation,
+  type ChatWebSearchState,
   chatCitationSnapshotSchema,
   chatMessageSchema,
   chatMessageScopeSchema,
@@ -76,6 +77,7 @@ import {
 } from "./chat.stream.js";
 import { attachmentDto, ChatAttachmentsService } from "./chat-attachments.service.js";
 import { ChatMultimodal, promptTokenCount } from "./chat-multimodal.js";
+import { ChatWebSearch } from "./chat-web-search.js";
 import { createLearningAgent } from "./learning.agent.js";
 import { LearningEvidence, materialPrompt } from "./learning.context.js";
 import { learningPrompt } from "./prompts/learning.prompt.js";
@@ -1076,7 +1078,20 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
           if (error instanceof LearningRunError && error.code === "CONTEXT_LIMIT") return messages;
           throw error;
         }
-        const pair = [previousMessage, new AIMessage(textOf(assistant.parts_json))];
+        const webReferences = chatMessageParts(assistant.parts_json).flatMap((part) =>
+          part.type === "data-citation" && part.data.origin === "web"
+            ? [`${part.data.title}: ${part.data.url}`]
+            : [],
+        );
+        const pair = [
+          previousMessage,
+          new AIMessage(
+            textOf(assistant.parts_json) +
+              (webReferences.length
+                ? `\n\nSumber web pada jawaban ini (riwayat, bukan hasil pencarian baru):\n${webReferences.join("\n")}`
+                : ""),
+          ),
+        ];
         const budget = await promptTokenCount(model, [
           new SystemMessage(learningPrompt),
           ...pair,
@@ -1117,9 +1132,13 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
     terminal?: { status: ChatRunStatus; errorCode: ChatRunError | null },
     evidence: ChatCitationSnapshot[] = [],
     images: ChatImage[] = [],
+    webCitations: ChatWebCitation[] = [],
+    webSearch?: ChatWebSearchState,
   ) {
     // A concurrent tool completion must not change a snapshot mid-transaction.
     images = [...images];
+    webCitations = structuredClone(webCitations);
+    if (webSearch) webSearch = { ...webSearch };
     const committed = await this.db.transaction(async (tx) => {
       const [locked] = await tx
         .select({
@@ -1137,18 +1156,14 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
         .select()
         .from(chat_messages)
         .where(eq(chat_messages.id, assistantId));
-      const previous = {
+      const previousParts = message ? chatMessageParts(message.parts_json) : [];
+      const previous: ChatSnapshot = {
         ...this.snapshot(current, message ? textOf(message.parts_json) : ""),
-        images: message
-          ? chatMessageParts(message.parts_json).flatMap((part) =>
-              part.type === "data-image" ? [part.data] : [],
-            )
-          : [],
-        citations: message
-          ? chatMessageParts(message.parts_json).flatMap((part) =>
-              part.type === "data-citation" ? [part.data] : [],
-            )
-          : [],
+        webSearch: previousParts.find((part) => part.type === "data-web-search")?.data,
+        images: previousParts.flatMap((part) => (part.type === "data-image" ? [part.data] : [])),
+        citations: previousParts.flatMap((part) =>
+          part.type === "data-citation" ? [part.data] : [],
+        ),
       };
       let status = current.status;
       if (terminal) status = current.status === "cancelling" ? "cancelled" : terminal.status;
@@ -1165,8 +1180,18 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
           id: snapshot.citation.id,
           data: snapshot.citation,
         }));
+      citations.push(
+        ...webCitations.map(
+          (citation): ChatPart => ({ type: "data-citation", id: citation.id, data: citation }),
+        ),
+      );
+      if (webSearch?.status === "searching" && terminal)
+        webSearch = { ...webSearch, status: "failed" };
       const parts: ChatPart[] = [
         { type: "text", text },
+        ...(webSearch
+          ? [{ type: "data-web-search" as const, id: "web-search" as const, data: webSearch }]
+          : []),
         ...citations,
         ...images.map((image): ChatPart => ({ type: "data-image", id: image.id, data: image })),
       ];
@@ -1214,6 +1239,7 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
         ? {
             snapshot: {
               ...this.snapshot(updated, text),
+              webSearch,
               images,
               citations: citations.flatMap((part) =>
                 part.type === "data-citation" ? [part.data] : [],
@@ -1270,15 +1296,23 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
               .where(eq(chat_messages.id, run.assistant_message_id))
           : [];
         const text = message ? textOf(message.parts_json) : "";
-        const snapshot = this.snapshot(updated, text);
+        const parts = message ? chatMessageParts(message.parts_json) : [];
+        const priorWebSearch = parts.find((part) => part.type === "data-web-search")?.data;
+        const webSearch =
+          priorWebSearch?.status === "searching"
+            ? { ...priorWebSearch, status: "failed" as const }
+            : priorWebSearch;
+        const snapshot = { ...this.snapshot(updated, text), webSearch };
         if (message)
           await tx
             .update(chat_messages)
             .set({
               parts_json: [
-                ...chatMessageParts(message.parts_json).filter(
-                  (part) => part.type !== "data-run-status",
-                ),
+                ...parts
+                  .filter((part) => part.type !== "data-run-status")
+                  .map((part) =>
+                    part.type === "data-web-search" ? { ...part, data: webSearch } : part,
+                  ),
                 {
                   type: "data-run-status",
                   data: { status: updated.status, errorCode: updated.error_code },
@@ -1293,7 +1327,10 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
           .where(
             and(eq(chat_run_usage.run_id, run.id), eq(chat_run_usage.coverage, "unavailable")),
           );
-        snapshots.push({ snapshot, previous: this.snapshot(run, text) });
+        snapshots.push({
+          snapshot,
+          previous: { ...this.snapshot(run, text), webSearch: priorWebSearch },
+        });
       }
       return snapshots;
     });
@@ -1311,6 +1348,7 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
     const assistantId = randomUUID();
     const calls = new Map<string, ChatUsage>();
     const evidence = new LearningEvidence();
+    const webSearch = new ChatWebSearch();
     const images: ChatImage[] = [];
     const imageDiagnostic: ChatImageDiagnostic = { status: "not_requested", searches: [] };
     let text = "";
@@ -1391,6 +1429,8 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
             undefined,
             evidence.values(),
             images,
+            webSearch.values(snapshotText),
+            webSearch.state,
           ))
         ) {
           stop("PROCESS_INTERRUPTED");
@@ -1407,6 +1447,28 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
       signal: abort.signal,
       assertActive,
       save,
+      webSearchCount: () => webSearch.state.searches,
+      onStreamEvent: async (event) => {
+        assertActive();
+        if (
+          event.event === "error" ||
+          (event.event === "provider" && ["error", "response.failed"].includes(event.name))
+        )
+          throw new LearningRunError("PROVIDER_ERROR");
+        const metadataChanged = webSearch.handle(event);
+        if (event.event === "content-block-delta" && event.delta.type === "text-delta")
+          text += event.delta.text;
+        if (
+          metadataChanged ||
+          (text !== savedText && Date.now() - lastSnapshot >= this.env.CHAT_SNAPSHOT_INTERVAL_MS)
+        ) {
+          if (webSearch.state.searches > this.env.CHAT_TOOL_MAX_CALLS) {
+            stop("STEP_LIMIT");
+            assertActive();
+          }
+          await save();
+        }
+      },
     });
     let snapshotBusy = false;
     const snapshotTimer = setInterval(() => {
@@ -1545,18 +1607,14 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
           recursionLimit: this.env.CHAT_AGENT_MAX_STEPS * 4 + 10,
         },
       );
-      const reader = toUIMessageStream(stream).getReader();
+      const reader = stream.getReader();
       try {
         while (true) {
-          const { done, value } = await reader.read();
+          const { done } = await reader.read();
           assertActive();
           if (done) break;
-          // Only public text is persisted; provider metadata and reasoning never enter UI frames.
-          if (value.type === "error") throw new Error("Provider stream error");
-          if (value.type === "text-delta") {
-            text += value.delta;
-            if (Date.now() - lastSnapshot >= this.env.CHAT_SNAPSHOT_INTERVAL_MS) await save();
-          }
+          // Public text and citations arrive together through the native model callback.
+          // Drain the graph for tool execution and errors; never publish its private state.
         }
       } finally {
         reader.releaseLock();
@@ -1580,6 +1638,8 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
         },
         evidence.values(),
         images,
+        webSearch.values(text),
+        webSearch.state,
       );
     } catch (error) {
       finished = true; // Late provider callbacks cannot change snapshots or usage.
@@ -1599,6 +1659,8 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
         },
         evidence.values(),
         images,
+        webSearch.values(text),
+        webSearch.state,
       );
     } finally {
       finished = true;
@@ -1618,6 +1680,8 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
         threadId: run.thread_id,
         modelCallCount: budget.modelCallCount,
         toolCallCount: budget.toolCallCount,
+        webSearchCount: webSearch.state.searches,
+        webSourceCount: webSearch.values(text).length,
         imageStatus: imageDiagnostic.status,
         imageCount: images.length,
         usageCoverage: this.ai.aggregateUsage([...calls.values()]).coverage,
@@ -1642,6 +1706,10 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
       this.notFound();
     return {
       ...this.snapshot(row.run, row.message ? textOf(row.message.parts_json) : ""),
+      webSearch: row.message
+        ? chatMessageParts(row.message.parts_json).find((part) => part.type === "data-web-search")
+            ?.data
+        : undefined,
       images: row.message
         ? chatMessageParts(row.message.parts_json).flatMap((part) =>
             part.type === "data-image" ? [part.data] : [],

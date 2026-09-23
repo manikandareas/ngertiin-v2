@@ -3,6 +3,7 @@ import {
   type ChatImage,
   type ChatRunError,
   type ChatRunStatus,
+  type ChatWebSearchState,
   isChatRunActive,
 } from "@ngertiin/contracts/api";
 import type { UIMessageChunk } from "ai";
@@ -18,6 +19,7 @@ export type ChatSnapshot = {
   text: string;
   citations?: ChatCitation[];
   images?: ChatImage[];
+  webSearch?: ChatWebSearchState;
   sequence: number;
 };
 export type ChatEventResponse = {
@@ -48,17 +50,32 @@ export function chatSnapshotFrames(
   }
   const delta = snapshot.text.slice(previous?.text.length ?? 0);
   if (delta) frames.push({ type: "text-delta", id: "answer", delta });
+  if (
+    snapshot.webSearch &&
+    (snapshot.webSearch.status !== previous?.webSearch?.status ||
+      snapshot.webSearch.searches !== previous?.webSearch?.searches)
+  )
+    frames.push({ type: "data-web-search", id: "web-search", data: snapshot.webSearch });
   for (const citation of snapshot.citations ?? []) {
-    if (!previous?.citations?.some((item) => item.id === citation.id))
+    const existing = previous?.citations?.find((item) => item.id === citation.id);
+    if (!existing)
       frames.push(
-        {
-          type: "source-document",
-          sourceId: citation.id,
-          mediaType: "text/plain",
-          title: citation.title,
-        },
-        { type: "data-citation", id: citation.id, data: citation },
+        citation.origin === "web"
+          ? {
+              type: "source-url",
+              sourceId: citation.id,
+              url: citation.url,
+              title: citation.title,
+            }
+          : {
+              type: "source-document",
+              sourceId: citation.id,
+              mediaType: "text/plain",
+              title: citation.title,
+            },
       );
+    if (JSON.stringify(existing) !== JSON.stringify(citation))
+      frames.push({ type: "data-citation", id: citation.id, data: citation });
   }
   for (const image of snapshot.images ?? []) {
     if (!previous?.images?.some((item) => item.id === image.id))

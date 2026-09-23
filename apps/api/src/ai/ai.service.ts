@@ -1,3 +1,5 @@
+import { BaseCallbackHandler } from "@langchain/core/callbacks/base";
+import type { ChatModelStreamEvent } from "@langchain/core/language_models/event";
 import { ChatOpenAI, OpenAIEmbeddings } from "@langchain/openai";
 import { Inject, Injectable } from "@nestjs/common";
 import type { ChatRunError, ChatUsage } from "@ngertiin/contracts/api";
@@ -22,7 +24,13 @@ export class AiService {
     return validateEmbeddings(await client.embedDocuments(texts), texts.length, dimensions);
   }
 
-  createChatModel(options?: { maxTokens: number; timeout: number; onStream?: () => void }) {
+  createChatModel(options?: {
+    maxTokens: number;
+    timeout: number;
+    onStream?: () => void;
+    onStreamEvent?: (event: ChatModelStreamEvent) => void | Promise<void>;
+    maxToolCalls?: number;
+  }) {
     if (!this.env.OPENAI_API_KEY || !this.env.OPENAI_CHAT_MODEL) {
       throw new ProductError(
         503,
@@ -31,13 +39,29 @@ export class AiService {
         "Teman belajar belum tersedia.",
       );
     }
+    // Native events carry web-search progress and annotations that token callbacks omit.
+    const streamHandler =
+      options?.onStream || options?.onStreamEvent
+        ? Object.assign(
+            BaseCallbackHandler.fromMethods({
+              handleLLMNewToken: options.onStream,
+              handleChatModelStreamEvent: async (event) => {
+                options.onStream?.();
+                await options.onStreamEvent?.(event);
+              },
+            }),
+            {
+              lc_prefer_chat_model_stream_events: Boolean(options.onStreamEvent),
+              awaitHandlers: true,
+              raiseError: true,
+            },
+          )
+        : undefined;
     return new ChatOpenAI({
       apiKey: this.env.OPENAI_API_KEY,
       model: this.env.OPENAI_CHAT_MODEL,
       useResponsesApi: true,
-      callbacks: options?.onStream
-        ? [{ handleLLMNewToken: options.onStream, handleChatModelStreamEvent: options.onStream }]
-        : undefined,
+      callbacks: streamHandler ? [streamHandler] : undefined,
       maxTokens: options?.maxTokens ?? this.env.CHAT_OUTPUT_MAX_TOKENS,
       timeout: Math.min(
         this.env.CHAT_PROVIDER_TIMEOUT_MS,
@@ -45,7 +69,10 @@ export class AiService {
       ),
       maxRetries: this.env.CHAT_PROVIDER_MAX_RETRIES,
       // Do not persist conversations with the provider; our database owns history.
-      modelKwargs: { store: false },
+      modelKwargs: {
+        store: false,
+        ...(options?.maxToolCalls !== undefined ? { max_tool_calls: options.maxToolCalls } : {}),
+      },
     });
   }
 

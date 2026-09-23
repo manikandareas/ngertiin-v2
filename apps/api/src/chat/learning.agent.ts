@@ -1,6 +1,6 @@
 import type { AIMessage, BaseMessage, SystemMessage } from "@langchain/core/messages";
-import type { StructuredToolInterface } from "@langchain/core/tools";
-import type { ChatOpenAI } from "@langchain/openai";
+import type { ServerTool, StructuredToolInterface } from "@langchain/core/tools";
+import { type ChatOpenAI, tools as openaiTools } from "@langchain/openai";
 import { createAgent, createMiddleware } from "langchain";
 import { isAttachmentRejection } from "./chat-multimodal.js";
 import { learningPrompt } from "./prompts/learning.prompt.js";
@@ -14,6 +14,7 @@ export type ExecutionBudget = {
   canFallback(): boolean;
   rejectedCall(callId: string): void;
   onCallError(error: unknown): void;
+  canSearchWeb(): boolean;
 };
 
 export function createLearningAgent(
@@ -23,14 +24,22 @@ export function createLearningAgent(
   fallback?: (messages: BaseMessage[]) => Promise<BaseMessage[]>,
 ) {
   let fallbackUsed = false;
+  const agentTools: (StructuredToolInterface | ServerTool)[] = [...tools, openaiTools.webSearch()];
   return createAgent({
     model,
-    tools,
+    tools: agentTools,
     systemPrompt: learningPrompt,
     middleware: [
       createMiddleware({
         name: "LearningRunBudget",
         wrapModelCall: async (request, handler) => {
+          if (!budget.canSearchWeb())
+            request = {
+              ...request,
+              tools: request.tools.filter(
+                (tool) => !("type" in tool && tool.type === "web_search"),
+              ),
+            };
           if (fallbackUsed && fallback)
             request = { ...request, messages: await fallback(request.messages) };
           const call = await budget.beforeCall([request.systemMessage, ...request.messages]);

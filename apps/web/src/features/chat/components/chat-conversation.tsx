@@ -10,6 +10,7 @@ import {
   chatCitationSchema,
   chatImageSchema,
   chatRunDataSchema,
+  chatWebSearchSchema,
   isChatRunActive,
 } from "@ngertiin/contracts/api";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -85,6 +86,7 @@ export function ChatConversation({
       "run-status": chatRunDataSchema,
       citation: chatCitationSchema,
       image: chatImageSchema,
+      "web-search": chatWebSearchSchema,
     },
     onFinish: refresh,
     onError: refresh,
@@ -204,12 +206,20 @@ export function ChatConversation({
   const activeAssistant = active
     ? messages.find((message) => message.role === "assistant" && message.metadata?.runId === runId)
     : undefined;
+  let loadingLabel = `${CHAT_AGENT_NAME} sedang menjawab…`;
+  if (run.data?.status === "cancelling") {
+    loadingLabel = "Menghentikan jawaban…";
+  } else if (
+    activeAssistant?.parts.some(
+      (part) => part.type === "data-web-search" && part.data.status === "searching",
+    )
+  ) {
+    loadingLabel = "Mencari di web…";
+  }
   const loadingIndicator = (
     <p role="status" className="flex items-center gap-2 text-xs text-muted-foreground">
       <ChatMascot className="size-7" thinking />
-      {run.data?.status === "cancelling"
-        ? "Menghentikan jawaban…"
-        : `${CHAT_AGENT_NAME} sedang menjawab…`}
+      {loadingLabel}
     </p>
   );
   const terminal =

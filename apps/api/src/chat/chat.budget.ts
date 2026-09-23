@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import type { ChatModelStreamEvent } from "@langchain/core/language_models/event";
 import { type AIMessage, type BaseMessage, SystemMessage } from "@langchain/core/messages";
 import type { ChatOpenAI } from "@langchain/openai";
 import type { ChatRunError, ChatUsage } from "@ngertiin/contracts/api";
@@ -14,6 +15,8 @@ type ExecutionContext = {
   signal: AbortSignal;
   assertActive(): void;
   save(): Promise<void>;
+  onStreamEvent?(event: ChatModelStreamEvent): void | Promise<void>;
+  webSearchCount?(): number;
 };
 
 /** Per-run model/tool limits and usage; persistence stays with the executor. */
@@ -84,6 +87,15 @@ export class ChatExecutionBudget implements ExecutionBudget {
         this.streamStarted = true;
       },
       maxTokens,
+      ...(maxOutputTokens === undefined
+        ? {
+            onStreamEvent: this.context.onStreamEvent,
+            maxToolCalls: Math.max(
+              1,
+              this.env.CHAT_TOOL_MAX_CALLS - (this.context.webSearchCount?.() ?? 0),
+            ),
+          }
+        : {}),
       timeout: Math.max(1, this.context.deadlineAt.getTime() - Date.now()),
     });
     return { callId, model, systemMessage };
@@ -116,6 +128,10 @@ export class ChatExecutionBudget implements ExecutionBudget {
       this.toolCallCount === 0 &&
       !this.context.signal.aborted
     );
+  }
+
+  canSearchWeb(): boolean {
+    return (this.context.webSearchCount?.() ?? 0) < this.env.CHAT_TOOL_MAX_CALLS;
   }
 
   rejectedCall(callId: string) {

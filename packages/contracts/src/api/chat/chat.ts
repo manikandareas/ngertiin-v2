@@ -58,7 +58,7 @@ export const chatMaterialTargetSchema = z.discriminatedUnion("kind", [
     .strict(),
 ]);
 export type ChatMaterialTarget = z.infer<typeof chatMaterialTargetSchema>;
-export const chatCitationSchema = z.object({
+export const chatMaterialCitationSchema = z.object({
   id: uuidSchema,
   origin: z.enum(["generated_material", "original_source"]),
   title: z.string(),
@@ -67,9 +67,26 @@ export const chatCitationSchema = z.object({
   pageNumber: z.number().int().positive().nullable(),
   sectionTitle: z.string().nullable(),
 });
+export const chatWebCitationSchema = z.object({
+  id: uuidSchema,
+  origin: z.literal("web"),
+  title: z.string(),
+  url: z.url({ protocol: /^https?$/ }),
+  // UTF-16 offsets into the persisted answer, independent of presentation markers.
+  occurrences: z.array(
+    z
+      .object({
+        start: z.number().int().nonnegative(),
+        end: z.number().int().nonnegative(),
+      })
+      .refine((range) => range.end >= range.start),
+  ),
+});
+export type ChatWebCitation = z.infer<typeof chatWebCitationSchema>;
+export const chatCitationSchema = z.union([chatMaterialCitationSchema, chatWebCitationSchema]);
 export type ChatCitation = z.infer<typeof chatCitationSchema>;
 export const chatCitationSnapshotSchema = z.object({
-  citation: chatCitationSchema,
+  citation: chatMaterialCitationSchema,
   moduleId: uuidSchema.optional(),
   text: z.string(),
   startCodePoint: z.number().int().nonnegative(),
@@ -206,8 +223,18 @@ export const chatRunDataSchema = z.object({
 export const chatImageSchema = lessonImageSchema.extend({ id: uuidSchema });
 export type ChatImage = z.infer<typeof chatImageSchema>;
 export const chatImageDownloadSchema = successEnvelopeSchema(z.object({ url: z.url() }));
+export const chatWebSearchSchema = z.object({
+  status: z.enum(["not_requested", "searching", "completed", "failed"]),
+  searches: z.number().int().nonnegative(),
+});
+export type ChatWebSearchState = z.infer<typeof chatWebSearchSchema>;
 // Public parts are persisted before they are streamed.
 export const chatPartSchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("data-web-search"),
+    id: z.literal("web-search"),
+    data: chatWebSearchSchema,
+  }),
   z.object({ type: z.literal("data-image"), id: uuidSchema, data: chatImageSchema }),
   z.object({ type: z.literal("data-attachment"), id: uuidSchema, data: chatAttachmentSchema }),
   z.object({ type: z.literal("text"), text: z.string() }),
