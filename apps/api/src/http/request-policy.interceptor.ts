@@ -25,6 +25,7 @@ const expensiveRoutes = [
   /^\/api\/v1\/modules$/,
   /^\/api\/v1\/modules\/[^/]+\/generation\/retry$/,
   /^\/api\/v1\/modules\/[^/]+\/nodes\/[^/]+\/attempts$/,
+  /^\/api\/v1\/modules\/[^/]+\/nodes\/[^/]+\/activities\/[^/]+\/speech$/,
   /^\/api\/v1\/adaptive-interventions\/[^/]+\/decision$/,
 ];
 

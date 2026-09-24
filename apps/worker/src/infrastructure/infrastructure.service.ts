@@ -17,6 +17,7 @@ export class InfrastructureService implements OnModuleInit, OnApplicationShutdow
   readonly moduleGenerationQueue: Queue;
   readonly adaptiveGenerationQueue: Queue;
   readonly attemptEvaluationQueue: Queue;
+  readonly speechGenerationQueue: Queue;
   private queueSnapshotTimer?: ReturnType<typeof setInterval>;
 
   constructor(@Inject(WORKER_ENV) environment: WorkerEnvironment) {
@@ -55,6 +56,10 @@ export class InfrastructureService implements OnModuleInit, OnApplicationShutdow
       connection: this.redis,
     });
     this.attemptEvaluationQueue.on("error", () => undefined);
+    this.speechGenerationQueue = new Queue(QUEUE_NAMES.speechGeneration, {
+      connection: this.redis,
+    });
+    this.speechGenerationQueue.on("error", () => undefined);
   }
 
   async onModuleInit(): Promise<void> {
@@ -73,6 +78,7 @@ export class InfrastructureService implements OnModuleInit, OnApplicationShutdow
           this.moduleGenerationQueue.waitUntilReady(),
           this.adaptiveGenerationQueue.waitUntilReady(),
           this.attemptEvaluationQueue.waitUntilReady(),
+          this.speechGenerationQueue.waitUntilReady(),
         ]),
         startupTimeout,
       ]);
@@ -118,6 +124,7 @@ export class InfrastructureService implements OnModuleInit, OnApplicationShutdow
         this.moduleGenerationQueue,
         this.attemptEvaluationQueue,
         this.adaptiveGenerationQueue,
+        this.speechGenerationQueue,
       ];
       const snapshots = await Promise.all(
         queues.map(async (queue) => ({
@@ -145,6 +152,7 @@ export class InfrastructureService implements OnModuleInit, OnApplicationShutdow
     await this.moduleGenerationQueue.close();
     await this.adaptiveGenerationQueue.close();
     await this.attemptEvaluationQueue.close();
+    await this.speechGenerationQueue.close();
     await this.database.close();
     if (this.redis.status === "ready") {
       await this.redis.quit();

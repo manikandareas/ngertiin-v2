@@ -408,6 +408,29 @@ export const activities = pgTable(
   (table) => [uniqueIndex("activities_node_position_idx").on(table.node_id, table.position)],
 );
 
+export const speech_assets = pgTable(
+  "speech_assets",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    fingerprint: varchar({ length: 64 }).notNull().unique(),
+    text: text().notNull(),
+    provider: varchar({ length: 32 }).notNull(),
+    model: varchar({ length: 100 }).notNull(),
+    voice: varchar({ length: 200 }).notNull(),
+    status: varchar({ length: 16 }).notNull().default("queued"),
+    object_key: text(),
+    failure_reason: varchar({ length: 100 }),
+    created_at: createdAt(),
+    updated_at: updatedAt(),
+  },
+  (table) => [
+    check(
+      "speech_assets_status_check",
+      sql`${table.status} in ('queued', 'processing', 'ready', 'failed')`,
+    ),
+  ],
+);
+
 export const generation_runs = pgTable(
   "generation_runs",
   {

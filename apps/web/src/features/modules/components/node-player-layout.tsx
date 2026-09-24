@@ -37,7 +37,7 @@ export function NodePlayerLayout({
 }: NodePlayerLayoutProps): JSX.Element {
   return (
     <div className="fixed inset-0 flex h-dvh overflow-hidden bg-background">
-      <div className="@container/node-player flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overscroll-contain bg-background px-6 text-foreground sm:px-10 lg:px-12">
+      <div className="node-player-scroll @container/node-player flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overscroll-contain bg-background px-6 text-foreground sm:px-10 lg:px-12">
         {resultTone ? <AttemptEnvironment tone={resultTone} animate={animateResult} /> : null}
         <header className="sticky top-0 z-20 -mx-6 bg-background px-6 sm:-mx-10 sm:px-10 lg:-mx-12 lg:px-12">
           <div className="mx-auto flex w-full max-w-7xl items-center justify-between py-1 sm:py-2">

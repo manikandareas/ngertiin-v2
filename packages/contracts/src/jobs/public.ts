@@ -24,3 +24,4 @@ export {
   type SourceProcessingJob,
   sourceProcessingJobSchema,
 } from "./source-processing.js";
+export * from "./speech-generation.js";

@@ -5,6 +5,10 @@ import { knowledgeEnvironment } from "./knowledge-environment.js";
 export const workerEnvSchema = infrastructureEnvSchema.extend({
   ...knowledgeEnvironment,
   OPENAI_API_KEY: z.string().min(1),
+  FISH_API_KEY: z.preprocess(
+    (value) => (value === "" ? undefined : value),
+    z.string().min(1).optional(),
+  ),
   AI_IMAGE_INPUT_ENABLED: z
     .enum(["true", "false"])
     .transform((value) => value === "true")

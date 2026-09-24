@@ -11,6 +11,11 @@ export const apiEnvSchema = infrastructureEnvSchema
     MISTRAL_API_KEY: z.string().min(1).optional(),
     MISTRAL_OCR_MODEL: z.string().min(1).default("mistral-ocr-latest"),
     OPENAI_API_KEY: z.string().trim().min(1),
+    FISH_TTS_MODEL: z.string().min(1).default("s2.1-pro-free"),
+    FISH_TTS_REFERENCE_ID: z.preprocess(
+      (value) => (value === "" ? undefined : value),
+      z.string().min(1).optional(),
+    ),
     OPENAI_CHAT_MODEL: z.string().trim().min(1),
     WIKIMEDIA_USER_AGENT: z.string().min(1).default("NgertiinChatImages/1.0 (https://ngerti.in)"),
     CHAT_CONTEXT_MAX_REFERENCES: z.coerce.number().int().positive().default(5),

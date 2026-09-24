@@ -25,13 +25,15 @@ import {
   type GetJourneyResponse,
   type GetModuleResponse,
   type GetNodeResponse,
+  generationEventSchema,
   getGenerationResponseSchema,
   getJourneyResponseSchema,
   getModuleResponseSchema,
   getNodeResponseSchema,
-  generationEventSchema,
+  type LessonSpeechParams,
   type ListModulesQuery,
   type ListModulesResponse,
+  lessonSpeechParamsSchema,
   listModulesQuerySchema,
   listModulesResponseSchema,
   type ModuleNodeParams,
@@ -40,20 +42,24 @@ import {
   moduleParamsSchema,
   type RetryGenerationResponse,
   retryGenerationResponseSchema,
+  type SpeechAssetResponse,
   type StartNodeResponse,
+  speechAssetResponseSchema,
   startNodeResponseSchema,
 } from "@ngertiin/contracts/api";
 import { ClerkAuthGuard } from "../auth/clerk-auth.guard.js";
 import { IdempotencyKeyPipe } from "../http/idempotency-key.pipe.js";
 import { getLocalUserId, type ProductRequest } from "../http/request-context.js";
 import { ZodValidationPipe } from "../http/zod-validation.pipe.js";
+import { LessonSpeechService } from "./lesson-speech.service.js";
 import { ModulesService } from "./modules.service.js";
 
 type PassthroughResponse = { status(status: number): unknown };
+
 import {
-  streamGeneration,
   type StreamRequest,
   type StreamResponse,
+  streamGeneration,
 } from "../http/generation-sse.js";
 
 const idempotencyKeyPipe = new IdempotencyKeyPipe();
@@ -61,7 +67,42 @@ const idempotencyKeyPipe = new IdempotencyKeyPipe();
 @Controller("modules")
 @UseGuards(ClerkAuthGuard)
 export class ModulesController {
-  constructor(@Inject(ModulesService) private readonly modulesService: ModulesService) {}
+  constructor(
+    @Inject(ModulesService) private readonly modulesService: ModulesService,
+    @Inject(LessonSpeechService) private readonly lessonSpeech: LessonSpeechService,
+  ) {}
+
+  @Get(":moduleId/nodes/:nodeId/activities/:activityId/speech")
+  async getLessonSpeech(
+    @Req() request: ProductRequest,
+    @Param(new ZodValidationPipe(lessonSpeechParamsSchema)) params: LessonSpeechParams,
+  ): Promise<SpeechAssetResponse> {
+    const data = await this.lessonSpeech.get(
+      getLocalUserId(request),
+      params.moduleId,
+      params.nodeId,
+      params.activityId,
+      false,
+    );
+    return speechAssetResponseSchema.parse({ data });
+  }
+
+  @Post(":moduleId/nodes/:nodeId/activities/:activityId/speech")
+  async requestLessonSpeech(
+    @Req() request: ProductRequest,
+    @Param(new ZodValidationPipe(lessonSpeechParamsSchema)) params: LessonSpeechParams,
+    @Res({ passthrough: true }) response: PassthroughResponse,
+  ): Promise<SpeechAssetResponse> {
+    const data = await this.lessonSpeech.get(
+      getLocalUserId(request),
+      params.moduleId,
+      params.nodeId,
+      params.activityId,
+      true,
+    );
+    response.status(data.status === "ready" ? 200 : 202);
+    return speechAssetResponseSchema.parse({ data });
+  }
 
   @Post()
   @HttpCode(202)

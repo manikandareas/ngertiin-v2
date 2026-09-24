@@ -158,6 +158,7 @@ export {
   startNodeResponseSchema,
   storedLessonImageSchema,
 } from "./modules/module.js";
+export * from "./modules/speech.js";
 export {
   type CreatePdfSourceFields,
   type CreatePdfSourceFieldsInput,

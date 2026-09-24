@@ -32,7 +32,7 @@ export function NodeActivity({
   let content: JSX.Element;
   switch (activity.type) {
     case "lesson":
-      content = <Lesson activity={activity} />;
+      content = <Lesson key={activity.id} activity={activity} />;
       break;
     case "flashcard":
       content = <Flashcards activity={activity} reading={citationReading} />;

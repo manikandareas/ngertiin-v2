@@ -5,6 +5,7 @@ import { ConfigModule } from "./config.module.js";
 import { KnowledgeModule } from "./knowledge/knowledge.module.js";
 import { ModulesModule } from "./modules/modules.module.js";
 import { SourceModule } from "./source/source.module.js";
+import { SpeechModule } from "./speech/speech.module.js";
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { SourceModule } from "./source/source.module.js";
     ModulesModule,
     AttemptsModule,
     AdaptiveModule,
+    SpeechModule,
   ],
 })
 export class AppModule {}

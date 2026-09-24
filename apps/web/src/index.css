@@ -253,6 +253,10 @@
   --sidebar-ring: var(--ring);
 }
 
+.node-player-scroll:has([data-lesson-audio-open]) footer {
+  padding-bottom: max(6.25rem, calc(5.25rem + env(safe-area-inset-bottom)));
+}
+
 /* Decorative book materials stay consistent across light and dark workspaces. */
 @theme {
   --color-book-blue: #cfdfec;

@@ -49,9 +49,11 @@ import {
   retryGenerationResponseSchema,
   retrySourceResponseSchema,
   type Source,
+  type SpeechAsset,
   type SubmitAttemptBody,
   sourceFileResponseSchema,
   sourcePreviewResponseSchema,
+  speechAssetResponseSchema,
   startNodeResponseSchema,
   submitAttemptResponseSchema,
   usageResponseSchema,
@@ -327,6 +329,35 @@ export async function getNode(
     `/modules/${encodeURIComponent(moduleId)}/nodes/${encodeURIComponent(nodeId)}`,
     tokenResolver,
     getNodeResponseSchema,
+  );
+  return response.data;
+}
+
+export async function getLessonSpeech(
+  tokenResolver: TokenResolver,
+  moduleId: string,
+  nodeId: string,
+  activityId: string,
+): Promise<SpeechAsset> {
+  const response = await requestApi(
+    `/modules/${encodeURIComponent(moduleId)}/nodes/${encodeURIComponent(nodeId)}/activities/${encodeURIComponent(activityId)}/speech`,
+    tokenResolver,
+    speechAssetResponseSchema,
+  );
+  return response.data;
+}
+
+export async function requestLessonSpeech(
+  tokenResolver: TokenResolver,
+  moduleId: string,
+  nodeId: string,
+  activityId: string,
+): Promise<SpeechAsset> {
+  const response = await requestApi(
+    `/modules/${encodeURIComponent(moduleId)}/nodes/${encodeURIComponent(nodeId)}/activities/${encodeURIComponent(activityId)}/speech`,
+    tokenResolver,
+    speechAssetResponseSchema,
+    { method: "POST" },
   );
   return response.data;
 }
