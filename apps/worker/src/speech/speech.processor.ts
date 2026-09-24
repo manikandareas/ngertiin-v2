@@ -12,6 +12,7 @@ import { Worker as BullWorker, type Job } from "bullmq";
 import { eq } from "drizzle-orm";
 import { WORKER_ENV } from "../config.js";
 import { InfrastructureService } from "../infrastructure/infrastructure.service.js";
+import { assembleSpeech } from "./assemble-speech.js";
 import { synthesizeFishAudio } from "./speech-provider.js";
 
 @Injectable()
@@ -56,11 +57,29 @@ export class SpeechProcessor implements OnApplicationBootstrap, OnApplicationShu
       .where(eq(speech_assets.id, assetId));
     try {
       if (!this.environment.FISH_API_KEY) throw new Error("fish_audio_not_configured");
-      const bytes = await synthesizeFishAudio(this.environment.FISH_API_KEY, {
-        text: asset.text,
-        model: asset.model,
-        voice: asset.voice,
+      if (!asset.blocks?.length) throw new Error("speech_blocks_missing");
+      const apiKey = this.environment.FISH_API_KEY;
+      const blocks = asset.blocks;
+      const segments = new Array<Uint8Array>(blocks.length);
+      let next = 0;
+      let generationError: unknown;
+      const workers = Array.from({ length: Math.min(3, blocks.length) }, async () => {
+        while (next < blocks.length && !generationError) {
+          const index = next++;
+          try {
+            segments[index] = await synthesizeFishAudio(apiKey, {
+              text: blocks[index].text,
+              model: asset.model,
+              voice: asset.voice,
+            });
+          } catch (error) {
+            generationError = error;
+          }
+        }
       });
+      await Promise.all(workers);
+      if (generationError) throw generationError;
+      const { bytes, timeline } = await assembleSpeech(blocks, segments);
       const objectKey = `speech/fish-audio/${asset.fingerprint}.mp3`;
       await this.infrastructure.storage.put({
         key: objectKey,
@@ -72,6 +91,7 @@ export class SpeechProcessor implements OnApplicationBootstrap, OnApplicationShu
         .set({
           status: "ready",
           object_key: objectKey,
+          timeline,
           failure_reason: null,
           updated_at: new Date(),
         })

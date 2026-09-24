@@ -34,6 +34,9 @@ EXPOSE 3000
 CMD ["bun", "dist/main.js"]
 
 FROM runtime AS worker
+USER root
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg && rm -rf /var/lib/apt/lists/*
+USER bun
 COPY --from=build /app/apps/worker/dist /app/apps/worker/dist
 WORKDIR /app/apps/worker
 CMD ["bun", "dist/main.js"]

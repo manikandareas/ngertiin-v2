@@ -40,6 +40,8 @@
   --adaptive-ink: #513800;
   --adaptive-subtle: #fff4ce;
   --adaptive-foreground: #705000;
+  --lesson-speech-highlight: #ffecae;
+  --lesson-speech-highlight-link: #005d87;
   --success: #58cc02;
   --success-foreground: #234700;
   --success-subtle: #d7ffb8;
@@ -194,6 +196,8 @@
   --destructive-foreground: #541c16;
   --adaptive-subtle: #382d16;
   --adaptive-foreground: #f5d578;
+  --lesson-speech-highlight: #27738f;
+  --lesson-speech-highlight-link: #e8f8ff;
   --success-subtle: #253d21;
   --success-foreground: #a5ed6e;
 }
@@ -228,6 +232,8 @@
     --destructive-foreground: #541c16;
     --adaptive-subtle: #382d16;
     --adaptive-foreground: #f5d578;
+    --lesson-speech-highlight: #27738f;
+    --lesson-speech-highlight-link: #e8f8ff;
     --success-subtle: #253d21;
     --success-foreground: #a5ed6e;
   }
@@ -357,6 +363,16 @@
 .lesson-markdown a:not([data-chat-citation]) {
   color: var(--link);
   text-decoration: underline;
+}
+
+[data-lesson-speech-active] {
+  background: var(--lesson-speech-highlight);
+  box-shadow: 0 0 0 0.35rem var(--lesson-speech-highlight);
+  border-radius: 0.3rem;
+}
+
+[data-lesson-speech-active] a:not([data-chat-citation]) {
+  color: var(--lesson-speech-highlight-link);
 }
 
 /* Scrapbook materials keep their physical paper palette in either app theme. */

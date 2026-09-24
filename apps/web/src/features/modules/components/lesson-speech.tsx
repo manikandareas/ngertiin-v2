@@ -6,6 +6,7 @@ import { type JSX, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useParams } from "react-router-dom";
 import { getLessonSpeech, requestLessonSpeech } from "../../../lib/api";
+import { useLessonSpeechHighlight } from "./use-lesson-speech-highlight";
 
 const playbackRates = [1, 1.25, 1.5, 2] as const;
 
@@ -25,12 +26,15 @@ export function LessonSpeech({ activityId }: { activityId: string }): JSX.Elemen
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [ended, setEnded] = useState(false);
   const [rateIndex, setRateIndex] = useState(0);
   const [activityCenter, setActivityCenter] = useState<number | null>(null);
   const anchorRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const refreshedUrl = useRef<string | null>(null);
   const readyUrl = speech?.status === "ready" ? speech.url : null;
+  const showPlayer = visible && Boolean(readyUrl);
+  useLessonSpeechHighlight(anchorRef, showPlayer ? speech?.timeline : null, currentTime, ended);
 
   useLayoutEffect(() => {
     const anchor = anchorRef.current;
@@ -120,10 +124,10 @@ export function LessonSpeech({ activityId }: { activityId: string }): JSX.Elemen
     setPlaying(false);
     setPlayRequested(false);
     setVisible(false);
+    setEnded(false);
   }
 
   const preparing = requesting || speech?.status === "queued" || speech?.status === "processing";
-  const showPlayer = visible && Boolean(readyUrl);
   let buttonLabel = "Dengarkan";
   if (preparing) buttonLabel = "Menyiapkan audio…";
   else if (playing) buttonLabel = "Sedang mendengarkan";
@@ -169,11 +173,19 @@ export function LessonSpeech({ activityId }: { activityId: string }): JSX.Elemen
                     event.currentTarget.playbackRate = playbackRates[rateIndex];
                   }}
                   onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)}
-                  onPlay={() => setPlaying(true)}
+                  onSeeked={(event) => {
+                    setCurrentTime(event.currentTarget.currentTime);
+                    setEnded(false);
+                  }}
+                  onPlay={() => {
+                    setPlaying(true);
+                    setEnded(false);
+                  }}
                   onPause={() => setPlaying(false)}
                   onEnded={() => {
                     setPlaying(false);
                     setPlayRequested(false);
+                    setEnded(true);
                   }}
                   onError={() => {
                     setPlaying(false);
@@ -214,6 +226,7 @@ export function LessonSpeech({ activityId }: { activityId: string }): JSX.Elemen
                       if (audioRef.current) {
                         audioRef.current.currentTime = Number(event.target.value);
                         setCurrentTime(audioRef.current.currentTime);
+                        setEnded(false);
                       }
                     }}
                     aria-label="Posisi audio"

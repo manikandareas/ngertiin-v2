@@ -2,7 +2,7 @@ import { Inject, Injectable, type OnApplicationShutdown } from "@nestjs/common";
 import type { SpeechAsset } from "@ngertiin/contracts/api";
 import type { ApiEnvironment } from "@ngertiin/contracts/environment";
 import { speech_assets } from "@ngertiin/database";
-import { QUEUE_NAMES, speechFingerprint } from "@ngertiin/shared";
+import { type LessonSpeechBlock, QUEUE_NAMES, speechFingerprint } from "@ngertiin/shared";
 import { Queue } from "bullmq";
 import { and, eq } from "drizzle-orm";
 import { Redis } from "ioredis";
@@ -34,8 +34,8 @@ export class SpeechAssetsService implements OnApplicationShutdown {
     else this.redis.disconnect();
   }
 
-  async get(spokenText: string, create: boolean): Promise<SpeechAsset> {
-    if (!spokenText.trim())
+  async get(blocks: LessonSpeechBlock[], create: boolean): Promise<SpeechAsset> {
+    if (!blocks.length)
       throw new ProductError(422, "VALIDATION_ERROR", "Empty text", "There is no text to narrate.");
     const voice = this.environment.FISH_TTS_REFERENCE_ID;
     if (!voice)
@@ -46,14 +46,15 @@ export class SpeechAssetsService implements OnApplicationShutdown {
         "Speech is not configured.",
       );
     const model = this.environment.FISH_TTS_MODEL;
-    const fingerprint = speechFingerprint(spokenText, "fish-audio", model, voice);
+    const fingerprint = speechFingerprint(blocks, "fish-audio", model, voice);
     const db = this.infrastructure.database.db;
     if (create) {
       await db
         .insert(speech_assets)
         .values({
           fingerprint,
-          text: spokenText,
+          text: blocks.map((block) => block.text).join(" "),
+          blocks,
           provider: "fish-audio",
           model,
           voice,
@@ -102,12 +103,17 @@ export class SpeechAssetsService implements OnApplicationShutdown {
         );
       }
     }
-    if (asset.status === "ready" && asset.object_key) {
+    if (asset.status === "ready" && asset.object_key && asset.timeline) {
       return {
         status: "ready",
         url: await this.infrastructure.storage.createSignedUrl(asset.object_key),
+        timeline: asset.timeline,
       };
     }
-    return { status: retry ? "queued" : (asset.status as SpeechAsset["status"]), url: null };
+    return {
+      status: retry ? "queued" : (asset.status as SpeechAsset["status"]),
+      url: null,
+      timeline: null,
+    };
   }
 }

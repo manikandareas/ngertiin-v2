@@ -414,6 +414,8 @@ export const speech_assets = pgTable(
     id: uuid().primaryKey().defaultRandom(),
     fingerprint: varchar({ length: 64 }).notNull().unique(),
     text: text().notNull(),
+    blocks: jsonb().$type<Array<{ id: string; text: string }>>(),
+    timeline: jsonb().$type<Array<{ id: string; text: string; start: number; end: number }>>(),
     provider: varchar({ length: 32 }).notNull(),
     model: varchar({ length: 100 }).notNull(),
     voice: varchar({ length: 200 }).notNull(),
