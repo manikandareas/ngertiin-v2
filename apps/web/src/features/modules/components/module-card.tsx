@@ -1,5 +1,6 @@
 import type { ModuleSummary } from "@ngertiin/contracts/api";
 import { BookOpen, ChevronRight, Clock3 } from "lucide-react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "../../../components/ui/button";
 import { Card } from "../../../components/ui/card";
@@ -15,22 +16,37 @@ export function ModuleCard({ module }: { module: ModuleSummary }) {
   const progress = module.progress;
   const status = getModuleStatus(module);
   const select = useSelectCurrentModule();
+  const [failedImageUrl, setFailedImageUrl] = useState<string | null>(null);
   const selectModule = () => {
     if (module.status !== "archived") select.mutate(module.id);
   };
 
   return (
     <Card className="before:absolute before:-top-[11px] before:-left-0.5 before:h-[11px] before:w-21 before:rounded-t-[10px_14px] before:border-2 before:border-border before:border-b-0 before:bg-card before:content-[''] motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-out motion-safe:hover:-translate-y-[3px] motion-safe:hover:rotate-[0.4deg] relative mt-3 min-w-0 gap-0 rounded-tl-none px-5 py-5 sm:px-6">
-      <h2 className="min-h-12 text-base font-semibold leading-6 tracking-tight">
-        <Link
-          to={destination}
-          onClick={selectModule}
-          title={module.title ?? "Modul baru"}
-          className="line-clamp-2 wrap-anywhere rounded-sm hover:text-link focus-visible:outline-2 focus-visible:outline-ring"
-        >
-          {module.title ?? "Modul baru"}
-        </Link>
-      </h2>
+      <div className="flex items-center gap-3">
+        {module.imageUrl && module.imageUrl !== failedImageUrl ? (
+          <div className="size-8 shrink-0 overflow-hidden rounded-lg bg-muted">
+            <img
+              src={module.imageUrl}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              onError={() => setFailedImageUrl(module.imageUrl)}
+              className="size-full object-cover"
+            />
+          </div>
+        ) : null}
+        <h2 className="min-w-0 flex-1 text-base font-semibold leading-6 tracking-tight">
+          <Link
+            to={destination}
+            onClick={selectModule}
+            title={module.title ?? "Modul baru"}
+            className="line-clamp-2 wrap-anywhere rounded-sm hover:text-link focus-visible:outline-2 focus-visible:outline-ring"
+          >
+            {module.title ?? "Modul baru"}
+          </Link>
+        </h2>
+      </div>
       <p className="mt-2 line-clamp-2 min-h-10 wrap-anywhere text-sm leading-5 text-muted-foreground">
         {module.description ??
           (module.status === "generating"
