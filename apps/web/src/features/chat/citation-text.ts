@@ -1,4 +1,4 @@
-import type { ChatCitation } from "@ngertiin/contracts/api";
+import { type ChatCitation, citationMarkerIds } from "@ngertiin/contracts/api";
 
 /** Add presentation markers without changing the append-only answer in storage.
  * Only a provider citation token/link is replaced; cited prose is always kept.
@@ -28,5 +28,14 @@ export function citationText(text: string, citations: ChatCitation[]): string {
     result += [...edit.ids].map((id) => `[[cite:${id}]]`).join("");
     cursor = edit.end;
   }
-  return result + text.slice(cursor);
+  const withWebCitations = result + text.slice(cursor);
+  const ids = new Set(citations.map((citation) => citation.id));
+  return withWebCitations
+    .replace(/cite[^]*/g, (marker) =>
+      [...citationMarkerIds(marker)]
+        .filter((id) => ids.has(id))
+        .map((id) => `[[cite:${id}]]`)
+        .join(""),
+    )
+    .replace(/cite[^]*$/, "");
 }

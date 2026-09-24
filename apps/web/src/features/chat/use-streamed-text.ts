@@ -49,5 +49,5 @@ export function useStreamedText(text: string, streaming: boolean) {
   }, [text, visible, streaming, following, reducedMotion]);
 
   const displayed = reducedMotion || !following || !text.startsWith(visible) ? text : visible;
-  return { text: displayed, revealing: streaming || displayed.length < text.length, reducedMotion };
+  return { text: displayed, revealing: streaming || displayed.length < text.length };
 }

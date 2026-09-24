@@ -85,6 +85,20 @@ export const chatWebCitationSchema = z.object({
 export type ChatWebCitation = z.infer<typeof chatWebCitationSchema>;
 export const chatCitationSchema = z.union([chatMaterialCitationSchema, chatWebCitationSchema]);
 export type ChatCitation = z.infer<typeof chatCitationSchema>;
+
+/** Callers must match extracted IDs against server-owned citation evidence. */
+export function citationMarkerIds(text: string): Set<string> {
+  const ids = new Set<string>();
+  const addId = (value: string) => {
+    const id = value.replace(/^turn/, "").toLowerCase();
+    if (uuidSchema.safeParse(id).success) ids.add(id);
+  };
+  for (const marker of text.matchAll(/\[\[cite:([^\]]+)\]\]/g)) addId(marker[1]);
+  for (const marker of text.matchAll(/cite([^]*)/g))
+    for (const reference of marker[1].split("")) addId(reference);
+  return ids;
+}
+
 export const chatCitationSnapshotSchema = z.object({
   citation: chatMaterialCitationSchema,
   moduleId: uuidSchema.optional(),

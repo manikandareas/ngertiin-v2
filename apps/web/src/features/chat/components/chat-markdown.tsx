@@ -95,7 +95,6 @@ type ChatMarkdownProps = {
   loadImage: (id: string) => Promise<string>;
   citationHref: (citation: ChatCitation) => string;
   isAnimating: boolean;
-  animateWords?: boolean;
 };
 
 export function ChatMarkdown({
@@ -105,7 +104,6 @@ export function ChatMarkdown({
   loadImage,
   citationHref,
   isAnimating,
-  animateWords = false,
 }: ChatMarkdownProps) {
   const remarkPlugins = useMemo<StreamdownProps["remarkPlugins"]>(
     () => [
@@ -177,11 +175,7 @@ export function ChatMarkdown({
         ].join(",")}
         mode="streaming"
         isAnimating={isAnimating}
-        animated={
-          animateWords
-            ? { animation: "blurIn", duration: 160, sep: "word", stagger: 0, maxBacklogMs: 0 }
-            : false
-        }
+        animated={false}
         plugins={plugins}
         components={components}
         remarkPlugins={remarkPlugins}

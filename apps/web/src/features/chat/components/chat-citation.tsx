@@ -62,7 +62,6 @@ export function ChatCitedAnswer({
         loadImage={loadImage}
         citationHref={href}
         isAnimating={presentation.revealing}
-        animateWords={!presentation.reducedMotion && presentation.revealing}
       />
       {text ? (
         <div

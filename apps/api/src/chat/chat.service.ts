@@ -28,6 +28,7 @@ import {
   chatPartSchema,
   chatRunSchema,
   chatThreadSchema,
+  citationMarkerIds,
   isChatRunActive,
   type SendChatMessage,
 } from "@ngertiin/contracts/api";
@@ -413,13 +414,12 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
       .from(chat_messages)
       .where(and(eq(chat_messages.id, messageId), eq(chat_messages.thread_id, threadId)))
       .limit(1);
-    if (
-      !message ||
-      !chatMessageParts(message.parts_json).some(
-        (part) => part.type === "data-citation" && part.data.id === citationId,
-      )
-    )
-      this.notFound();
+    if (message?.role !== "assistant") this.notFound();
+    const parts = chatMessageParts(message.parts_json);
+    const cited =
+      parts.some((part) => part.type === "data-citation" && part.data.id === citationId) ||
+      citationMarkerIds(textOf(parts)).has(citationId);
+    if (!cited) this.notFound();
     const evidence = await this.runEvidence(message.run_id);
     const snapshot = evidence.find((item) => item.citation.id === citationId);
     if (!snapshot || !(await this.canReadEvidence(userId, moduleId, [snapshot]))) this.notFound();
@@ -496,8 +496,18 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
             ),
           )
       : [];
-    return rows.map((row) =>
-      chatMessageSchema.parse({
+    return rows.map((row) => {
+      const parts = chatMessageParts(row.parts_json);
+      const existingCitationIds = new Set(
+        parts.flatMap((part) => (part.type === "data-citation" ? [part.data.id] : [])),
+      );
+      const citedIds = citationMarkerIds(textOf(parts));
+      const recoveredCitations = contexts
+        .filter((context) => context.message_id === row.id && context.kind === "material")
+        .map((context) => chatCitationSnapshotSchema.parse(context.reference_json).citation)
+        .filter((citation) => citedIds.has(citation.id) && !existingCitationIds.has(citation.id))
+        .map((citation): ChatPart => ({ type: "data-citation", id: citation.id, data: citation }));
+      return chatMessageSchema.parse({
         id: row.id,
         threadId: row.thread_id,
         runId: row.run_id,
@@ -506,9 +516,8 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
         parts:
           row.role === "assistant"
             ? [
-                ...chatMessageParts(row.parts_json).filter(
-                  (part) => part.type !== "data-run-status",
-                ),
+                ...parts.filter((part) => part.type !== "data-run-status"),
+                ...recoveredCitations,
                 {
                   type: "data-run-status",
                   data: { status: row.runStatus, errorCode: row.runErrorCode },
@@ -529,8 +538,8 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
           .map((c) => chatCitationSnapshotSchema.parse(c.reference_json).citation.reference),
         createdAt: row.created_at.toISOString(),
         availability: "available",
-      }),
-    );
+      });
+    });
   }
   async listMessages(
     userId: string,
@@ -1173,8 +1182,9 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
           .insert(chat_message_contexts)
           .values(this.evidenceRows(assistantId, evidence, true))
           .onConflictDoNothing();
+      const citedIds = citationMarkerIds(text);
       const citations: ChatPart[] = evidence
-        .filter((snapshot) => text.includes(`[[cite:${snapshot.citation.id}]]`))
+        .filter((snapshot) => citedIds.has(snapshot.citation.id))
         .map((snapshot) => ({
           type: "data-citation",
           id: snapshot.citation.id,
