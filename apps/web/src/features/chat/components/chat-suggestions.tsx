@@ -10,12 +10,12 @@ type ChatSuggestionsProps = {
 };
 
 const suggestionChipClassName =
-  "flex min-h-9 items-center gap-2 rounded-full border border-foreground/25 bg-[color-mix(in_srgb,var(--foreground)_8%,var(--background))] py-1 pl-1 pr-3 text-left text-xs font-medium text-foreground hover:border-foreground/40 hover:bg-[color-mix(in_srgb,var(--foreground)_12%,var(--background))] motion-safe:transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-50";
+  "flex min-h-9 items-center gap-2 rounded-full border border-foreground/25 bg-card py-1 pl-1 pr-3 text-left text-xs font-medium text-foreground hover:border-foreground/40 hover:bg-muted motion-safe:transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-50";
 
 const primarySuggestions = [
   {
     icon: BulbIcon,
-    iconClassName: "bg-blue-600 text-white",
+    iconClassName: "bg-secondary text-secondary-foreground",
     compactLabel: "Jelaskan konsep",
     standaloneCompactLabel: "Jelaskan konsep",
     standaloneLabel: "Kenapa langit berwarna biru?",
@@ -25,7 +25,7 @@ const primarySuggestions = [
   },
   {
     icon: Chat01Icon,
-    iconClassName: "bg-violet-600 text-white",
+    iconClassName: "bg-[var(--flashcard-lavender-surface)] text-[var(--flashcard-lavender-ink)]",
     compactLabel: "Beri contoh",
     standaloneCompactLabel: "Beri contoh",
     standaloneLabel: "Apa itu berpikir kritis?",
@@ -35,7 +35,7 @@ const primarySuggestions = [
   },
   {
     icon: TextAlignLeftIcon,
-    iconClassName: "bg-pink-600 text-white",
+    iconClassName: "bg-[var(--flashcard-peach-surface)] text-[var(--flashcard-peach-ink)]",
     standaloneCompactLabel: "Mulai topik baru",
     compactLabel: "Ringkas materi",
     standaloneLabel: "Bantu aku mulai belajar topik baru",
@@ -48,7 +48,7 @@ const primarySuggestions = [
 const extraSuggestions = [
   {
     icon: BookOpen,
-    iconClassName: "bg-emerald-600 text-white",
+    iconClassName: "bg-success-subtle text-success-foreground",
     label: "Susun rencana belajar",
     standalonePrompt:
       "Bantu aku menyusun rencana belajar. Tanyakan dulu topik dan target belajarku.",
@@ -56,7 +56,7 @@ const extraSuggestions = [
   },
   {
     icon: ListChecks,
-    iconClassName: "bg-rose-600 text-white",
+    iconClassName: "bg-adaptive-subtle text-adaptive-foreground",
     label: "Uji pemahamanku",
     standalonePrompt:
       "Bantu aku menguji pemahaman. Tanyakan dulu topik yang ingin kupelajari, lalu beri satu pertanyaan setiap kali.",
@@ -64,7 +64,7 @@ const extraSuggestions = [
   },
   {
     icon: Layers,
-    iconClassName: "bg-orange-600 text-white",
+    iconClassName: "bg-secondary text-secondary-foreground",
     label: "Buat kartu belajar",
     standalonePrompt:
       "Bantu aku membuat kartu tanya jawab. Tanyakan dulu topik yang ingin kupelajari.",
