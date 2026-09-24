@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { ApiProblemError, type TokenResolver } from "../../../lib/api";
 import { useModule } from "../../modules/api/use-modules";
 import { chatApi } from "../api/chat-api";
-import { mentionDocument, withLockedMention } from "../chat-draft";
+import { mentionDocument, textDocument, withLockedMention } from "../chat-draft";
 import { patchChatSession, useChatSession } from "../chat-session";
 import { ChatComposer } from "./chat-composer";
 import { ChatWelcome } from "./chat-welcome";
@@ -71,6 +71,19 @@ export function ChatNewConversation({
     module.data?.title,
     module.isPending,
   ]);
+  function appendSuggestion(text: string) {
+    const suffix = `${session.draft && !/\s$/.test(session.draft) ? " " : ""}${text.trim()} `;
+    const document = structuredClone(session.document ?? textDocument(session.draft));
+    const content = document.content ?? [];
+    const lastParagraph = content.at(-1);
+    if (lastParagraph?.type === "paragraph") {
+      lastParagraph.content = [...(lastParagraph.content ?? []), { type: "text", text: suffix }];
+    } else {
+      content.push({ type: "paragraph", content: [{ type: "text", text: suffix }] });
+    }
+    patch({ draft: session.draft + suffix, document: { ...document, content } });
+  }
+
   async function create(text = session.draft) {
     if ((!text.trim() && !session.attachments.length) || creating.current || session.sending)
       return;
@@ -121,7 +134,7 @@ export function ChatNewConversation({
         </p>
       ) : null}
       <ChatComposer
-        className={fullPage ? "w-full px-0 pb-0 pt-0 text-left" : undefined}
+        className={fullPage ? "mx-auto w-full max-w-3xl sm:pb-6" : undefined}
         fullPage={fullPage}
         attachments={session.attachments}
         onAttachmentsChange={(attachments) => patch({ attachments })}
@@ -141,28 +154,23 @@ export function ChatNewConversation({
       <div
         className={
           fullPage
-            ? "flex min-h-0 flex-1 overflow-y-auto px-5 py-10 sm:px-8"
+            ? "flex min-h-0 flex-1 overflow-y-auto px-5 pb-8 pt-22 sm:px-8 sm:pt-26"
             : "flex min-h-0 flex-1 overflow-y-auto px-6 pb-6"
         }
       >
         <div
-          className={fullPage ? "mx-auto my-auto w-full max-w-3xl pb-8 sm:pb-16" : "my-auto w-full"}
+          className={fullPage ? "mx-auto my-auto w-full max-w-3xl py-6 sm:py-10" : "my-auto w-full"}
         >
           <ChatWelcome
             standalone={!moduleId}
             fullPage={fullPage}
             idlePaused={session.draft.length > 0}
             disabled={session.sending}
-            onSuggest={(text) => {
-              setDraft(text);
-              void create(text);
-            }}
-          >
-            {fullPage ? <div className="mt-8 sm:mt-10">{composer}</div> : null}
-          </ChatWelcome>
+            onSuggest={appendSuggestion}
+          />
         </div>
       </div>
-      {!fullPage ? composer : null}
+      {composer}
     </>
   );
 }
