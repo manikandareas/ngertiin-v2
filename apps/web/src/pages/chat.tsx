@@ -1,5 +1,7 @@
+import type { ChatMention } from "@ngertiin/contracts/api";
 import { uuidSchema } from "@ngertiin/contracts/api";
 import { useQueryClient } from "@tanstack/react-query";
+import { useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { AppShell } from "../components/app-shell";
 import { Button } from "../components/ui/button";
@@ -8,7 +10,7 @@ import { patchChatSession, useChatSession } from "../features/chat/chat-session"
 import { ChatNewConversation } from "../features/chat/components/chat-new-conversation";
 import { ChatPageHeader } from "../features/chat/components/chat-page-header";
 import { useChatThreads } from "../features/chat/use-chat-threads";
-import { useModule } from "../features/modules/api/use-modules";
+import { useModule, useNode } from "../features/modules/api/use-modules";
 
 export default function ChatPage() {
   return isClerkConfigured ? (
@@ -39,6 +41,19 @@ function ConnectedChatPage() {
   }
   const contextLabel = moduleId ? (module.data?.title ?? "Modul belajar") : undefined;
   const pageContext = moduleId ? session.pageContext : undefined;
+  const nodeId = pageContext?.surface === "node" ? pageContext.nodeId : undefined;
+  const node = useNode(nodeId ? (moduleId ?? undefined) : undefined, nodeId);
+  const lockedContext = useMemo<ChatMention | undefined>(() => {
+    if (!moduleId) return undefined;
+    return {
+      moduleId,
+      ...(nodeId ? { nodeId } : {}),
+      label: (nodeId
+        ? `${(contextLabel ?? "Modul belajar").slice(0, 120)}:${(node.data?.node.title ?? "Materi").slice(0, 119)}`
+        : (contextLabel ?? "Modul belajar")
+      ).slice(0, 240),
+    };
+  }, [moduleId, nodeId, contextLabel, node.data?.node.title]);
   return (
     <AppShell workspace hideMobileSidebarHeader>
       <div className="relative flex min-h-0 flex-1 flex-col">
@@ -67,6 +82,7 @@ function ConnectedChatPage() {
           <ChatNewConversation
             key={sessionId}
             moduleId={moduleId}
+            lockedContext={lockedContext}
             contextLabel={contextLabel}
             pageContext={pageContext}
             root={chat.root}
