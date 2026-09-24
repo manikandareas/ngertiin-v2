@@ -366,9 +366,21 @@
 }
 
 [data-lesson-speech-active] {
+  position: relative;
+  isolation: isolate;
+}
+
+[data-lesson-speech-active]::before {
+  /* Tilt only the highlight so text and document flow stay unchanged. */
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: -0.35rem -0.5rem;
+  pointer-events: none;
   background: var(--lesson-speech-highlight);
-  box-shadow: 0 0 0 0.35rem var(--lesson-speech-highlight);
-  border-radius: 0.3rem;
+  border: 2px solid color-mix(in srgb, var(--lesson-speech-highlight), currentColor 25%);
+  border-radius: 46% 5% 7% 4% / 5% 19% 8% 14%;
+  transform: rotate(0.4deg);
 }
 
 [data-lesson-speech-active] a:not([data-chat-citation]) {
