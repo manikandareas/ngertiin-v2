@@ -1,15 +1,10 @@
-import {
-  type ChatRun,
-  isChatRunActive,
-  type RespondChatInteraction,
-} from "@ngertiin/contracts/api";
+import { type ChatRun, isChatRunActive } from "@ngertiin/contracts/api";
 import type { TokenResolver } from "../../../lib/api";
 import type { chatApi } from "../api/chat-api";
 import type { LearningMessage } from "../api/chat-transport";
 import { ChatActivityTrace } from "./chat-activity-trace";
 import { ChatAttachmentCard } from "./chat-attachment-card";
 import { ChatCitedAnswer } from "./chat-citation";
-import { ChatInteractionCard } from "./chat-interaction-card";
 import { ChatPracticeCard } from "./chat-practice-card";
 
 type ChatMessageProps = {
@@ -20,11 +15,6 @@ type ChatMessageProps = {
   threadId: string;
   api: ReturnType<typeof chatApi>;
   getToken: TokenResolver;
-  onRespond: (
-    runId: string,
-    interactionId: string,
-    decision: RespondChatInteraction,
-  ) => Promise<void>;
 };
 
 export function ChatMessage({
@@ -35,7 +25,6 @@ export function ChatMessage({
   threadId,
   api,
   getToken,
-  onRespond,
 }: ChatMessageProps) {
   return (
     <div
@@ -88,16 +77,6 @@ export function ChatMessage({
       {message.parts.map((part) =>
         part.type === "data-attachment" ? (
           <ChatAttachmentCard key={part.id} attachment={part.data} getToken={getToken} />
-        ) : part.type === "data-interaction" && part.data.status === "pending" ? (
-          <ChatInteractionCard
-            key={part.id}
-            interaction={part.data}
-            onRespond={async (decision) => {
-              if (!part.id || !message.metadata?.runId)
-                throw new Error("Identitas interaksi tidak tersedia.");
-              await onRespond(message.metadata.runId, part.id, decision);
-            }}
-          />
         ) : part.type === "data-practice" ? (
           <ChatPracticeCard
             key={part.id}

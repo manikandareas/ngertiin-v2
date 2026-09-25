@@ -29,6 +29,7 @@ import { withLockedMention } from "../chat-draft";
 import { useChatSession } from "../chat-session";
 import { ChatActivityTrace } from "./chat-activity-trace";
 import { ChatComposer } from "./chat-composer";
+import { ChatInteractionCard } from "./chat-interaction-card";
 import { ChatMessage } from "./chat-message";
 import { ChatWelcome } from "./chat-welcome";
 
@@ -57,6 +58,7 @@ export function ChatConversation({
   const setAck = useCallback((value: ChatAcknowledgment | null) => patch({ ack: value }), [patch]);
   const initialSent = useRef(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [answeredInteractionId, setAnsweredInteractionId] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const { scrollRef, contentRef, isAtBottom, scrollToBottom, stopScroll } = useStickToBottom({
     initial: "smooth",
@@ -209,6 +211,27 @@ export function ChatConversation({
         rendered.set(ack?.messageId ?? message.id, message);
     }
   const messages = [...rendered.values()];
+  const resolvedInteractionIds = new Set(
+    saved.flatMap((message) =>
+      message.parts.flatMap((part) =>
+        part.type === "data-interaction" && part.data.status !== "pending" ? [part.data.id] : [],
+      ),
+    ),
+  );
+  const pendingInteraction = messages
+    .filter((message) => message.role === "assistant" && message.metadata?.runId === runId)
+    .flatMap((message) =>
+      message.parts.flatMap((part) =>
+        part.type === "data-interaction" &&
+        part.data.status === "pending" &&
+        part.data.id !== answeredInteractionId &&
+        !resolvedInteractionIds.has(part.data.id) &&
+        (!run.data || isChatRunUnfinished(run.data.status))
+          ? [part.data]
+          : [],
+      ),
+    )
+    .at(-1);
   const activeAssistant =
     active && (!run.data || isChatRunActive(run.data.status))
       ? messages.find(
@@ -364,12 +387,6 @@ export function ChatConversation({
                 threadId={thread.id}
                 api={api}
                 getToken={getToken}
-                onRespond={async (runId, interactionId, decision) => {
-                  await api.respondInteraction(thread.id, runId, interactionId, decision);
-                  refresh();
-                  void history.refetch();
-                  void run.refetch();
-                }}
               />
             ))}
             {active && !activeAssistant && run.data?.status !== "waiting_for_input"
@@ -441,23 +458,41 @@ export function ChatConversation({
           </Button>
         ) : null}
       </div>
-      <ChatComposer
-        attachments={session.attachments}
-        onAttachmentsChange={(attachments) => patch({ attachments })}
-        draft={draft}
-        document={session.document}
-        lockedContext={lockedContext}
-        root={root}
-        getToken={getToken}
-        fullPage={fullPage}
-        onDraftChange={(draft, document, mentions) => patch({ draft, document, mentions })}
-        onSend={() => void send()}
-        className={fullPage ? "mx-auto w-full max-w-3xl sm:pb-6" : undefined}
-        disabled={history.isPending || history.isError}
-        active={active}
-        cancelling={cancelling || !runId}
-        onCancel={() => void cancel()}
-      />
+      <div
+        className={`shrink-0 px-4 pt-2 pb-[max(.75rem,env(safe-area-inset-bottom))] ${fullPage ? "mx-auto w-full max-w-3xl sm:pb-6" : ""}`}
+      >
+        {pendingInteraction && runId ? (
+          <ChatInteractionCard
+            key={pendingInteraction.id}
+            interaction={pendingInteraction}
+            onRespond={async (decision) => {
+              await api.respondInteraction(thread.id, runId, pendingInteraction.id, decision);
+              setAnsweredInteractionId(pendingInteraction.id);
+              refresh();
+              void history.refetch();
+              void run.refetch();
+            }}
+          />
+        ) : (
+          <ChatComposer
+            attachments={session.attachments}
+            onAttachmentsChange={(attachments) => patch({ attachments })}
+            draft={draft}
+            document={session.document}
+            lockedContext={lockedContext}
+            root={root}
+            getToken={getToken}
+            fullPage={fullPage}
+            onDraftChange={(draft, document, mentions) => patch({ draft, document, mentions })}
+            onSend={() => void send()}
+            className="px-0 pb-0 pt-0"
+            disabled={history.isPending || history.isError}
+            active={active}
+            cancelling={cancelling || !runId}
+            onCancel={() => void cancel()}
+          />
+        )}
+      </div>
     </>
   );
 }
