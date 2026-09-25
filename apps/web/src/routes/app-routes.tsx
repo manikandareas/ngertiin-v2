@@ -16,6 +16,9 @@ const ModulesPage = lazy(() => import("../pages/modules"));
 const ModuleStatusPage = lazy(() => import("../pages/module-status"));
 const ModuleJourneyPage = lazy(() => import("../pages/module-journey"));
 const ModuleNodePage = lazy(() => import("../pages/module-node"));
+const ModulePracticePage = lazy(() => import("../pages/module-practice"));
+const PracticeDetailPage = lazy(() => import("../pages/practice-detail"));
+const PracticeAttemptPage = lazy(() => import("../pages/practice-attempt"));
 const AdaptiveInterventionPage = lazy(() => import("../pages/adaptive-intervention"));
 const SettingsPage = lazy(() => import("../pages/settings"));
 const AccountCallbackPage = lazy(() => import("../pages/account-callback"));
@@ -54,6 +57,12 @@ export function AppRoutes() {
           <Route path="/modules" element={<ModulesPage />} />
           <Route path="/modules/new" element={<NewModulePage />} />
           <Route path="/modules/:moduleId/journey" element={<ModuleJourneyPage />} />
+          <Route path="/modules/:moduleId/practice" element={<ModulePracticePage />} />
+          <Route path="/modules/:moduleId/practice/:practiceId" element={<PracticeDetailPage />} />
+          <Route
+            path="/modules/:moduleId/practice/:practiceId/attempts/:attemptId"
+            element={<PracticeAttemptPage />}
+          />
           <Route path="/modules/:moduleId/nodes/:nodeId" element={<ModuleNodePage />} />
           <Route path="/modules/:moduleId" element={<ModuleStatusPage />} />
           <Route path="/profile" element={<Navigate replace to="/settings?tab=account" />} />

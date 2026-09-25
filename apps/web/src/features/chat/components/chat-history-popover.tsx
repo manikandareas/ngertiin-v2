@@ -40,10 +40,10 @@ export function ChatHistoryPopover({ moduleId }: { moduleId?: string | null }) {
         <Button
           variant="ghost"
           size="sm"
-          className="h-8 gap-2 px-2 text-muted-foreground capitalize"
+          className="h-7 gap-1.5 px-1.5 text-xs text-muted-foreground capitalize"
           aria-label="Riwayat chat"
         >
-          <History className="size-4" aria-hidden="true" />
+          <History className="size-3.5" aria-hidden="true" />
           <span className="hidden sm:inline">Riwayat</span>
         </Button>
       </Popover.Trigger>

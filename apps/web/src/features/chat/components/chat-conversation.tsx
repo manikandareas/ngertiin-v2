@@ -6,12 +6,16 @@ import {
   type ChatRunError,
   type ChatRunStatus,
   type ChatThread,
+  chatActivitySchema,
   chatAttachmentSchema,
   chatCitationSchema,
   chatImageSchema,
+  chatInteractionSchema,
+  chatPracticeDataSchema,
   chatRunDataSchema,
   chatWebSearchSchema,
   isChatRunActive,
+  isChatRunUnfinished,
 } from "@ngertiin/contracts/api";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowDown } from "lucide-react";
@@ -23,11 +27,9 @@ import type { chatApi } from "../api/chat-api";
 import { createChatTransport, type LearningMessage, toUIMessage } from "../api/chat-transport";
 import { withLockedMention } from "../chat-draft";
 import { useChatSession } from "../chat-session";
-import { CHAT_AGENT_NAME } from "../constants";
-import { ChatAttachmentCard } from "./chat-attachment-card";
-import { ChatCitedAnswer } from "./chat-citation";
+import { ChatActivityTrace } from "./chat-activity-trace";
 import { ChatComposer } from "./chat-composer";
-import { ChatMascot } from "./chat-mascot";
+import { ChatMessage } from "./chat-message";
 import { ChatWelcome } from "./chat-welcome";
 
 type ChatConversationProps = {
@@ -82,11 +84,14 @@ export function ChatConversation({
     id: thread.id,
     transport,
     dataPartSchemas: {
+      activity: chatActivitySchema,
       attachment: chatAttachmentSchema,
       "run-status": chatRunDataSchema,
       citation: chatCitationSchema,
       image: chatImageSchema,
       "web-search": chatWebSearchSchema,
+      interaction: chatInteractionSchema,
+      practice: chatPracticeDataSchema,
     },
     onFinish: refresh,
     onError: refresh,
@@ -142,12 +147,12 @@ export function ChatConversation({
     queryFn: () => api.run(thread.id, runId ?? ""),
     enabled: Boolean(runId),
     refetchInterval: (query) =>
-      !query.state.data || isChatRunActive(query.state.data.status) ? 2000 : false,
+      !query.state.data || isChatRunUnfinished(query.state.data.status) ? 2000 : false,
   });
   const active =
     session.sending ||
     streaming ||
-    Boolean(runId && (!run.data || isChatRunActive(run.data.status)));
+    Boolean(runId && (!run.data || isChatRunUnfinished(run.data.status)));
   const savedAssistant = saved.find(
     (message) => message.role === "assistant" && message.runId === ack?.runId,
   );
@@ -162,6 +167,7 @@ export function ChatConversation({
     streaming ||
     Boolean(
       ack &&
+        !chat.error &&
         !hasFinalSnapshot &&
         chat.messages.some(
           (message) => message.role === "assistant" && message.metadata?.runId === ack.runId,
@@ -203,27 +209,17 @@ export function ChatConversation({
         rendered.set(ack?.messageId ?? message.id, message);
     }
   const messages = [...rendered.values()];
-  const activeAssistant = active
-    ? messages.find((message) => message.role === "assistant" && message.metadata?.runId === runId)
-    : undefined;
-  let loadingLabel = `${CHAT_AGENT_NAME} sedang menjawab…`;
-  if (run.data?.status === "cancelling") {
-    loadingLabel = "Menghentikan jawaban…";
-  } else if (
-    activeAssistant?.parts.some(
-      (part) => part.type === "data-web-search" && part.data.status === "searching",
-    )
-  ) {
-    loadingLabel = "Mencari di web…";
-  }
+  const activeAssistant =
+    active && (!run.data || isChatRunActive(run.data.status))
+      ? messages.find(
+          (message) => message.role === "assistant" && message.metadata?.runId === runId,
+        )
+      : undefined;
   const loadingIndicator = (
-    <p role="status" className="flex items-center gap-2 text-xs text-muted-foreground">
-      <ChatMascot className="size-7" thinking />
-      {loadingLabel}
-    </p>
+    <ChatActivityTrace activities={[]} active status={run.data?.status} hasText={false} />
   );
   const terminal =
-    run.data && !isChatRunActive(run.data.status) && run.data.status !== "completed"
+    run.data && !isChatRunUnfinished(run.data.status) && run.data.status !== "completed"
       ? run.data
       : null;
   const safeError =
@@ -236,7 +232,7 @@ export function ChatConversation({
     (run.isError ? "Status jawaban belum dapat dimuat. Coba muat ulang riwayat." : null) ??
     (chat.error instanceof ApiProblemError
       ? chat.error.problem.detail
-      : chat.error
+      : chat.error && !(run.data && isChatRunActive(run.data.status))
         ? "Koneksi terputus. Periksa status dan riwayat sebelum mengirim lagi."
         : null);
   async function send(
@@ -324,10 +320,7 @@ export function ChatConversation({
         <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
           <div
             ref={contentRef}
-            className={`flex min-h-full flex-col px-6 pb-4 [&>*]:shrink-0 ${fullPage ? "pt-22 sm:pt-26" : "pt-5"}`}
-            style={
-              fullPage ? { paddingInline: "max(1rem, calc((100% - 48rem) / 2 + 1rem))" } : undefined
-            }
+            className={`flex min-h-full flex-col pb-4 [&>*]:shrink-0 ${fullPage ? "pt-6 sm:pt-8 [padding-inline:max(1rem,calc((100%-48rem)/2+1rem))]" : "px-6 pt-5"}`}
             role="log"
             aria-label="Pesan percakapan"
             aria-live="off"
@@ -362,64 +355,26 @@ export function ChatConversation({
               />
             ) : null}
             {messages.map((message) => (
-              <div
+              <ChatMessage
                 key={message.id}
-                className={
-                  message.role === "user"
-                    ? `ml-auto max-w-[90%] rounded-2xl bg-muted px-4 py-2.5 text-base leading-8 ${fullPage ? "mb-10" : "mb-6 rounded-br-sm"}`
-                    : `${fullPage ? "mb-10" : "mb-7"} text-base leading-8`
-                }
-              >
-                {message === activeAssistant ? (
-                  <div className="mb-3">{loadingIndicator}</div>
-                ) : null}
-                {message.role === "assistant" && message !== activeAssistant ? (
-                  <div className="mb-3 flex items-center gap-2 text-xs font-bold">
-                    <ChatMascot className="size-7" />
-                    {CHAT_AGENT_NAME}
-                  </div>
-                ) : null}
-                {message.role === "assistant" ? (
-                  <ChatCitedAnswer
-                    isAnimating={message === activeAssistant}
-                    text={message.parts
-                      .filter((p) => p.type === "text")
-                      .map((p) => p.text)
-                      .join("")}
-                    citations={message.parts.flatMap((p) =>
-                      p.type === "data-citation" ? [p.data] : [],
-                    )}
-                    images={message.parts.flatMap((p) => (p.type === "data-image" ? [p.data] : []))}
-                    loadImage={(id) => api.image(thread.id, message.id, id)}
-                    messageId={message.id}
-                    threadId={thread.id}
-                  />
-                ) : (
-                  <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
-                    {message.parts
-                      .filter((p) => p.type === "text")
-                      .map((p) => p.text)
-                      .join("")}
-                  </p>
-                )}
-                {message.parts.map((part) =>
-                  part.type === "data-attachment" ? (
-                    <ChatAttachmentCard key={part.id} attachment={part.data} getToken={getToken} />
-                  ) : null,
-                )}
-                {message.parts.some(
-                  (p) =>
-                    p.type === "data-run-status" &&
-                    !isChatRunActive(p.data.status) &&
-                    p.data.status !== "completed",
-                ) ? (
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    Jawaban terhenti · teks mungkin belum lengkap.
-                  </p>
-                ) : null}
-              </div>
+                message={message}
+                active={message === activeAssistant}
+                fullPage={fullPage}
+                run={run.data}
+                threadId={thread.id}
+                api={api}
+                getToken={getToken}
+                onRespond={async (runId, interactionId, decision) => {
+                  await api.respondInteraction(thread.id, runId, interactionId, decision);
+                  refresh();
+                  void history.refetch();
+                  void run.refetch();
+                }}
+              />
             ))}
-            {active && !activeAssistant ? loadingIndicator : null}
+            {active && !activeAssistant && run.data?.status !== "waiting_for_input"
+              ? loadingIndicator
+              : null}
             {terminal ? (
               <div className="rounded-xl border p-3 text-xs text-muted-foreground">
                 <p>{incompleteRunMessage(terminal.status, terminal.errorCode)}</p>
@@ -449,6 +404,11 @@ export function ChatConversation({
                   </Button>
                 ) : null}
               </div>
+            ) : null}
+            {chat.error && run.data && isChatRunActive(run.data.status) && !safeError ? (
+              <p role="status" className="mt-3 text-xs text-muted-foreground">
+                Memperbarui jawaban dari riwayat. Proses tetap berjalan…
+              </p>
             ) : null}
             {safeError ? (
               <div role="alert" className="mt-4 text-xs leading-6 text-destructive">

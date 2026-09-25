@@ -30,6 +30,7 @@
   --secondary: #e5f5ff;
   --secondary-foreground: #005d87;
   --muted: #f7f7f7;
+  --chat-user-bubble: #f0ece5;
   --muted-foreground: #707070;
   --accent: #e5f5ff;
   --accent-foreground: #005d87;
@@ -183,6 +184,7 @@
   --flashcard-yellow-surface: #64501f;
   --flashcard-yellow-ink: var(--foreground);
   --muted: #262626;
+  --chat-user-bubble: var(--muted);
   --muted-foreground: #a3a3a3;
   --border: #282828;
   --input: #595959;
@@ -219,6 +221,7 @@
     --flashcard-yellow-surface: #64501f;
     --flashcard-yellow-ink: var(--foreground);
     --muted: #262626;
+    --chat-user-bubble: var(--muted);
     --muted-foreground: #a3a3a3;
     --border: #282828;
     --input: #595959;
@@ -740,4 +743,29 @@
 ::highlight(ngertiin-citation) {
   background-color: var(--accent);
   color: var(--accent-foreground);
+}
+
+@keyframes chat-activity-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .chat-activity-shimmer {
+    background-image: linear-gradient(
+      100deg,
+      var(--foreground) 35%,
+      color-mix(in srgb, var(--foreground) 65%, var(--background)) 50%,
+      var(--foreground) 65%
+    );
+    background-size: 200% 100%;
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    animation: chat-activity-shimmer 1.8s linear infinite;
+  }
 }

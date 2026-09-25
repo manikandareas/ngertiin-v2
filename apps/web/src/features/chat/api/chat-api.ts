@@ -5,12 +5,14 @@ import {
   chatAttachmentResponseSchema,
   chatCitationResponseSchema,
   chatImageDownloadSchema,
+  chatInteractionResponseSchema,
   chatMaterialPreviewResponseSchema,
   chatMaterialsResponseSchema,
   chatMessagesResponseSchema,
   chatRunResponseSchema,
   chatThreadResponseSchema,
   chatThreadsResponseSchema,
+  type RespondChatInteraction,
 } from "@ngertiin/contracts/api";
 import { requestApi, type TokenResolver } from "../../../lib/api";
 export const chatRoot = () => "/chat";
@@ -135,6 +137,20 @@ export function chatApi(token: TokenResolver, moduleId?: string | null) {
           token,
           chatRunResponseSchema,
           { method: "POST", body: "{}" },
+        )
+      ).data,
+    respondInteraction: async (
+      id: string,
+      runId: string,
+      interactionId: string,
+      body: RespondChatInteraction,
+    ) =>
+      (
+        await requestApi(
+          `${thread(id)}/runs/${encodeURIComponent(runId)}/interactions/${encodeURIComponent(interactionId)}/respond`,
+          token,
+          chatInteractionResponseSchema,
+          { method: "POST", body: JSON.stringify(body) },
         )
       ).data,
   };

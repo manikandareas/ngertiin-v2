@@ -1,6 +1,6 @@
 import { Chat01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { FileText, Map as MapIcon } from "lucide-react";
+import { FileText, Map as MapIcon, NotebookPen } from "lucide-react";
 import { Link, useLocation, useMatch } from "react-router-dom";
 import { useCurrentUser } from "../features/current-user/api/use-current-user";
 import { useJourney, useModule } from "../features/modules/api/use-modules";
@@ -53,12 +53,18 @@ export function SidebarModuleSection({
               }
               onClick={onNavigate}
               title={collapsed ? "Journey" : undefined}
-              aria-current={pathname.startsWith(`/modules/${moduleId}`) ? "page" : undefined}
+              aria-current={
+                pathname === `/modules/${moduleId}/journey` ||
+                pathname.startsWith(`/modules/${moduleId}/nodes/`)
+                  ? "page"
+                  : undefined
+              }
               className={`${sidebarNavItemClass} ${collapsed ? "justify-center px-0" : ""}`}
             >
               <MapIcon className="size-[18px] shrink-0" strokeWidth={1.5} aria-hidden="true" />
               <span className={collapsed ? "sr-only" : "truncate"}>Journey</span>
             </Link>
+
             {module.data.status === "ready" ? (
               <Link
                 to={`/chat?moduleId=${moduleId}`}
@@ -69,6 +75,25 @@ export function SidebarModuleSection({
               >
                 <HugeiconsIcon icon={Chat01Icon} size={18} strokeWidth={1.5} aria-hidden="true" />
                 <span className={collapsed ? "sr-only" : "truncate"}>Obrolan</span>
+              </Link>
+            ) : null}
+
+            {module.data.status === "ready" ? (
+              <Link
+                to={`/modules/${moduleId}/practice`}
+                onClick={onNavigate}
+                title={collapsed ? "Latihan" : undefined}
+                aria-current={
+                  pathname.startsWith(`/modules/${moduleId}/practice`) ? "page" : undefined
+                }
+                className={`${sidebarNavItemClass} ${collapsed ? "justify-center px-0" : ""}`}
+              >
+                <NotebookPen
+                  className="size-[18px] shrink-0"
+                  strokeWidth={1.5}
+                  aria-hidden="true"
+                />
+                <span className={collapsed ? "sr-only" : "truncate"}>Latihan</span>
               </Link>
             ) : null}
           </nav>

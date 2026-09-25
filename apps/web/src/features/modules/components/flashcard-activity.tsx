@@ -17,9 +17,16 @@ const badgeClassName =
 interface FlashcardsProps {
   activity: Extract<PublicActivity, { type: "flashcard" }>;
   reading?: boolean;
+  onMark?: (index: number, understood: boolean) => void;
+  marked?: Record<number, boolean>;
 }
 
-export function Flashcards({ activity, reading = false }: FlashcardsProps): JSX.Element | null {
+export function Flashcards({
+  activity,
+  reading = false,
+  onMark,
+  marked,
+}: FlashcardsProps): JSX.Element | null {
   if (reading)
     return (
       <article className="space-y-4">
@@ -35,10 +42,10 @@ export function Flashcards({ activity, reading = false }: FlashcardsProps): JSX.
         ))}
       </article>
     );
-  return <FlashcardPlayer activity={activity} />;
+  return <FlashcardPlayer activity={activity} onMark={onMark} marked={marked} />;
 }
 
-function FlashcardPlayer({ activity }: FlashcardsProps): JSX.Element | null {
+function FlashcardPlayer({ activity, onMark, marked }: FlashcardsProps): JSX.Element | null {
   const cardRef = useRef<HTMLButtonElement>(null);
   const [index, setIndex] = useState(0);
   const [showBack, setShowBack] = useState(false);
@@ -167,6 +174,24 @@ function FlashcardPlayer({ activity }: FlashcardsProps): JSX.Element | null {
         </kbd>{" "}
         saat kartu terpilih untuk membalik.
       </p>
+      {onMark && showBack ? (
+        <div className="flex justify-center gap-2">
+          <Button
+            type="button"
+            variant={marked?.[index] === false ? "default" : "outline"}
+            onClick={() => onMark(index, false)}
+          >
+            Perlu diulang
+          </Button>
+          <Button
+            type="button"
+            variant={marked?.[index] === true ? "default" : "outline"}
+            onClick={() => onMark(index, true)}
+          >
+            Sudah paham
+          </Button>
+        </div>
+      ) : null}
     </article>
   );
 }

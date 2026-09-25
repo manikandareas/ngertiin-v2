@@ -154,7 +154,7 @@ export function ChatNewConversation({
       <div
         className={
           fullPage
-            ? "flex min-h-0 flex-1 overflow-y-auto px-5 pb-8 pt-22 sm:px-8 sm:pt-26"
+            ? "flex min-h-0 flex-1 overflow-y-auto px-5 pb-8 pt-6 sm:px-8 sm:pt-8"
             : "flex min-h-0 flex-1 overflow-y-auto px-6 pb-6"
         }
       >

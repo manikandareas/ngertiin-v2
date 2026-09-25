@@ -1,11 +1,12 @@
 import type { ChatMention } from "@ngertiin/contracts/api";
 import { uuidSchema } from "@ngertiin/contracts/api";
 import { useQueryClient } from "@tanstack/react-query";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { AppShell } from "../components/app-shell";
 import { Button } from "../components/ui/button";
 import { isClerkConfigured } from "../config";
+import { textDocument } from "../features/chat/chat-draft";
 import { patchChatSession, useChatSession } from "../features/chat/chat-session";
 import { ChatNewConversation } from "../features/chat/components/chat-new-conversation";
 import { ChatPageHeader } from "../features/chat/components/chat-page-header";
@@ -31,6 +32,22 @@ function ConnectedChatPage() {
   const module = useModule(moduleId ?? undefined);
   const sessionId = `new:${moduleId ?? "standalone"}`;
   const { session } = useChatSession(chat.root, sessionId);
+  const suggestedDraft = search.get("draft");
+  useEffect(() => {
+    if (!suggestedDraft || session.draft) return;
+    patchChatSession(client, chat.root, sessionId, {
+      draft: suggestedDraft,
+      document: textDocument(suggestedDraft),
+    });
+    setSearch(
+      (current) => {
+        const next = new URLSearchParams(current);
+        next.delete("draft");
+        return next;
+      },
+      { replace: true },
+    );
+  }, [suggestedDraft, session.draft, client, chat.root, sessionId, setSearch]);
   function switchToStandalone() {
     patchChatSession(client, chat.root, "new:standalone", {
       draft: session.draft,

@@ -1,13 +1,16 @@
 import {
   type ChatAcknowledgment,
+  type ChatActivity,
   type ChatAttachment,
   type ChatCitation,
   type ChatImage,
+  type ChatInteraction,
   type ChatMessage,
   type ChatPageContext,
   type ChatRunStatus,
   type ChatWebSearchState,
   chatSendResponseSchema,
+  type PracticeSummary,
   sendChatMessageSchema,
 } from "@ngertiin/contracts/api";
 import {
@@ -23,11 +26,14 @@ import { chatRoot } from "./chat-api";
 export type LearningMessage = UIMessage<
   { runId: string; status?: ChatRunStatus },
   {
+    activity: ChatActivity;
     attachment: ChatAttachment;
     "run-status": { status: ChatRunStatus; errorCode: string | null };
     citation: ChatCitation;
     image: ChatImage;
     "web-search": ChatWebSearchState;
+    interaction: ChatInteraction;
+    practice: { practiceId: string; moduleId: string; status: PracticeSummary["status"] };
   }
 >;
 export function toUIMessage(message: ChatMessage): LearningMessage {
