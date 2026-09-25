@@ -22,7 +22,7 @@ import {
   source_contents,
   sources,
 } from "@ngertiin/database";
-import { and, asc, desc, eq, inArray, isNull, lt, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, inArray, isNull, lt, or, sql } from "drizzle-orm";
 import { ProductError } from "../http/product-error.js";
 import { InfrastructureService } from "../infrastructure/infrastructure.service.js";
 
@@ -338,6 +338,7 @@ export class PracticeService {
     query: {
       kind?: "flashcard" | "quiz" | "exam";
       status?: "generating" | "ready" | "failed";
+      q?: string;
       archived: boolean;
       cursor?: string;
       limit: number;
@@ -372,6 +373,9 @@ export class PracticeService {
           eq(practice_sets.module_id, moduleId),
           query.kind ? eq(practice_sets.kind, query.kind) : undefined,
           query.status ? eq(practice_sets.status, query.status) : undefined,
+          query.q
+            ? ilike(practice_sets.title, `%${query.q.replace(/[\\%_]/g, "\\$&")}%`)
+            : undefined,
           query.archived
             ? sql`${practice_sets.archived_at} is not null`
             : isNull(practice_sets.archived_at),

@@ -9,12 +9,25 @@ import {
 import { requestApi, type TokenResolver } from "../../lib/api";
 
 export const practiceApi = (token: TokenResolver) => ({
-  list: async (moduleId: string, cursor?: string) =>
-    requestApi(
-      `/modules/${moduleId}/practices${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`,
+  list: async (
+    moduleId: string,
+    filters: {
+      archived: boolean;
+      kind?: "flashcard" | "quiz" | "exam";
+      q?: string;
+      cursor?: string;
+    },
+  ) => {
+    const params = new URLSearchParams({ archived: String(filters.archived) });
+    if (filters.kind) params.set("kind", filters.kind);
+    if (filters.q) params.set("q", filters.q);
+    if (filters.cursor) params.set("cursor", filters.cursor);
+    return requestApi(
+      `/modules/${moduleId}/practices?${params}`,
       token,
       practiceListResponseSchema,
-    ),
+    );
+  },
   detail: async (id: string) =>
     (await requestApi(`/practices/${id}`, token, practiceDetailResponseSchema)).data,
   attempts: async (id: string) =>

@@ -183,7 +183,11 @@ export const practiceDetailSchema = practiceSummarySchema.extend({
 export const listPracticesQuerySchema = z.object({
   kind: practiceKindSchema.optional(),
   status: practiceStatusSchema.optional(),
-  archived: z.coerce.boolean().default(false),
+  q: z.string().trim().max(500).optional(),
+  archived: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((value) => value === "true"),
   cursor: z.string().optional(),
   limit: z.coerce.number().int().min(1).max(100).default(20),
 });
