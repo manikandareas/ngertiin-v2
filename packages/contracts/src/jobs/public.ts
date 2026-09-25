@@ -20,6 +20,7 @@ export {
   type ModuleGenerationStep,
   moduleGenerationJobSchema,
 } from "./module-generation.js";
+export * from "./practice.js";
 export {
   type SourceProcessingJob,
   sourceProcessingJobSchema,

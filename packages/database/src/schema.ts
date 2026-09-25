@@ -104,6 +104,7 @@ export const xp_reason = pgEnum("xp_reason", [
   "perfect_score",
   "checkpoint_completed",
   "adaptive_completed",
+  "practice_completed",
 ]);
 
 const createdAt = () => timestamp({ withTimezone: true, mode: "date" }).notNull().defaultNow();
@@ -1112,6 +1113,7 @@ export const chat_run_status = pgEnum("chat_run_status", [
   "queued",
   "running",
   "cancelling",
+  "waiting_for_input",
   "completed",
   "failed",
   "cancelled",
@@ -1175,11 +1177,16 @@ export const chat_runs = pgTable(
     finished_at: optionalTimestamp(),
     created_at: createdAt(),
     snapshot_sequence: integer().notNull().default(0),
+    model_calls: integer().notNull().default(0),
+    tool_calls: integer().notNull().default(0),
+    paused_remaining_ms: integer(),
   },
   (t) => [
     uniqueIndex("chat_one_active_run_per_thread")
       .on(t.thread_id)
-      .where(sql`${t.status} in ('queued', 'running', 'cancelling')`),
+      .where(
+        sql`${t.status} not in ('completed', 'failed', 'cancelled', 'timed_out', 'interrupted')`,
+      ),
     index("chat_runs_lease_idx").on(t.status, t.lease_expires_at),
     index("chat_runs_queue_idx").on(t.status, t.created_at),
   ],
@@ -1360,5 +1367,187 @@ export const chat_attachments = pgTable(
       "chat_attachment_extraction",
       sql`${t.extraction_status} in ('pending','ready','failed')`,
     ),
+  ],
+);
+
+// Practice owns its lifecycle independently of Journey nodes and chat deletion.
+export const practice_kind = pgEnum("practice_kind", ["flashcard", "quiz", "exam"]);
+export const practice_status = pgEnum("practice_status", ["generating", "ready", "failed"]);
+export const practice_generation_status = pgEnum("practice_generation_status", [
+  "queued",
+  "processing",
+  "completed",
+  "failed",
+]);
+export const practice_attempt_status = pgEnum("practice_attempt_status", [
+  "active",
+  "evaluating",
+  "completed",
+  "evaluation_failed",
+]);
+
+export const chat_interactions = pgTable(
+  "chat_interactions",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    run_id: uuid()
+      .notNull()
+      .references(() => chat_runs.id, { onDelete: "cascade" }),
+    assistant_message_id: uuid().references(() => chat_messages.id, { onDelete: "set null" }),
+    kind: text().notNull(),
+    status: text().notNull().default("pending"),
+    interrupt_json: jsonb().notNull(),
+    public_json: jsonb().notNull(),
+    decision_json: jsonb(),
+    response_id: uuid(),
+    revision: integer().notNull().default(0),
+    created_at: createdAt(),
+    decided_at: optionalTimestamp(),
+  },
+  (t) => [
+    index("chat_interactions_run_idx").on(t.run_id, t.created_at),
+    uniqueIndex("chat_interactions_response_idx").on(t.response_id),
+    check("chat_interactions_kind_check", sql`${t.kind} in ('ask_user','create_practice')`),
+    check(
+      "chat_interactions_status_check",
+      sql`${t.status} in ('pending','answered','approved','rejected','revising','cancelled')`,
+    ),
+  ],
+);
+
+export const practice_sets = pgTable(
+  "practice_sets",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    owner_id: uuid()
+      .notNull()
+      .references(() => users.id),
+    module_id: uuid()
+      .notNull()
+      .references(() => modules.id),
+    kind: practice_kind().notNull(),
+    status: practice_status().notNull().default("generating"),
+    title: text().notNull(),
+    configuration: jsonb().notNull(),
+    approved_interaction_id: uuid().references(() => chat_interactions.id, {
+      onDelete: "set null",
+    }),
+    approval_action_id: uuid().notNull(),
+    variation_of_id: uuid().references((): AnyPgColumn => practice_sets.id),
+    archived_at: optionalTimestamp(),
+    created_at: createdAt(),
+    updated_at: updatedAt(),
+  },
+  (t) => [
+    uniqueIndex("practice_sets_approval_action_idx").on(t.approval_action_id),
+    index("practice_sets_module_list_idx").on(
+      t.owner_id,
+      t.module_id,
+      t.created_at.desc(),
+      t.id.desc(),
+    ),
+    check("practice_sets_title_check", sql`char_length(${t.title}) between 1 and 120`),
+  ],
+);
+
+export const practice_sources = pgTable(
+  "practice_sources",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    practice_id: uuid()
+      .notNull()
+      .references(() => practice_sets.id, { onDelete: "cascade" }),
+    position: integer().notNull(),
+    origin: text().notNull(),
+    module_id: uuid().references(() => modules.id),
+    source_id: uuid().references(() => sources.id),
+    source_content_id: uuid().references(() => source_contents.id),
+    attachment_id: uuid().references(() => chat_attachments.id, { onDelete: "set null" }),
+    content_revision: text(),
+    snapshot_text: text().notNull(),
+    object_key: text(),
+    mime_type: text(),
+    created_at: createdAt(),
+  },
+  (t) => [
+    uniqueIndex("practice_sources_position_idx").on(t.practice_id, t.position),
+    check("practice_sources_position_check", sql`${t.position} > 0`),
+    check("practice_sources_origin_check", sql`${t.origin} in ('module','attachment')`),
+  ],
+);
+
+export const practice_generation_runs = pgTable(
+  "practice_generation_runs",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    practice_id: uuid()
+      .notNull()
+      .references(() => practice_sets.id, { onDelete: "cascade" }),
+    status: practice_generation_status().notNull().default("queued"),
+    attempt_count: integer().notNull().default(0),
+    bullmq_job_id: text(),
+    batches_json: jsonb().notNull().default([]),
+    progress: integer().notNull().default(0),
+    failure: jsonb(),
+    created_at: createdAt(),
+    started_at: optionalTimestamp(),
+    finished_at: optionalTimestamp(),
+  },
+  (t) => [
+    index("practice_generation_dispatch_idx").on(t.status, t.created_at),
+    check("practice_generation_attempt_check", sql`${t.attempt_count} between 0 and 3`),
+    check("practice_generation_progress_check", sql`${t.progress} between 0 and 100`),
+  ],
+);
+
+export const practice_items = pgTable(
+  "practice_items",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    practice_id: uuid()
+      .notNull()
+      .references(() => practice_sets.id, { onDelete: "cascade" }),
+    position: integer().notNull(),
+    content: jsonb().notNull(),
+    private_key: jsonb().notNull(),
+    source_refs: jsonb().notNull().default([]),
+    created_at: createdAt(),
+  },
+  (t) => [
+    uniqueIndex("practice_items_position_idx").on(t.practice_id, t.position),
+    check("practice_items_position_check", sql`${t.position} > 0`),
+  ],
+);
+
+export const practice_attempts = pgTable(
+  "practice_attempts",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    practice_id: uuid()
+      .notNull()
+      .references(() => practice_sets.id),
+    user_id: uuid()
+      .notNull()
+      .references(() => users.id),
+    status: practice_attempt_status().notNull().default("active"),
+    revision: integer().notNull().default(0),
+    answers: jsonb().notNull().default({}),
+    results: jsonb(),
+    score: numeric(),
+    xp_awarded: integer().notNull().default(0),
+    started_at: createdAt(),
+    deadline_at: optionalTimestamp(),
+    submitted_at: optionalTimestamp(),
+    evaluated_at: optionalTimestamp(),
+    failure: jsonb(),
+  },
+  (t) => [
+    index("practice_attempts_user_set_idx").on(t.user_id, t.practice_id, t.started_at.desc()),
+    index("practice_attempts_deadline_idx").on(t.status, t.deadline_at),
+    uniqueIndex("practice_attempts_one_active_idx")
+      .on(t.user_id, t.practice_id)
+      .where(sql`${t.status} = 'active'`),
+    check("practice_attempts_revision_check", sql`${t.revision} >= 0`),
+    check("practice_attempts_xp_check", sql`${t.xp_awarded} >= 0`),
   ],
 );

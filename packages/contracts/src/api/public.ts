@@ -159,6 +159,7 @@ export {
   storedLessonImageSchema,
 } from "./modules/module.js";
 export * from "./modules/speech.js";
+export * from "./practice/practice.js";
 export {
   type CreatePdfSourceFields,
   type CreatePdfSourceFieldsInput,

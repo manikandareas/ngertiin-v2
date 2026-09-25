@@ -1,0 +1,1 @@
+ALTER TABLE "practice_sources" ADD COLUMN "mime_type" text;

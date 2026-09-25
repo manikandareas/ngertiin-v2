@@ -2,11 +2,13 @@ import { z } from "zod";
 import { successEnvelopeSchema, timestampSchema, uuidSchema } from "../common/identifiers.js";
 import { paginatedSuccessEnvelopeSchema } from "../common/pagination.js";
 import { lessonImageSchema } from "../modules/module.js";
+import { practiceConfigurationSchema } from "../practice/practice.js";
 
 export const chatRunStatusSchema = z.enum([
   "queued",
   "running",
   "cancelling",
+  "waiting_for_input",
   "completed",
   "failed",
   "cancelled",
@@ -24,8 +26,16 @@ export const chatRunErrorSchema = z.enum([
   "PROCESS_INTERRUPTED",
 ]);
 export const activeChatStatuses = ["queued", "running", "cancelling"] as const;
+export const unfinishedChatStatuses = [
+  "queued",
+  "running",
+  "cancelling",
+  "waiting_for_input",
+] as const;
 export const isChatRunActive = (status: string) =>
   (activeChatStatuses as readonly string[]).includes(status);
+export const isChatRunUnfinished = (status: string) =>
+  (unfinishedChatStatuses as readonly string[]).includes(status);
 export const chatPageContextSchema = z.discriminatedUnion("surface", [
   z.object({ surface: z.literal("journey") }).strict(),
   z.object({ surface: z.literal("node"), nodeId: uuidSchema }).strict(),
@@ -242,8 +252,94 @@ export const chatWebSearchSchema = z.object({
   searches: z.number().int().nonnegative(),
 });
 export type ChatWebSearchState = z.infer<typeof chatWebSearchSchema>;
+export const chatInteractionQuestionSchema = z
+  .object({
+    id: z.string().min(1).max(80),
+    label: z.string().min(1).max(240),
+    kind: z.enum(["single_choice", "multiple_choice", "module", "text"]),
+    required: z.boolean(),
+    options: z
+      .array(z.object({ value: z.string(), label: z.string() }).strict())
+      .max(20)
+      .optional(),
+  })
+  .strict();
+export const chatInteractionSchema = z
+  .object({
+    id: uuidSchema,
+    kind: z.enum(["ask_user", "create_practice"]),
+    status: z.enum(["pending", "approved", "rejected", "answered", "cancelled", "revising"]),
+    questions: z.array(chatInteractionQuestionSchema).min(1).max(3).optional(),
+    activityId: z.string().optional(),
+    answers: z.record(z.string(), z.union([z.string(), z.array(z.string())])).optional(),
+    instruction: z.string().optional(),
+    practice: z.lazy(() => practiceConfigurationSchema).optional(),
+    decisionAt: timestampSchema.nullable(),
+  })
+  .strict();
+export type ChatInteraction = z.infer<typeof chatInteractionSchema>;
+export const respondChatInteractionSchema = z.discriminatedUnion("decision", [
+  z
+    .object({
+      decision: z.literal("answer"),
+      responseId: uuidSchema,
+      answers: z.record(z.string(), z.union([z.string(), z.array(z.string())])),
+    })
+    .strict(),
+  z
+    .object({
+      decision: z.literal("approve"),
+      responseId: uuidSchema,
+      practice: z.lazy(() => practiceConfigurationSchema),
+    })
+    .strict(),
+  z
+    .object({
+      decision: z.literal("revise"),
+      responseId: uuidSchema,
+      instruction: z.string().trim().min(1).max(2_000),
+    })
+    .strict(),
+  z.object({ decision: z.literal("reject"), responseId: uuidSchema }).strict(),
+]);
+export type RespondChatInteraction = z.infer<typeof respondChatInteractionSchema>;
+
+export const chatInteractionParamsSchema = chatRunParamsSchema.extend({
+  interactionId: uuidSchema,
+});
+export const chatInteractionResponseSchema = successEnvelopeSchema(chatInteractionSchema);
+export const chatPracticeDataSchema = z
+  .object({
+    practiceId: uuidSchema,
+    moduleId: uuidSchema,
+    status: z.enum(["generating", "ready", "failed"]),
+  })
+  .strict();
+export const chatActivitySchema = z.object({
+  id: z.string().min(1).max(200),
+  kind: z.enum(["tool", "search", "reasoning"]),
+  label: z.string().min(1).max(160),
+  query: z.string().max(500).optional(),
+  text: z.string().max(12000).optional(),
+  results: z
+    .array(
+      z.object({
+        title: z.string().max(240),
+        description: z.string().max(800).optional(),
+        url: z.url({ protocol: /^https?$/ }).optional(),
+      }),
+    )
+    .max(8)
+    .optional(),
+  status: z.enum(["running", "completed", "failed", "waiting", "cancelled"]),
+  startedAt: timestampSchema,
+  finishedAt: timestampSchema.nullable(),
+});
+export type ChatActivity = z.infer<typeof chatActivitySchema>;
+
 // Public parts are persisted before they are streamed.
 export const chatPartSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("data-activity"), id: z.string(), data: chatActivitySchema }),
   z.object({
     type: z.literal("data-web-search"),
     id: z.literal("web-search"),
@@ -254,6 +350,8 @@ export const chatPartSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("text"), text: z.string() }),
   z.object({ type: z.literal("data-citation"), id: uuidSchema, data: chatCitationSchema }),
   z.object({ type: z.literal("data-run-status"), data: chatRunDataSchema }),
+  z.object({ type: z.literal("data-interaction"), id: uuidSchema, data: chatInteractionSchema }),
+  z.object({ type: z.literal("data-practice"), id: uuidSchema, data: chatPracticeDataSchema }),
 ]);
 export const chatThreadSchema = z.object({
   id: uuidSchema,
