@@ -1,6 +1,8 @@
 import {
+  type ChatActivity,
   type ChatCitation,
   type ChatImage,
+  type ChatInteraction,
   type ChatRunError,
   type ChatRunStatus,
   type ChatWebSearchState,
@@ -17,8 +19,15 @@ export type ChatSnapshot = {
     errorCode: ChatRunError | null;
   };
   text: string;
+  activities?: ChatActivity[];
   citations?: ChatCitation[];
   images?: ChatImage[];
+  interactions?: ChatInteraction[];
+  practices?: Array<{
+    practiceId: string;
+    moduleId: string;
+    status: "generating" | "ready" | "failed";
+  }>;
   webSearch?: ChatWebSearchState;
   sequence: number;
 };
@@ -56,6 +65,11 @@ export function chatSnapshotFrames(
       snapshot.webSearch.searches !== previous?.webSearch?.searches)
   )
     frames.push({ type: "data-web-search", id: "web-search", data: snapshot.webSearch });
+  for (const activity of snapshot.activities ?? []) {
+    const existing = previous?.activities?.find((item) => item.id === activity.id);
+    if (JSON.stringify(existing) !== JSON.stringify(activity))
+      frames.push({ type: "data-activity", id: activity.id, data: activity });
+  }
   for (const citation of snapshot.citations ?? []) {
     const existing = previous?.citations?.find((item) => item.id === citation.id);
     if (!existing)
@@ -81,6 +95,19 @@ export function chatSnapshotFrames(
     if (!previous?.images?.some((item) => item.id === image.id))
       frames.push({ type: "data-image", id: image.id, data: image });
   }
+  for (const interaction of snapshot.interactions ?? []) {
+    const existing = previous?.interactions?.find((item) => item.id === interaction.id);
+    if (JSON.stringify(existing) !== JSON.stringify(interaction))
+      frames.push({ type: "data-interaction", id: interaction.id, data: interaction });
+  }
+  for (const practice of snapshot.practices ?? []) {
+    if (
+      !previous?.practices?.some(
+        (item) => item.practiceId === practice.practiceId && item.status === practice.status,
+      )
+    )
+      frames.push({ type: "data-practice", id: practice.practiceId, data: practice });
+  }
   if (!isChatRunActive(run.status)) {
     frames.push(
       { type: "text-end", id: "answer" },
@@ -105,6 +132,7 @@ export async function streamChatSnapshots(
   let closed = false;
   let ready = false;
   let sequence = -1;
+  let delivered: ChatSnapshot | undefined;
   let bufferedBytes = 0;
   const pending: ChatStreamEvent[] = [];
   let unsubscribe: (() => void) | undefined;
@@ -135,6 +163,15 @@ export async function streamChatSnapshots(
       }
     }
   };
+  const deliver = (snapshot: ChatSnapshot) => {
+    if (closed || snapshot.sequence <= sequence) return;
+    // Public answer text is append-only. Never stitch incompatible snapshots together.
+    if (delivered && !snapshot.text.startsWith(delivered.text)) return close();
+    const frames = chatSnapshotFrames(snapshot, delivered);
+    sequence = snapshot.sequence;
+    delivered = snapshot;
+    emit(frames);
+  };
   let delivering = false;
   const drain = async () => {
     if (delivering || !ready || closed) return;
@@ -148,14 +185,16 @@ export async function streamChatSnapshots(
           bufferedBytes -= eventBytes;
           continue;
         }
-        if (event.sequence !== sequence + 1) {
+        await authorize?.();
+        // Redis is a wake-up signal. Read the authorized, committed snapshot to
+        // coalesce updates and recover missed/out-of-order publications safely.
+        const snapshot = await read();
+        if (closed) break;
+        if (snapshot.sequence < event.sequence) {
           close();
           break;
         }
-        await authorize?.();
-        if (closed) break;
-        sequence = event.sequence;
-        emit(event.frames);
+        deliver(snapshot);
         bufferedBytes -= eventBytes;
       }
     } catch {
@@ -189,25 +228,25 @@ export async function streamChatSnapshots(
     res.setHeader("x-vercel-ai-ui-message-stream", "v1");
     res.setHeader("X-Accel-Buffering", "no");
     res.flushHeaders();
-    sequence = initial.sequence;
-    emit(chatSnapshotFrames(initial));
+    deliver(initial);
     ready = true;
     await drain();
     if (closed) return;
-    let checking = false;
     timer = setInterval(() => {
-      if (checking || closed || delivering) return;
-      checking = true;
-      // Detect a lost final publication even when there is no next delta to expose a gap.
-      void read()
-        .then((snapshot) => {
-          if (closed || delivering) return;
-          if (snapshot.sequence > sequence || !isChatRunActive(snapshot.run.status)) close();
-          else write(": keepalive\n\n");
-        })
+      if (closed || delivering) return;
+      delivering = true;
+      // Share the delivery lock with Pub/Sub so a delayed DB read cannot race
+      // a newer event or append the same text twice.
+      void (async () => {
+        await authorize?.();
+        const snapshot = await read();
+        deliver(snapshot);
+        if (!closed) write(": keepalive\n\n");
+      })()
         .catch(close)
         .finally(() => {
-          checking = false;
+          delivering = false;
+          void drain();
         });
     }, checkIntervalMs);
     timer.unref();

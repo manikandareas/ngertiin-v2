@@ -32,7 +32,11 @@ export class ChatExecutionBudget implements ExecutionBudget {
     private readonly ai: AiService,
     private readonly env: ApiEnvironment,
     private readonly context: ExecutionContext,
-  ) {}
+    previous?: { modelCalls: number; toolCalls: number },
+  ) {
+    this.modelCallCount = previous?.modelCalls ?? 0;
+    this.toolCallCount = previous?.toolCalls ?? 0;
+  }
 
   private fail(code: ChatRunError): never {
     this.failure = code;

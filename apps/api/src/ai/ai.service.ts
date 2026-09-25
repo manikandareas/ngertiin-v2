@@ -61,6 +61,9 @@ export class AiService {
       apiKey: this.env.OPENAI_API_KEY,
       model: this.env.OPENAI_CHAT_MODEL,
       useResponsesApi: true,
+      ...(options?.onStreamEvent && /^(gpt-[56]|o[134])/.test(this.env.OPENAI_CHAT_MODEL)
+        ? { reasoning: { summary: "auto" as const } }
+        : {}),
       callbacks: streamHandler ? [streamHandler] : undefined,
       maxTokens: options?.maxTokens ?? this.env.CHAT_OUTPUT_MAX_TOKENS,
       timeout: Math.min(
@@ -71,6 +74,7 @@ export class AiService {
       // Do not persist conversations with the provider; our database owns history.
       modelKwargs: {
         store: false,
+        ...(options?.onStreamEvent ? { include: ["web_search_call.action.sources"] } : {}),
         ...(options?.maxToolCalls !== undefined ? { max_tool_calls: options.maxToolCalls } : {}),
       },
     });

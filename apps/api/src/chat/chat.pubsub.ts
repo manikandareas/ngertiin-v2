@@ -1,6 +1,8 @@
 import {
+  chatActivitySchema,
   chatCitationSchema,
   chatImageSchema,
+  chatInteractionSchema,
   chatRunDataSchema,
   chatRunStatusSchema,
   chatWebCitationSchema,
@@ -12,6 +14,7 @@ import { z } from "zod";
 
 const metadataSchema = z.object({ runId: z.uuid(), status: chatRunStatusSchema });
 const frameSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("data-activity"), id: z.string(), data: chatActivitySchema }),
   z.object({
     type: z.literal("start"),
     messageId: z.string(),
@@ -40,6 +43,16 @@ const frameSchema = z.discriminatedUnion("type", [
   }),
   z.object({ type: z.literal("data-citation"), id: z.uuid(), data: chatCitationSchema }),
   z.object({ type: z.literal("data-image"), id: z.uuid(), data: chatImageSchema }),
+  z.object({ type: z.literal("data-interaction"), id: z.uuid(), data: chatInteractionSchema }),
+  z.object({
+    type: z.literal("data-practice"),
+    id: z.uuid(),
+    data: z.object({
+      practiceId: z.uuid(),
+      moduleId: z.uuid(),
+      status: z.enum(["generating", "ready", "failed"]),
+    }),
+  }),
   z.object({ type: z.literal("error"), errorText: z.string().max(200) }),
   z.object({ type: z.literal("finish"), messageMetadata: metadataSchema.optional() }),
 ]);

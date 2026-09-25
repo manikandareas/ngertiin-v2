@@ -19,6 +19,8 @@ import {
   type ChatPagination,
   chatCitationResponseSchema,
   chatImageDownloadSchema,
+  chatInteractionParamsSchema,
+  chatInteractionResponseSchema,
   chatMessagesResponseSchema,
   chatPaginationSchema,
   chatRunParamsSchema,
@@ -29,6 +31,7 @@ import {
   chatThreadsResponseSchema,
   createChatThreadSchema,
   patchChatThreadSchema,
+  respondChatInteractionSchema,
   type SendChatMessage,
   sendChatMessageSchema,
   uuidSchema,
@@ -49,6 +52,27 @@ type RunParams = z.infer<typeof chatRunParamsSchema>;
 @UseGuards(ClerkAuthGuard)
 export class ChatController {
   constructor(@Inject(ChatService) private readonly chat: ChatService) {}
+  @Post("threads/:threadId/runs/:runId/interactions/:interactionId/respond")
+  async respondInteraction(
+    @Req() req: ProductRequest,
+    @Param(new ZodValidationPipe(chatInteractionParamsSchema)) p: z.infer<
+      typeof chatInteractionParamsSchema
+    >,
+    @Body(new ZodValidationPipe(respondChatInteractionSchema)) body: z.infer<
+      typeof respondChatInteractionSchema
+    >,
+  ) {
+    return chatInteractionResponseSchema.parse({
+      data: await this.chat.respondInteraction(
+        getLocalUserId(req),
+        await this.chat.resolveThreadModuleId(getLocalUserId(req), p.threadId, p.moduleId),
+        p.threadId,
+        p.runId,
+        p.interactionId,
+        body,
+      ),
+    });
+  }
   @Get("threads/:threadId/messages/:messageId/citations/:citationId")
   async citation(
     @Req() req: ProductRequest,

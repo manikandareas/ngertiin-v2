@@ -11,6 +11,7 @@ import { RequestPolicyInterceptor } from "./http/request-policy.interceptor.js";
 import { InfrastructureModule } from "./infrastructure/infrastructure.module.js";
 import { LeaderboardModule } from "./leaderboard/leaderboard.module.js";
 import { ModulesModule } from "./modules/modules.module.js";
+import { PracticeModule } from "./practice/practice.module.js";
 import { SourcesModule } from "./sources/sources.module.js";
 import { UsersModule } from "./users/users.module.js";
 
@@ -26,6 +27,7 @@ import { UsersModule } from "./users/users.module.js";
     SourcesModule,
     ModulesModule,
     AttemptsModule,
+    PracticeModule,
     AdaptiveModule,
   ],
   providers: [

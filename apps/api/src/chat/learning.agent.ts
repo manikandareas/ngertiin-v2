@@ -1,7 +1,11 @@
+import { randomUUID } from "node:crypto";
 import type { AIMessage, BaseMessage, SystemMessage } from "@langchain/core/messages";
 import type { ServerTool, StructuredToolInterface } from "@langchain/core/tools";
+import { isGraphInterrupt } from "@langchain/langgraph";
+import type { PostgresSaver } from "@langchain/langgraph-checkpoint-postgres";
 import { type ChatOpenAI, tools as openaiTools } from "@langchain/openai";
-import { createAgent, createMiddleware } from "langchain";
+import { createAgent, createMiddleware, humanInTheLoopMiddleware } from "langchain";
+import type { ToolActivityEvent } from "./chat-activity.js";
 import { isAttachmentRejection } from "./chat-multimodal.js";
 import { learningPrompt } from "./prompts/learning.prompt.js";
 
@@ -22,14 +26,20 @@ export function createLearningAgent(
   budget: ExecutionBudget,
   tools: StructuredToolInterface[] = [],
   fallback?: (messages: BaseMessage[]) => Promise<BaseMessage[]>,
-) {
+  checkpointer?: PostgresSaver,
+  onToolActivity?: (event: ToolActivityEvent) => Promise<void>,
+): ReturnType<typeof createAgent> {
   let fallbackUsed = false;
   const agentTools: (StructuredToolInterface | ServerTool)[] = [...tools, openaiTools.webSearch()];
   return createAgent({
     model,
     tools: agentTools,
     systemPrompt: learningPrompt,
+    checkpointer,
     middleware: [
+      humanInTheLoopMiddleware({
+        interruptOn: { create_practice: { allowedDecisions: ["approve", "edit", "reject"] } },
+      }),
       createMiddleware({
         name: "LearningRunBudget",
         wrapModelCall: async (request, handler) => {
@@ -77,7 +87,27 @@ export function createLearningAgent(
         },
         wrapToolCall: async (request, handler) => {
           budget.beforeToolCall();
-          return handler(request);
+          const id = request.toolCall.id ?? randomUUID();
+          const name = request.toolCall.name;
+          await onToolActivity?.({ id, name, status: "running", input: request.toolCall.args });
+          try {
+            const result = await handler(request);
+            await onToolActivity?.({
+              id,
+              name,
+              input: request.toolCall.args,
+              output: "content" in result ? result.content : undefined,
+              status: "status" in result && result.status === "error" ? "failed" : "completed",
+            });
+            return result;
+          } catch (error) {
+            await onToolActivity?.({
+              id,
+              name,
+              status: isGraphInterrupt(error) ? "waiting" : "failed",
+            });
+            throw error;
+          }
         },
       }),
     ],

@@ -1,5 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { AIMessage, type BaseMessage, HumanMessage, SystemMessage } from "@langchain/core/messages";
+import { Command } from "@langchain/langgraph";
+import type { PostgresSaver } from "@langchain/langgraph-checkpoint-postgres";
 import {
   Inject,
   Injectable,
@@ -9,8 +11,10 @@ import {
 import {
   activeChatStatuses,
   type ChatAcknowledgment,
+  type ChatActivity,
   type ChatCitationSnapshot,
   type ChatImage,
+  type ChatInteraction,
   type ChatMaterialTarget,
   type ChatMessage,
   type ChatPagination,
@@ -22,6 +26,7 @@ import {
   type ChatWebCitation,
   type ChatWebSearchState,
   chatCitationSnapshotSchema,
+  chatInteractionSchema,
   chatMessageSchema,
   chatMessageScopeSchema,
   chatPageContextSchema,
@@ -30,12 +35,15 @@ import {
   chatThreadSchema,
   citationMarkerIds,
   isChatRunActive,
+  type respondChatInteractionSchema,
   type SendChatMessage,
+  unfinishedChatStatuses,
 } from "@ngertiin/contracts/api";
 import type { ApiEnvironment } from "@ngertiin/contracts/environment";
 import {
   chat_admission_slots,
   chat_attachments,
+  chat_interactions,
   chat_message_contexts,
   chat_messages,
   chat_run_usage,
@@ -64,6 +72,7 @@ import { IdempotencyService } from "../idempotency/idempotency.service.js";
 import { InfrastructureService } from "../infrastructure/infrastructure.service.js";
 import { KnowledgeService } from "../knowledge/knowledge.service.js";
 import { ModulesService } from "../modules/modules.service.js";
+import { PracticeService } from "../practice/practice.service.js";
 import { ChatExecutionBudget } from "./chat.budget.js";
 import { resolveMessageScope } from "./chat.context.js";
 import { LearningRunError } from "./chat.errors.js";
@@ -76,12 +85,15 @@ import {
   chatSnapshotFrames,
   streamChatSnapshots,
 } from "./chat.stream.js";
+import { ChatActivities, settleChatActivities } from "./chat-activity.js";
 import { attachmentDto, ChatAttachmentsService } from "./chat-attachments.service.js";
+import { createChatCheckpointer } from "./chat-checkpointer.js";
 import { ChatMultimodal, promptTokenCount } from "./chat-multimodal.js";
 import { ChatWebSearch } from "./chat-web-search.js";
-import { createLearningAgent } from "./learning.agent.js";
+import { createLearningAgent, type ExecutionBudget } from "./learning.agent.js";
 import { LearningEvidence, materialPrompt } from "./learning.context.js";
 import { learningPrompt } from "./prompts/learning.prompt.js";
+import { askUserTool, createPracticeTool } from "./tools/practice.tool.js";
 import { readExcerptTool } from "./tools/read-excerpt.tool.js";
 import { readProgressTool } from "./tools/read-progress.tool.js";
 import { searchModuleMaterialsTool } from "./tools/search-module-materials.tool.js";
@@ -106,6 +118,7 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
   private readonly executorId = randomUUID();
   private readonly executions = new Map<string, { abort: AbortController; done: Promise<void> }>();
   private readonly pubsub: ChatPubSub;
+  private readonly checkpointer: PostgresSaver;
   private scheduler?: ReturnType<typeof setInterval>;
   private ticking = false;
   private stopping = false;
@@ -120,12 +133,15 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
     @Inject(IdempotencyService) private readonly idempotency: IdempotencyService,
     @Inject(ChatAttachmentsService) private readonly attachments: ChatAttachmentsService,
     @Inject(AiService) private readonly ai: AiService,
+    @Inject(PracticeService) private readonly practice: PracticeService,
     @Inject(API_ENV) private readonly env: ApiEnvironment,
   ) {
     this.pubsub = new ChatPubSub(env.REDIS_URL);
+    this.checkpointer = createChatCheckpointer(this.db, env.DATABASE_URL);
   }
 
   async onApplicationBootstrap() {
+    await this.checkpointer.setup();
     await this.tick();
     this.scheduler = setInterval(() => {
       void this.tick().catch(() => this.log("chat.scheduler_failed"));
@@ -157,6 +173,7 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
       claimPending: this.ticking,
     });
     this.pubsub.close();
+    await this.checkpointer.end();
   }
   private log(event: string, data: Record<string, unknown> = {}) {
     console.log(JSON.stringify({ level: "log", event, ...data }));
@@ -242,7 +259,7 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
             chat_runs.thread_id,
             threads.map((thread) => thread.id),
           ),
-          inArray(chat_runs.status, [...activeChatStatuses]),
+          inArray(chat_runs.status, [...unfinishedChatStatuses]),
         ),
       );
     const moduleIds = [...new Set(threads.flatMap((t) => (t.module_id ? [t.module_id] : [])))];
@@ -338,16 +355,59 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
         .where(eq(chat_threads.id, threadId))
         .for("update");
       const [active] = await tx
-        .select({ id: chat_runs.id })
+        .select({
+          id: chat_runs.id,
+          status: chat_runs.status,
+          assistantId: chat_runs.assistant_message_id,
+        })
         .from(chat_runs)
         .where(
           and(
             eq(chat_runs.thread_id, threadId),
-            inArray(chat_runs.status, [...activeChatStatuses]),
+            inArray(chat_runs.status, [...unfinishedChatStatuses]),
           ),
         )
         .limit(1);
-      if (active) this.conflict();
+      if (active?.status === "waiting_for_input") {
+        await tx
+          .update(chat_runs)
+          .set({
+            status: "cancelled",
+            error_code: "USER_CANCELLED",
+            finished_at: sql`clock_timestamp()`,
+          })
+          .where(eq(chat_runs.id, active.id));
+        await tx
+          .update(chat_interactions)
+          .set({ status: "cancelled", decided_at: sql`clock_timestamp()` })
+          .where(
+            and(eq(chat_interactions.run_id, active.id), eq(chat_interactions.status, "pending")),
+          );
+        if (active.assistantId) {
+          const [message] = await tx
+            .select()
+            .from(chat_messages)
+            .where(eq(chat_messages.id, active.assistantId));
+          if (message)
+            await tx
+              .update(chat_messages)
+              .set({
+                parts_json: chatMessageParts(message.parts_json).map((part) =>
+                  part.type === "data-interaction" && part.data.status === "pending"
+                    ? {
+                        ...part,
+                        data: {
+                          ...part.data,
+                          status: "cancelled",
+                          decisionAt: new Date().toISOString(),
+                        },
+                      }
+                    : part,
+                ),
+              })
+              .where(eq(chat_messages.id, message.id));
+        }
+      } else if (active) this.conflict();
       await tx
         .update(chat_threads)
         .set({ deleted_at: sql`coalesce(${chat_threads.deleted_at},now())` })
@@ -759,7 +819,7 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
             .where(
               and(
                 eq(chat_runs.thread_id, threadId),
-                inArray(chat_runs.status, [...activeChatStatuses]),
+                inArray(chat_runs.status, [...unfinishedChatStatuses]),
               ),
             )
             .limit(1);
@@ -919,7 +979,12 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
         .where(eq(chat_runs.id, runId))
         .for("update")
         .limit(1);
-      if (!run || !isChatRunActive(run.status) || run.status === "cancelling") return;
+      if (
+        !run ||
+        (!isChatRunActive(run.status) && run.status !== "waiting_for_input") ||
+        run.status === "cancelling"
+      )
+        return;
       const [message] = run.assistant_message_id
         ? await tx
             .select()
@@ -930,15 +995,64 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
       const [updated] = await tx
         .update(chat_runs)
         .set({
-          status: run.status === "queued" ? "cancelled" : "cancelling",
+          status:
+            run.status === "queued" || run.status === "waiting_for_input"
+              ? "cancelled"
+              : "cancelling",
           cancel_requested_at: sql`clock_timestamp()`,
           snapshot_sequence: sql`${chat_runs.snapshot_sequence}+1`,
-          ...(run.status === "queued"
+          ...(run.status === "queued" || run.status === "waiting_for_input"
             ? { error_code: "USER_CANCELLED", finished_at: sql`clock_timestamp()` }
             : {}),
         })
         .where(eq(chat_runs.id, runId))
         .returning();
+      if (run.status === "waiting_for_input") {
+        await tx
+          .update(chat_interactions)
+          .set({ status: "cancelled", decided_at: sql`clock_timestamp()` })
+          .where(and(eq(chat_interactions.run_id, runId), eq(chat_interactions.status, "pending")));
+        if (message) {
+          const parts = chatMessageParts(message.parts_json).map((part) =>
+            part.type === "data-interaction" && part.data.status === "pending"
+              ? {
+                  ...part,
+                  data: {
+                    ...part.data,
+                    status: "cancelled" as const,
+                    decisionAt: new Date().toISOString(),
+                  },
+                }
+              : part,
+          );
+          const activities = settleChatActivities(
+            parts.flatMap((part) => (part.type === "data-activity" ? [part.data] : [])),
+            "cancelled",
+          );
+          await tx
+            .update(chat_messages)
+            .set({
+              parts_json: [
+                ...parts.filter(
+                  (part) => part.type !== "data-run-status" && part.type !== "data-activity",
+                ),
+                ...activities.map(
+                  (activity): ChatPart => ({
+                    type: "data-activity",
+                    id: activity.id,
+                    data: activity,
+                  }),
+                ),
+                {
+                  type: "data-run-status",
+                  data: { status: "cancelled", errorCode: "USER_CANCELLED" },
+                },
+              ],
+              content_revision: sql`${chat_messages.content_revision}+1`,
+            })
+            .where(eq(chat_messages.id, message.id));
+        }
+      }
       return updated
         ? { snapshot: this.snapshot(updated, text), previous: this.snapshot(run, text) }
         : undefined;
@@ -946,6 +1060,172 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
     if (committed) await this.publish(committed.snapshot, committed.previous);
     this.executions.get(runId)?.abort.abort(new LearningRunError("USER_CANCELLED"));
     return this.getRun(userId, moduleId, threadId, runId);
+  }
+
+  async respondInteraction(
+    userId: string,
+    moduleId: string | null,
+    threadId: string,
+    runId: string,
+    interactionId: string,
+    body: typeof respondChatInteractionSchema._output,
+  ) {
+    await this.ownedThread(userId, moduleId, threadId);
+    const committed = await this.db.transaction(async (tx) => {
+      const [run] = await tx
+        .select()
+        .from(chat_runs)
+        .where(and(eq(chat_runs.id, runId), eq(chat_runs.thread_id, threadId)))
+        .for("update");
+      if (!run) this.notFound();
+      const [row] = await tx
+        .select()
+        .from(chat_interactions)
+        .where(and(eq(chat_interactions.id, interactionId), eq(chat_interactions.run_id, runId)))
+        .for("update");
+      if (!row) this.notFound();
+      if (row.status !== "pending")
+        return { changed: false, run, interaction: chatInteractionSchema.parse(row.public_json) };
+      if (run.status !== "waiting_for_input") this.conflict();
+      const prior = chatInteractionSchema.parse(row.public_json);
+      if (prior.kind === "ask_user" && !["answer", "reject"].includes(body.decision))
+        this.conflict();
+      if (prior.kind === "create_practice" && body.decision === "answer") this.conflict();
+      if (body.decision === "answer") {
+        for (const question of prior.questions ?? []) {
+          const answer = body.answers[question.id];
+          if (
+            question.required &&
+            (answer === undefined || answer === "" || (Array.isArray(answer) && !answer.length))
+          )
+            this.conflict();
+          if (question.kind === "module" && typeof answer === "string") {
+            const [selected] = await tx
+              .select({ id: modulesTable.id })
+              .from(modulesTable)
+              .where(
+                and(
+                  eq(modulesTable.id, answer),
+                  eq(modulesTable.owner_id, userId),
+                  eq(modulesTable.status, "ready"),
+                ),
+              );
+            if (!selected) this.notFound();
+          }
+          if (question.options && answer !== undefined) {
+            const allowed = new Set(question.options.map((option) => option.value));
+            if ((Array.isArray(answer) ? answer : [answer]).some((value) => !allowed.has(value)))
+              this.conflict();
+          }
+        }
+      }
+      const storedRevision =
+        row.interrupt_json && typeof row.interrupt_json === "object"
+          ? (row.interrupt_json as Record<string, unknown>).sourceRevision
+          : null;
+      const currentRevision =
+        body.decision === "approve" && prior.practice
+          ? await this.practice.sourceRevision(userId, prior.practice).catch(() => null)
+          : storedRevision;
+      const response =
+        body.decision === "approve" && currentRevision !== storedRevision
+          ? ({
+              decision: "revise",
+              responseId: body.responseId,
+              instruction:
+                "Materi sumber berubah atau tidak tersedia lagi. Periksa materi terbaru dan buat usulan latihan baru untuk persetujuan.",
+            } as const)
+          : body;
+      const approvedRevision =
+        response.decision === "approve"
+          ? await this.practice.sourceRevision(userId, response.practice)
+          : storedRevision;
+      const decision =
+        response.decision === "approve"
+          ? "approved"
+          : response.decision === "answer"
+            ? "answered"
+            : response.decision === "revise"
+              ? "revising"
+              : prior.kind === "ask_user"
+                ? "cancelled"
+                : "rejected";
+      const publicInteraction = chatInteractionSchema.parse({
+        ...prior,
+        status: decision,
+        decisionAt: new Date().toISOString(),
+        ...(response.decision === "approve" ? { practice: response.practice } : {}),
+        ...(response.decision === "answer" ? { answers: response.answers } : {}),
+        ...(response.decision === "revise" ? { instruction: response.instruction } : {}),
+      });
+      const decisionJson =
+        response.decision === "approve"
+          ? response.practice
+          : response.decision === "answer"
+            ? response.answers
+            : response.decision === "revise"
+              ? response.instruction
+              : { rejected: true };
+      await tx
+        .update(chat_interactions)
+        .set({
+          status: decision,
+          public_json: publicInteraction,
+          decision_json: decisionJson,
+          interrupt_json: {
+            ...(row.interrupt_json && typeof row.interrupt_json === "object"
+              ? (row.interrupt_json as Record<string, unknown>)
+              : {}),
+            sourceRevision: approvedRevision,
+          },
+          response_id: response.responseId,
+          revision: row.revision + 1,
+          decided_at: sql`clock_timestamp()`,
+        })
+        .where(eq(chat_interactions.id, interactionId));
+      const [message] = run.assistant_message_id
+        ? await tx
+            .select()
+            .from(chat_messages)
+            .where(eq(chat_messages.id, run.assistant_message_id))
+        : [];
+      const oldParts = message ? chatMessageParts(message.parts_json) : [];
+      const parts = oldParts
+        .map((part) =>
+          part.type === "data-interaction" && part.id === interactionId
+            ? { ...part, data: publicInteraction }
+            : part,
+        )
+        .filter((part) => part.type !== "data-run-status");
+      if (message)
+        await tx
+          .update(chat_messages)
+          .set({ parts_json: parts, content_revision: sql`${chat_messages.content_revision}+1` })
+          .where(eq(chat_messages.id, message.id));
+      const cancelled = decision === "cancelled";
+      const [updated] = await tx
+        .update(chat_runs)
+        .set({
+          status: cancelled ? "cancelled" : "queued",
+          ...(cancelled
+            ? { error_code: "USER_CANCELLED", finished_at: sql`clock_timestamp()` }
+            : {
+                deadline_at: sql`clock_timestamp() + ${run.paused_remaining_ms ?? 60_000} * interval '1 millisecond'`,
+                error_code: null,
+              }),
+          snapshot_sequence: sql`${chat_runs.snapshot_sequence}+1`,
+        })
+        .where(eq(chat_runs.id, runId))
+        .returning();
+      if (!updated) throw new Error("Missing chat run");
+      return { changed: true, run: updated, interaction: publicInteraction };
+    });
+    if (committed.changed) {
+      const snapshot = await this.streamSnapshot(userId, moduleId, threadId, runId);
+      await this.publish(snapshot);
+      void this.tick().catch(() => this.log("chat.scheduler_failed"));
+    }
+    return committed.interaction;
   }
 
   private async tick() {
@@ -1138,13 +1418,28 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
     assistantId: string,
     text: string,
     calls: Map<string, ChatUsage>,
-    terminal?: { status: ChatRunStatus; errorCode: ChatRunError | null },
+    terminal?: {
+      status: ChatRunStatus;
+      errorCode: ChatRunError | null;
+      pausedRemainingMs?: number;
+      modelCalls?: number;
+      toolCalls?: number;
+    },
     evidence: ChatCitationSnapshot[] = [],
     images: ChatImage[] = [],
     webCitations: ChatWebCitation[] = [],
     webSearch?: ChatWebSearchState,
+    activities?: ChatActivity[],
+    interaction?: ChatInteraction,
+    practices: Array<{
+      practiceId: string;
+      moduleId: string;
+      status: "generating" | "ready" | "failed";
+    }> = [],
+    interruptValue?: unknown,
   ) {
     // A concurrent tool completion must not change a snapshot mid-transaction.
+    activities = activities ? structuredClone(activities) : undefined;
     images = [...images];
     webCitations = structuredClone(webCitations);
     if (webSearch) webSearch = { ...webSearch };
@@ -1168,10 +1463,19 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
       const previousParts = message ? chatMessageParts(message.parts_json) : [];
       const previous: ChatSnapshot = {
         ...this.snapshot(current, message ? textOf(message.parts_json) : ""),
+        activities: previousParts.flatMap((part) =>
+          part.type === "data-activity" ? [part.data] : [],
+        ),
         webSearch: previousParts.find((part) => part.type === "data-web-search")?.data,
         images: previousParts.flatMap((part) => (part.type === "data-image" ? [part.data] : [])),
         citations: previousParts.flatMap((part) =>
           part.type === "data-citation" ? [part.data] : [],
+        ),
+        interactions: previousParts.flatMap((part) =>
+          part.type === "data-interaction" ? [part.data] : [],
+        ),
+        practices: previousParts.flatMap((part) =>
+          part.type === "data-practice" ? [part.data] : [],
         ),
       };
       let status = current.status;
@@ -1181,6 +1485,19 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
         await tx
           .insert(chat_message_contexts)
           .values(this.evidenceRows(assistantId, evidence, true))
+          .onConflictDoNothing();
+      if (interaction && interruptValue)
+        await tx
+          .insert(chat_interactions)
+          .values({
+            id: interaction.id,
+            run_id: run.id,
+            assistant_message_id: assistantId,
+            kind: interaction.kind,
+            status: "pending",
+            interrupt_json: interruptValue,
+            public_json: interaction,
+          })
           .onConflictDoNothing();
       const citedIds = citationMarkerIds(text);
       const citations: ChatPart[] = evidence
@@ -1197,13 +1514,38 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
       );
       if (webSearch?.status === "searching" && terminal)
         webSearch = { ...webSearch, status: "failed" };
+      const settledActivities = settleChatActivities(
+        activities ?? previous.activities ?? [],
+        status,
+      );
       const parts: ChatPart[] = [
+        ...settledActivities.map(
+          (activity): ChatPart => ({ type: "data-activity", id: activity.id, data: activity }),
+        ),
         { type: "text", text },
         ...(webSearch
           ? [{ type: "data-web-search" as const, id: "web-search" as const, data: webSearch }]
           : []),
         ...citations,
         ...images.map((image): ChatPart => ({ type: "data-image", id: image.id, data: image })),
+        ...previousParts.filter(
+          (part) => part.type === "data-interaction" && part.id !== interaction?.id,
+        ),
+        ...(interaction
+          ? [{ type: "data-interaction" as const, id: interaction.id, data: interaction }]
+          : []),
+        ...previousParts.filter(
+          (part) =>
+            part.type === "data-practice" &&
+            !practices.some((practice) => practice.practiceId === part.id),
+        ),
+        ...practices.map(
+          (practice): ChatPart => ({
+            type: "data-practice",
+            id: practice.practiceId,
+            data: practice,
+          }),
+        ),
       ];
       if (terminal) parts.push({ type: "data-run-status", data: { status, errorCode } });
       if (message)
@@ -1216,7 +1558,18 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
         .set({
           snapshot_sequence: sql`${chat_runs.snapshot_sequence}+1`,
           ...(terminal
-            ? { status, error_code: errorCode, finished_at: sql`clock_timestamp()` }
+            ? {
+                status,
+                error_code: errorCode,
+                ...(terminal.pausedRemainingMs === undefined
+                  ? {}
+                  : { paused_remaining_ms: terminal.pausedRemainingMs }),
+                ...(terminal.modelCalls === undefined ? {} : { model_calls: terminal.modelCalls }),
+                ...(terminal.toolCalls === undefined ? {} : { tool_calls: terminal.toolCalls }),
+                ...(status === "waiting_for_input"
+                  ? { executor_id: null, lease_expires_at: null, heartbeat_at: null }
+                  : { finished_at: sql`clock_timestamp()` }),
+              }
             : {}),
         })
         .where(eq(chat_runs.id, run.id))
@@ -1250,9 +1603,16 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
             snapshot: {
               ...this.snapshot(updated, text),
               webSearch,
+              activities: settledActivities,
               images,
               citations: citations.flatMap((part) =>
                 part.type === "data-citation" ? [part.data] : [],
+              ),
+              interactions: parts.flatMap((part) =>
+                part.type === "data-interaction" ? [part.data] : [],
+              ),
+              practices: parts.flatMap((part) =>
+                part.type === "data-practice" ? [part.data] : [],
               ),
             },
             previous,
@@ -1264,6 +1624,7 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
     return true;
   }
   private async sweep() {
+    await this.recoverPausedCheckpoints();
     // Lock each expired run once. All terminal state, partial text and usage commit together.
     const committed = await this.db.transaction(async (tx) => {
       const expired = await tx
@@ -1312,17 +1673,30 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
           priorWebSearch?.status === "searching"
             ? { ...priorWebSearch, status: "failed" as const }
             : priorWebSearch;
-        const snapshot = { ...this.snapshot(updated, text), webSearch };
+        const priorActivities = parts.flatMap((part) =>
+          part.type === "data-activity" ? [part.data] : [],
+        );
+        const activities = settleChatActivities(priorActivities, updated.status);
+        const snapshot = { ...this.snapshot(updated, text), webSearch, activities };
         if (message)
           await tx
             .update(chat_messages)
             .set({
               parts_json: [
                 ...parts
-                  .filter((part) => part.type !== "data-run-status")
+                  .filter(
+                    (part) => part.type !== "data-run-status" && part.type !== "data-activity",
+                  )
                   .map((part) =>
                     part.type === "data-web-search" ? { ...part, data: webSearch } : part,
                   ),
+                ...activities.map(
+                  (activity): ChatPart => ({
+                    type: "data-activity",
+                    id: activity.id,
+                    data: activity,
+                  }),
+                ),
                 {
                   type: "data-run-status",
                   data: { status: updated.status, errorCode: updated.error_code },
@@ -1339,7 +1713,11 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
           );
         snapshots.push({
           snapshot,
-          previous: { ...this.snapshot(run, text), webSearch: priorWebSearch },
+          previous: {
+            ...this.snapshot(run, text),
+            webSearch: priorWebSearch,
+            activities: priorActivities,
+          },
         });
       }
       return snapshots;
@@ -1353,19 +1731,207 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
       await this.publish(snapshot, previous);
     }
   }
+  private async recoverPausedCheckpoints() {
+    const candidates = await this.db
+      .select({ run: chat_runs, userId: chat_threads.user_id })
+      .from(chat_runs)
+      .innerJoin(chat_threads, eq(chat_threads.id, chat_runs.thread_id))
+      .where(
+        and(
+          eq(chat_runs.status, "running"),
+          sql`${chat_runs.lease_expires_at} <= clock_timestamp()`,
+        ),
+      )
+      .limit(50);
+    for (const { run, userId } of candidates) {
+      try {
+        const agent = createLearningAgent(
+          this.ai.createChatModel(),
+          {} as ExecutionBudget,
+          [askUserTool(), createPracticeTool(this.practice, userId, null)],
+          undefined,
+          this.checkpointer,
+        );
+        const state = await (agent.getState({
+          configurable: { thread_id: run.id },
+        }) as unknown as Promise<{
+          createdAt?: string;
+          tasks?: Array<{ interrupts?: Array<{ value: unknown }> }>;
+          values?: { messages?: Array<{ type?: string }> };
+        }>);
+        const value = state.tasks?.flatMap((task) => task.interrupts ?? []).at(0)?.value;
+        if (!value || typeof value !== "object") continue;
+        const interruptValue = value as Record<string, unknown>;
+        const interaction = chatInteractionSchema.parse({
+          id: randomUUID(),
+          kind: interruptValue.kind === "ask_user" ? "ask_user" : "create_practice",
+          status: "pending",
+          ...(interruptValue.kind === "ask_user"
+            ? { questions: interruptValue.questions }
+            : {
+                practice: (
+                  interruptValue.actionRequests as Array<{ args: unknown }> | undefined
+                )?.[0]?.args,
+              }),
+          decisionAt: null,
+        });
+        const sourceRevision =
+          interaction.kind === "create_practice" && interaction.practice
+            ? await this.practice
+                .sourceRevision(userId, interaction.practice)
+                .catch(() => "source-unavailable")
+            : null;
+        const checkpointTime = Date.parse(state.createdAt ?? "");
+        const remaining = Math.max(
+          1,
+          run.deadline_at.getTime() -
+            (Number.isFinite(checkpointTime) ? checkpointTime : Date.now()),
+        );
+        const committed = await this.db.transaction(async (tx) => {
+          const [locked] = await tx
+            .select()
+            .from(chat_runs)
+            .where(
+              and(
+                eq(chat_runs.id, run.id),
+                eq(chat_runs.status, "running"),
+                eq(chat_runs.lease_epoch, run.lease_epoch),
+                sql`${chat_runs.lease_expires_at} <= clock_timestamp()`,
+              ),
+            )
+            .for("update");
+          if (!locked?.assistant_message_id) return false;
+          const [message] = await tx
+            .select()
+            .from(chat_messages)
+            .where(eq(chat_messages.id, locked.assistant_message_id));
+          if (!message) return false;
+          const parts = chatMessageParts(message.parts_json);
+          const activities = settleChatActivities(
+            parts.flatMap((part) => (part.type === "data-activity" ? [part.data] : [])),
+            "waiting_for_input",
+          );
+          interaction.activityId = activities.findLast(
+            (item) => item.kind === "tool" && item.status === "waiting",
+          )?.id;
+          const [usage] = await tx
+            .select({ value: count() })
+            .from(chat_run_usage)
+            .where(eq(chat_run_usage.run_id, run.id));
+          await tx.insert(chat_interactions).values({
+            id: interaction.id,
+            run_id: run.id,
+            assistant_message_id: message.id,
+            kind: interaction.kind,
+            status: "pending",
+            interrupt_json: { ...interruptValue, sourceRevision },
+            public_json: interaction,
+          });
+          await tx
+            .update(chat_messages)
+            .set({
+              parts_json: [
+                ...parts.filter(
+                  (part) => part.type !== "data-run-status" && part.type !== "data-activity",
+                ),
+                ...activities.map(
+                  (activity): ChatPart => ({
+                    type: "data-activity",
+                    id: activity.id,
+                    data: activity,
+                  }),
+                ),
+                { type: "data-interaction", id: interaction.id, data: interaction },
+                { type: "data-run-status", data: { status: "waiting_for_input", errorCode: null } },
+              ],
+              content_revision: sql`${chat_messages.content_revision}+1`,
+            })
+            .where(eq(chat_messages.id, message.id));
+          const [updated] = await tx
+            .update(chat_runs)
+            .set({
+              status: "waiting_for_input",
+              paused_remaining_ms: remaining,
+              model_calls: Math.max(locked.model_calls, usage?.value ?? 0),
+              tool_calls: Math.max(
+                locked.tool_calls,
+                state.values?.messages?.filter((entry) => entry.type === "tool").length ?? 0,
+              ),
+              executor_id: null,
+              lease_expires_at: null,
+              heartbeat_at: null,
+              snapshot_sequence: sql`${chat_runs.snapshot_sequence}+1`,
+            })
+            .where(eq(chat_runs.id, run.id))
+            .returning();
+          return updated
+            ? { ...this.snapshot(updated, textOf(message.parts_json)), activities }
+            : null;
+        });
+        if (committed) await this.publish(committed);
+      } catch (error) {
+        this.log("chat.interrupt_recovery_failed", {
+          runId: run.id,
+          errorType: error instanceof Error ? error.name : "unknown",
+        });
+      }
+    }
+  }
   private async execute(run: RunRow, abort: AbortController) {
     const startedAt = performance.now();
-    const assistantId = randomUUID();
+    const assistantId = run.assistant_message_id ?? randomUUID();
     const calls = new Map<string, ChatUsage>();
     const evidence = new LearningEvidence();
     const webSearch = new ChatWebSearch();
     const images: ChatImage[] = [];
     const imageDiagnostic: ChatImageDiagnostic = { status: "not_requested", searches: [] };
     let text = "";
+    let activities = new ChatActivities();
+    if (run.assistant_message_id) {
+      const [previousMessage] = await this.db
+        .select({ parts: chat_messages.parts_json })
+        .from(chat_messages)
+        .where(eq(chat_messages.id, run.assistant_message_id));
+      text = previousMessage ? textOf(previousMessage.parts) : "";
+      activities = new ChatActivities(
+        previousMessage
+          ? chatMessageParts(previousMessage.parts).flatMap((part) =>
+              part.type === "data-activity" ? [part.data] : [],
+            )
+          : [],
+      );
+      const priorCalls = await this.db
+        .select()
+        .from(chat_run_usage)
+        .where(eq(chat_run_usage.run_id, run.id));
+      for (const call of priorCalls)
+        calls.set(call.call_id, {
+          inputTokens: call.input_tokens,
+          outputTokens: call.output_tokens,
+          totalTokens: call.total_tokens,
+          coverage: call.coverage as ChatUsage["coverage"],
+        });
+    }
+    const [resumeInteraction] = run.assistant_message_id
+      ? await this.db
+          .select()
+          .from(chat_interactions)
+          .where(eq(chat_interactions.run_id, run.id))
+          .orderBy(desc(chat_interactions.created_at))
+          .limit(1)
+      : [];
+    const resuming =
+      resumeInteraction && resumeInteraction.status !== "pending" ? resumeInteraction : null;
     let lastSnapshot = 0;
     let heartbeatBusy = false,
       lastHeartbeat = Date.now(),
       finished = false;
+    let paused = false;
+    const practiceResults: Array<{
+      practiceId: string;
+      moduleId: string;
+      status: "generating" | "ready" | "failed";
+    }> = [];
     const assertActive = () => {
       if (finished || abort.signal.aborted)
         throw abort.signal.reason ?? new LearningRunError("PROCESS_INTERRUPTED");
@@ -1409,11 +1975,15 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
       | { userId: string; moduleId: string | null; scopes: ChatScope[] }
       | undefined;
     let savedText = "";
+    let activityRevision = 0;
+    let savedActivityRevision = 0;
     let saving = Promise.resolve();
     const save = () => {
       saving = saving.then(async () => {
         assertActive();
         const snapshotText = text;
+        const snapshotActivities = activities.values();
+        const snapshotActivityRevision = activityRevision;
         if (executionScope) {
           for (const scope of executionScope.scopes)
             await this.modules.validateChatScope(
@@ -1441,48 +2011,66 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
             images,
             webSearch.values(snapshotText),
             webSearch.state,
+            snapshotActivities,
           ))
         ) {
           stop("PROCESS_INTERRUPTED");
           assertActive();
         }
         savedText = snapshotText;
+        savedActivityRevision = snapshotActivityRevision;
         lastSnapshot = Date.now();
       });
       return saving;
     };
-    const budget = new ChatExecutionBudget(this.ai, this.env, {
-      calls,
-      deadlineAt: run.deadline_at,
-      signal: abort.signal,
-      assertActive,
-      save,
-      webSearchCount: () => webSearch.state.searches,
-      onStreamEvent: async (event) => {
-        assertActive();
-        if (
-          event.event === "error" ||
-          (event.event === "provider" && ["error", "response.failed"].includes(event.name))
-        )
-          throw new LearningRunError("PROVIDER_ERROR");
-        const metadataChanged = webSearch.handle(event);
-        if (event.event === "content-block-delta" && event.delta.type === "text-delta")
-          text += event.delta.text;
-        if (
-          metadataChanged ||
-          (text !== savedText && Date.now() - lastSnapshot >= this.env.CHAT_SNAPSHOT_INTERVAL_MS)
-        ) {
-          if (webSearch.state.searches > this.env.CHAT_TOOL_MAX_CALLS) {
-            stop("STEP_LIMIT");
-            assertActive();
+    const budget = new ChatExecutionBudget(
+      this.ai,
+      this.env,
+      {
+        calls,
+        deadlineAt: run.deadline_at,
+        signal: abort.signal,
+        assertActive,
+        save,
+        webSearchCount: () => webSearch.state.searches,
+        onStreamEvent: async (event) => {
+          assertActive();
+          if (
+            event.event === "error" ||
+            (event.event === "provider" && ["error", "response.failed"].includes(event.name))
+          )
+            throw new LearningRunError("PROVIDER_ERROR");
+          const activityChanged = activities.search(event);
+          if (activityChanged) activityRevision++;
+          const reasoningDelta =
+            event.event === "content-block-delta" && event.delta.type === "reasoning-delta";
+          const metadataChanged = webSearch.handle(event) || (activityChanged && !reasoningDelta);
+          if (event.event === "content-block-delta" && event.delta.type === "text-delta")
+            text += event.delta.text;
+          if (
+            metadataChanged ||
+            ((text !== savedText || activityRevision !== savedActivityRevision) &&
+              Date.now() - lastSnapshot >= this.env.CHAT_SNAPSHOT_INTERVAL_MS)
+          ) {
+            if (webSearch.state.searches > this.env.CHAT_TOOL_MAX_CALLS) {
+              stop("STEP_LIMIT");
+              assertActive();
+            }
+            await save();
           }
-          await save();
-        }
+        },
       },
-    });
+      { modelCalls: run.model_calls, toolCalls: run.tool_calls },
+    );
     let snapshotBusy = false;
     const snapshotTimer = setInterval(() => {
-      if (snapshotBusy || finished || abort.signal.aborted || text === savedText) return;
+      if (
+        snapshotBusy ||
+        finished ||
+        abort.signal.aborted ||
+        (text === savedText && activityRevision === savedActivityRevision)
+      )
+        return;
       snapshotBusy = true;
       void save()
         .catch(() => stop("PROCESS_INTERRUPTED"))
@@ -1514,13 +2102,14 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
           .where(eq(chat_messages.id, run.user_message_id ?? ""))
           .limit(1);
         if (!user) throw new Error("Missing user message");
-        await tx.insert(chat_messages).values({
-          id: assistantId,
-          thread_id: run.thread_id,
-          run_id: run.id,
-          sequence: user.sequence + 1,
-          role: "assistant",
-        });
+        if (!current.assistant_message_id)
+          await tx.insert(chat_messages).values({
+            id: assistantId,
+            thread_id: run.thread_id,
+            run_id: run.id,
+            sequence: user.sequence + 1,
+            role: "assistant",
+          });
         const [updated] = await tx
           .update(chat_runs)
           .set({
@@ -1561,7 +2150,9 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
       });
       executionScope = context;
       const multimodal = new ChatMultimodal(this.attachments, thread.user_id, run, abort.signal);
-      const messages = await this.promptMessages(run, model, context, evidence, multimodal);
+      const messages = resuming
+        ? []
+        : await this.promptMessages(run, model, context, evidence, multimodal);
       await save(); // Commit inherited dependencies before the first provider call.
       const [userMessage] = await this.db
         .select({ parts: chat_messages.parts_json })
@@ -1569,6 +2160,14 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
         .where(eq(chat_messages.id, run.user_message_id ?? ""))
         .limit(1);
       const tools: Parameters<typeof createLearningAgent>[2] = [
+        askUserTool(),
+        createPracticeTool(
+          this.practice,
+          thread.user_id,
+          resuming?.kind === "create_practice" && resuming.status === "approved"
+            ? resuming.id
+            : null,
+        ),
         searchWikimediaImagesTool({
           runId: run.id,
           userAgent: this.env.WIKIMEDIA_USER_AGENT,
@@ -1594,29 +2193,69 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
           ),
         );
       }
-      const agent = createLearningAgent(model, budget, tools, async (messages) => {
-        assertActive();
-        if (!multimodal.rows.size) throw new LearningRunError("ATTACHMENT_UNREADABLE");
-        const extracted = await multimodal.fallback(messages);
-        while (
-          (await promptTokenCount(model, [new SystemMessage(learningPrompt), ...extracted])) >
-          this.env.CHAT_PROMPT_MAX_TOKENS
-        ) {
-          const latestUser = extracted.findLastIndex((message) => message.type === "human");
-          if (latestUser < 2 || extracted[0]?.type !== "human" || extracted[1]?.type !== "ai")
-            throw new LearningRunError("CONTEXT_LIMIT");
-          extracted.splice(0, 2);
-        }
-        return extracted;
-      });
-      const stream = await agent.stream(
-        { messages },
-        {
-          signal: abort.signal,
-          streamMode: ["values", "messages", "tools"],
-          recursionLimit: this.env.CHAT_AGENT_MAX_STEPS * 4 + 10,
+      const agent = createLearningAgent(
+        model,
+        budget,
+        tools,
+        async (messages) => {
+          assertActive();
+          if (!multimodal.rows.size) throw new LearningRunError("ATTACHMENT_UNREADABLE");
+          const extracted = await multimodal.fallback(messages);
+          while (
+            (await promptTokenCount(model, [new SystemMessage(learningPrompt), ...extracted])) >
+            this.env.CHAT_PROMPT_MAX_TOKENS
+          ) {
+            const latestUser = extracted.findLastIndex((message) => message.type === "human");
+            if (latestUser < 2 || extracted[0]?.type !== "human" || extracted[1]?.type !== "ai")
+              throw new LearningRunError("CONTEXT_LIMIT");
+            extracted.splice(0, 2);
+          }
+          return extracted;
+        },
+        this.checkpointer,
+        async (event) => {
+          assertActive();
+          if (activities.tool(event)) {
+            activityRevision++;
+            await save();
+          }
         },
       );
+      const resume = resuming
+        ? resuming.kind === "ask_user"
+          ? new Command({ resume: resuming.decision_json })
+          : new Command({
+              resume: {
+                decisions: [
+                  resuming.status === "approved"
+                    ? {
+                        type: "edit",
+                        editedAction: { name: "create_practice", args: resuming.decision_json },
+                      }
+                    : {
+                        type: "reject",
+                        message:
+                          resuming.status === "revising"
+                            ? String(resuming.decision_json)
+                            : "Pengguna membatalkan usulan latihan.",
+                      },
+                ],
+              },
+            })
+        : null;
+      const graphConfig = {
+        configurable: {
+          thread_id: run.id,
+          executor_id: this.executorId,
+          lease_epoch: run.lease_epoch,
+        },
+        signal: abort.signal,
+        streamMode: ["values", "messages", "tools"] as Array<"values" | "messages" | "tools">,
+        recursionLimit: this.env.CHAT_AGENT_MAX_STEPS * 4 + 10,
+      };
+      const stream = await agent.stream(resume ?? { messages }, {
+        ...graphConfig,
+      });
       const reader = stream.getReader();
       try {
         while (true) {
@@ -1630,9 +2269,82 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
         reader.releaseLock();
       }
       assertActive();
+      const state = await (agent.getState(graphConfig) as unknown as Promise<{
+        tasks?: Array<{ interrupts?: Array<{ value: unknown }> }>;
+        values?: { messages?: Array<{ content?: unknown }> };
+      }>);
+      const interrupted = state.tasks?.flatMap((task) => task.interrupts ?? []).at(0)?.value;
+      if (interrupted) {
+        const value = interrupted as Record<string, unknown>;
+        const kind = value.kind === "ask_user" ? "ask_user" : "create_practice";
+        const interaction = chatInteractionSchema.parse({
+          id: randomUUID(),
+          kind,
+          activityId: activities
+            .values()
+            .findLast(
+              (item) =>
+                item.kind === "tool" && (item.status === "running" || item.status === "waiting"),
+            )?.id,
+          status: "pending",
+          ...(kind === "ask_user"
+            ? { questions: value.questions }
+            : {
+                practice: (value.actionRequests as Array<{ args: unknown }> | undefined)?.[0]?.args,
+              }),
+          decisionAt: null,
+        });
+        const sourceRevision =
+          interaction.kind === "create_practice" && interaction.practice
+            ? await this.practice.sourceRevision(thread.user_id, interaction.practice)
+            : null;
+        paused = true;
+        finished = true;
+        await this.persist(
+          run,
+          assistantId,
+          text,
+          calls,
+          {
+            status: "waiting_for_input",
+            errorCode: null,
+            pausedRemainingMs: Math.max(1, run.deadline_at.getTime() - Date.now()),
+            modelCalls: budget.modelCallCount,
+            toolCalls: budget.toolCallCount,
+          },
+          evidence.values(),
+          images,
+          webSearch.values(text),
+          webSearch.state,
+          activities.values(),
+          interaction,
+          [],
+          { ...value, sourceRevision },
+        );
+        return;
+      }
+      for (const message of state.values?.messages ?? []) {
+        if (typeof message.content !== "string") continue;
+        try {
+          const value = JSON.parse(message.content) as Record<string, unknown>;
+          if (
+            typeof value.practiceId === "string" &&
+            typeof value.moduleId === "string" &&
+            ["generating", "ready", "failed"].includes(String(value.status))
+          )
+            practiceResults.push({
+              practiceId: value.practiceId,
+              moduleId: value.moduleId,
+              status: value.status as "generating" | "ready" | "failed",
+            });
+        } catch {
+          /* Other tool output is not a Practice result. */
+        }
+      }
     };
     try {
       await withAbortGrace(work(), abort.signal, this.env.CHAT_CANCEL_GRACE_MS);
+      if (paused) return;
       finished = true;
       const usage = this.ai.aggregateUsage([...calls.values()]);
       const outputLimited =
@@ -1650,6 +2362,9 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
         images,
         webSearch.values(text),
         webSearch.state,
+        activities.values(),
+        undefined,
+        practiceResults,
       );
     } catch (error) {
       finished = true; // Late provider callbacks cannot change snapshots or usage.
@@ -1671,6 +2386,7 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
         images,
         webSearch.values(text),
         webSearch.state,
+        activities.values(),
       );
     } finally {
       finished = true;
@@ -1714,21 +2430,26 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
     if (!row) this.notFound();
     if (!(await this.canReadEvidence(userId, moduleId, await this.runEvidence(runId))))
       this.notFound();
+    const parts = row.message ? chatMessageParts(row.message.parts_json) : [];
     return {
       ...this.snapshot(row.run, row.message ? textOf(row.message.parts_json) : ""),
+      activities: row.message
+        ? parts.flatMap((part) => (part.type === "data-activity" ? [part.data] : []))
+        : [],
       webSearch: row.message
-        ? chatMessageParts(row.message.parts_json).find((part) => part.type === "data-web-search")
-            ?.data
+        ? parts.find((part) => part.type === "data-web-search")?.data
         : undefined,
       images: row.message
-        ? chatMessageParts(row.message.parts_json).flatMap((part) =>
-            part.type === "data-image" ? [part.data] : [],
-          )
+        ? parts.flatMap((part) => (part.type === "data-image" ? [part.data] : []))
         : [],
       citations: row.message
-        ? chatMessageParts(row.message.parts_json).flatMap((part) =>
-            part.type === "data-citation" ? [part.data] : [],
-          )
+        ? parts.flatMap((part) => (part.type === "data-citation" ? [part.data] : []))
+        : [],
+      interactions: row.message
+        ? parts.flatMap((part) => (part.type === "data-interaction" ? [part.data] : []))
+        : [],
+      practices: row.message
+        ? parts.flatMap((part) => (part.type === "data-practice" ? [part.data] : []))
         : [],
     };
   }
@@ -1754,9 +2475,6 @@ export class ChatService implements OnApplicationBootstrap, OnModuleDestroy {
       },
       this.env.CHAT_STREAM_BUFFER_MAX_BYTES,
       this.env.CHAT_SWEEP_INTERVAL_MS,
-      async () => {
-        await read();
-      },
     );
   }
 }
