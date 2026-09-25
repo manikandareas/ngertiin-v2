@@ -43,6 +43,7 @@ const summary = (row: typeof practice_sets.$inferSelect) => {
     title: row.title,
     status: row.status,
     itemCount: configuration.itemCount,
+    durationMinutes: configuration.durationMinutes,
     latestAttempt: null,
     archivedAt: iso(row.archived_at),
     createdAt: row.created_at.toISOString(),
@@ -393,6 +394,34 @@ export class PracticeService {
       .orderBy(desc(practice_sets.created_at), desc(practice_sets.id))
       .limit(query.limit + 1);
     const page = rows.slice(0, query.limit);
+    const readyIds = page.filter((row) => row.status === "ready").map((row) => row.id);
+    const firstItems = readyIds.length
+      ? await this.db
+          .selectDistinctOn([practice_items.practice_id], {
+            practiceId: practice_items.practice_id,
+            content: practice_items.content,
+          })
+          .from(practice_items)
+          .where(inArray(practice_items.practice_id, readyIds))
+          .orderBy(practice_items.practice_id, asc(practice_items.position))
+      : [];
+    const previews = new Map(
+      firstItems.map((item) => {
+        const content = practiceItemContentSchema.parse(item.content);
+        return [
+          item.practiceId,
+          {
+            text: (content.type === "flashcard" ? content.front : content.question).slice(0, 300),
+            options:
+              content.type === "multiple_choice"
+                ? content.options.slice(0, 2).map((option) => option.slice(0, 120))
+                : content.type === "true_false"
+                  ? ["Benar", "Salah"]
+                  : [],
+          },
+        ];
+      }),
+    );
     const data = await Promise.all(
       page.map(async (row) => {
         const [latest] = await this.db
@@ -409,6 +438,7 @@ export class PracticeService {
           .limit(1);
         return {
           ...summary(row),
+          preview: previews.get(row.id) ?? null,
           latestAttempt: latest
             ? {
                 status: latest.status,

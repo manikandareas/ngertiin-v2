@@ -162,6 +162,12 @@ export const practiceSummarySchema = z
     title: z.string(),
     status: practiceStatusSchema,
     itemCount: z.number().int().positive(),
+    durationMinutes: z.number().int().positive().nullable().optional(),
+    preview: z
+      .object({ text: z.string(), options: z.array(z.string()) })
+      .strict()
+      .nullable()
+      .optional(),
     archivedAt: timestampSchema.nullable(),
     latestAttempt: z
       .object({
