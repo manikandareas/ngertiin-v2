@@ -18,6 +18,8 @@ export class InfrastructureService implements OnModuleInit, OnApplicationShutdow
   readonly adaptiveGenerationQueue: Queue;
   readonly attemptEvaluationQueue: Queue;
   readonly speechGenerationQueue: Queue;
+  readonly practiceGenerationQueue: Queue;
+  readonly practiceEvaluationQueue: Queue;
   private queueSnapshotTimer?: ReturnType<typeof setInterval>;
 
   constructor(@Inject(WORKER_ENV) environment: WorkerEnvironment) {
@@ -60,6 +62,14 @@ export class InfrastructureService implements OnModuleInit, OnApplicationShutdow
       connection: this.redis,
     });
     this.speechGenerationQueue.on("error", () => undefined);
+    this.practiceGenerationQueue = new Queue(QUEUE_NAMES.practiceGeneration, {
+      connection: this.redis,
+    });
+    this.practiceGenerationQueue.on("error", () => undefined);
+    this.practiceEvaluationQueue = new Queue(QUEUE_NAMES.practiceEvaluation, {
+      connection: this.redis,
+    });
+    this.practiceEvaluationQueue.on("error", () => undefined);
   }
 
   async onModuleInit(): Promise<void> {
@@ -79,6 +89,8 @@ export class InfrastructureService implements OnModuleInit, OnApplicationShutdow
           this.adaptiveGenerationQueue.waitUntilReady(),
           this.attemptEvaluationQueue.waitUntilReady(),
           this.speechGenerationQueue.waitUntilReady(),
+          this.practiceGenerationQueue.waitUntilReady(),
+          this.practiceEvaluationQueue.waitUntilReady(),
         ]),
         startupTimeout,
       ]);
@@ -125,6 +137,8 @@ export class InfrastructureService implements OnModuleInit, OnApplicationShutdow
         this.attemptEvaluationQueue,
         this.adaptiveGenerationQueue,
         this.speechGenerationQueue,
+        this.practiceGenerationQueue,
+        this.practiceEvaluationQueue,
       ];
       const snapshots = await Promise.all(
         queues.map(async (queue) => ({
@@ -153,6 +167,8 @@ export class InfrastructureService implements OnModuleInit, OnApplicationShutdow
     await this.adaptiveGenerationQueue.close();
     await this.attemptEvaluationQueue.close();
     await this.speechGenerationQueue.close();
+    await this.practiceGenerationQueue.close();
+    await this.practiceEvaluationQueue.close();
     await this.database.close();
     if (this.redis.status === "ready") {
       await this.redis.quit();
