@@ -37,12 +37,18 @@ export function ConnectedAppSidebar({
         onLogout: () => signOut({ redirectUrl: "/sign-in" }),
       }}
       usageBanner={<UsageBanner />}
+      currentModuleId={user.data?.currentModuleId}
       onNewChat={() =>
-        patchChatSession(client, ["chat", clerkUser?.id], "new:standalone", {
-          draft: "",
-          excerpts: [],
-          pageContext: undefined,
-        })
+        patchChatSession(
+          client,
+          ["chat", clerkUser?.id],
+          `new:${user.data?.currentModuleId ?? "standalone"}`,
+          {
+            draft: "",
+            excerpts: [],
+            pageContext: undefined,
+          },
+        )
       }
       hideMobileHeader={hideMobileHeader}
     />
@@ -52,6 +58,7 @@ export function ConnectedAppSidebar({
 type AppSidebarProps = {
   user?: Omit<NavUserProps, "collapsed" | "side">;
   usageBanner?: ReactNode;
+  currentModuleId?: string | null;
   onNewChat?: () => void;
   hideMobileHeader?: boolean;
 };
@@ -59,6 +66,7 @@ type AppSidebarProps = {
 export function AppSidebar({
   user = { name: "Akun belajar" },
   usageBanner,
+  currentModuleId,
   onNewChat,
   hideMobileHeader = false,
 }: AppSidebarProps) {
@@ -108,7 +116,12 @@ export function AppSidebar({
             />
           </button>
         </div>
-        <SidebarContent collapsed={collapsed} usageBanner={usageBanner} onNewChat={onNewChat} />
+        <SidebarContent
+          collapsed={collapsed}
+          usageBanner={usageBanner}
+          currentModuleId={currentModuleId}
+          onNewChat={onNewChat}
+        />
       </aside>
       <header
         className={`${hideMobileHeader ? "hidden" : "flex"} shrink-0 items-center justify-between gap-2 border-b bg-background px-3 py-2 xl:hidden`}
@@ -149,6 +162,7 @@ export function AppSidebar({
               </div>
               <SidebarContent
                 usageBanner={usageBanner}
+                currentModuleId={currentModuleId}
                 onNewChat={onNewChat}
                 onNavigate={() => setMenuOpen(false)}
               />

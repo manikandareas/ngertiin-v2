@@ -16,10 +16,12 @@ const navigation = [
 export function SidebarContent({
   collapsed = false,
   usageBanner,
+  currentModuleId,
   onNewChat,
   onNavigate,
 }: {
   usageBanner?: ReactNode;
+  currentModuleId?: string | null;
   onNewChat?: () => void;
   collapsed?: boolean;
   onNavigate?: () => void;
@@ -62,6 +64,7 @@ export function SidebarContent({
         <SidebarCreateActions
           collapsed={collapsed}
           isChatPage={isChatPage}
+          currentModuleId={currentModuleId}
           onNewChat={onNewChat}
           onNavigate={onNavigate}
         />

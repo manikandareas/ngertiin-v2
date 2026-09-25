@@ -6,6 +6,7 @@ import { ChatMascot } from "../features/chat/components/chat-mascot";
 type SidebarCreateActionsProps = {
   collapsed?: boolean;
   isChatPage: boolean;
+  currentModuleId?: string | null;
   onNewChat?: () => void;
   onNavigate?: () => void;
 };
@@ -13,6 +14,7 @@ type SidebarCreateActionsProps = {
 export function SidebarCreateActions({
   collapsed = false,
   isChatPage,
+  currentModuleId,
   onNewChat,
   onNavigate,
 }: SidebarCreateActionsProps) {
@@ -31,7 +33,13 @@ export function SidebarCreateActions({
         return (
           <Link
             key={action}
-            to={isChat ? "/chat" : "/modules/new"}
+            to={
+              isChat
+                ? currentModuleId
+                  ? `/chat?moduleId=${encodeURIComponent(currentModuleId)}`
+                  : "/chat"
+                : "/modules/new"
+            }
             aria-label={label}
             title={showLabel ? undefined : label}
             onClick={() => {
