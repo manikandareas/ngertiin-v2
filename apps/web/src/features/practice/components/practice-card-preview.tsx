@@ -1,6 +1,11 @@
 import type { PracticeSummary } from "@ngertiin/contracts/api";
 import { CircleAlert, LoaderCircle } from "lucide-react";
 
+import {
+  FlashcardSticker,
+  flashcardColors,
+} from "../../../components/flashcards/flashcard-sticker";
+
 export function PracticeCardPreview({ practice }: { practice: PracticeSummary }) {
   if (practice.status !== "ready") {
     const generating = practice.status === "generating";
@@ -20,15 +25,18 @@ export function PracticeCardPreview({ practice }: { practice: PracticeSummary })
 
   const text = practice.preview?.text ?? practice.title;
   if (practice.kind === "flashcard") {
+    const decoration = [...practice.id].reduce((sum, char) => sum + char.charCodeAt(0), 0);
     return (
-      <div className="relative isolate h-56 overflow-hidden rounded-xl bg-[light-dark(#f1eaff,#a184d5)] text-[light-dark(#62418c,#382255)]">
-        <div className="absolute inset-x-[17%] top-9 h-44 rotate-10 rounded-2xl border border-current/35 bg-[light-dark(#fff,#eee5fa)]" />
-        <div className="absolute inset-x-[13%] top-10 h-44 -rotate-7 rounded-2xl border border-current/35 bg-[light-dark(#fff,#eee5fa)]" />
-        <div className="absolute inset-x-[12%] top-11 flex h-42 -rotate-3 flex-col items-center justify-between rounded-2xl border border-current/50 bg-[light-dark(#fff,#eee5fa)] px-5 py-5 text-center">
-          <span className="text-[10px]">Ingat kembali</span>
-          <p className="line-clamp-3 font-serif text-xl leading-snug wrap-anywhere">{text}</p>
-          <span className="text-[10px] opacity-75">Balik kartu untuk memahami</span>
-        </div>
+      <div
+        className="flex h-56 flex-col overflow-hidden rounded-xl p-5 text-[#29253d]"
+        style={{ backgroundColor: flashcardColors[decoration % flashcardColors.length] }}
+      >
+        <span className="text-[10px] font-bold tracking-widest uppercase">Coba ingat</span>
+        <FlashcardSticker index={decoration} className="h-16 w-18 shrink-0 self-end rotate-8" />
+        <p className="my-auto line-clamp-3 font-display text-lg leading-snug font-extrabold wrap-anywhere">
+          {text}
+        </p>
+        <span className="mt-3 text-[10px]">Satu kartu, satu pemahaman.</span>
       </div>
     );
   }

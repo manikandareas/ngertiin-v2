@@ -3,18 +3,24 @@ import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { AppShell } from "../components/app-shell";
 import { Button } from "../components/ui/button";
-import { Flashcards } from "../features/modules/components/flashcard-activity";
 import { PracticeAttemptOutcome } from "../features/practice/components/practice-attempt-outcome";
+import { PracticeFlashcardAttempt } from "../features/practice/components/practice-flashcard-attempt";
 import { PracticeQuestion } from "../features/practice/components/practice-question";
 import { PracticeQuizAttempt } from "../features/practice/components/practice-quiz-attempt";
 import { usePracticeAttempt } from "../features/practice/use-practice-attempt";
 
 export default function PracticeAttemptPage() {
+  const { attemptId } = useParams();
+  return <PracticeAttemptSession key={attemptId} />;
+}
+
+function PracticeAttemptSession() {
   const { moduleId, practiceId, attemptId } = useParams();
   const {
     practice,
     attempt,
     answers,
+    answersReady,
     unsaved,
     error,
     busy,
@@ -32,14 +38,6 @@ export default function PracticeAttemptPage() {
   const item = data?.items[position];
   const currentAnswer = item ? answers[item.id] : undefined;
   const answered = data?.items.filter((entry) => answers[entry.id] !== undefined).length ?? 0;
-  const flashcards =
-    data?.kind === "flashcard"
-      ? data.items.flatMap((entry) =>
-          entry.content.type === "flashcard"
-            ? [{ front: entry.content.front, back: entry.content.back, conceptKey: entry.id }]
-            : [],
-        )
-      : [];
   const outcome =
     data && session ? (
       <PracticeAttemptOutcome
@@ -51,6 +49,21 @@ export default function PracticeAttemptPage() {
       />
     ) : null;
 
+  if (data?.kind === "flashcard" && session) {
+    return (
+      <PracticeFlashcardAttempt
+        practice={data}
+        attemptId={session.id}
+        answers={answers}
+        canAnswer={canAnswer && answersReady}
+        busy={busy}
+        unsaved={unsaved}
+        onMark={markFlashcard}
+      >
+        {outcome}
+      </PracticeFlashcardAttempt>
+    );
+  }
   if (data?.kind === "quiz" && session) {
     return (
       <PracticeQuizAttempt
@@ -116,34 +129,6 @@ export default function PracticeAttemptPage() {
               <p role="status" className="mt-5 text-sm text-muted-foreground">
                 Waktu habis. Jawaban sedang dikirim oleh server.
               </p>
-            ) : null}
-            {canAnswer && data.kind === "flashcard" ? (
-              <div className="mt-8">
-                <Flashcards
-                  activity={{
-                    id: data.id,
-                    type: "flashcard",
-                    position: 1,
-                    content: { cards: flashcards },
-                  }}
-                  marked={Object.fromEntries(
-                    data.items
-                      .map((entry, index) => {
-                        const answer = answers[entry.id];
-                        return [
-                          index,
-                          answer?.type === "flashcard" ? answer.understood : undefined,
-                        ];
-                      })
-                      .filter((entry) => entry[1] !== undefined),
-                  )}
-                  onMark={(index, understood) => {
-                    const selected = data.items[index];
-                    if (!selected) return;
-                    void markFlashcard(selected.id, understood);
-                  }}
-                />
-              </div>
             ) : null}
             {canAnswer && data.kind !== "flashcard" && item ? (
               <div className="mt-8">

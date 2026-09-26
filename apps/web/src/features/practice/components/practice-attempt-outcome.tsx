@@ -1,6 +1,7 @@
 import type { PracticeAttempt, PracticeDetail } from "@ngertiin/contracts/api";
 import { Button } from "../../../components/ui/button";
 import { PracticeAttemptResult } from "./practice-attempt-result";
+import { PracticeFlashcardResult } from "./practice-flashcard-result";
 import { PracticeQuizResult } from "./practice-quiz-result";
 
 type Props = {
@@ -30,7 +31,9 @@ export function PracticeAttemptOutcome({ data, session, busy, error, onRetryEval
         </div>
       ) : null}
       {session.status === "completed" ? (
-        data.kind === "quiz" ? (
+        data.kind === "flashcard" ? (
+          <PracticeFlashcardResult key={session.id} data={data} session={session} />
+        ) : data.kind === "quiz" ? (
           <PracticeQuizResult data={data} session={session} />
         ) : (
           <PracticeAttemptResult data={data} session={session} />

@@ -26,6 +26,7 @@ export function usePracticeAttempt(practiceId: string | undefined, attemptId: st
   const queueRef = useRef(Promise.resolve());
   const saveFailedRef = useRef(false);
   const dirtyRef = useRef(false);
+  const [answersReady, setAnswersReady] = useState(false);
   const [unsaved, setUnsaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -36,6 +37,7 @@ export function usePracticeAttempt(practiceId: string | undefined, attemptId: st
     answersRef.current = attempt.data.answers;
     revisionRef.current = attempt.data.revision;
     setAnswers(attempt.data.answers);
+    setAnswersReady(true);
   }, [attempt.data]);
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000);
@@ -73,7 +75,7 @@ export function usePracticeAttempt(practiceId: string | undefined, attemptId: st
     return task;
   };
   const submit = async () => {
-    if (!attemptId) return;
+    if (!attemptId) return false;
     setBusy(true);
     setError(null);
     try {
@@ -82,8 +84,10 @@ export function usePracticeAttempt(practiceId: string | undefined, attemptId: st
       await api.submit(attemptId);
       await client.invalidateQueries({ queryKey: ["practice-attempt", attemptId] });
       await client.invalidateQueries({ queryKey: ["practice-attempts", practiceId] });
+      return true;
     } catch {
       setError("Latihan belum dapat dikirim. Periksa jawaban tersimpan lalu coba lagi.");
+      return false;
     } finally {
       setBusy(false);
     }
@@ -109,13 +113,18 @@ export function usePracticeAttempt(practiceId: string | undefined, attemptId: st
   };
   const markFlashcard = async (id: string, understood: boolean) => {
     await saveAnswer(id, { type: "flashcard", understood });
-    if (data && Object.keys(answersRef.current).length === data.items.length) void submit();
+    if (saveFailedRef.current) return false;
+    if (data?.items.every((item) => answersRef.current[item.id]?.type === "flashcard")) {
+      return submit();
+    }
+    return true;
   };
 
   return {
     practice,
     attempt,
     answers,
+    answersReady,
     unsaved,
     error,
     busy,
