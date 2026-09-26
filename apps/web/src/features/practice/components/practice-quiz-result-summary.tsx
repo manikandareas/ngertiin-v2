@@ -2,6 +2,7 @@ import type { PracticeAttempt, PracticeDetail } from "@ngertiin/contracts/api";
 import type { ReactElement } from "react";
 
 type Props = {
+  kind?: "quiz" | "exam";
   items: PracticeDetail["items"];
   results: ReadonlyMap<string, NonNullable<PracticeAttempt["results"]>[number]>;
   score: PracticeAttempt["score"];
@@ -9,6 +10,7 @@ type Props = {
 };
 
 export function PracticeQuizResultSummary({
+  kind = "quiz",
   items,
   results,
   score,
@@ -39,7 +41,7 @@ export function PracticeQuizResultSummary({
 
   return (
     <aside
-      aria-label="Ringkasan hasil kuis"
+      aria-label={`Ringkasan hasil ${kind === "exam" ? "exam" : "kuis"}`}
       className="grid grid-cols-[105px_minmax(0,1fr)] items-center gap-4 rounded-card border-2 bg-card p-4 sm:grid-cols-[150px_minmax(0,1fr)] sm:gap-6 sm:p-6 lg:sticky lg:top-6 lg:block"
     >
       <div
@@ -54,7 +56,9 @@ export function PracticeQuizResultSummary({
             {score ?? "—"}
             <span className="text-sm text-muted-foreground sm:text-base">/100</span>
           </p>
-          <p className="text-[10px] text-muted-foreground sm:text-xs">Nilai kuis</p>
+          <p className="text-[10px] text-muted-foreground sm:text-xs">
+            Nilai {kind === "exam" ? "exam" : "kuis"}
+          </p>
         </div>
       </div>
       <div>

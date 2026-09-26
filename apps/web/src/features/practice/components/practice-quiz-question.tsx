@@ -1,12 +1,12 @@
 import type { PracticeAnswer, PracticeDetail } from "@ngertiin/contracts/api";
-import type { Ref } from "react";
+import type { ReactNode, Ref } from "react";
 
 type Props = {
   item: PracticeDetail["items"][number];
   answer: PracticeAnswer | undefined;
   busy: boolean;
-  saveStatus: string | null;
-  questionRef: Ref<HTMLHeadingElement>;
+  questionRef?: Ref<HTMLHeadingElement>;
+  header?: ReactNode;
   onAnswer: (id: string, answer: PracticeAnswer) => void;
 };
 
@@ -16,26 +16,21 @@ const questionLabels = {
   short_answer: "Jawaban singkat",
 };
 
-export function PracticeQuizQuestion({
-  item,
-  answer,
-  busy,
-  saveStatus,
-  questionRef,
-  onAnswer,
-}: Props) {
+export function PracticeQuizQuestion({ item, answer, busy, questionRef, header, onAnswer }: Props) {
   const optionClass =
     "flex cursor-pointer items-center gap-3 rounded-2xl border-2 border-border bg-card p-4 text-sm leading-relaxed transition-colors hover:bg-muted has-[:checked]:border-primary has-[:checked]:bg-accent has-[:checked]:text-accent-foreground has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-ring has-[:disabled]:cursor-default sm:gap-5 sm:p-5 sm:text-base motion-reduce:transition-none";
 
   if (item.content.type === "flashcard") return null;
   return (
     <article>
-      <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
-        <span>{questionLabels[item.content.type]}</span>
-        <span>
-          {item.content.type === "short_answer" ? "Tulis jawabanmu" : "Pilih satu jawaban"}
-        </span>
-      </div>
+      {header ?? (
+        <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
+          <span>{questionLabels[item.content.type]}</span>
+          <span>
+            {item.content.type === "short_answer" ? "Tulis jawabanmu" : "Pilih satu jawaban"}
+          </span>
+        </div>
+      )}
       <h2
         ref={questionRef}
         id={`question-${item.id}`}
@@ -93,9 +88,6 @@ export function PracticeQuizQuestion({
           placeholder="Tulis pemahamanmu dengan kata-katamu sendiri…"
         />
       ) : null}
-      <p role="status" className="mt-4 min-h-4 text-xs text-muted-foreground">
-        {saveStatus}
-      </p>
     </article>
   );
 }

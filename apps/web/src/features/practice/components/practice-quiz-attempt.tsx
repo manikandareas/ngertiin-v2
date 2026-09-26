@@ -7,6 +7,7 @@ import { ThemeToggle } from "../../../components/theme-toggle";
 import { Button } from "../../../components/ui/button";
 import { cn } from "../../../lib/utils";
 
+import { hasPracticeAnswer } from "../practice-answers";
 import { PracticeQuizQuestion } from "./practice-quiz-question";
 
 type Props = {
@@ -23,10 +24,6 @@ type Props = {
   onSubmit: () => void;
   children: ReactNode;
 };
-
-function hasAnswer(answer: PracticeAnswer | undefined) {
-  return answer !== undefined && (answer.type !== "short_answer" || answer.text.trim() !== "");
-}
 
 export function PracticeQuizAttempt({
   practice,
@@ -46,12 +43,9 @@ export function PracticeQuizAttempt({
   const questionRef = useRef<HTMLHeadingElement>(null);
   const item = practice.items[position];
   const answer = item ? answers[item.id] : undefined;
-  const answered = practice.items.filter((entry) => hasAnswer(answers[entry.id])).length;
+  const answered = practice.items.filter((entry) => hasPracticeAnswer(answers[entry.id])).length;
   const total = practice.items.length;
   const last = position === total - 1;
-  let saveStatus: string | null = null;
-  if (unsaved) saveStatus = "Belum tersimpan";
-  else if (hasAnswer(answer)) saveStatus = "Jawaban tersimpan";
   let nextLabel = "Lanjutkan";
   if (busy) nextLabel = "Mengirim…";
   else if (last) nextLabel = "Kirim jawaban";
@@ -110,7 +104,6 @@ export function PracticeQuizAttempt({
                 item={item}
                 answer={answer}
                 busy={busy}
-                saveStatus={saveStatus}
                 questionRef={questionRef}
                 onAnswer={onAnswer}
               />
@@ -128,7 +121,7 @@ export function PracticeQuizAttempt({
                   <Button
                     size="sm"
                     className="normal-case tracking-normal"
-                    disabled={busy || (last ? answered < total : !hasAnswer(answer))}
+                    disabled={busy || (last ? answered < total : !hasPracticeAnswer(answer))}
                     onClick={() => (last ? onSubmit() : moveTo(position + 1))}
                   >
                     {nextLabel}
