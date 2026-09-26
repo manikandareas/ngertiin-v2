@@ -85,7 +85,7 @@ export function PracticeQuizResultSummary({
               <li key={item.id}>
                 <a
                   href={`#result-${item.id}`}
-                  className="text-xs leading-relaxed text-link wrap-anywhere hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+                  className="text-xs leading-relaxed text-muted-foreground wrap-anywhere hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
                 >
                   Soal {item.position} ·{" "}
                   {item.content.type === "flashcard" ? item.content.front : item.content.question}
