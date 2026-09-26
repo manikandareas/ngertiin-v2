@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { AppShell } from "../../../components/app-shell";
 import { ThemeToggle } from "../../../components/theme-toggle";
 import { Button } from "../../../components/ui/button";
+import { cn } from "../../../lib/utils";
 
 import { PracticeQuizQuestion } from "./practice-quiz-question";
 
@@ -14,6 +15,7 @@ type Props = {
   answers: Record<string, PracticeAnswer>;
   position: number;
   canAnswer: boolean;
+  completed: boolean;
   busy: boolean;
   unsaved: boolean;
   onPositionChange: (position: number) => void;
@@ -32,6 +34,7 @@ export function PracticeQuizAttempt({
   answers,
   position,
   canAnswer,
+  completed,
   busy,
   unsaved,
   onPositionChange,
@@ -85,15 +88,22 @@ export function PracticeQuizAttempt({
           </div>
           <ThemeToggle />
         </div>
-        <progress
-          aria-label={`${answered} dari ${total} soal terjawab`}
-          className="learning-progress absolute inset-x-0 bottom-0 h-[3px]! rounded-none!"
-          value={answered}
-          max={Math.max(1, total)}
-        />
+        {!completed ? (
+          <progress
+            aria-label={`${answered} dari ${total} soal terjawab`}
+            className="learning-progress absolute inset-x-0 bottom-0 h-[3px]! rounded-none!"
+            value={answered}
+            max={Math.max(1, total)}
+          />
+        ) : null}
       </header>
       <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-        <div className="mx-auto max-w-[864px] px-5 py-7 sm:px-8 sm:py-10">
+        <div
+          className={cn(
+            "mx-auto px-5 py-7 sm:px-8 sm:py-10",
+            completed ? "max-w-[1200px]" : "max-w-[864px]",
+          )}
+        >
           {canAnswer && item && item.content.type !== "flashcard" ? (
             <>
               <PracticeQuizQuestion

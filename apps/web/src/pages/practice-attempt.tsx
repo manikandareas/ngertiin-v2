@@ -59,6 +59,7 @@ export default function PracticeAttemptPage() {
         answers={answers}
         position={position}
         canAnswer={canAnswer}
+        completed={session.status === "completed"}
         busy={busy}
         unsaved={unsaved}
         onPositionChange={setPosition}
