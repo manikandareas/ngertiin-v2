@@ -22,12 +22,24 @@ const kinds = {
 };
 const dateFormat = new Intl.DateTimeFormat("id-ID", { dateStyle: "medium" });
 
-export function PracticeCard({ practice }: { practice: PracticeSummary }) {
+export function PracticeCard({
+  practice,
+  linked = true,
+}: {
+  practice: PracticeSummary;
+  linked?: boolean;
+}) {
   const kind = kinds[practice.kind];
   const KindIcon = kind.icon;
   const href = `/modules/${practice.moduleId}/practice/${practice.id}`;
   return (
-    <Card className="group relative min-w-0 gap-0 rounded-[18px] border p-2.5 motion-safe:transition-[border-color,transform] hover:border-input/50 motion-safe:hover:-translate-y-0.5">
+    <Card
+      className={cn(
+        "group relative min-w-0 gap-0 rounded-[18px] border p-2.5",
+        linked &&
+          "motion-safe:transition-[border-color,transform] hover:border-input/50 motion-safe:hover:-translate-y-0.5",
+      )}
+    >
       <div aria-hidden="true">
         <PracticeCardPreview practice={practice} />
       </div>
@@ -35,12 +47,16 @@ export function PracticeCard({ practice }: { practice: PracticeSummary }) {
         <KindIcon className={cn("size-5 shrink-0", kind.accent)} aria-hidden="true" />
         <div className="min-w-0 flex-1">
           <h2 className="truncate text-base font-semibold tracking-tight" title={practice.title}>
-            <Link
-              to={href}
-              className="rounded-sm after:absolute after:inset-0 after:rounded-[18px] focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:outline-offset-2 focus-visible:after:outline-ring"
-            >
-              {practice.title}
-            </Link>
+            {linked ? (
+              <Link
+                to={href}
+                className="rounded-sm after:absolute after:inset-0 after:rounded-[18px] focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:outline-offset-2 focus-visible:after:outline-ring"
+              >
+                {practice.title}
+              </Link>
+            ) : (
+              practice.title
+            )}
           </h2>
           <p className="mt-1 text-xs text-muted-foreground">
             {kind.label} · {practice.itemCount} {practice.kind === "flashcard" ? "kartu" : "soal"}
@@ -49,7 +65,9 @@ export function PracticeCard({ practice }: { practice: PracticeSummary }) {
               : ""}
           </p>
         </div>
-        <ArrowUpRight className={cn("size-5 shrink-0", kind.ink)} aria-hidden="true" />
+        {linked ? (
+          <ArrowUpRight className={cn("size-5 shrink-0", kind.ink)} aria-hidden="true" />
+        ) : null}
       </div>
       <time className="sr-only" dateTime={practice.createdAt}>
         Dibuat {dateFormat.format(new Date(practice.createdAt))}
