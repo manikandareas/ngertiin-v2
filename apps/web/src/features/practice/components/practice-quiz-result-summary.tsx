@@ -24,12 +24,6 @@ export function PracticeQuizResultSummary({
     else if (result.score === 0) counts.wrong++;
     else counts.partial++;
   }
-  const revisit = items
-    .filter((item) => {
-      const result = results.get(item.id);
-      return result !== undefined && result.score < 0.5;
-    })
-    .slice(0, 5);
   const stats = [
     { label: "Benar", count: counts.correct, color: "bg-success" },
     { label: "Sebagian benar", count: counts.partial, color: "bg-adaptive" },
@@ -81,24 +75,6 @@ export function PracticeQuizResultSummary({
           </span>
         </div>
       </div>
-      {revisit.length > 0 ? (
-        <section className="col-span-full border-t pt-5 lg:mt-5">
-          <h3 className="text-sm font-bold">Perlu dipelajari lagi</h3>
-          <ul className="mt-3 space-y-3">
-            {revisit.map((item) => (
-              <li key={item.id}>
-                <a
-                  href={`#result-${item.id}`}
-                  className="text-xs leading-relaxed text-muted-foreground wrap-anywhere hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
-                >
-                  Soal {item.position} ·{" "}
-                  {item.content.type === "flashcard" ? item.content.front : item.content.question}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
     </aside>
   );
 }

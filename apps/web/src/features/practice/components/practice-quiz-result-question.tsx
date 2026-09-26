@@ -42,10 +42,12 @@ export function PracticeQuizResultQuestion({ item, answer, result }: Props): Rea
   if (answer?.type === "multiple_choice") selected = answer.optionIndex;
   else if (answer?.type === "true_false") selected = answer.value ? 0 : 1;
 
-  let feedback = "Pelajari kembali materi, lalu coba lagi.";
-  if (!answered) feedback = "Tidak dijawab";
-  else if (!result) feedback = "Hasil penilaian belum tersedia.";
-  else if (correct) feedback = "Jawabanmu sudah tepat.";
+  let feedbackSummary = "Pelajari kembali materi, lalu coba lagi.";
+  if (!answered) feedbackSummary = "Tidak dijawab";
+  else if (!result) feedbackSummary = "Hasil penilaian belum tersedia.";
+  else if (correct) feedbackSummary = "Jawabanmu sudah tepat.";
+
+  const explanation = result?.explanation.trim();
 
   return (
     <article
@@ -111,21 +113,28 @@ export function PracticeQuizResultQuestion({ item, answer, result }: Props): Rea
         )}
       </div>
       <div className="flex items-start justify-between gap-4 border-t px-4 py-3 text-xs text-muted-foreground sm:px-6">
-        <p>{feedback}</p>
+        <p>{feedbackSummary}</p>
         <p className="shrink-0 font-bold text-foreground">
           Skor: {result ? result.score.toLocaleString("id-ID", { maximumFractionDigits: 2 }) : "—"}{" "}
           / 1
         </p>
       </div>
-      {/* Incorrect and partial explanations may disclose the answer on repeatable quizzes. */}
-      {correct && result?.explanation ? (
+      {explanation ? (
         <details className="border-t px-4 py-3 text-sm sm:px-6">
           <summary className="cursor-pointer font-bold text-link focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring">
             Penjelasan
           </summary>
-          <p className="mt-3 leading-relaxed whitespace-pre-wrap text-muted-foreground wrap-anywhere">
-            {result.explanation}
-          </p>
+          <div className="mt-4 pb-2">
+            <h4 className="mb-3 text-xs font-bold text-muted-foreground">Feedback AI</h4>
+            <div className="space-y-4 leading-7 wrap-anywhere">
+              {explanation.split(/\n\s*\n/).map((paragraph, index) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: Paragraph order is fixed within a result explanation.
+                <p key={index} className="whitespace-pre-wrap">
+                  {paragraph}
+                </p>
+              ))}
+            </div>
+          </div>
         </details>
       ) : null}
     </article>
