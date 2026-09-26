@@ -1,8 +1,11 @@
-import { Check, RotateCcw, Undo2 } from "lucide-react";
+import { Check, MoveHorizontal, RotateCcw } from "lucide-react";
+import { motion } from "motion/react";
 import { type CSSProperties, useId, useRef, useState } from "react";
 import { cn } from "../../lib/utils";
 import { Button } from "../ui/button";
 import { FlashcardSticker, flashcardColors } from "./flashcard-sticker";
+
+import { useFlashcardDrag } from "./use-flashcard-drag";
 
 export type StudyCard = { id: string; front: string; back: string; decorationIndex?: number };
 
@@ -20,6 +23,7 @@ type Props = {
 /** Shared card station. Uncontrolled marks are a temporary, local study session. */
 export function FlashcardDeck({ cards, marked, onMark, busy = false }: Props) {
   const contentId = useId();
+  const gestureHintId = useId();
   const [position, setPosition] = useState(() => {
     const first = cards.findIndex((card) => marked?.[card.id] === undefined);
     return Math.max(0, first);
@@ -34,20 +38,26 @@ export function FlashcardDeck({ cards, marked, onMark, busy = false }: Props) {
   const completionRef = useRef<HTMLElement>(null);
   const marks = marked ?? localMarks;
   const card = cards[position];
-  const locked = busy || saving;
-  if (!card) return null;
-  const decoration = card.decorationIndex ?? position;
-  const focusCard = () => {
+  const focusCard = (scroll = true) => {
     requestAnimationFrame(() => {
       cardRef.current?.focus({ preventScroll: true });
-      cardRef.current?.scrollIntoView({ block: "start" });
+      if (scroll) cardRef.current?.scrollIntoView({ block: "start" });
     });
   };
-  const move = (next: number) => {
+  const move = (next: number, scroll = true) => {
     setPosition(next);
     setFlipped(false);
-    focusCard();
+    focusCard(scroll);
   };
+  const drag = useFlashcardDrag({
+    position,
+    total: cards.length,
+    disabled: busy || saving,
+    onNavigate: (next) => move(next, false),
+  });
+  const locked = busy || saving || drag.transitioning;
+  if (!card) return null;
+  const decoration = card.decorationIndex ?? position;
   const mark = async (understood: boolean) => {
     if (!flipped || locked || pending.current) return;
     pending.current = true;
@@ -112,37 +122,41 @@ export function FlashcardDeck({ cards, marked, onMark, busy = false }: Props) {
         <span aria-live="polite">
           Kartu {position + 1} dari {cards.length}
         </span>
-        {position > 0 ? (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-9 rounded-full"
-            disabled={locked}
-            aria-label="Kartu sebelumnya"
-            onClick={() => move(position - 1)}
-          >
-            <Undo2 className="size-4" />
-          </Button>
-        ) : null}
       </div>
       <div
-        className="rounded-[32px] border bg-card p-2"
+        className="overflow-hidden rounded-[32px] border bg-card p-2"
         style={
           {
             "--study-card-color": flashcardColors[decoration % flashcardColors.length],
           } as CSSProperties
         }
       >
-        <button
+        <motion.button
           ref={cardRef}
+          style={{ x: drag.x }}
           type="button"
           aria-label={flipped ? "Lihat pertanyaan lagi" : "Balik kartu untuk melihat jawaban"}
           aria-pressed={flipped}
-          aria-describedby={contentId}
+          aria-describedby={`${contentId} ${gestureHintId}`}
           disabled={locked}
-          onClick={() => setFlipped(!flipped)}
+          onPointerDown={drag.onPointerDown}
+          onPointerMove={drag.onPointerMove}
+          onPointerUp={drag.onPointerUp}
+          onPointerCancel={drag.onPointerCancel}
+          onLostPointerCapture={drag.onLostPointerCapture}
+          onKeyDown={(event) => {
+            if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+            event.preventDefault();
+            if (locked || pending.current) return;
+            const next = position + (event.key === "ArrowRight" ? 1 : -1);
+            if (next >= 0 && next < cards.length) move(next);
+          }}
+          onClick={(event) => {
+            if (event.detail !== 0 && drag.suppressClick.current) return;
+            setFlipped(!flipped);
+          }}
           className={cn(
-            "flex min-h-87 w-full scroll-mt-20 flex-col rounded-3xl border-[3px] border-[var(--study-card-color)] p-5 text-left focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring sm:p-8",
+            "flex min-h-87 w-full cursor-grab touch-pan-y touch-pinch-zoom scroll-mt-20 select-none active:cursor-grabbing flex-col rounded-3xl border-[3px] border-[var(--study-card-color)] p-5 text-left focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring sm:p-8",
             flipped
               ? "bg-card text-card-foreground shadow-[0_3px_0_var(--study-card-color)]"
               : "bg-[var(--study-card-color)] text-[#29253d]",
@@ -175,7 +189,7 @@ export function FlashcardDeck({ cards, marked, onMark, busy = false }: Props) {
             <span>{flipped ? "Lihat pertanyaan lagi" : "Klik untuk balik kartu"}</span>
             <RotateCcw className="size-5 shrink-0" />
           </span>
-        </button>
+        </motion.button>
         <div className="flex min-h-19 items-center justify-between gap-2 px-1 pt-3 pb-1 sm:px-4">
           {flipped ? (
             <div className="grid w-full grid-cols-2 divide-x">
@@ -214,6 +228,13 @@ export function FlashcardDeck({ cards, marked, onMark, busy = false }: Props) {
           )}
         </div>
       </div>
+      <p
+        id={gestureHintId}
+        className="mt-4 flex items-center justify-center gap-2 text-center text-xs leading-relaxed text-muted-foreground"
+      >
+        <MoveHorizontal className="size-4 shrink-0" aria-hidden="true" />
+        <span>Geser kiri / kanan untuk pindah kartu.</span>
+      </p>
       {saving ? (
         <p role="status" className="mt-3 text-center text-xs text-muted-foreground">
           Menyimpan pemahaman…
