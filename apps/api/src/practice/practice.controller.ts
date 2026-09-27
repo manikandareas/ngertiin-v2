@@ -11,6 +11,7 @@ import {
   UseGuards,
 } from "@nestjs/common";
 import {
+  createPracticeBodySchema,
   listPracticesQuerySchema,
   patchPracticeAttemptSchema,
   patchPracticeSchema,
@@ -35,6 +36,19 @@ const attemptParams = z.object({ attemptId: uuidSchema });
 @UseGuards(ClerkAuthGuard)
 export class PracticeController {
   constructor(@Inject(PracticeService) private readonly practice: PracticeService) {}
+
+  @Post("modules/:moduleId/practices")
+  async create(
+    @Req() req: ProductRequest,
+    @Param(new ZodValidationPipe(moduleParams)) params: z.infer<typeof moduleParams>,
+    @Body(new ZodValidationPipe(createPracticeBodySchema)) body: z.infer<
+      typeof createPracticeBodySchema
+    >,
+  ) {
+    return practiceSummaryResponseSchema.parse({
+      data: await this.practice.createFromForm(getLocalUserId(req), params.moduleId, body),
+    });
+  }
 
   @Get("modules/:moduleId/practices")
   async list(

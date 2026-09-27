@@ -348,8 +348,8 @@
   }
 }
 
-/* One style contract shared by builder content and its portalled dialogs. */
-@utility builder-controls {
+/* Shared controls for module and Practice creation, including portalled dialogs. */
+@utility creation-controls {
   & [data-slot="button"] {
     @apply font-semibold normal-case tracking-normal;
   }

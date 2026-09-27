@@ -4,6 +4,7 @@ import { MAX_PDF_SIZE_BYTES, type SourceType } from "@ngertiin/contracts/api";
 import { useDropzone } from "react-dropzone";
 import { Button } from "../../components/ui/button";
 import { DialogFrame } from "../../components/ui/dialog-frame";
+import { Field, FieldLabel, FieldSet } from "../../components/ui/field";
 import { Input } from "../../components/ui/input";
 import { Textarea } from "../../components/ui/textarea";
 import { UsageNotice } from "../usage/usage-notice";
@@ -72,9 +73,11 @@ export function SourceDialog({
           if (await state.add(kind)) onClose();
         }}
       >
-        <fieldset disabled={state.busy} className="min-w-0 space-y-5">
-          <label htmlFor="material-title" className="block space-y-2 text-sm font-medium">
-            Judul materi <span className="text-muted-foreground">(opsional)</span>
+        <FieldSet disabled={state.busy} className="min-w-0 gap-5">
+          <Field>
+            <FieldLabel htmlFor="material-title">
+              Judul materi <span className="text-muted-foreground">(opsional)</span>
+            </FieldLabel>
             <Input
               className="h-11 rounded-xl border sm:text-sm"
               id="material-title"
@@ -82,7 +85,7 @@ export function SourceDialog({
               onChange={(e) => state.setTitle(e.target.value)}
               placeholder="Contoh: Mengenal sistem tata surya"
             />
-          </label>
+          </Field>
           {kind === "pdf" ? (
             <div
               {...drop.getRootProps()}
@@ -104,8 +107,8 @@ export function SourceDialog({
               </p>
             </div>
           ) : kind === "url" ? (
-            <label htmlFor="material-url" className="block space-y-2 text-sm font-medium">
-              Tautan halaman
+            <Field>
+              <FieldLabel htmlFor="material-url">Tautan halaman</FieldLabel>
               <Input
                 className="h-11 rounded-xl border sm:text-sm"
                 id="material-url"
@@ -114,10 +117,10 @@ export function SourceDialog({
                 onChange={(e) => state.setUrl(e.target.value)}
                 placeholder="https://contoh.id/artikel"
               />
-            </label>
+            </Field>
           ) : (
-            <label htmlFor="material-text" className="block space-y-2 text-sm font-medium">
-              Isi materi
+            <Field>
+              <FieldLabel htmlFor="material-text">Isi materi</FieldLabel>
               <Textarea
                 className="rounded-xl border px-4 py-3.5 leading-7 sm:text-sm"
                 id="material-text"
@@ -126,7 +129,7 @@ export function SourceDialog({
                 onChange={(e) => state.setText(e.target.value)}
                 placeholder="Tempel materi atau catatanmu di sini…"
               />
-            </label>
+            </Field>
           )}
           {state.sourceError ? (
             <p role="alert" className="text-sm text-destructive">
@@ -159,7 +162,7 @@ export function SourceDialog({
               {state.busy ? "Menambahkan…" : submitLabel}
             </Button>
           </div>
-        </fieldset>
+        </FieldSet>
       </form>
     </DialogFrame>
   );

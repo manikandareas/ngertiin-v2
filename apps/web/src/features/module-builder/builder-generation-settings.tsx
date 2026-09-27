@@ -60,7 +60,7 @@ export function BuilderGenerationSettings({ state }: { state: SettingsState }) {
               <SelectTrigger
                 id="module-length"
                 aria-describedby="module-length-help"
-                className="min-w-44 max-w-full rounded-xl shadow-none"
+                className="min-w-44 max-w-full rounded-xl shadow-none data-[size=default]:h-11"
               >
                 <SelectValue />
               </SelectTrigger>

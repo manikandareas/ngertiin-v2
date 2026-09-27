@@ -143,18 +143,11 @@ with the primary instance.
 ## Verification and activation
 
 ```sh
-python3 -m unittest discover -s infra/semaphore/tests -v
-python3 infra/semaphore/tests/semaphore-restore.py
-bash infra/semaphore/tests/disposable.sh
-bash infra/semaphore/tests/application-migration.sh
 python3 infra/semaphore/render-compose.py --config /private/release.json > /tmp/semaphore.yml
 # Set dummy setup variables, then docker compose -f /tmp/semaphore.yml config --quiet
 ```
 
-The disposable test uses a local pgvector image, an isolated network, tmpfs storage,
-PostgreSQL custom backup/restore, and successful/failed SQL migrations. The application-migration test also runs all repository Drizzle migrations and
-restores their complete schema into a second disposable database. Neither test
-claims a provider-backed application E2E test. Verify live resource IDs, Dokploy
+Verify live resource IDs, Dokploy
 version/API, PostgreSQL image and pgvector, VPS capacity and backup destination
 before activation. Publish controller workflows before enabling task execution.
 Validate in order: read-only preflight, WWW, Web, Backend, then All using an

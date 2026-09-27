@@ -42,19 +42,9 @@ new generation run, as before; it does not reuse the failed run's checkpoint.
 
 ## Verification
 
-Run the focused suite against a disposable/local PostgreSQL database:
-
-```sh
-MODULE_WORKFLOW_TEST_DATABASE_URL=postgresql://... bun test   apps/worker/src/modules/modules.workflow.spec.ts   apps/worker/src/modules/modules.failure.spec.ts
-```
-
-The workflow tests create random thread IDs in the `langgraph` schema and remove
-only their own threads. Provider and application-service operations are fakes;
-PostgreSQL and LangGraph are real. Coverage includes image-inclusive concurrency,
-immediate slot refill while a sibling is still enriching, incremental progress,
-out-of-order completion, old replacement-reducer checkpoints, an inconsistent
-legacy cursor, one/two failed siblings, completed-run replay, and SIGKILL followed
-by resume in a fresh process. The tests skip without the explicit database URL.
+Earlier validation used disposable PostgreSQL and LangGraph checkpoints to cover
+concurrency, incremental progress, failure recovery, completed-run replay, and
+fresh-process resume after SIGKILL. The focused test suite has since been removed.
 
 The temporary generation, quality-review and benchmark harnesses were removed
 after validation. Historical aggregate results remain below; private artifacts

@@ -1,11 +1,12 @@
 import { z } from "zod";
 import { successEnvelopeSchema, timestampSchema, uuidSchema } from "../common/identifiers.js";
+import { languageSchema } from "../common/languages.js";
 import { paginatedSuccessEnvelopeSchema } from "../common/pagination.js";
 
 export const practiceKindSchema = z.enum(["flashcard", "quiz", "exam"]);
 export const practiceStatusSchema = z.enum(["generating", "ready", "failed"]);
 export const practiceDifficultySchema = z.enum(["beginner", "intermediate", "advanced"]);
-export const practiceLanguageSchema = z.enum(["id", "en"]);
+export const practiceLanguageSchema = languageSchema;
 export const practiceQuestionKindSchema = z.enum(["multiple_choice", "true_false", "short_answer"]);
 
 export const practiceSourceSelectionSchema = z.discriminatedUnion("kind", [
@@ -21,13 +22,10 @@ const compositionSchema = z
   })
   .strict();
 
-export const practiceConfigurationSchema = z
+const practiceSettingsFields = z
   .object({
     kind: practiceKindSchema,
     title: z.string().trim().min(1).max(120),
-    destinationModuleId: uuidSchema,
-    variationOfId: uuidSchema.optional(),
-    sources: z.array(practiceSourceSelectionSchema).min(1).max(10),
     focus: z.string().trim().min(1).max(2_000),
     language: practiceLanguageSchema,
     difficulty: practiceDifficultySchema,
@@ -35,16 +33,74 @@ export const practiceConfigurationSchema = z
     composition: compositionSchema.nullable(),
     durationMinutes: z.number().int().nullable(),
   })
-  .strict()
-  .superRefine((value, context) => {
-    const bounds =
-      value.kind === "flashcard" ? [5, 30] : value.kind === "quiz" ? [5, 20] : [20, 60];
-    if (value.itemCount < bounds[0] || value.itemCount > bounds[1])
+  .strict();
+
+function validatePracticeSettings(
+  value: z.infer<typeof practiceSettingsFields>,
+  context: z.RefinementCtx,
+) {
+  const bounds = value.kind === "flashcard" ? [5, 30] : value.kind === "quiz" ? [5, 20] : [20, 60];
+  if (value.itemCount < bounds[0] || value.itemCount > bounds[1])
+    context.addIssue({
+      code: "custom",
+      path: ["itemCount"],
+      message: `Jumlah harus ${bounds[0]}–${bounds[1]}.`,
+    });
+  if (value.kind === "flashcard") {
+    if (value.composition !== null)
       context.addIssue({
         code: "custom",
-        path: ["itemCount"],
-        message: `Jumlah harus ${bounds[0]}–${bounds[1]}.`,
+        path: ["composition"],
+        message: "Flashcard tidak memiliki komposisi soal.",
       });
+    if (value.durationMinutes !== null)
+      context.addIssue({
+        code: "custom",
+        path: ["durationMinutes"],
+        message: "Flashcard tidak memiliki timer.",
+      });
+  } else {
+    if (
+      !value.composition ||
+      Object.values(value.composition).reduce((sum, count) => sum + count, 0) !== value.itemCount
+    )
+      context.addIssue({
+        code: "custom",
+        path: ["composition"],
+        message: "Komposisi harus sama dengan jumlah soal.",
+      });
+    if (value.composition && value.composition.shortAnswer > (value.kind === "quiz" ? 5 : 10))
+      context.addIssue({
+        code: "custom",
+        path: ["composition", "shortAnswer"],
+        message: "Terlalu banyak esai singkat.",
+      });
+    if (value.kind === "quiz" && value.durationMinutes !== null)
+      context.addIssue({
+        code: "custom",
+        path: ["durationMinutes"],
+        message: "Kuis tidak memiliki timer.",
+      });
+    if (
+      value.kind === "exam" &&
+      (value.durationMinutes === null || value.durationMinutes < 20 || value.durationMinutes > 180)
+    )
+      context.addIssue({
+        code: "custom",
+        path: ["durationMinutes"],
+        message: "Durasi exam harus 20–180 menit.",
+      });
+  }
+}
+
+export const practiceConfigurationSchema = practiceSettingsFields
+  .extend({
+    destinationModuleId: uuidSchema,
+    variationOfId: uuidSchema.optional(),
+    sources: z.array(practiceSourceSelectionSchema).min(1).max(10),
+  })
+  .superRefine((value, context) => {
+    validatePracticeSettings(value, context);
     if (
       new Set(
         value.sources.map((source) =>
@@ -57,55 +113,17 @@ export const practiceConfigurationSchema = z
         path: ["sources"],
         message: "Sumber tidak boleh berulang.",
       });
-    if (value.kind === "flashcard") {
-      if (value.composition !== null)
-        context.addIssue({
-          code: "custom",
-          path: ["composition"],
-          message: "Flashcard tidak memiliki komposisi soal.",
-        });
-      if (value.durationMinutes !== null)
-        context.addIssue({
-          code: "custom",
-          path: ["durationMinutes"],
-          message: "Flashcard tidak memiliki timer.",
-        });
-    } else {
-      if (
-        !value.composition ||
-        Object.values(value.composition).reduce((sum, count) => sum + count, 0) !== value.itemCount
-      )
-        context.addIssue({
-          code: "custom",
-          path: ["composition"],
-          message: "Komposisi harus sama dengan jumlah soal.",
-        });
-      if (value.composition && value.composition.shortAnswer > (value.kind === "quiz" ? 5 : 10))
-        context.addIssue({
-          code: "custom",
-          path: ["composition", "shortAnswer"],
-          message: "Terlalu banyak esai singkat.",
-        });
-      if (value.kind === "quiz" && value.durationMinutes !== null)
-        context.addIssue({
-          code: "custom",
-          path: ["durationMinutes"],
-          message: "Kuis tidak memiliki timer.",
-        });
-      if (
-        value.kind === "exam" &&
-        (value.durationMinutes === null ||
-          value.durationMinutes < 20 ||
-          value.durationMinutes > 180)
-      )
-        context.addIssue({
-          code: "custom",
-          path: ["durationMinutes"],
-          message: "Durasi exam harus 20–180 menit.",
-        });
-    }
   });
 export type PracticeConfiguration = z.infer<typeof practiceConfigurationSchema>;
+
+// The route owns the destination and source; form callers cannot supply chat approvals.
+export const createPracticeBodySchema = z
+  .object({
+    requestId: uuidSchema,
+    settings: practiceSettingsFields.superRefine(validatePracticeSettings),
+  })
+  .strict();
+export type CreatePracticeBody = z.infer<typeof createPracticeBodySchema>;
 
 export const practiceItemContentSchema = z.discriminatedUnion("type", [
   z

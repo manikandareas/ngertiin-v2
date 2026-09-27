@@ -1,3 +1,4 @@
+import { Field, FieldDescription, FieldLabel } from "../../components/ui/field";
 import { Input } from "../../components/ui/input";
 import {
   Select,
@@ -44,10 +45,10 @@ export function MaterialSettings({
           {pageCount ? ` · ${pageCount} halaman` : ""} · {statusLabels[item.source.status]}
         </p>
       </div>
-      <div className="space-y-2.5">
-        <label htmlFor="material-role" className="block text-sm font-medium">
+      <Field>
+        <FieldLabel htmlFor="material-role" className="block text-sm font-medium">
           Peran materi
-        </label>
+        </FieldLabel>
         <Select
           value={item.role}
           disabled={state.busy}
@@ -59,7 +60,7 @@ export function MaterialSettings({
           <SelectTrigger
             id="material-role"
             aria-describedby="material-role-help"
-            className="h-11 w-full rounded-xl shadow-none"
+            className="h-11 w-full rounded-xl shadow-none data-[size=default]:h-11"
           >
             <SelectValue />
           </SelectTrigger>
@@ -69,16 +70,19 @@ export function MaterialSettings({
             <SelectItem value="supplementary">Pelengkap</SelectItem>
           </SelectContent>
         </Select>
-        <p id="material-role-help" className="text-xs leading-5 text-muted-foreground">
+        <FieldDescription
+          id="material-role-help"
+          className="text-xs leading-5 text-muted-foreground"
+        >
           {roleDescriptions[item.role]}
-        </p>
-      </div>
+        </FieldDescription>
+      </Field>
       {item.source.type === "pdf" ? (
         <div className="space-y-5">
-          <div className="space-y-2.5">
-            <label htmlFor="material-page-scope" className="block text-sm font-medium">
+          <Field>
+            <FieldLabel htmlFor="material-page-scope" className="block text-sm font-medium">
               Halaman yang dipelajari
-            </label>
+            </FieldLabel>
             <Select
               value={pages ? "custom" : "all"}
               disabled={state.busy || !pageCount}
@@ -101,7 +105,7 @@ export function MaterialSettings({
               <SelectTrigger
                 id="material-page-scope"
                 aria-describedby="material-pages-help"
-                className="h-11 w-full rounded-xl shadow-none"
+                className="h-11 w-full rounded-xl shadow-none data-[size=default]:h-11"
               >
                 <SelectValue />
               </SelectTrigger>
@@ -110,22 +114,28 @@ export function MaterialSettings({
                 <SelectItem value="custom">Rentang tertentu</SelectItem>
               </SelectContent>
             </Select>
-            <p id="material-pages-help" className="text-xs leading-5 text-muted-foreground">
+            <FieldDescription
+              id="material-pages-help"
+              className="text-xs leading-5 text-muted-foreground"
+            >
               {!pageCount
                 ? "Pilihan halaman tersedia setelah PDF selesai diproses."
                 : pages
                   ? "Hanya halaman dalam rentang ini yang digunakan."
                   : "Seluruh isi PDF digunakan untuk menyusun modul."}
-            </p>
-          </div>
+            </FieldDescription>
+          </Field>
           {pages ? (
             <div>
               <div className="grid grid-cols-2 gap-4">
                 {(["from", "to"] as const).map((key) => (
-                  <div key={key} className="space-y-2.5">
-                    <label htmlFor={`material-page-${key}`} className="block text-sm font-medium">
+                  <Field key={key}>
+                    <FieldLabel
+                      htmlFor={`material-page-${key}`}
+                      className="block text-sm font-medium"
+                    >
                       {key === "from" ? "Dari halaman" : "Sampai halaman"}
-                    </label>
+                    </FieldLabel>
                     <Input
                       id={`material-page-${key}`}
                       type="number"
@@ -155,7 +165,7 @@ export function MaterialSettings({
                         )
                       }
                     />
-                  </div>
+                  </Field>
                 ))}
               </div>
               {invalidRange ? (

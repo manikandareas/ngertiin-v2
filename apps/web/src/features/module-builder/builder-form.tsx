@@ -2,6 +2,7 @@ import { ArrowLeft01Icon, ArrowRight01Icon, SparklesIcon } from "@hugeicons/core
 import { HugeiconsIcon } from "@hugeicons/react";
 import { type ReactNode, useState } from "react";
 import { Button } from "../../components/ui/button";
+import { FieldSet } from "../../components/ui/field";
 import { UsageNotice } from "../usage/usage-notice";
 import { useUsage } from "../usage/use-usage";
 import { BuilderFocus } from "./builder-focus";
@@ -93,7 +94,7 @@ export function BuilderForm({
         </div>
       }
     >
-      <fieldset disabled={state.busy} className="min-w-0 space-y-8">
+      <FieldSet disabled={state.busy} className="min-w-0 gap-8">
         {step === 0 ? (
           <MaterialBoard state={state} library={library} />
         ) : step === 1 ? (
@@ -102,7 +103,7 @@ export function BuilderForm({
           <BuilderReview state={state} onEdit={go} />
         )}
         {statuses}
-      </fieldset>
+      </FieldSet>
       {validation || state.error ? (
         <p role="alert" className="mt-4 text-sm text-destructive">
           {validation || state.error}

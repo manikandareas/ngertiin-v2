@@ -7,6 +7,7 @@ import {
   type OnApplicationShutdown,
 } from "@nestjs/common";
 import {
+  LANGUAGE_OPTIONS,
   practiceConfigurationSchema,
   practiceItemContentSchema,
   practiceItemKeySchema,
@@ -244,7 +245,7 @@ export class PracticeGenerationProcessor implements OnApplicationBootstrap, OnAp
           schema: outputSchema,
           schemaName: "practice_batch",
           operation: "practice_generation",
-          prompt: `Buat ${count} item latihan yang berbeda berdasarkan sumber di bawah. Jenis: ${configuration.kind}. Fokus: ${configuration.focus}. Bahasa: ${configuration.language}. Kesulitan: ${configuration.difficulty}. Komposisi soal batch: ${JSON.stringify(counts)}. Untuk flashcard isi cards saja; untuk kuis/exam isi questions saja. Semua item wajib menunjuk nomor sumber yang benar. Jangan membuat soal yang tidak didukung materi. Setiap rubrik esai berbobot total 1. Materi:\n${segment}`,
+          prompt: `Buat ${count} item latihan yang berbeda berdasarkan sumber di bawah. Jenis: ${configuration.kind}. Fokus: ${configuration.focus}. Bahasa: ${LANGUAGE_OPTIONS[configuration.language].label}. Kesulitan: ${configuration.difficulty}. Komposisi soal batch: ${JSON.stringify(counts)}. Untuk flashcard isi cards saja; untuk kuis/exam isi questions saja. Semua item wajib menunjuk nomor sumber yang benar. Jangan membuat soal yang tidak didukung materi. Setiap rubrik esai berbobot total 1. Materi:\n${segment}`,
         });
         const generated: StoredItem[] =
           configuration.kind === "flashcard"

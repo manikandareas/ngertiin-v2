@@ -7,7 +7,14 @@ import {
   flashcardColors,
 } from "../../../components/flashcards/flashcard-sticker";
 
-export function PracticeCardPreview({ practice }: { practice: PracticeSummary }) {
+export function PracticeCardPreview({
+  practice,
+}: {
+  practice: Pick<
+    PracticeSummary,
+    "id" | "kind" | "status" | "title" | "preview" | "itemCount" | "durationMinutes"
+  >;
+}) {
   if (practice.status !== "ready") {
     const generating = practice.status === "generating";
     return (

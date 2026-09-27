@@ -1,4 +1,4 @@
-import { GENERATION_LANGUAGES, generationLanguageSchema } from "@ngertiin/contracts/api";
+import { LANGUAGE_OPTIONS, languageSchema } from "@ngertiin/contracts/api";
 import { Field, FieldLabel } from "../../components/ui/field";
 import {
   Select,
@@ -23,22 +23,25 @@ export function BuilderLanguage({ state }: { state: SettingsState }) {
         value={settings.language}
         disabled={state.busy}
         onValueChange={(value) => {
-          const language = generationLanguageSchema.parse(value);
+          const language = languageSchema.parse(value);
           state.setGenerationSettings((current) => ({ ...current, language }));
         }}
       >
-        <SelectTrigger id="module-language" className="min-w-52 max-w-full rounded-xl shadow-none">
+        <SelectTrigger
+          id="module-language"
+          className="min-w-52 max-w-full rounded-xl shadow-none data-[size=default]:h-11"
+        >
           <SelectValue />
         </SelectTrigger>
         <SelectContent position="popper">
-          {generationLanguageSchema.options.map((language) => (
+          {languageSchema.options.map((language) => (
             <SelectItem
               key={language}
               value={language}
-              textValue={GENERATION_LANGUAGES[language].label}
+              textValue={LANGUAGE_OPTIONS[language].label}
             >
-              <span aria-hidden="true">{GENERATION_LANGUAGES[language].flag}</span>
-              {GENERATION_LANGUAGES[language].label}
+              <span aria-hidden="true">{LANGUAGE_OPTIONS[language].flag}</span>
+              {LANGUAGE_OPTIONS[language].label}
             </SelectItem>
           ))}
         </SelectContent>

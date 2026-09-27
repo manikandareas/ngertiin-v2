@@ -26,7 +26,7 @@ const emptyMessages = {
   },
   active: {
     title: "Belum ada latihan",
-    description: "Minta Teman Belajar membuat latihan dari materi modul ini.",
+    description: "Buat flashcard, kuis, atau exam dari materi modul ini.",
   },
 };
 
@@ -50,9 +50,7 @@ export default function ModulePracticePage() {
           </p>
         </div>
         <Button size="sm" variant="outline" className="normal-case" asChild>
-          <Link
-            to={`/chat?moduleId=${moduleId}&draft=${encodeURIComponent("Buatkan latihan dari materi modul ini")}`}
-          >
+          <Link to={`/modules/${moduleId}/practice/new`}>
             Buat latihan{" "}
             <HugeiconsIcon icon={Add01Icon} strokeWidth={1.5} size={20} aria-hidden="true" />
           </Link>

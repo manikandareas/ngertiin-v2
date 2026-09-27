@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 import { Inject, Injectable } from "@nestjs/common";
 import {
+  type CreatePracticeBody,
   type PracticeAttempt,
   type PracticeConfiguration,
   practiceAnswerSchema,
@@ -173,6 +174,40 @@ export class PracticeService {
         : null;
     if (approvedRevision !== (await this.sourceRevision(userId, configuration)))
       fail(409, "SUBMISSION_CONFLICT", "Materi sumber berubah. Tinjau usulan latihan baru.");
+    return this.create(userId, actionId, interactionId, configuration);
+  }
+
+  async createFromForm(userId: string, moduleId: string, body: CreatePracticeBody) {
+    const configuration = practiceConfigurationSchema.parse({
+      ...body.settings,
+      destinationModuleId: moduleId,
+      sources: [{ kind: "module", moduleId }],
+    });
+    // Namespace the client request ID by owner and entry point, separate from chat actions.
+    const hash = createHash("sha256")
+      .update(`practice-form:${userId}:${body.requestId}`)
+      .digest("hex");
+    const actionId = `${hash.slice(0, 8)}-${hash.slice(8, 12)}-8${hash.slice(13, 16)}-a${hash.slice(17, 20)}-${hash.slice(20, 32)}`;
+    return this.create(userId, actionId, null, configuration);
+  }
+
+  private async create(
+    userId: string,
+    actionId: string,
+    interactionId: string | null,
+    configuration: PracticeConfiguration,
+  ) {
+    const checkReplay = (row: typeof practice_sets.$inferSelect) => {
+      if (row.owner_id !== userId || !isDeepStrictEqual(row.configuration, configuration))
+        fail(409, "SUBMISSION_CONFLICT", "Permintaan ini sudah digunakan untuk pengaturan lain.");
+      return row;
+    };
+    const [existing] = await this.db
+      .select()
+      .from(practice_sets)
+      .where(eq(practice_sets.approval_action_id, actionId))
+      .limit(1);
+    if (existing) return summary(checkReplay(existing));
     const moduleIds = [
       configuration.destinationModuleId,
       ...configuration.sources.flatMap((source) =>
@@ -301,7 +336,7 @@ export class PracticeService {
         .from(practice_sets)
         .where(eq(practice_sets.approval_action_id, actionId))
         .limit(1);
-      if (again) return again;
+      if (again) return checkReplay(again);
       const [set] = await tx
         .insert(practice_sets)
         .values({
@@ -322,7 +357,7 @@ export class PracticeService {
           .from(practice_sets)
           .where(eq(practice_sets.approval_action_id, actionId));
         if (!replayed) throw new Error("Missing idempotent Practice set");
-        return replayed;
+        return checkReplay(replayed);
       }
       await tx
         .insert(practice_sources)

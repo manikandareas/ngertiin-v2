@@ -1,4 +1,5 @@
 import {
+  type CreatePracticeBody,
   type PracticeAnswer,
   practiceAttemptResponseSchema,
   practiceAttemptsResponseSchema,
@@ -9,6 +10,13 @@ import {
 import { requestApi, type TokenResolver } from "../../lib/api";
 
 export const practiceApi = (token: TokenResolver) => ({
+  create: async (moduleId: string, body: CreatePracticeBody) =>
+    (
+      await requestApi(`/modules/${moduleId}/practices`, token, practiceSummaryResponseSchema, {
+        method: "POST",
+        body: JSON.stringify(body),
+      })
+    ).data,
   list: async (
     moduleId: string,
     filters: {

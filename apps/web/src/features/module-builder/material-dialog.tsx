@@ -1,5 +1,6 @@
 import { Button } from "../../components/ui/button";
 import { DialogFrame } from "../../components/ui/dialog-frame";
+import { FieldSet } from "../../components/ui/field";
 import { type AddSourceAction, SourceDialog } from "../sources/source-dialog";
 import { MaterialSettings } from "./material-settings";
 import type { ModuleBuilderState } from "./use-module-builder";
@@ -30,9 +31,9 @@ export function MaterialDialog({ action, state, onClose, returnFocus }: Material
       busy={state.busy}
       onClose={onClose}
       returnFocus={returnFocus}
-      className="builder-controls"
+      className="creation-controls"
     >
-      <fieldset disabled={state.busy} className="space-y-5">
+      <FieldSet disabled={state.busy} className="gap-5">
         <MaterialSettings state={state} sourceId={action.sourceId} />
         {state.error ? (
           <p role="alert" className="text-destructive">
@@ -52,7 +53,7 @@ export function MaterialDialog({ action, state, onClose, returnFocus }: Material
           </Button>
           <Button onClick={onClose}>Selesai</Button>
         </div>
-      </fieldset>
+      </FieldSet>
     </DialogFrame>
   );
 }

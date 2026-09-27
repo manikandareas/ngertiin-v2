@@ -5,6 +5,9 @@
       "**",
       "!!**/dist",
       "!!**/node_modules",
+      "!!.experiments",
+      "!!docs/prototype",
+      "!!packages/database/migrations/meta/*_snapshot.json",
       "!!bun.lock",
       "!!apps/www/.astro",
       "!!apps/www/**/*.astro"

@@ -18,6 +18,5 @@
     "strict": true,
     "strictPropertyInitialization": false,
     "types": ["node"]
-  },
-  "exclude": ["src/speech/assemble-speech.spec.ts"]
+  }
 }

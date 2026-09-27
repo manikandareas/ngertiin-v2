@@ -23,6 +23,7 @@ const expensiveRoutes = [
   /^\/api\/v1\/sources\/(url|pdf)$/,
   /^\/api\/v1\/sources\/[^/]+\/retry$/,
   /^\/api\/v1\/modules$/,
+  /^\/api\/v1\/modules\/[^/]+\/practices$/,
   /^\/api\/v1\/modules\/[^/]+\/generation\/retry$/,
   /^\/api\/v1\/modules\/[^/]+\/nodes\/[^/]+\/attempts$/,
   /^\/api\/v1\/modules\/[^/]+\/nodes\/[^/]+\/activities\/[^/]+\/speech$/,

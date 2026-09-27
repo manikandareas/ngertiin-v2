@@ -17,6 +17,7 @@ const ModuleStatusPage = lazy(() => import("../pages/module-status"));
 const ModuleJourneyPage = lazy(() => import("../pages/module-journey"));
 const ModuleNodePage = lazy(() => import("../pages/module-node"));
 const ModulePracticePage = lazy(() => import("../pages/module-practice"));
+const NewPracticePage = lazy(() => import("../pages/new-practice"));
 const PracticeDetailPage = lazy(() => import("../pages/practice-detail"));
 const PracticeAttemptPage = lazy(() => import("../pages/practice-attempt"));
 const AdaptiveInterventionPage = lazy(() => import("../pages/adaptive-intervention"));
@@ -58,6 +59,7 @@ export function AppRoutes() {
           <Route path="/modules/new" element={<NewModulePage />} />
           <Route path="/modules/:moduleId/journey" element={<ModuleJourneyPage />} />
           <Route path="/modules/:moduleId/practice" element={<ModulePracticePage />} />
+          <Route path="/modules/:moduleId/practice/new" element={<NewPracticePage />} />
           <Route path="/modules/:moduleId/practice/:practiceId" element={<PracticeDetailPage />} />
           <Route
             path="/modules/:moduleId/practice/:practiceId/attempts/:attemptId"

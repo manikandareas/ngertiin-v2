@@ -6,6 +6,7 @@ import { Button } from "../../components/ui/button";
 import { useCurrentUser } from "../current-user/api/use-current-user";
 import { useCreateModule } from "../modules/api/use-modules";
 import { useSaveSource } from "../sources/use-save-source";
+import { BuilderLayout } from "./builder-layout";
 import { BuilderForm } from "./builder-form";
 import { SelectedStatus } from "./selected-source-status";
 import { SourceLibrary } from "./source-library";
@@ -20,23 +21,25 @@ function BuilderPreferences() {
   const [fallback, setFallback] = useState(false);
   if (!profile.data && !fallback)
     return (
-      <div className="mx-auto max-w-xl space-y-4 p-6" role="status">
-        <p>
-          {profile.isError
-            ? "Preferensi belajar belum dapat dimuat."
-            : "Memuat preferensi belajar…"}
-        </p>
-        {profile.isError && (
-          <div className="flex flex-wrap gap-3">
-            <Button onClick={() => void profile.refetch()} disabled={profile.isFetching}>
-              Coba lagi
-            </Button>
-            <Button variant="outline" onClick={() => setFallback(true)}>
-              Gunakan default aplikasi
-            </Button>
-          </div>
-        )}
-      </div>
+      <BuilderLayout step={0}>
+        <div className="space-y-4" role="status">
+          <p>
+            {profile.isError
+              ? "Preferensi belajar belum dapat dimuat."
+              : "Memuat preferensi belajar…"}
+          </p>
+          {profile.isError && (
+            <div className="flex flex-wrap gap-3">
+              <Button onClick={() => void profile.refetch()} disabled={profile.isFetching}>
+                Coba lagi
+              </Button>
+              <Button variant="outline" onClick={() => setFallback(true)}>
+                Gunakan default aplikasi
+              </Button>
+            </div>
+          )}
+        </div>
+      </BuilderLayout>
     );
   return (
     <UserBuilder

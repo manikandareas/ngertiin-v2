@@ -1,6 +1,8 @@
 import { z } from "zod";
+import { languageSchema as generationLanguageSchema } from "../common/languages.js";
 
-export const generationLanguageSchema = z.enum(["id", "ms", "en"]);
+export { generationLanguageSchema };
+export { LANGUAGE_OPTIONS as GENERATION_LANGUAGES } from "../common/languages.js";
 export const generationLengthSchema = z.enum(["auto", "short", "medium", "long"]);
 export const GENERATION_ACTIVITY_TYPES = ["lesson", "flashcard", "quiz"] as const;
 export const GENERATION_LENGTH_RANGES = {
@@ -8,11 +10,6 @@ export const GENERATION_LENGTH_RANGES = {
   short: { min: 3, max: 5 },
   medium: { min: 6, max: 10 },
   long: { min: 11, max: 15 },
-} as const;
-export const GENERATION_LANGUAGES = {
-  id: { label: "Bahasa Indonesia", flag: "🇮🇩" },
-  ms: { label: "Bahasa Melayu", flag: "🇲🇾" },
-  en: { label: "English", flag: "🇬🇧" },
 } as const;
 export const GENERATION_NODE_TYPES = {
   lesson: ["lesson"],

@@ -44,23 +44,28 @@ export function SortableMaterial({
       className="min-w-0"
     >
       <div className="mb-3 flex items-center gap-2 px-1">
-        <button
-          type="button"
-          ref={setActivatorNodeRef}
-          {...attributes}
-          {...listeners}
-          aria-label={`Urutkan materi ${index + 1}: ${item.source.title ?? "Materi tanpa judul"}`}
-          disabled={disabled}
-          className="flex h-8 touch-none items-center gap-1 rounded-sm px-1 text-xs font-semibold tabular-nums text-muted-foreground cursor-grab focus-visible:outline-2 focus-visible:outline-ring active:cursor-grabbing"
+        <Button
+          asChild
+          variant="ghost"
+          className="h-8 touch-none gap-1 rounded-sm px-1 text-xs font-semibold tabular-nums text-muted-foreground cursor-grab active:cursor-grabbing"
         >
-          <HugeiconsIcon
-            icon={DragDropVerticalIcon}
-            strokeWidth={1.5}
-            size={16}
-            aria-hidden="true"
-          />
-          {String(index + 1).padStart(2, "0")}
-        </button>
+          <button
+            type="button"
+            ref={setActivatorNodeRef}
+            {...attributes}
+            {...listeners}
+            aria-label={`Urutkan materi ${index + 1}: ${item.source.title ?? "Materi tanpa judul"}`}
+            disabled={disabled}
+          >
+            <HugeiconsIcon
+              icon={DragDropVerticalIcon}
+              strokeWidth={1.5}
+              size={16}
+              aria-hidden="true"
+            />
+            {String(index + 1).padStart(2, "0")}
+          </button>
+        </Button>
         <span className="text-xs text-muted-foreground">
           {item.role === "primary"
             ? "Materi utama"

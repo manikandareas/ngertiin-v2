@@ -1,6 +1,6 @@
 import { ArrowRight02Icon, RotateLeft01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import type { PracticeDetail } from "@ngertiin/contracts/api";
+import { type PracticeDetail, LANGUAGE_OPTIONS } from "@ngertiin/contracts/api";
 import { Button } from "../../../components/ui/button";
 
 type Props = {
@@ -125,7 +125,7 @@ export function PracticeDetailContent({
             </span>
           ))}
           <span className="rounded-md bg-muted px-2.5 py-1.5">
-            {data.configuration.language === "id" ? "Bahasa Indonesia" : "Bahasa Inggris"}
+            {LANGUAGE_OPTIONS[data.configuration.language].label}
           </span>
         </div>
       </section>
