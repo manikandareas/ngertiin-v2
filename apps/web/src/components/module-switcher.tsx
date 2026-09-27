@@ -8,7 +8,6 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 
-import { Popover } from "radix-ui";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useSelectCurrentModule } from "../features/current-user/api/use-select-current-module";
@@ -23,12 +22,7 @@ import {
   DrawerTrigger,
 } from "./ui/drawer";
 import { Input } from "./ui/input";
-
-const updatedDate = new Intl.DateTimeFormat("id-ID", {
-  day: "numeric",
-  month: "short",
-  year: "numeric",
-});
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 
 export function ModuleSwitcher({
   collapsed,
@@ -113,7 +107,7 @@ export function ModuleSwitcher({
       <Link
         to="/modules"
         onClick={close}
-        className="flex min-h-11 xl:min-h-9 shrink-0 items-center gap-2 rounded-lg px-2.5 text-[13px] hover:bg-accent hover:text-accent-foreground focus-visible:outline-2 focus-visible:outline-ring"
+        className="flex min-h-11 xl:min-h-9 shrink-0 items-center gap-2 rounded-lg px-2.5 text-[13px] hover:bg-accent hover:text-accent-foreground hover:[&_svg]:text-current focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:outline-2 focus-visible:outline-ring focus-visible:[&_svg]:text-current"
       >
         <HugeiconsIcon
           icon={ArrowUpRight01Icon}
@@ -126,7 +120,7 @@ export function ModuleSwitcher({
       <Link
         to="/modules/new"
         onClick={close}
-        className="flex min-h-11 xl:min-h-9 shrink-0 items-center gap-2 rounded-lg px-2.5 text-[13px] hover:bg-accent hover:text-accent-foreground focus-visible:outline-2 focus-visible:outline-ring"
+        className="flex min-h-11 xl:min-h-9 shrink-0 items-center gap-2 rounded-lg px-2.5 text-[13px] hover:bg-accent hover:text-accent-foreground hover:[&_svg]:text-current focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:outline-2 focus-visible:outline-ring focus-visible:[&_svg]:text-current"
       >
         <HugeiconsIcon
           icon={Add01Icon}
@@ -141,21 +135,18 @@ export function ModuleSwitcher({
   return (
     <>
       {desktop ? (
-        <Popover.Root open={open} onOpenChange={changeOpen}>
-          <Popover.Trigger asChild>{trigger}</Popover.Trigger>
-          <Popover.Portal>
-            <Popover.Content
-              aria-label="Pilih modul"
-              side="right"
-              align="start"
-              sideOffset={6}
-              collisionPadding={12}
-              className="z-50 flex max-h-[var(--radix-popover-content-available-height)] w-72 max-w-[min(calc(100vw-24px),var(--radix-popover-content-available-width))] flex-col overflow-hidden rounded-xl border bg-popover p-2 text-popover-foreground shadow-md"
-            >
-              {contents}
-            </Popover.Content>
-          </Popover.Portal>
-        </Popover.Root>
+        <Popover open={open} onOpenChange={changeOpen}>
+          <PopoverTrigger asChild>{trigger}</PopoverTrigger>
+          <PopoverContent
+            aria-label="Pilih modul"
+            side="right"
+            align="start"
+            sideOffset={6}
+            className="flex max-h-[var(--radix-popover-content-available-height)] w-xs flex-col overflow-hidden"
+          >
+            {contents}
+          </PopoverContent>
+        </Popover>
       ) : (
         <Drawer open={open} onOpenChange={changeOpen} shouldScaleBackground={false}>
           <DrawerTrigger asChild>{trigger}</DrawerTrigger>
@@ -244,19 +235,13 @@ function ModuleOptions({
             onNavigate();
           }}
           aria-current={item.id === selectedId ? "page" : undefined}
-          className="flex min-h-11 items-center gap-2 rounded-lg px-2.5 py-1.5 hover:bg-muted aria-[current=page]:bg-accent aria-[current=page]:text-accent-foreground aria-[current=page]:[&_time]:text-current focus-visible:outline-2 focus-visible:outline-ring"
+          className="flex min-h-11 items-center gap-2 rounded-lg px-2.5 py-1.5 hover:bg-accent hover:text-accent-foreground hover:[&_time]:text-current focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:outline-2 focus-visible:outline-ring focus-visible:[&_time]:text-current aria-[current=page]:bg-accent aria-[current=page]:text-accent-foreground aria-[current=page]:[&_time]:text-current"
         >
           <ModuleGlyph imageUrl={item.imageUrl} />
           <span className="min-w-0">
             <span className="block truncate text-[13px] font-medium leading-4">
               {item.title ?? "Modul belajar"}
             </span>
-            <time
-              dateTime={item.updatedAt}
-              className="block text-[11px] leading-4 text-muted-foreground"
-            >
-              Diperbarui {updatedDate.format(new Date(item.updatedAt))}
-            </time>
           </span>
         </Link>
       ))}
