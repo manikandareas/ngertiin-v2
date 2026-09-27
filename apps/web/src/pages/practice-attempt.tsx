@@ -1,8 +1,7 @@
-import { ArrowLeft02Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { AppShell } from "../components/app-shell";
+import { BackHeader } from "../components/back-header";
 import { PracticeAttemptOutcome } from "../features/practice/components/practice-attempt-outcome";
 import { PracticeExamAttempt } from "../features/practice/components/practice-exam-attempt";
 import { PracticeFlashcardAttempt } from "../features/practice/components/practice-flashcard-attempt";
@@ -104,28 +103,19 @@ function PracticeAttemptSession() {
     );
   }
   return (
-    <AppShell>
-      <div className="mx-auto max-w-3xl pb-16">
-        <Link
-          to={`/modules/${moduleId}/practice/${practiceId}`}
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
-        >
-          <HugeiconsIcon
-            icon={ArrowLeft02Icon}
-            strokeWidth={1.5}
-            aria-hidden="true"
-            className="size-4"
-          />{" "}
-          Kembali ke latihan
-        </Link>
-        {practice.isPending || attempt.isPending ? (
-          <p className="mt-7 text-sm text-muted-foreground">Memuat sesi…</p>
-        ) : null}
-        {practice.isError || attempt.isError ? (
-          <p role="alert" className="mt-7 text-sm text-destructive">
-            Sesi belum dapat dimuat.
-          </p>
-        ) : null}
+    <AppShell workspace>
+      <BackHeader to={`/modules/${moduleId}/practice/${practiceId}`} label="Kembali ke latihan" />
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="mx-auto max-w-3xl px-5 pt-8 pb-16 sm:px-8 lg:pt-16">
+          {practice.isPending || attempt.isPending ? (
+            <p className="text-sm text-muted-foreground">Memuat sesi…</p>
+          ) : null}
+          {practice.isError || attempt.isError ? (
+            <p role="alert" className="text-sm text-destructive">
+              Sesi belum dapat dimuat.
+            </p>
+          ) : null}
+        </div>
       </div>
     </AppShell>
   );

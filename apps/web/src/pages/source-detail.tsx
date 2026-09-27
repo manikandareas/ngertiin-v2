@@ -1,8 +1,7 @@
 import { useAuth } from "@clerk/react";
-import { ArrowLeft01Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { lazy, Suspense, useState } from "react";
-import { Link, useLocation, useParams } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
+import { BackHeader } from "../components/back-header";
 import { Button } from "../components/ui/button";
 import { CitationContent } from "../features/chat/components/citation-content";
 import { useCitationLocation } from "../features/chat/use-citation-location";
@@ -33,25 +32,15 @@ function SourceDetail({ id }: { id: string | undefined }) {
     typeof returnTo === "string" && /^\/sources(?:\?|$)/.test(returnTo) ? returnTo : "/sources";
   return (
     <main className="min-h-dvh bg-background text-foreground">
-      <header className="sticky top-0 z-30 flex h-12 items-center border-b border-muted bg-background/95 px-4 backdrop-blur sm:px-8">
-        <Button
-          asChild
-          variant="ghost"
-          size="sm"
-          className="h-8 gap-2 px-2 text-xs font-medium normal-case text-muted-foreground"
-        >
-          <Link
-            to={back}
-            onClick={(event) => {
-              if (dirty && !window.confirm("Perubahan belum disimpan. Tinggalkan halaman?"))
-                event.preventDefault();
-            }}
-          >
-            <HugeiconsIcon icon={ArrowLeft01Icon} size={16} strokeWidth={1.5} aria-hidden="true" />
-            Kembali ke Materi saya
-          </Link>
-        </Button>
-      </header>
+      <BackHeader
+        to={back}
+        label="Kembali ke Materi saya"
+        sticky
+        onClick={(event) => {
+          if (dirty && !window.confirm("Perubahan belum disimpan. Tinggalkan halaman?"))
+            event.preventDefault();
+        }}
+      />
       {query.isPending ? (
         <p role="status" className="p-8">
           Memuat materi…

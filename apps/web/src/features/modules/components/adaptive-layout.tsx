@@ -1,8 +1,7 @@
-import { ArrowLeft01Icon, Tick02Icon } from "@hugeicons/core-free-icons";
+import { Tick02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import type { JSX, ReactNode } from "react";
-import { Link } from "react-router-dom";
-import { Button } from "../../../components/ui/button";
+import { BackHeader } from "../../../components/back-header";
 
 const steps = ["Tinjau penguatan", "Siapkan materi", "Mulai belajar"];
 
@@ -15,19 +14,10 @@ interface AdaptiveLayoutProps {
 export function AdaptiveLayout({ children, moduleId, step }: AdaptiveLayoutProps): JSX.Element {
   return (
     <main className="min-h-dvh bg-background text-foreground [&_[data-slot=button]]:font-semibold [&_[data-slot=button]]:tracking-normal [&_[data-slot=button]]:normal-case">
-      <header className="flex h-12 items-center border-b border-muted px-4 sm:px-8">
-        <Button
-          asChild
-          variant="ghost"
-          size="sm"
-          className="h-8 px-2 text-xs text-muted-foreground"
-        >
-          <Link to={moduleId ? `/modules/${moduleId}/journey` : "/dashboard"}>
-            <HugeiconsIcon icon={ArrowLeft01Icon} size={16} strokeWidth={1.5} aria-hidden="true" />
-            {moduleId ? "Kembali ke perjalanan" : "Kembali ke Beranda"}
-          </Link>
-        </Button>
-      </header>
+      <BackHeader
+        to={moduleId ? `/modules/${moduleId}/journey` : "/dashboard"}
+        label={moduleId ? "Kembali ke perjalanan" : "Kembali ke Beranda"}
+      />
       <div className="mx-auto grid w-full max-w-6xl gap-10 px-5 py-8 sm:px-10 sm:py-12 lg:grid-cols-[180px_minmax(0,1fr)] lg:gap-24 lg:px-16 lg:py-16">
         <nav aria-label="Tahap penguatan">
           <ol className="flex lg:block">

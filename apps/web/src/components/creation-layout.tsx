@@ -1,7 +1,7 @@
-import { ArrowLeft01Icon, Tick02Icon } from "@hugeicons/core-free-icons";
+import { Tick02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { type ReactNode, useEffect, useId, useRef } from "react";
-import { Link } from "react-router-dom";
+import { BackHeader } from "./back-header";
 import { Button } from "./ui/button";
 
 export function CreationLayout({
@@ -36,19 +36,7 @@ export function CreationLayout({
   }, [step]);
   return (
     <div className="creation-controls flex min-h-0 flex-1 flex-col text-foreground">
-      <header className="z-20 flex h-12 shrink-0 items-center border-b border-muted bg-background px-4 sm:px-8">
-        <Button
-          asChild
-          variant="ghost"
-          size="sm"
-          className="h-8 gap-2 px-2 text-xs font-medium normal-case text-muted-foreground"
-        >
-          <Link to={backTo}>
-            <HugeiconsIcon icon={ArrowLeft01Icon} size={16} strokeWidth={1.5} aria-hidden="true" />
-            {backLabel}
-          </Link>
-        </Button>
-      </header>
+      <BackHeader to={backTo} label={backLabel} />
       <div ref={scroll} className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto grid w-full max-w-6xl gap-10 px-5 py-8 sm:px-8 sm:py-12 lg:grid-cols-[160px_minmax(0,1fr)] lg:gap-10 lg:py-16 2xl:gap-16 2xl:px-12">
           <nav aria-label="Langkah pembuatan" className="lg:sticky lg:top-8 lg:self-start">

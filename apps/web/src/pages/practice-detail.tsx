@@ -1,10 +1,9 @@
 import { useAuth } from "@clerk/react";
-import { ArrowLeft02Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { AppShell } from "../components/app-shell";
+import { BackHeader } from "../components/back-header";
 import { PracticeAttemptHistory } from "../features/practice/components/practice-attempt-history";
 import { PracticeCard } from "../features/practice/components/practice-card";
 import { PracticeDetailContent } from "../features/practice/components/practice-detail-content";
@@ -54,80 +53,73 @@ export default function PracticeDetailPage() {
     : null;
   const active = attempts.data?.some((attempt) => attempt.status === "active");
   return (
-    <AppShell>
-      <div className="mx-auto max-w-6xl pb-16">
-        <Link
-          to={`/modules/${moduleId}/practice`}
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
-        >
-          <HugeiconsIcon
-            icon={ArrowLeft02Icon}
-            strokeWidth={1.5}
-            aria-hidden="true"
-            className="size-4"
-          />{" "}
-          Kembali ke Latihan
-        </Link>
-        {practice.isPending ? (
-          <p role="status" className="mt-8 text-sm text-muted-foreground">
-            Memuat latihan…
-          </p>
-        ) : null}
-        {practice.isError ? (
-          <p role="alert" className="mt-8 text-sm text-destructive">
-            Latihan belum dapat dimuat.
-          </p>
-        ) : null}
-        {data ? (
-          <div className="mt-8 grid gap-8 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-10 2xl:gap-16">
-            <aside className="mx-auto w-full max-w-60 lg:sticky lg:top-8 lg:self-start">
-              <PracticeCard practice={{ ...data, preview }} linked={false} />
-              <p className="mt-4 text-center text-xs text-muted-foreground">
-                Dibuat {new Date(data.createdAt).toLocaleDateString("id-ID", { dateStyle: "long" })}
-              </p>
-            </aside>
-            <div className="min-w-0">
-              <PracticeDetailHeader
-                practice={data}
-                busy={busy}
-                onRename={() => {
-                  const title = window.prompt("Judul latihan", data.title)?.trim();
-                  if (title && title !== data.title) void run(() => api.patch(data.id, { title }));
-                }}
-                onToggleArchive={() =>
-                  void run(() => api.patch(data.id, { archived: !data.archivedAt }))
-                }
-              />
-              <PracticeDetailContent
-                practice={data}
-                busy={busy}
-                active={Boolean(active)}
-                startDisabled={attempts.isPending || attempts.isError}
-                onRetry={() => void run(() => api.retry(data.id))}
-                onStart={() =>
-                  void run(async () => {
-                    const attempt = await api.start(data.id);
-                    navigate(`/modules/${moduleId}/practice/${data.id}/attempts/${attempt.id}`);
-                  })
-                }
-              />
-              {data.status === "ready" ? (
-                <PracticeAttemptHistory
-                  practice={data}
-                  attempts={attempts.data}
-                  pending={attempts.isPending}
-                  failed={attempts.isError}
-                  onRetry={() => void attempts.refetch()}
-                />
-              ) : null}
-              {error ? (
-                <p role="alert" className="mt-4 text-sm text-destructive">
-                  {error}
+    <AppShell workspace>
+      <BackHeader to={`/modules/${moduleId}/practice`} label="Kembali ke Latihan" />
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="mx-auto max-w-6xl px-5 pt-8 pb-16 sm:px-8 lg:pt-16">
+          {practice.isPending ? (
+            <p role="status" className="text-sm text-muted-foreground">
+              Memuat latihan…
+            </p>
+          ) : null}
+          {practice.isError ? (
+            <p role="alert" className="text-sm text-destructive">
+              Latihan belum dapat dimuat.
+            </p>
+          ) : null}
+          {data ? (
+            <div className="grid gap-8 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-10 2xl:gap-16">
+              <aside className="mx-auto w-full max-w-60 lg:sticky lg:top-8 lg:self-start">
+                <PracticeCard practice={{ ...data, preview }} linked={false} />
+                <p className="mt-4 text-center text-xs text-muted-foreground">
+                  Dibuat{" "}
+                  {new Date(data.createdAt).toLocaleDateString("id-ID", { dateStyle: "long" })}
                 </p>
-              ) : null}
+              </aside>
+              <div className="min-w-0">
+                <PracticeDetailHeader
+                  practice={data}
+                  busy={busy}
+                  onRename={() => {
+                    const title = window.prompt("Judul latihan", data.title)?.trim();
+                    if (title && title !== data.title)
+                      void run(() => api.patch(data.id, { title }));
+                  }}
+                  onToggleArchive={() =>
+                    void run(() => api.patch(data.id, { archived: !data.archivedAt }))
+                  }
+                />
+                <PracticeDetailContent
+                  practice={data}
+                  busy={busy}
+                  active={Boolean(active)}
+                  startDisabled={attempts.isPending || attempts.isError}
+                  onRetry={() => void run(() => api.retry(data.id))}
+                  onStart={() =>
+                    void run(async () => {
+                      const attempt = await api.start(data.id);
+                      navigate(`/modules/${moduleId}/practice/${data.id}/attempts/${attempt.id}`);
+                    })
+                  }
+                />
+                {data.status === "ready" ? (
+                  <PracticeAttemptHistory
+                    practice={data}
+                    attempts={attempts.data}
+                    pending={attempts.isPending}
+                    failed={attempts.isError}
+                    onRetry={() => void attempts.refetch()}
+                  />
+                ) : null}
+                {error ? (
+                  <p role="alert" className="mt-4 text-sm text-destructive">
+                    {error}
+                  </p>
+                ) : null}
+              </div>
             </div>
-          </div>
-        ) : null}
+          ) : null}
+        </div>
       </div>
     </AppShell>
   );
