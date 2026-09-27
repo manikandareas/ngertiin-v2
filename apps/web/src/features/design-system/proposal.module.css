@@ -1,0 +1,97 @@
+/* Experimental styles only. This class is attached to proposed previews and
+   their own portal content, never to the document or existing design system. */
+.proposal {
+  --primary-foreground: #000437;
+  --input: #858585;
+  --proposal-destructive-solid: #df2450;
+  --proposal-destructive-hover: #c61c43;
+  --proposal-error-surface: #ffe5ec;
+  --proposal-error-ink: #ad1238;
+}
+
+:where([class~="dark"]) .proposal {
+  --input: #7d7d7d;
+  --proposal-destructive-solid: #df2850;
+  --proposal-error-surface: #44252f;
+  --proposal-error-ink: #ffb2c1;
+}
+
+.proposal [data-proposal-solid="destructive"] {
+  background-color: var(--proposal-destructive-solid);
+  color: #ffffff;
+}
+
+.proposal [data-proposal-solid="destructive"]:hover {
+  background-color: var(--proposal-destructive-hover);
+}
+
+/* Opaque neutral surfaces keep control borders above 3:1 in dark mode too. */
+.proposal [data-slot="select-trigger"],
+.proposal [data-slot="checkbox"] {
+  background-color: var(--background);
+}
+
+.proposal [data-slot="checkbox"][data-state="checked"],
+.proposal [data-slot="checkbox"][data-state="indeterminate"] {
+  background-color: var(--primary);
+  border-color: var(--ring);
+  color: var(--primary-foreground);
+}
+
+.proposal [data-slot="checkbox"][data-state="indeterminate"] svg {
+  display: none;
+}
+
+.proposal
+  [data-slot="checkbox"][data-state="indeterminate"]
+  [data-slot="checkbox-indicator"]::after {
+  content: "";
+  width: 8px;
+  height: 2px;
+  border-radius: 1px;
+  background: currentColor;
+}
+
+.proposal [role="tab"][data-state="active"] {
+  color: var(--link);
+  border-color: var(--ring);
+}
+
+.proposal [role="radio"] {
+  color: var(--ring);
+}
+
+.proposal [role="progressbar"] > div {
+  background-color: var(--ring);
+}
+
+.proposal [data-slot="field-description"] > a:hover {
+  color: var(--link);
+}
+
+.proposal [data-proposal-feedback] [class~="bg-destructive/10"] {
+  background-color: var(--proposal-error-surface);
+  color: var(--proposal-error-ink);
+}
+
+.proposal [data-proposal-feedback] [class~="text-destructive"] {
+  color: var(--proposal-error-ink);
+}
+
+.proposal [data-slot="select-item"]:focus svg,
+.proposal [data-slot="dropdown-menu-item"][data-highlighted] svg {
+  color: var(--accent-foreground);
+}
+
+/* Focus exploration: one colored border, with a quiet tint inside the field. */
+.proposal :is([data-slot="input"], [data-slot="textarea"]):focus-visible {
+  outline: none;
+  box-shadow: none;
+  border-color: var(--ring);
+  background-color: color-mix(in srgb, var(--accent) 6%, var(--background));
+  caret-color: var(--link);
+}
+
+.proposal :is([data-slot="input"], [data-slot="textarea"])[aria-invalid="true"]:focus-visible {
+  border-color: var(--destructive);
+}

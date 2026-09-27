@@ -1,5 +1,5 @@
 import { NuqsAdapter } from "nuqs/adapters/react-router/v7";
-import { StrictMode } from "react";
+import { lazy, StrictMode, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { App } from "./app";
@@ -17,7 +17,27 @@ function getRootElement(): HTMLElement {
 }
 const rootElement = getRootElement();
 
+const DesignSystemPage = lazy(() => import("./pages/design-system"));
+
+const DesignSystemProposalPage = lazy(() => import("./pages/design-system-proposal"));
+
 const router = createBrowserRouter([
+  {
+    path: "/design-system/proposal",
+    element: (
+      <Suspense fallback={<p className="p-8">Memuat proposal…</p>}>
+        <DesignSystemProposalPage />
+      </Suspense>
+    ),
+  },
+  {
+    path: "/design-system",
+    element: (
+      <Suspense fallback={<p className="p-8">Memuat design system…</p>}>
+        <DesignSystemPage />
+      </Suspense>
+    ),
+  },
   {
     path: "*",
     element: (
