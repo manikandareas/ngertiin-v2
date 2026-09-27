@@ -106,9 +106,9 @@ export function MaterialBoard({
               <div className="flex min-h-64 flex-col items-center justify-center pb-5 text-center">
                 <div className="relative mb-7 h-25 w-33" aria-hidden="true">
                   {[
-                    "-translate-x-6.5 -rotate-17 bg-book-sage",
-                    "-rotate-5 bg-book-blue",
-                    "translate-x-7 rotate-12 bg-book-clay",
+                    "-translate-x-6.5 -rotate-17 bg-[light-dark(#ddf3fe,#51baf0)]",
+                    "-rotate-5 bg-[light-dark(#eae2ff,#bcacf0)]",
+                    "translate-x-7 rotate-12 bg-[light-dark(#fff4ce,#d9af58)]",
                   ].map((tone) => (
                     <span
                       key={tone}

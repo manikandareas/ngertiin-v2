@@ -280,8 +280,6 @@
 
 /* Decorative book materials stay consistent across light and dark workspaces. */
 @theme {
-  --color-book-blue: #cfdfec;
-  --color-book-sage: #d6ddca;
   --color-book-clay: #e7d5cc;
   --color-book-page: #f9f9f6;
   --shadow-empty-book:

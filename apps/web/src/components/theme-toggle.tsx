@@ -91,6 +91,7 @@ export function ThemeToggle({ variant = "button" }: { variant?: "button" | "menu
   if (variant === "menu") {
     return (
       <DropdownMenuItem
+        className="group"
         aria-label={label}
         title={label}
         onSelect={(event) => {
@@ -100,7 +101,9 @@ export function ThemeToggle({ variant = "button" }: { variant?: "button" | "menu
       >
         {icon}
         Tema
-        <span className="ml-auto text-xs text-muted-foreground">{mode.label}</span>
+        <span className="ml-auto text-xs text-muted-foreground group-data-[highlighted]:text-accent-foreground group-data-[state=open]:text-accent-foreground">
+          {mode.label}
+        </span>
       </DropdownMenuItem>
     );
   }
