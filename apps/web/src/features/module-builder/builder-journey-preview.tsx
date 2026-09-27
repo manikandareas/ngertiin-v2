@@ -1,5 +1,6 @@
+import { ArrowRight02Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import type { JourneyNode } from "@ngertiin/contracts/api";
-import { ArrowRight } from "lucide-react";
 import type { JSX } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "../../components/ui/button";
@@ -87,7 +88,7 @@ export function BuilderJourneyPreview({
         <Button asChild className="mt-6 rounded-full">
           <Link to={`/modules/${moduleId}/journey`}>
             Lihat journey
-            <ArrowRight aria-hidden="true" />
+            <HugeiconsIcon icon={ArrowRight02Icon} strokeWidth={1.5} aria-hidden="true" />
           </Link>
         </Button>
       </div>

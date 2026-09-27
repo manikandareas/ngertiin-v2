@@ -1,8 +1,8 @@
-import { ArrowUp02Icon } from "@hugeicons/core-free-icons";
+import { ArrowUp02Icon, SquareIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import type { ChatAttachment, ChatMention } from "@ngertiin/contracts/api";
 import type { JSONContent } from "@tiptap/react";
-import { Square } from "lucide-react";
+
 import { lazy, Suspense, useState } from "react";
 import { Button } from "../../../components/ui/button";
 import type { TokenResolver } from "../../../lib/api";
@@ -148,7 +148,12 @@ export function ChatComposer({
                 onClick={onCancel}
                 disabled={cancelling}
               >
-                <Square className="fill-current" aria-hidden="true" />
+                <HugeiconsIcon
+                  icon={SquareIcon}
+                  strokeWidth={1.5}
+                  className="fill-current"
+                  aria-hidden="true"
+                />
               </Button>
             ) : (
               <Button

@@ -1,7 +1,7 @@
-import { Chat01Icon, Search01Icon } from "@hugeicons/core-free-icons";
+import { Add01Icon, Chat01Icon, HistoryIcon, Search01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useQueryClient } from "@tanstack/react-query";
-import { History, Plus } from "lucide-react";
+
 import { Popover } from "radix-ui";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
@@ -43,7 +43,12 @@ export function ChatHistoryPopover({ moduleId }: { moduleId?: string | null }) {
           className="h-7 gap-1.5 px-1.5 text-xs text-muted-foreground capitalize"
           aria-label="Riwayat chat"
         >
-          <History className="size-3.5" aria-hidden="true" />
+          <HugeiconsIcon
+            icon={HistoryIcon}
+            strokeWidth={1.5}
+            className="size-3.5"
+            aria-hidden="true"
+          />
           <span className="hidden sm:inline">Riwayat</span>
         </Button>
       </Popover.Trigger>
@@ -74,7 +79,12 @@ export function ChatHistoryPopover({ moduleId }: { moduleId?: string | null }) {
                 }}
                 aria-label="Chat baru"
               >
-                <Plus className="size-5" aria-hidden="true" />
+                <HugeiconsIcon
+                  icon={Add01Icon}
+                  strokeWidth={1.5}
+                  className="size-5"
+                  aria-hidden="true"
+                />
               </Link>
             </Button>
           </div>
@@ -120,7 +130,7 @@ export function ChatHistoryPopover({ moduleId }: { moduleId?: string | null }) {
                 to={`/chat/${thread.id}`}
                 onClick={() => setOpen(false)}
                 aria-current={thread.id === threadId ? "page" : undefined}
-                className="flex items-center gap-3 rounded-lg px-2 py-3 hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring aria-[current=page]:bg-accent"
+                className="flex items-center gap-3 rounded-lg px-2 py-3 hover:bg-accent hover:text-accent-foreground hover:[&_svg]:text-current hover:[&_time]:text-current focus-visible:outline-2 focus-visible:outline-ring aria-[current=page]:bg-accent aria-[current=page]:text-accent-foreground aria-[current=page]:[&_svg]:text-current aria-[current=page]:[&_time]:text-current"
               >
                 <HugeiconsIcon
                   icon={Chat01Icon}

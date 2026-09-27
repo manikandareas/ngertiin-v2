@@ -1,6 +1,12 @@
-import { BulbIcon, Chat01Icon, TextAlignLeftIcon } from "@hugeicons/core-free-icons";
+import {
+  BookOpen01Icon,
+  BulbIcon,
+  Chat01Icon,
+  Layers01Icon,
+  TaskDone01Icon,
+  TextAlignLeftIcon,
+} from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { BookOpen, Layers, ListChecks } from "lucide-react";
 
 type ChatSuggestionsProps = {
   onSuggest: (text: string) => void;
@@ -47,7 +53,7 @@ const primarySuggestions = [
 
 const extraSuggestions = [
   {
-    icon: BookOpen,
+    icon: BookOpen01Icon,
     iconClassName: "bg-success-subtle text-success-foreground",
     label: "Susun rencana belajar",
     standalonePrompt:
@@ -55,7 +61,7 @@ const extraSuggestions = [
     modulePrompt: "Buatkan rencana belajar untuk materi ini",
   },
   {
-    icon: ListChecks,
+    icon: TaskDone01Icon,
     iconClassName: "bg-adaptive-subtle text-adaptive-foreground",
     label: "Uji pemahamanku",
     standalonePrompt:
@@ -63,7 +69,7 @@ const extraSuggestions = [
     modulePrompt: "Uji pemahamanku tentang materi ini, satu pertanyaan setiap kali",
   },
   {
-    icon: Layers,
+    icon: Layers01Icon,
     iconClassName: "bg-secondary text-secondary-foreground",
     label: "Buat kartu belajar",
     standalonePrompt:
@@ -132,7 +138,8 @@ export function ChatSuggestions({
             }
             className={suggestionChipClassName}
           >
-            <suggestion.icon
+            <HugeiconsIcon
+              icon={suggestion.icon}
               className={`size-7 shrink-0 rounded-full p-1.5 ${suggestion.iconClassName}`}
               strokeWidth={1.5}
               aria-hidden="true"

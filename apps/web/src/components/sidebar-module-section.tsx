@@ -1,6 +1,6 @@
-import { Chat01Icon } from "@hugeicons/core-free-icons";
+import { Chat01Icon, File01Icon, MapsIcon, NoteEditIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { FileText, Map as MapIcon, NotebookPen } from "lucide-react";
+
 import { Link, useLocation, useMatch } from "react-router-dom";
 import { useCurrentUser } from "../features/current-user/api/use-current-user";
 import { useJourney, useModule } from "../features/modules/api/use-modules";
@@ -61,7 +61,12 @@ export function SidebarModuleSection({
               }
               className={`${sidebarNavItemClass} ${collapsed ? "justify-center px-0" : ""}`}
             >
-              <MapIcon className="size-[18px] shrink-0" strokeWidth={1.5} aria-hidden="true" />
+              <HugeiconsIcon
+                icon={MapsIcon}
+                className="size-[18px] shrink-0"
+                strokeWidth={1.5}
+                aria-hidden="true"
+              />
               <span className={collapsed ? "sr-only" : "truncate"}>Journey</span>
             </Link>
 
@@ -88,7 +93,8 @@ export function SidebarModuleSection({
                 }
                 className={`${sidebarNavItemClass} ${collapsed ? "justify-center px-0" : ""}`}
               >
-                <NotebookPen
+                <HugeiconsIcon
+                  icon={NoteEditIcon}
                   className="size-[18px] shrink-0"
                   strokeWidth={1.5}
                   aria-hidden="true"
@@ -140,7 +146,12 @@ function ModuleSources({ moduleId, onNavigate }: { moduleId: string; onNavigate?
           title={source.title}
           className="flex min-h-9 min-w-0 items-center gap-3 rounded-lg px-3 text-xs text-muted-foreground hover:bg-muted hover:text-sidebar-foreground focus-visible:outline-2 focus-visible:outline-ring"
         >
-          <FileText className="size-4 shrink-0" strokeWidth={1.5} aria-hidden="true" />
+          <HugeiconsIcon
+            icon={File01Icon}
+            className="size-4 shrink-0"
+            strokeWidth={1.5}
+            aria-hidden="true"
+          />
           <span className="truncate">{source.title}</span>
         </Link>
       ))}

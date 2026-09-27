@@ -1,4 +1,5 @@
-import { Plus } from "lucide-react";
+import { Add01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { parseAsString, parseAsStringLiteral, useQueryStates } from "nuqs";
 import { ContextMenu, DropdownMenu, Tabs } from "radix-ui";
 import { useRef, useState } from "react";
@@ -81,7 +82,8 @@ export function SourceCollection() {
           <DropdownMenu.Root>
             <DropdownMenu.Trigger asChild>
               <Button size="sm" variant="outline">
-                Tambah materi <Plus size={20} aria-hidden="true" />
+                Tambah materi{" "}
+                <HugeiconsIcon icon={Add01Icon} strokeWidth={1.5} size={20} aria-hidden="true" />
               </Button>
             </DropdownMenu.Trigger>
             <DropdownMenu.Portal>

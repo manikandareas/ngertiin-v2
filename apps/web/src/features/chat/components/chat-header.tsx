@@ -63,7 +63,7 @@ export function ChatHeader({ chat, title, busy, onCreate, onFullScreen }: ChatHe
               {chat.list.map((thread) => (
                 <div
                   key={thread.id}
-                  className={`flex items-center rounded-lg ${thread.id === chat.selectedId ? "bg-accent" : ""}`}
+                  className={`flex items-center rounded-lg ${thread.id === chat.selectedId ? "bg-accent text-accent-foreground [&_button]:text-current" : ""}`}
                 >
                   <button
                     type="button"

@@ -1,4 +1,5 @@
-import { LogOut, Settings } from "lucide-react";
+import { Logout01Icon, Settings01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { AlertDialog } from "radix-ui";
 import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
@@ -103,7 +104,7 @@ export function NavUser({
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
           <Link to="/settings">
-            <Settings aria-hidden="true" />
+            <HugeiconsIcon icon={Settings01Icon} strokeWidth={1.5} aria-hidden="true" />
             Pengaturan
           </Link>
         </DropdownMenuItem>
@@ -116,7 +117,7 @@ export function NavUser({
             setConfirmLogout(true);
           }}
         >
-          <LogOut aria-hidden="true" />
+          <HugeiconsIcon icon={Logout01Icon} strokeWidth={1.5} aria-hidden="true" />
           {signingOut ? "Keluar…" : "Keluar"}
         </DropdownMenuItem>
       </DropdownMenuContent>

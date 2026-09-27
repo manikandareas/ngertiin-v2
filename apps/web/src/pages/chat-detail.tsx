@@ -1,6 +1,7 @@
+import { ArrowDown01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { uuidSchema } from "@ngertiin/contracts/api";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronDown } from "lucide-react";
 import { type ReactNode, useMemo } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { AppShell } from "../components/app-shell";
@@ -93,7 +94,14 @@ function ConnectedChatDetailPage() {
           actions={
             thread ? (
               <ChatThreadActions
-                triggerIcon={<ChevronDown className="size-4" aria-hidden="true" />}
+                triggerIcon={
+                  <HugeiconsIcon
+                    icon={ArrowDown01Icon}
+                    strokeWidth={1.5}
+                    className="size-4"
+                    aria-hidden="true"
+                  />
+                }
                 thread={thread}
                 api={chat.api}
                 root={chat.root}

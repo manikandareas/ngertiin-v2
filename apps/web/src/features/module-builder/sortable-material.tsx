@@ -1,8 +1,8 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Settings04Icon } from "@hugeicons/core-free-icons";
+import { DragDropVerticalIcon, Settings04Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { GripVertical } from "lucide-react";
+
 import { useReducedMotion } from "motion/react";
 import { Button } from "../../components/ui/button";
 import { SourceItemContent } from "../sources/source-item-content";
@@ -53,7 +53,12 @@ export function SortableMaterial({
           disabled={disabled}
           className="flex h-8 touch-none items-center gap-1 rounded-sm px-1 text-xs font-semibold tabular-nums text-muted-foreground cursor-grab focus-visible:outline-2 focus-visible:outline-ring active:cursor-grabbing"
         >
-          <GripVertical size={16} aria-hidden="true" />
+          <HugeiconsIcon
+            icon={DragDropVerticalIcon}
+            strokeWidth={1.5}
+            size={16}
+            aria-hidden="true"
+          />
           {String(index + 1).padStart(2, "0")}
         </button>
         <span className="text-xs text-muted-foreground">

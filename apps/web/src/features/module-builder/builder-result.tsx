@@ -1,5 +1,6 @@
+import { Clock01Icon, Layers01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import type { ModuleSummary } from "@ngertiin/contracts/api";
-import { Clock3, Layers } from "lucide-react";
 import type { JSX } from "react";
 import { BuilderJourneyPreview } from "./builder-journey-preview";
 
@@ -31,13 +32,23 @@ export function BuilderResult({ module }: BuilderResultProps): JSX.Element {
           ) : null}
           {module.progress ? (
             <span className="flex items-center gap-2">
-              <Layers aria-hidden="true" className="size-4" />
+              <HugeiconsIcon
+                icon={Layers01Icon}
+                strokeWidth={1.5}
+                aria-hidden="true"
+                className="size-4"
+              />
               {module.progress.totalCoreNodes} node utama
             </span>
           ) : null}
           {module.estimatedMinutes ? (
             <span className="flex items-center gap-2">
-              <Clock3 aria-hidden="true" className="size-4" />
+              <HugeiconsIcon
+                icon={Clock01Icon}
+                strokeWidth={1.5}
+                aria-hidden="true"
+                className="size-4"
+              />
               {module.estimatedMinutes} menit
             </span>
           ) : null}

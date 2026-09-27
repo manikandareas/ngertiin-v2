@@ -1,6 +1,13 @@
-import { BookOpen01Icon, Search01Icon } from "@hugeicons/core-free-icons";
+import {
+  Add01Icon,
+  ArrowLeftRightIcon,
+  ArrowUpRight01Icon,
+  BookOpen01Icon,
+  Cancel01Icon,
+  Search01Icon,
+} from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { ArrowLeftRight, ArrowUpRight, Plus, X } from "lucide-react";
+
 import { Popover } from "radix-ui";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
@@ -71,7 +78,12 @@ export function ModuleSwitcher({
           <span className="min-w-0 flex-1 truncate text-left text-[13px] font-semibold">
             {title}
           </span>
-          <ArrowLeftRight className="size-4 shrink-0" aria-hidden="true" />
+          <HugeiconsIcon
+            icon={ArrowLeftRightIcon}
+            strokeWidth={1.5}
+            className="size-4 shrink-0"
+            aria-hidden="true"
+          />
         </>
       ) : null}
     </button>
@@ -101,17 +113,27 @@ export function ModuleSwitcher({
       <Link
         to="/modules"
         onClick={close}
-        className="flex min-h-11 xl:min-h-9 shrink-0 items-center gap-2 rounded-lg px-2.5 text-[13px] hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring"
+        className="flex min-h-11 xl:min-h-9 shrink-0 items-center gap-2 rounded-lg px-2.5 text-[13px] hover:bg-accent hover:text-accent-foreground focus-visible:outline-2 focus-visible:outline-ring"
       >
-        <ArrowUpRight className="size-4 text-muted-foreground" aria-hidden="true" />
+        <HugeiconsIcon
+          icon={ArrowUpRight01Icon}
+          strokeWidth={1.5}
+          className="size-4 text-muted-foreground"
+          aria-hidden="true"
+        />
         Lihat semua
       </Link>
       <Link
         to="/modules/new"
         onClick={close}
-        className="flex min-h-11 xl:min-h-9 shrink-0 items-center gap-2 rounded-lg px-2.5 text-[13px] hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring"
+        className="flex min-h-11 xl:min-h-9 shrink-0 items-center gap-2 rounded-lg px-2.5 text-[13px] hover:bg-accent hover:text-accent-foreground focus-visible:outline-2 focus-visible:outline-ring"
       >
-        <Plus className="size-4 text-muted-foreground" aria-hidden="true" />
+        <HugeiconsIcon
+          icon={Add01Icon}
+          strokeWidth={1.5}
+          className="size-4 text-muted-foreground"
+          aria-hidden="true"
+        />
         Buat baru
       </Link>
     </>
@@ -150,7 +172,12 @@ export function ModuleSwitcher({
                   aria-label="Tutup pilihan modul"
                   className="absolute right-2 top-1 size-11"
                 >
-                  <X className="size-4" aria-hidden="true" />
+                  <HugeiconsIcon
+                    icon={Cancel01Icon}
+                    strokeWidth={1.5}
+                    className="size-4"
+                    aria-hidden="true"
+                  />
                 </Button>
               </DrawerClose>
             </DrawerHeader>
@@ -217,7 +244,7 @@ function ModuleOptions({
             onNavigate();
           }}
           aria-current={item.id === selectedId ? "page" : undefined}
-          className="flex min-h-11 items-center gap-2 rounded-lg px-2.5 py-1.5 hover:bg-muted aria-[current=page]:bg-accent focus-visible:outline-2 focus-visible:outline-ring"
+          className="flex min-h-11 items-center gap-2 rounded-lg px-2.5 py-1.5 hover:bg-muted aria-[current=page]:bg-accent aria-[current=page]:text-accent-foreground aria-[current=page]:[&_time]:text-current focus-visible:outline-2 focus-visible:outline-ring"
         >
           <ModuleGlyph imageUrl={item.imageUrl} />
           <span className="min-w-0">

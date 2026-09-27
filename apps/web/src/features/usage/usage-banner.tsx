@@ -1,6 +1,6 @@
-import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
+import { ArrowRight01Icon, InformationCircleIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Info } from "lucide-react";
+
 import { Tooltip } from "radix-ui";
 import { useState } from "react";
 import { Link } from "react-router-dom";
@@ -110,7 +110,12 @@ function UsageInfoTooltip() {
             onClick={() => setOpen(!open)}
             className="-my-1 inline-grid size-6 shrink-0 place-items-center rounded-full hover:bg-primary-foreground/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-foreground"
           >
-            <Info className="size-3" aria-hidden="true" />
+            <HugeiconsIcon
+              icon={InformationCircleIcon}
+              strokeWidth={1.5}
+              className="size-3"
+              aria-hidden="true"
+            />
           </button>
         </Tooltip.Trigger>
         <Tooltip.Portal>

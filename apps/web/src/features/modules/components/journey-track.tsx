@@ -1,5 +1,6 @@
+import { ArrowRight02Icon, ArrowUp01Icon, PlayIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import type { JourneySummary } from "@ngertiin/contracts/api";
-import { ArrowRight, ChevronUp, Play } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "../../../components/ui/button";
@@ -72,9 +73,14 @@ export function JourneyTrack({ data, canLearn }: { data: JourneySummary; canLear
               />
               <span
                 aria-hidden="true"
-                className="relative grid size-9 shrink-0 -rotate-6 place-items-center rounded-xl border border-primary/20 bg-accent text-link shadow-[0_2px_0_var(--primary-edge)]"
+                className="relative grid size-9 shrink-0 -rotate-6 place-items-center rounded-xl border border-primary/20 bg-accent text-accent-foreground shadow-[0_2px_0_var(--primary-edge)]"
               >
-                <Play className="ml-0.5 size-4 fill-current" />
+                <HugeiconsIcon
+                  icon={PlayIcon}
+                  strokeWidth={1.5}
+                  aria-hidden="true"
+                  className="ml-0.5 size-4 fill-current"
+                />
               </span>
               <p
                 className="min-w-0 flex-1 line-clamp-2 text-sm font-bold leading-5"
@@ -89,7 +95,7 @@ export function JourneyTrack({ data, canLearn }: { data: JourneySummary; canLear
               >
                 <Link to={destination}>
                   {resume ? "Lanjutkan" : "Mulai"}
-                  <ArrowRight aria-hidden="true" />
+                  <HugeiconsIcon icon={ArrowRight02Icon} strokeWidth={1.5} aria-hidden="true" />
                 </Link>
               </Button>
             </section>
@@ -101,7 +107,7 @@ export function JourneyTrack({ data, canLearn }: { data: JourneySummary; canLear
               className="rounded-full"
               aria-label="Kembali ke node belajar saat ini"
             >
-              <ChevronUp aria-hidden="true" />
+              <HugeiconsIcon icon={ArrowUp01Icon} strokeWidth={1.5} aria-hidden="true" />
             </Button>
           )}
         </div>

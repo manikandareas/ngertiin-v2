@@ -1,19 +1,20 @@
 import {
+  Alert02Icon,
+  ArrowDown01Icon,
+  GlobalIcon,
+  Loading03Icon,
+  PauseCircleIcon,
+  StopCircleIcon,
+  Tick02Icon,
+  Wrench01Icon,
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import {
   type ChatActivity,
   type ChatInteraction,
   type ChatRunStatus,
   isChatRunActive,
 } from "@ngertiin/contracts/api";
-import {
-  Check,
-  ChevronDown,
-  CirclePause,
-  CircleStop,
-  Globe,
-  LoaderCircle,
-  TriangleAlert,
-  Wrench,
-} from "lucide-react";
 import { useEffect, useState } from "react";
 import {
   Collapsible,
@@ -26,11 +27,11 @@ import { ChatMascot } from "./chat-mascot";
 import { ToolResultViewport } from "./chat-tool-result-viewport";
 
 const activityStates = {
-  running: { icon: LoaderCircle, label: "Sedang berjalan" },
-  completed: { icon: Check, label: "Selesai" },
-  waiting: { icon: CirclePause, label: "Menunggu jawabanmu" },
-  cancelled: { icon: CircleStop, label: "Dihentikan" },
-  failed: { icon: TriangleAlert, label: "Tidak selesai" },
+  running: { icon: Loading03Icon, label: "Sedang berjalan" },
+  completed: { icon: Tick02Icon, label: "Selesai" },
+  waiting: { icon: PauseCircleIcon, label: "Menunggu jawabanmu" },
+  cancelled: { icon: StopCircleIcon, label: "Dihentikan" },
+  failed: { icon: Alert02Icon, label: "Tidak selesai" },
 };
 
 export function ChatActivityTrace({
@@ -84,7 +85,9 @@ export function ChatActivityTrace({
         {label}
       </span>
       {hasDetails ? (
-        <ChevronDown
+        <HugeiconsIcon
+          icon={ArrowDown01Icon}
+          strokeWidth={1.5}
           aria-hidden
           className={`size-3.5 shrink-0 transition-[transform,opacity] motion-reduce:transition-none ${expanded ? "rotate-180" : ""} ${working || expanded ? "opacity-100" : "opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100"}`}
         />
@@ -138,12 +141,21 @@ export function ChatActivityTrace({
                     : "failed"
                 : item.status;
             const Icon =
-              state === "running" ? LoaderCircle : item.kind === "search" ? Globe : Wrench;
+              state === "running"
+                ? Loading03Icon
+                : item.kind === "search"
+                  ? GlobalIcon
+                  : Wrench01Icon;
             const title = item.query ? `${item.label}: “${item.query}”` : item.label;
             if (!item.text && !item.results?.length && state !== "running") {
               return (
                 <div key={item.id} title={title} className="flex min-h-8 items-center gap-2 py-1">
-                  <Icon aria-hidden className="size-4 shrink-0" />
+                  <HugeiconsIcon
+                    icon={Icon}
+                    strokeWidth={1.5}
+                    aria-hidden
+                    className="size-4 shrink-0"
+                  />
                   <span className="min-w-0 flex-1 truncate">{title}</span>
                   <span className="sr-only">{activityStates[state].label}</span>
                   {state !== "completed" ? (
@@ -158,7 +170,9 @@ export function ChatActivityTrace({
                   title={title}
                   className="flex min-h-8 cursor-pointer list-none items-center gap-2 rounded-md py-1 hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring [&::-webkit-details-marker]:hidden"
                 >
-                  <Icon
+                  <HugeiconsIcon
+                    icon={Icon}
+                    strokeWidth={1.5}
                     aria-hidden
                     className={`size-4 shrink-0 ${state === "running" ? "motion-safe:animate-spin" : ""}`}
                   />
@@ -168,7 +182,9 @@ export function ChatActivityTrace({
                   ) : (
                     <span className="sr-only">{activityStates[state].label}</span>
                   )}
-                  <ChevronDown
+                  <HugeiconsIcon
+                    icon={ArrowDown01Icon}
+                    strokeWidth={1.5}
                     aria-hidden
                     className="group-open/tool:rotate-180 size-3.5 shrink-0"
                   />

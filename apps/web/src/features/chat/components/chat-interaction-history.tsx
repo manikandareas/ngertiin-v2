@@ -1,5 +1,6 @@
+import { ArrowDown01Icon, Chat01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import type { ChatInteraction } from "@ngertiin/contracts/api";
-import { ChevronDown, MessageCircle } from "lucide-react";
 import { ToolResultViewport } from "./chat-tool-result-viewport";
 
 export function InteractionHistory({ interaction }: { interaction: ChatInteraction }) {
@@ -15,10 +16,20 @@ export function InteractionHistory({ interaction }: { interaction: ChatInteracti
   return (
     <details className="group/tool">
       <summary className="flex min-h-8 cursor-pointer list-none items-center gap-2 rounded-md py-1 hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring [&::-webkit-details-marker]:hidden">
-        <MessageCircle aria-hidden className="size-4 shrink-0" />
+        <HugeiconsIcon
+          icon={Chat01Icon}
+          strokeWidth={1.5}
+          aria-hidden
+          className="size-4 shrink-0"
+        />
         <span className="min-w-0 flex-1 truncate">{title}</span>
         <span className="text-xs">{status}</span>
-        <ChevronDown aria-hidden className="group-open/tool:rotate-180 size-3.5 shrink-0" />
+        <HugeiconsIcon
+          icon={ArrowDown01Icon}
+          strokeWidth={1.5}
+          aria-hidden
+          className="group-open/tool:rotate-180 size-3.5 shrink-0"
+        />
       </summary>
       <ToolResultViewport>
         <dl className="space-y-3">

@@ -1,8 +1,13 @@
 import { useClerk, useUser } from "@clerk/react";
-import { SidebarLeftIcon, SidebarRightIcon } from "@hugeicons/core-free-icons";
+import {
+  Cancel01Icon,
+  Menu01Icon,
+  SidebarLeftIcon,
+  SidebarRightIcon,
+} from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Menu, X } from "lucide-react";
+
 import { Dialog } from "radix-ui";
 import { type ReactNode, useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
@@ -136,7 +141,7 @@ export function AppSidebar({
               aria-label="Buka menu navigasi"
               className={`grid size-11 shrink-0 place-items-center rounded-lg hover:bg-sidebar-accent/50 ${focus}`}
             >
-              <Menu size={22} aria-hidden="true" />
+              <HugeiconsIcon icon={Menu01Icon} strokeWidth={1.5} size={22} aria-hidden="true" />
             </button>
           </Dialog.Trigger>
           <Dialog.Portal>
@@ -156,7 +161,12 @@ export function AppSidebar({
                     aria-label="Tutup menu"
                     className={`grid size-11 shrink-0 place-items-center rounded-lg hover:bg-sidebar-accent/50 ${focus}`}
                   >
-                    <X size={20} aria-hidden="true" />
+                    <HugeiconsIcon
+                      icon={Cancel01Icon}
+                      strokeWidth={1.5}
+                      size={20}
+                      aria-hidden="true"
+                    />
                   </button>
                 </Dialog.Close>
               </div>

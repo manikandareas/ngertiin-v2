@@ -1,5 +1,6 @@
+import { ArrowRight01Icon, BookOpen01Icon, Clock01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import type { ModuleSummary } from "@ngertiin/contracts/api";
-import { BookOpen, ChevronRight, Clock3 } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "../../../components/ui/button";
@@ -57,7 +58,12 @@ export function ModuleCard({ module }: { module: ModuleSummary }) {
       <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
         {module.estimatedMinutes ? (
           <span className={`${badge} ${moduleDurationTone} tabular-nums`}>
-            <Clock3 aria-hidden="true" className="size-3.5 shrink-0" />
+            <HugeiconsIcon
+              icon={Clock01Icon}
+              strokeWidth={1.5}
+              aria-hidden="true"
+              className="size-3.5 shrink-0"
+            />
             {module.estimatedMinutes} menit
           </span>
         ) : null}
@@ -76,7 +82,12 @@ export function ModuleCard({ module }: { module: ModuleSummary }) {
       <div className="mt-auto flex items-center justify-between gap-3 pt-4">
         {progress ? (
           <span className="inline-flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground tabular-nums">
-            <BookOpen aria-hidden="true" className="size-3.5 shrink-0" />
+            <HugeiconsIcon
+              icon={BookOpen01Icon}
+              strokeWidth={1.5}
+              aria-hidden="true"
+              className="size-3.5 shrink-0"
+            />
             {progress.completedCoreNodes}/{progress.totalCoreNodes} materi
           </span>
         ) : null}
@@ -91,7 +102,7 @@ export function ModuleCard({ module }: { module: ModuleSummary }) {
                 : "Lihat status"
             }
           >
-            <ChevronRight aria-hidden="true" />
+            <HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={1.5} aria-hidden="true" />
           </Link>
         </Button>
       </div>

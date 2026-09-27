@@ -1,7 +1,14 @@
-import { Book02Icon, File01Icon } from "@hugeicons/core-free-icons";
+import {
+  ArrowDown01Icon,
+  ArrowUpRight01Icon,
+  Book02Icon,
+  Copy01Icon,
+  File01Icon,
+  Tick02Icon,
+} from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import type { ChatCitation, ChatImage } from "@ngertiin/contracts/api";
-import { ArrowUpRight, Check, ChevronDown, Copy } from "lucide-react";
+
 import { useState } from "react";
 import { toast } from "sonner";
 import { fileChipClassName } from "../../../components/ui/file-chip";
@@ -76,7 +83,21 @@ export function ChatCitedAnswer({
             className="flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground active:scale-95"
             onClick={copyAnswer}
           >
-            {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+            {copied ? (
+              <HugeiconsIcon
+                icon={Tick02Icon}
+                strokeWidth={1.5}
+                aria-hidden="true"
+                className="size-3.5"
+              />
+            ) : (
+              <HugeiconsIcon
+                icon={Copy01Icon}
+                strokeWidth={1.5}
+                aria-hidden="true"
+                className="size-3.5"
+              />
+            )}
           </button>
           {citations.length > 0 ? (
             <button
@@ -88,7 +109,10 @@ export function ChatCitedAnswer({
             >
               <HugeiconsIcon icon={Book02Icon} size={14} aria-hidden="true" />
               {citations.length} sumber
-              <ChevronDown
+              <HugeiconsIcon
+                icon={ArrowDown01Icon}
+                strokeWidth={1.5}
+                aria-hidden="true"
                 className={`size-3 transition-transform motion-reduce:transition-none ${sourcesOpen ? "rotate-180" : ""}`}
               />
             </button>
@@ -145,7 +169,9 @@ export function ChatCitedAnswer({
               <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">
                 {index + 1}
               </span>
-              <ArrowUpRight
+              <HugeiconsIcon
+                icon={ArrowUpRight01Icon}
+                strokeWidth={1.5}
                 className="size-3.5 shrink-0 text-muted-foreground"
                 aria-hidden="true"
               />

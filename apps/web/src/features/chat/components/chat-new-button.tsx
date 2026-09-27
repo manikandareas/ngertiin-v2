@@ -1,6 +1,7 @@
 import { useAuth } from "@clerk/react";
+import { Add01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "../../../components/ui/button";
 import { patchChatSession } from "../chat-session";
@@ -32,7 +33,7 @@ export function ChatNewButton({ iconOnly = false }: { iconOnly?: boolean }) {
         }
       >
         {iconOnly ? (
-          <Plus className="size-5" />
+          <HugeiconsIcon icon={Add01Icon} strokeWidth={1.5} aria-hidden="true" className="size-5" />
         ) : (
           <>
             <span aria-hidden="true" className="flex size-7 shrink-0 items-center justify-center">

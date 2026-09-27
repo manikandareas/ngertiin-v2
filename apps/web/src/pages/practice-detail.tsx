@@ -1,6 +1,7 @@
 import { useAuth } from "@clerk/react";
+import { ArrowLeft02Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { AppShell } from "../components/app-shell";
@@ -59,7 +60,13 @@ export default function PracticeDetailPage() {
           to={`/modules/${moduleId}/practice`}
           className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
         >
-          <ArrowLeft className="size-4" /> Kembali ke Latihan
+          <HugeiconsIcon
+            icon={ArrowLeft02Icon}
+            strokeWidth={1.5}
+            aria-hidden="true"
+            className="size-4"
+          />{" "}
+          Kembali ke Latihan
         </Link>
         {practice.isPending ? (
           <p role="status" className="mt-8 text-sm text-muted-foreground">

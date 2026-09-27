@@ -1,6 +1,7 @@
+import { SquareLock01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { chatMentionSchema } from "@ngertiin/contracts/api";
 import { Node, type NodeViewProps, NodeViewWrapper, ReactNodeViewRenderer } from "@tiptap/react";
-import { LockKeyhole } from "lucide-react";
 
 function MentionChip({ node, deleteNode, editor }: NodeViewProps) {
   return (
@@ -17,7 +18,12 @@ function MentionChip({ node, deleteNode, editor }: NodeViewProps) {
           className="px-0.5 text-muted-foreground"
           aria-label="Konteks halaman terkunci"
         >
-          <LockKeyhole className="size-3" aria-hidden="true" />
+          <HugeiconsIcon
+            icon={SquareLock01Icon}
+            strokeWidth={1.5}
+            className="size-3"
+            aria-hidden="true"
+          />
         </span>
       ) : (
         <button

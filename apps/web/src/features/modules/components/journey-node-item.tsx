@@ -1,5 +1,14 @@
+import {
+  BookOpen01Icon,
+  Flag01Icon,
+  Layers01Icon,
+  PlayIcon,
+  SparklesIcon,
+  SquareLock01Icon,
+  Tick02Icon,
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import type { JourneyNode } from "@ngertiin/contracts/api";
-import { BookOpen, Check, Flag, Layers, LockKeyhole, Play, Sparkles } from "lucide-react";
 import type { Ref } from "react";
 import { Link } from "react-router-dom";
 import { cn } from "../../../lib/utils";
@@ -13,14 +22,14 @@ const statusLabel = {
 } as const;
 
 const nodeTypes = {
-  lesson: { label: "Materi", icon: BookOpen },
-  flashcard: { label: "Kartu belajar", icon: Layers },
-  quiz: { label: "Kuis", icon: Flag },
-  checkpoint: { label: "Evaluasi", icon: Flag },
-  review: { label: "Ulasan", icon: BookOpen },
-  practice: { label: "Latihan", icon: BookOpen },
-  remedial_quiz: { label: "Kuis remedial", icon: Flag },
-} satisfies Record<JourneyNode["type"], { label: string; icon: typeof BookOpen }>;
+  lesson: { label: "Materi", icon: BookOpen01Icon },
+  flashcard: { label: "Kartu belajar", icon: Layers01Icon },
+  quiz: { label: "Kuis", icon: Flag01Icon },
+  checkpoint: { label: "Evaluasi", icon: Flag01Icon },
+  review: { label: "Ulasan", icon: BookOpen01Icon },
+  practice: { label: "Latihan", icon: BookOpen01Icon },
+  remedial_quiz: { label: "Kuis remedial", icon: Flag01Icon },
+} satisfies Record<JourneyNode["type"], { label: string; icon: typeof BookOpen01Icon }>;
 
 const nodeOffsets = ["ml-[15%]", "mr-[15%]", "ml-[15%]", "ml-[20%] md:ml-[27%]"];
 
@@ -41,10 +50,10 @@ export function JourneyNodeItem({
   const completed = node.progress.status === "completed";
   const adaptive = node.origin === "adaptive";
   const evaluation = ["quiz", "checkpoint", "remedial_quiz"].includes(node.type);
-  let Icon = adaptive && !evaluation ? Sparkles : nodeTypes[node.type].icon;
-  if (current) Icon = Play;
-  if (completed) Icon = Check;
-  if (locked) Icon = LockKeyhole;
+  let Icon = adaptive && !evaluation ? SparklesIcon : nodeTypes[node.type].icon;
+  if (current) Icon = PlayIcon;
+  if (completed) Icon = Tick02Icon;
+  if (locked) Icon = SquareLock01Icon;
 
   return (
     <li
@@ -89,7 +98,12 @@ export function JourneyNodeItem({
                   : "bg-success text-[#234700] shadow-[-8px_8px_22px_color-mix(in_srgb,var(--success)_20%,transparent)]",
               )}
             >
-              <Play className="size-5 rotate-45 fill-current" />
+              <HugeiconsIcon
+                icon={PlayIcon}
+                strokeWidth={1.5}
+                aria-hidden="true"
+                className="size-5 rotate-45 fill-current"
+              />
             </span>
           ) : null}
           <span
@@ -98,7 +112,7 @@ export function JourneyNodeItem({
               adaptive && "border-dashed",
             )}
           >
-            <Icon className="size-6" />
+            <HugeiconsIcon icon={Icon} strokeWidth={1.5} aria-hidden="true" className="size-6" />
           </span>
         </span>
         <span className="min-w-0">

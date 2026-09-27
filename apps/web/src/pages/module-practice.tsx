@@ -1,4 +1,5 @@
-import { Plus } from "lucide-react";
+import { Add01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { parseAsString, parseAsStringLiteral, useQueryStates } from "nuqs";
 import { Link, useParams } from "react-router-dom";
 import { AppShell } from "../components/app-shell";
@@ -52,7 +53,8 @@ export default function ModulePracticePage() {
           <Link
             to={`/chat?moduleId=${moduleId}&draft=${encodeURIComponent("Buatkan latihan dari materi modul ini")}`}
           >
-            Buat latihan <Plus size={20} aria-hidden="true" />
+            Buat latihan{" "}
+            <HugeiconsIcon icon={Add01Icon} strokeWidth={1.5} size={20} aria-hidden="true" />
           </Link>
         </Button>
       </header>

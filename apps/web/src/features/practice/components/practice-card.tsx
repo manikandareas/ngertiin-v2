@@ -1,21 +1,27 @@
+import {
+  ArrowUpRight01Icon,
+  BookOpen01Icon,
+  Layers01Icon,
+  Task01Icon,
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import type { PracticeSummary } from "@ngertiin/contracts/api";
-import { ArrowUpRight, BookOpen, ClipboardList, Layers3 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Card } from "../../../components/ui/card";
 import { cn } from "../../../lib/utils";
 import { PracticeCardPreview } from "./practice-card-preview";
 
 const kinds = {
-  quiz: { label: "Kuis", icon: ClipboardList, accent: "text-primary", ink: "text-link" },
+  quiz: { label: "Kuis", icon: Task01Icon, accent: "text-primary", ink: "text-link" },
   flashcard: {
     label: "Flashcard",
-    icon: Layers3,
+    icon: Layers01Icon,
     accent: "text-[var(--flashcard-lavender-ink)]",
     ink: "text-[var(--flashcard-lavender-ink)]",
   },
   exam: {
     label: "Exam",
-    icon: BookOpen,
+    icon: BookOpen01Icon,
     accent: "text-adaptive-edge",
     ink: "text-adaptive-foreground",
   },
@@ -44,7 +50,12 @@ export function PracticeCard({
         <PracticeCardPreview practice={practice} />
       </div>
       <div className="flex min-w-0 items-center gap-3 px-1.5 pt-4 pb-3">
-        <KindIcon className={cn("size-5 shrink-0", kind.accent)} aria-hidden="true" />
+        <HugeiconsIcon
+          icon={KindIcon}
+          strokeWidth={1.5}
+          className={cn("size-5 shrink-0", kind.accent)}
+          aria-hidden="true"
+        />
         <div className="min-w-0 flex-1">
           <h2 className="truncate text-base font-semibold tracking-tight" title={practice.title}>
             {linked ? (
@@ -66,7 +77,12 @@ export function PracticeCard({
           </p>
         </div>
         {linked ? (
-          <ArrowUpRight className={cn("size-5 shrink-0", kind.ink)} aria-hidden="true" />
+          <HugeiconsIcon
+            icon={ArrowUpRight01Icon}
+            strokeWidth={1.5}
+            className={cn("size-5 shrink-0", kind.ink)}
+            aria-hidden="true"
+          />
         ) : null}
       </div>
       <time className="sr-only" dateTime={practice.createdAt}>

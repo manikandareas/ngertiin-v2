@@ -1,4 +1,11 @@
-import { Check, Info, LoaderCircle, TriangleAlert, X } from "lucide-react";
+import {
+  Alert02Icon,
+  Cancel01Icon,
+  InformationCircleIcon,
+  Loading03Icon,
+  Tick02Icon,
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { Toaster as Sonner } from "sonner";
 import { useTheme } from "../theme-provider";
 
@@ -20,12 +27,29 @@ export function Toaster() {
       closeButton
       containerAriaLabel="Notifikasi"
       icons={{
-        success: <Check size={18} aria-hidden="true" />,
-        error: <X size={18} aria-hidden="true" />,
-        info: <Info size={18} aria-hidden="true" />,
-        warning: <TriangleAlert size={18} aria-hidden="true" />,
-        loading: <LoaderCircle size={18} className="motion-safe:animate-spin" aria-hidden="true" />,
-        close: <X size={14} aria-hidden="true" />,
+        success: <HugeiconsIcon icon={Tick02Icon} strokeWidth={1.5} size={18} aria-hidden="true" />,
+        error: <HugeiconsIcon icon={Cancel01Icon} strokeWidth={1.5} size={18} aria-hidden="true" />,
+        info: (
+          <HugeiconsIcon
+            icon={InformationCircleIcon}
+            strokeWidth={1.5}
+            size={18}
+            aria-hidden="true"
+          />
+        ),
+        warning: (
+          <HugeiconsIcon icon={Alert02Icon} strokeWidth={1.5} size={18} aria-hidden="true" />
+        ),
+        loading: (
+          <HugeiconsIcon
+            icon={Loading03Icon}
+            strokeWidth={1.5}
+            size={18}
+            className="motion-safe:animate-spin"
+            aria-hidden="true"
+          />
+        ),
+        close: <HugeiconsIcon icon={Cancel01Icon} strokeWidth={1.5} size={14} aria-hidden="true" />,
       }}
       toastOptions={{
         unstyled: true,

@@ -1,5 +1,6 @@
+import { ArrowRight02Icon, Clock01Icon, Tick02Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import type { PracticeAttempt, PracticeDetail } from "@ngertiin/contracts/api";
-import { ArrowRight, Check, Clock3 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "../../../components/ui/button";
 
@@ -51,9 +52,19 @@ export function PracticeAttemptHistory({ practice, attempts, pending, failed, on
             >
               <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
                 {attempt.status === "completed" ? (
-                  <Check className="size-4" />
+                  <HugeiconsIcon
+                    icon={Tick02Icon}
+                    strokeWidth={1.5}
+                    aria-hidden="true"
+                    className="size-4"
+                  />
                 ) : (
-                  <Clock3 className="size-4" />
+                  <HugeiconsIcon
+                    icon={Clock01Icon}
+                    strokeWidth={1.5}
+                    aria-hidden="true"
+                    className="size-4"
+                  />
                 )}
               </span>
               <div className="min-w-0 flex-1">
@@ -86,7 +97,12 @@ export function PracticeAttemptHistory({ practice, attempts, pending, failed, on
                   </>
                 )}
               </div>
-              <ArrowRight className="size-4 shrink-0 text-muted-foreground" />
+              <HugeiconsIcon
+                icon={ArrowRight02Icon}
+                strokeWidth={1.5}
+                aria-hidden="true"
+                className="size-4 shrink-0 text-muted-foreground"
+              />
             </Link>
           );
         })}

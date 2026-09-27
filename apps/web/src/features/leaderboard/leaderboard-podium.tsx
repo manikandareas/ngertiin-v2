@@ -1,5 +1,6 @@
+import { CrownIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import type { Leaderboard } from "@ngertiin/contracts/api";
-import { Crown } from "lucide-react";
 import { Badge } from "../../components/ui/badge";
 import { UserAvatar } from "../../components/user-avatar";
 import { cn } from "../../lib/utils";
@@ -39,7 +40,9 @@ export function LeaderboardPodium({ participants, currentUserId }: LeaderboardPo
         {winners.map(({ position, person }) => (
           <div key={position} className="min-w-0 rounded-card text-center">
             {person?.rank === 1 && (
-              <Crown
+              <HugeiconsIcon
+                icon={CrownIcon}
+                strokeWidth={1.5}
                 aria-hidden="true"
                 className="mx-auto mb-3 size-7 -rotate-12 text-adaptive-foreground"
               />

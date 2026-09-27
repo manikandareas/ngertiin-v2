@@ -1,6 +1,6 @@
-import { Chat01Icon, Search01Icon } from "@hugeicons/core-free-icons";
+import { Cancel01Icon, Chat01Icon, Loading03Icon, Search01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { LoaderCircle, X } from "lucide-react";
+
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Button } from "../../../components/ui/button";
@@ -103,7 +103,12 @@ export function ChatSidebarSection({ collapsed = false }: { collapsed?: boolean 
                 aria-label="Tutup pencarian"
                 onClick={closeSearch}
               >
-                <X className="size-4" />
+                <HugeiconsIcon
+                  icon={Cancel01Icon}
+                  strokeWidth={1.5}
+                  aria-hidden="true"
+                  className="size-4"
+                />
               </Button>
             </div>
           ) : null}
@@ -178,7 +183,9 @@ export function ChatSidebarSection({ collapsed = false }: { collapsed?: boolean 
                           <span className="thread-title truncate">{thread.title}</span>
                           {thread.activeRunId ? (
                             <span role="status" className="shrink-0 text-muted-foreground">
-                              <LoaderCircle
+                              <HugeiconsIcon
+                                icon={Loading03Icon}
+                                strokeWidth={1.5}
                                 className="size-3.5 motion-safe:animate-spin"
                                 aria-hidden="true"
                               />

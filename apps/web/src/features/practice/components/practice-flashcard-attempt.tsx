@@ -1,5 +1,6 @@
+import { ArrowLeft02Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import type { PracticeAnswer, PracticeDetail } from "@ngertiin/contracts/api";
-import { ArrowLeft } from "lucide-react";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { AppShell } from "../../../components/app-shell";
@@ -55,7 +56,7 @@ export function PracticeFlashcardAttempt({
               to={`/modules/${practice.moduleId}/practice/${practice.id}`}
               aria-label="Kembali ke detail latihan"
             >
-              <ArrowLeft />
+              <HugeiconsIcon icon={ArrowLeft02Icon} strokeWidth={1.5} aria-hidden="true" />
             </Link>
           </Button>
           <h1 className="min-w-0 flex-1 truncate text-sm font-bold sm:text-center sm:text-base">

@@ -1,10 +1,17 @@
+import {
+  ArrowRight01Icon,
+  File01Icon,
+  GlobalIcon,
+  NoteEditIcon,
+  SparklesIcon,
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import type { Source } from "@ngertiin/contracts/api";
-import { ChevronRight, FileText, Globe2, NotebookPen, Sparkles } from "lucide-react";
 import { sourceItemMetadata, sourceOrigin, sourceTitle, statusLabels } from "./source-presentation";
 
 const paperStyles = {
   pdf: {
-    icon: FileText,
+    icon: File01Icon,
     label: "PDF",
     surface:
       "rounded-[3px_12px_12px_3px] border border-source-book-edge border-l-12 border-l-source-book-spine bg-source-book text-source-book-ink shadow-source-book",
@@ -13,7 +20,7 @@ const paperStyles = {
     title: "mt-8 text-[26px]",
   },
   url: {
-    icon: Globe2,
+    icon: GlobalIcon,
     label: "Web",
     surface:
       "border-8 border-white bg-source-postcard text-source-postcard-ink outline outline-source-postcard-edge shadow-sm",
@@ -22,7 +29,7 @@ const paperStyles = {
     title: "mt-2 text-xl",
   },
   text: {
-    icon: NotebookPen,
+    icon: NoteEditIcon,
     label: "Teks",
     surface:
       "source-note-paper border-t border-source-note-rule bg-source-note text-source-note-ink",
@@ -73,9 +80,14 @@ export function SourcePaper({
             aria-hidden="true"
             className={`bg-source-postcard-dots -mx-2 -mt-2 mb-3 flex shrink-0 items-center justify-around bg-source-postcard-art text-source-postcard-art-ink ${compact ? "h-10" : "h-16"}`}
           >
-            <Sparkles size={20} strokeWidth={1} />
-            <Globe2 size={compact ? 32 : 52} strokeWidth={1} />
-            <Sparkles size={20} strokeWidth={1} />
+            <HugeiconsIcon icon={SparklesIcon} aria-hidden="true" size={20} strokeWidth={1} />
+            <HugeiconsIcon
+              icon={GlobalIcon}
+              aria-hidden="true"
+              size={compact ? 32 : 52}
+              strokeWidth={1}
+            />
+            <HugeiconsIcon icon={SparklesIcon} aria-hidden="true" size={20} strokeWidth={1} />
           </div>
         </>
       ) : null}
@@ -92,7 +104,7 @@ export function SourcePaper({
         </>
       ) : null}
       <span className="flex w-fit shrink-0 items-center gap-1.5 text-[10px] font-black tracking-widest uppercase">
-        <Icon size={15} aria-hidden="true" />
+        <HugeiconsIcon icon={Icon} strokeWidth={1.5} size={15} aria-hidden="true" />
         {style.label}
       </span>
       <h2
@@ -133,7 +145,9 @@ export function SourcePaper({
         className={`mt-auto flex shrink-0 items-center justify-between gap-2 pt-3.5 text-[10px] ${source.type === "url" ? "border-t border-dashed border-source-postcard-rule" : ""}`}
       >
         <span>{sourceItemMetadata(source)}</span>
-        <ChevronRight
+        <HugeiconsIcon
+          icon={ArrowRight01Icon}
+          strokeWidth={1.5}
           className="shrink-0 rounded-full border border-current p-1"
           size={compact ? 24 : 30}
           aria-hidden="true"

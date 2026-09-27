@@ -1,5 +1,6 @@
+import { Cancel01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import type { PublicActivity } from "@ngertiin/contracts/api";
-import { X } from "lucide-react";
 import type { JSX, ReactNode, Ref } from "react";
 import { Link } from "react-router-dom";
 import { ThemeToggle } from "../../../components/theme-toggle";
@@ -47,7 +48,7 @@ export function NodePlayerLayout({
                 aria-label="Keluar dari node dan kembali ke Journey"
                 to={`/modules/${moduleId}/journey`}
               >
-                <X />
+                <HugeiconsIcon icon={Cancel01Icon} strokeWidth={1.5} aria-hidden="true" />
               </Link>
             </Button>
           </div>

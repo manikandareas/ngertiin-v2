@@ -124,7 +124,7 @@ export function ChatMentionMenu({
             data-index={index}
             id={`${id}-${index}`}
             tabIndex={-1}
-            className={`flex w-full min-w-0 items-center gap-2 rounded-lg px-2.5 py-2.5 text-left text-sm ${index === current ? "bg-accent" : "hover:bg-accent/60"}`}
+            className={`flex w-full min-w-0 items-center gap-2 rounded-lg px-2.5 py-2.5 text-left text-sm ${index === current ? "bg-accent text-accent-foreground [&>span]:text-current" : "hover:bg-accent hover:text-accent-foreground hover:[&>span]:text-current"}`}
             onMouseDown={(event) => event.preventDefault()}
             onMouseEnter={() => setSelected(index)}
             onClick={() => onSelect(item.mention)}

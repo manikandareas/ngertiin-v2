@@ -1,4 +1,5 @@
-import { Info } from "lucide-react";
+import { InformationCircleIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { Tooltip } from "radix-ui";
 import { useState } from "react";
 
@@ -17,7 +18,12 @@ export function AdaptiveInfoTooltip() {
               setTooltipOpen(!tooltipOpen);
             }}
           >
-            <Info className="size-4" aria-hidden="true" />
+            <HugeiconsIcon
+              icon={InformationCircleIcon}
+              strokeWidth={1.5}
+              className="size-4"
+              aria-hidden="true"
+            />
           </button>
         </Tooltip.Trigger>
         <Tooltip.Portal>

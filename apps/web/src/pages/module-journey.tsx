@@ -1,4 +1,5 @@
-import { Archive } from "lucide-react";
+import { Archive02Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { useParams } from "react-router-dom";
 import { AppShell } from "../components/app-shell";
 import { Button } from "../components/ui/button";
@@ -74,7 +75,7 @@ export default function ModuleJourneyPage() {
               size="sm"
               className="h-11 px-2 text-xs normal-case text-muted-foreground"
             >
-              <Archive aria-hidden="true" />
+              <HugeiconsIcon icon={Archive02Icon} strokeWidth={1.5} aria-hidden="true" />
               {archive.isPending ? "Mengarsipkan…" : "Arsipkan modul"}
             </Button>
             {archiveError ? (

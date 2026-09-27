@@ -1,5 +1,6 @@
+import { ArrowLeft02Icon, ArrowRight02Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import type { PracticeAnswer, PracticeDetail } from "@ngertiin/contracts/api";
-import { ArrowLeft, ArrowRight } from "lucide-react";
 import { type ReactNode, useRef } from "react";
 import { Link } from "react-router-dom";
 import { AppShell } from "../../../components/app-shell";
@@ -63,7 +64,7 @@ export function PracticeQuizAttempt({
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-2 sm:h-15 sm:gap-4">
           <Button asChild variant="ghost" size="icon" className="size-9 rounded-full">
             <Link to={backTo} aria-label="Kembali ke detail latihan">
-              <ArrowLeft />
+              <HugeiconsIcon icon={ArrowLeft02Icon} strokeWidth={1.5} aria-hidden="true" />
             </Link>
           </Button>
           <div className="flex min-w-0 flex-1 items-center gap-3 sm:justify-center">
@@ -116,7 +117,8 @@ export function PracticeQuizAttempt({
                     disabled={busy || position === 0}
                     onClick={() => moveTo(position - 1)}
                   >
-                    <ArrowLeft /> Sebelumnya
+                    <HugeiconsIcon icon={ArrowLeft02Icon} strokeWidth={1.5} aria-hidden="true" />{" "}
+                    Sebelumnya
                   </Button>
                   <Button
                     size="sm"
@@ -125,7 +127,9 @@ export function PracticeQuizAttempt({
                     onClick={() => (last ? onSubmit() : moveTo(position + 1))}
                   >
                     {nextLabel}
-                    {!last ? <ArrowRight /> : null}
+                    {!last ? (
+                      <HugeiconsIcon icon={ArrowRight02Icon} strokeWidth={1.5} aria-hidden="true" />
+                    ) : null}
                   </Button>
                 </div>
               </footer>

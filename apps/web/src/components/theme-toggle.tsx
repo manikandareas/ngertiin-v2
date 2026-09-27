@@ -1,4 +1,5 @@
-import { Monitor } from "lucide-react";
+import { ComputerIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { useId } from "react";
 import { cn } from "../lib/utils";
 import { useTheme } from "./theme-provider";
@@ -35,7 +36,9 @@ export function ThemeToggle({ variant = "button" }: { variant?: "button" | "menu
         variant === "menu" ? "size-5" : "size-6",
       )}
     >
-      <Monitor
+      <HugeiconsIcon
+        icon={ComputerIcon}
+        aria-hidden="true"
         strokeWidth={1.5}
         className={cn(
           "absolute size-full transition-[transform,opacity] duration-400 ease-out motion-reduce:transition-none",

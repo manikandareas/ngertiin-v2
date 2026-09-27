@@ -140,7 +140,7 @@ export function LessonSpeech({ activityId }: { activityId: string }): JSX.Elemen
         aria-pressed={playing}
         disabled={preparing}
         onClick={togglePlayback}
-        className={`inline-flex h-9 items-center gap-2 rounded-full border px-3.5 text-sm font-semibold normal-case transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-60 ${playing ? "border-secondary-foreground bg-secondary-foreground text-background hover:opacity-90" : "border-secondary-foreground/70 bg-secondary text-secondary-foreground hover:bg-accent"}`}
+        className={`inline-flex h-9 items-center gap-2 rounded-full border px-3.5 text-sm font-semibold normal-case transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-60 ${playing ? "border-secondary-foreground bg-secondary-foreground text-secondary hover:opacity-90" : "border-secondary-foreground/70 bg-secondary text-secondary-foreground hover:bg-accent"}`}
       >
         <HugeiconsIcon icon={VolumeHighIcon} size={18} strokeWidth={1.5} aria-hidden="true" />
         {buttonLabel}

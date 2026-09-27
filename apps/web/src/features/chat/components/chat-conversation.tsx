@@ -1,4 +1,6 @@
 import { useChat } from "@ai-sdk/react";
+import { ArrowDown02Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import {
   type ChatAcknowledgment,
   type ChatMention,
@@ -18,7 +20,6 @@ import {
   isChatRunUnfinished,
 } from "@ngertiin/contracts/api";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowDown } from "lucide-react";
 import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 import { useStickToBottom } from "use-stick-to-bottom";
 import { Button } from "../../../components/ui/button";
@@ -454,7 +455,7 @@ export function ChatConversation({
             aria-label="Gulir ke pesan terbaru"
             onClick={() => void scrollToBottom()}
           >
-            <ArrowDown aria-hidden="true" />
+            <HugeiconsIcon icon={ArrowDown02Icon} strokeWidth={1.5} aria-hidden="true" />
           </Button>
         ) : null}
       </div>

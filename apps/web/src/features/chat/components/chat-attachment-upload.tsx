@@ -1,3 +1,5 @@
+import { Attachment01Icon, Cancel01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import {
   CHAT_ATTACHMENT_MAX_BYTES,
   CHAT_ATTACHMENT_MAX_FILES,
@@ -6,7 +8,6 @@ import {
   chatAttachmentNote,
   chatAttachmentTypes,
 } from "@ngertiin/contracts/api";
-import { Paperclip, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "../../../components/ui/button";
 import { fileChipClassName } from "../../../components/ui/file-chip";
@@ -163,7 +164,7 @@ export function useAttachmentUpload(
                   aria-label={`Hapus ${item.filename}`}
                   onClick={() => void removeAttachment(item.id)}
                 >
-                  <X />
+                  <HugeiconsIcon icon={Cancel01Icon} strokeWidth={1.5} aria-hidden="true" />
                 </Button>
               </div>
               {chatAttachmentNote(item.filename) ? (
@@ -212,13 +213,13 @@ export function useAttachmentUpload(
       type="button"
       size="icon"
       variant="ghost"
-      className="size-8 rounded-lg text-muted-foreground hover:text-foreground"
+      className="size-8 rounded-lg text-muted-foreground hover:text-accent-foreground"
       aria-label="Lampirkan file"
       title="Maksimal 5 file, 10 MB per file, total 25 MB"
       disabled={disabled}
       onClick={() => input.current?.click()}
     >
-      <Paperclip />
+      <HugeiconsIcon icon={Attachment01Icon} strokeWidth={1.5} aria-hidden="true" />
     </Button>
   );
   return { add, content, button, pending: uploads.length > 0 || removing.length > 0 };

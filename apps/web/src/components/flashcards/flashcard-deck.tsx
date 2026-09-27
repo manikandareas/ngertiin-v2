@@ -1,4 +1,5 @@
-import { Check, MoveHorizontal, RotateCcw } from "lucide-react";
+import { ArrowHorizontalIcon, RotateLeft01Icon, Tick02Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { motion } from "motion/react";
 import { type CSSProperties, useId, useRef, useState } from "react";
 import { cn } from "../../lib/utils";
@@ -92,7 +93,12 @@ export function FlashcardDeck({ cards, marked, onMark, busy = false }: Props) {
         aria-live="polite"
         aria-label="Sesi kartu selesai"
       >
-        <Check className="mb-4 size-8 text-success-foreground" />
+        <HugeiconsIcon
+          icon={Tick02Icon}
+          strokeWidth={1.5}
+          aria-hidden="true"
+          className="mb-4 size-8 text-success-foreground"
+        />
         <h3 className="font-display text-xl font-bold">Semua kartu sudah kamu pelajari.</h3>
         <p className="mt-2 text-sm text-muted-foreground">
           {cards.length - repeat} kartu kamu tandai sudah paham
@@ -110,7 +116,13 @@ export function FlashcardDeck({ cards, marked, onMark, busy = false }: Props) {
             move(0);
           }}
         >
-          <RotateCcw className="size-4" /> Pelajari lagi
+          <HugeiconsIcon
+            icon={RotateLeft01Icon}
+            strokeWidth={1.5}
+            aria-hidden="true"
+            className="size-4"
+          />{" "}
+          Pelajari lagi
         </Button>
       </section>
     );
@@ -187,7 +199,12 @@ export function FlashcardDeck({ cards, marked, onMark, busy = false }: Props) {
           </span>
           <span className="mt-3 flex items-center justify-between gap-3 text-xs">
             <span>{flipped ? "Lihat pertanyaan lagi" : "Klik untuk balik kartu"}</span>
-            <RotateCcw className="size-5 shrink-0" />
+            <HugeiconsIcon
+              icon={RotateLeft01Icon}
+              strokeWidth={1.5}
+              aria-hidden="true"
+              className="size-5 shrink-0"
+            />
           </span>
         </motion.button>
         <div className="flex min-h-19 items-center justify-between gap-2 px-1 pt-3 pb-1 sm:px-4">
@@ -199,7 +216,13 @@ export function FlashcardDeck({ cards, marked, onMark, busy = false }: Props) {
                 className="h-auto min-h-11 rounded-xl px-2 text-xs normal-case tracking-normal sm:text-sm"
                 onClick={() => void mark(false)}
               >
-                <RotateCcw className="size-4 shrink-0" /> Perlu diulang
+                <HugeiconsIcon
+                  icon={RotateLeft01Icon}
+                  strokeWidth={1.5}
+                  aria-hidden="true"
+                  className="size-4 shrink-0"
+                />{" "}
+                Perlu diulang
               </Button>
               <Button
                 variant="ghost"
@@ -207,7 +230,13 @@ export function FlashcardDeck({ cards, marked, onMark, busy = false }: Props) {
                 className="h-auto min-h-11 rounded-xl px-2 text-xs normal-case tracking-normal sm:text-sm"
                 onClick={() => void mark(true)}
               >
-                <Check className="size-4 shrink-0" /> Sudah paham
+                <HugeiconsIcon
+                  icon={Tick02Icon}
+                  strokeWidth={1.5}
+                  aria-hidden="true"
+                  className="size-4 shrink-0"
+                />{" "}
+                Sudah paham
               </Button>
             </div>
           ) : (
@@ -222,7 +251,13 @@ export function FlashcardDeck({ cards, marked, onMark, busy = false }: Props) {
                   focusCard();
                 }}
               >
-                Lihat jawaban <RotateCcw className="size-4" />
+                Lihat jawaban{" "}
+                <HugeiconsIcon
+                  icon={RotateLeft01Icon}
+                  strokeWidth={1.5}
+                  aria-hidden="true"
+                  className="size-4"
+                />
               </Button>
             </>
           )}
@@ -232,7 +267,12 @@ export function FlashcardDeck({ cards, marked, onMark, busy = false }: Props) {
         id={gestureHintId}
         className="mt-4 flex items-center justify-center gap-2 text-center text-xs leading-relaxed text-muted-foreground"
       >
-        <MoveHorizontal className="size-4 shrink-0" aria-hidden="true" />
+        <HugeiconsIcon
+          icon={ArrowHorizontalIcon}
+          strokeWidth={1.5}
+          className="size-4 shrink-0"
+          aria-hidden="true"
+        />
         <span>Geser kiri / kanan untuk pindah kartu.</span>
       </p>
       {saving ? (

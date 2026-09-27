@@ -1,5 +1,6 @@
+import { Plant01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import type { Leaderboard } from "@ngertiin/contracts/api";
-import { Sprout } from "lucide-react";
 
 const numberFormat = new Intl.NumberFormat("id-ID");
 const dateFormat = new Intl.DateTimeFormat("id-ID", { dateStyle: "long", timeStyle: "short" });
@@ -23,7 +24,12 @@ export function LeaderboardScoreCard({ self }: LeaderboardScoreCardProps) {
       className="mt-6 rounded-card border-2 px-3 py-6 sm:px-5"
     >
       <div className="flex items-start gap-3">
-        <Sprout aria-hidden="true" className="mt-1 size-7 shrink-0 text-success" />
+        <HugeiconsIcon
+          icon={Plant01Icon}
+          strokeWidth={1.5}
+          aria-hidden="true"
+          className="mt-1 size-7 shrink-0 text-success"
+        />
         <div className="min-w-0 flex-1 space-y-3">
           <h2 id="self-score-title" className="text-sm font-semibold text-muted-foreground">
             Skor leaderboard kamu

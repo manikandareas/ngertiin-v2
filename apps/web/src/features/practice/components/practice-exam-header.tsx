@@ -1,4 +1,5 @@
-import { ArrowLeft, Clock3, List, Square } from "lucide-react";
+import { ArrowLeft02Icon, Clock01Icon, ListViewIcon, SquareIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import type { ReactElement } from "react";
 import { Link } from "react-router-dom";
 import { ThemeToggle } from "../../../components/theme-toggle";
@@ -39,7 +40,7 @@ export function PracticeExamHeader({
           className="size-9 rounded-full lg:justify-self-start"
         >
           <Link to={backTo} aria-label="Kembali ke detail exam">
-            <ArrowLeft />
+            <HugeiconsIcon icon={ArrowLeft02Icon} strokeWidth={1.5} aria-hidden="true" />
           </Link>
         </Button>
         <h1
@@ -66,7 +67,7 @@ export function PracticeExamHeader({
                 aria-pressed={view === "focus"}
                 onClick={() => onViewChange("focus")}
               >
-                <Square />
+                <HugeiconsIcon icon={SquareIcon} strokeWidth={1.5} aria-hidden="true" />
               </Button>
               <Button
                 size="sm"
@@ -80,7 +81,7 @@ export function PracticeExamHeader({
                 aria-pressed={view === "list"}
                 onClick={() => onViewChange("list")}
               >
-                <List />
+                <HugeiconsIcon icon={ListViewIcon} strokeWidth={1.5} aria-hidden="true" />
               </Button>
             </fieldset>
           ) : null}
@@ -95,7 +96,12 @@ export function PracticeExamHeader({
                   : "bg-card",
               )}
             >
-              <Clock3 className="size-4" />
+              <HugeiconsIcon
+                icon={Clock01Icon}
+                strokeWidth={1.5}
+                aria-hidden="true"
+                className="size-4"
+              />
               {Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, "0")}
             </span>
           ) : null}

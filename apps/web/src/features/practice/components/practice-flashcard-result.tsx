@@ -1,7 +1,8 @@
 import { useAuth } from "@clerk/react";
+import { ArrowLeft02Icon, RotateLeft01Icon, Tick02Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import type { PracticeAttempt, PracticeDetail } from "@ngertiin/contracts/api";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Check, RotateCcw } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FlashcardDeck } from "../../../components/flashcards/flashcard-deck";
@@ -56,7 +57,13 @@ export function PracticeFlashcardResult({ data, session }: Props) {
     return (
       <section>
         <Button variant="ghost" className="mb-5" onClick={() => setReviewing(false)}>
-          <ArrowLeft className="size-4" /> Kembali ke hasil
+          <HugeiconsIcon
+            icon={ArrowLeft02Icon}
+            strokeWidth={1.5}
+            aria-hidden="true"
+            className="size-4"
+          />{" "}
+          Kembali ke hasil
         </Button>
         <h2 className="font-display text-2xl font-bold">Ulangi yang masih sulit.</h2>
         <p className="mt-2 mb-4 text-sm text-muted-foreground">
@@ -70,7 +77,12 @@ export function PracticeFlashcardResult({ data, session }: Props) {
     <section>
       <header className="flex flex-col gap-5 py-3 sm:flex-row sm:items-center sm:gap-6">
         <div className="flex size-20 shrink-0 -rotate-6 items-center justify-center rounded-3xl bg-success-subtle text-success-foreground">
-          <Check className="size-10" />
+          <HugeiconsIcon
+            icon={Tick02Icon}
+            strokeWidth={1.5}
+            aria-hidden="true"
+            className="size-10"
+          />
         </div>
         <div>
           <p className="text-xs font-bold tracking-widest text-muted-foreground uppercase">
@@ -98,13 +110,13 @@ export function PracticeFlashcardResult({ data, session }: Props) {
       </div>
       <div className="grid gap-7 sm:grid-cols-2">
         {[
-          { title: "Sudah paham", items: understood, icon: Check },
-          { title: "Perlu diulang", items: repeat, icon: RotateCcw },
+          { title: "Sudah paham", items: understood, icon: Tick02Icon },
+          { title: "Perlu diulang", items: repeat, icon: RotateLeft01Icon },
         ].map(({ title, items, icon: Icon }) => (
           <section key={title}>
             <h3 className="mb-3 flex items-center gap-2 font-bold">
-              <Icon className="size-4" /> {title}{" "}
-              <span className="font-normal text-muted-foreground">· {items.length}</span>
+              <HugeiconsIcon icon={Icon} strokeWidth={1.5} aria-hidden="true" className="size-4" />{" "}
+              {title} <span className="font-normal text-muted-foreground">· {items.length}</span>
             </h3>
             <div className="border-t">
               {items.length ? (
@@ -128,7 +140,13 @@ export function PracticeFlashcardResult({ data, session }: Props) {
       <div className="mt-8 flex flex-wrap gap-3">
         {repeat.length ? (
           <Button onClick={() => setReviewing(true)}>
-            <RotateCcw className="size-4" /> Ulangi {repeat.length} kartu
+            <HugeiconsIcon
+              icon={RotateLeft01Icon}
+              strokeWidth={1.5}
+              aria-hidden="true"
+              className="size-4"
+            />{" "}
+            Ulangi {repeat.length} kartu
           </Button>
         ) : null}
         <Button

@@ -1,4 +1,5 @@
-import { ArrowLeft, ArrowRight, X } from "lucide-react";
+import { ArrowLeft02Icon, ArrowRight02Icon, Cancel01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { useId, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "../../../components/ui/button";
@@ -62,7 +63,7 @@ export function ChatQuestionForm({ interaction, busy, statusLabel, submit }: Int
               disabled={busy}
               onClick={() => void submit({ decision: "reject", responseId: crypto.randomUUID() })}
             >
-              <X aria-hidden="true" />
+              <HugeiconsIcon icon={Cancel01Icon} strokeWidth={1.5} aria-hidden="true" />
             </Button>
           ) : (
             <span className="text-xs font-medium text-muted-foreground">{statusLabel}</span>
@@ -200,7 +201,7 @@ export function ChatQuestionForm({ interaction, busy, statusLabel, submit }: Int
                 disabled={busy || step === 0}
                 onClick={() => setStep((value) => value - 1)}
               >
-                <ArrowLeft aria-hidden="true" />
+                <HugeiconsIcon icon={ArrowLeft02Icon} strokeWidth={1.5} aria-hidden="true" />
               </Button>
               <span
                 aria-live="polite"
@@ -230,7 +231,7 @@ export function ChatQuestionForm({ interaction, busy, statusLabel, submit }: Int
                   : step === questions.length - 1
                     ? "Kirim jawaban"
                     : "Berikutnya"}
-                <ArrowRight aria-hidden="true" />
+                <HugeiconsIcon icon={ArrowRight02Icon} strokeWidth={1.5} aria-hidden="true" />
               </Button>
             </div>
           </div>

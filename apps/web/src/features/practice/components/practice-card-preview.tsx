@@ -1,5 +1,6 @@
+import { AlertCircleIcon, Loading03Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import type { PracticeSummary } from "@ngertiin/contracts/api";
-import { CircleAlert, LoaderCircle } from "lucide-react";
 
 import {
   FlashcardSticker,
@@ -12,9 +13,19 @@ export function PracticeCardPreview({ practice }: { practice: PracticeSummary })
     return (
       <div className="flex h-56 flex-col items-center justify-center gap-3 rounded-xl bg-muted text-muted-foreground">
         {generating ? (
-          <LoaderCircle className="size-7 motion-safe:animate-spin" />
+          <HugeiconsIcon
+            icon={Loading03Icon}
+            strokeWidth={1.5}
+            aria-hidden="true"
+            className="size-7 motion-safe:animate-spin"
+          />
         ) : (
-          <CircleAlert className="size-7 text-destructive" />
+          <HugeiconsIcon
+            icon={AlertCircleIcon}
+            strokeWidth={1.5}
+            aria-hidden="true"
+            className="size-7 text-destructive"
+          />
         )}
         <span className="text-sm">
           {generating ? "Latihan sedang disusun" : "Pembuatan belum berhasil"}

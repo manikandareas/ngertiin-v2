@@ -1,5 +1,6 @@
+import { ArrowLeft02Icon, ArrowRight02Icon, Flag01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import type { PracticeAnswer, PracticeDetail } from "@ngertiin/contracts/api";
-import { ArrowLeft, ArrowRight, Flag } from "lucide-react";
 import { type ReactElement, type ReactNode, useRef, useState } from "react";
 import { AppShell } from "../../../components/app-shell";
 import { Button } from "../../../components/ui/button";
@@ -118,7 +119,10 @@ export function PracticeExamAttempt({
                             aria-pressed={flagged.has(item.id)}
                             onClick={() => toggleFlag(item.id)}
                           >
-                            <Flag
+                            <HugeiconsIcon
+                              icon={Flag01Icon}
+                              strokeWidth={1.5}
+                              aria-hidden="true"
                               className={cn(
                                 flagged.has(item.id) && "fill-adaptive text-adaptive-foreground",
                               )}
@@ -137,7 +141,8 @@ export function PracticeExamAttempt({
                       disabled={position === 0}
                       onClick={() => moveTo(position - 1)}
                     >
-                      <ArrowLeft /> Sebelumnya
+                      <HugeiconsIcon icon={ArrowLeft02Icon} strokeWidth={1.5} aria-hidden="true" />{" "}
+                      Sebelumnya
                     </Button>
                   ) : (
                     <span className="text-xs text-muted-foreground">
@@ -146,7 +151,8 @@ export function PracticeExamAttempt({
                   )}
                   {view === "focus" && position < total - 1 ? (
                     <Button size="sm" onClick={() => moveTo(position + 1)}>
-                      Berikutnya <ArrowRight />
+                      Berikutnya{" "}
+                      <HugeiconsIcon icon={ArrowRight02Icon} strokeWidth={1.5} aria-hidden="true" />
                     </Button>
                   ) : (
                     <Button
@@ -154,7 +160,8 @@ export function PracticeExamAttempt({
                       disabled={busy}
                       onClick={(event) => openConfirmation(event.currentTarget)}
                     >
-                      Periksa & kirim <ArrowRight />
+                      Periksa & kirim{" "}
+                      <HugeiconsIcon icon={ArrowRight02Icon} strokeWidth={1.5} aria-hidden="true" />
                     </Button>
                   )}
                 </footer>

@@ -1,5 +1,6 @@
+import { Cancel01Icon, Clock01Icon, Tick02Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { practiceConfigurationSchema } from "@ngertiin/contracts/api";
-import { Check, Clock3, X } from "lucide-react";
 import { useState } from "react";
 import { Button } from "../../../components/ui/button";
 import { cn } from "../../../lib/utils";
@@ -43,7 +44,7 @@ export function ChatPracticeApproval({
                 disabled={busy}
                 onClick={() => void submit({ decision: "reject", responseId: crypto.randomUUID() })}
               >
-                <X aria-hidden="true" />
+                <HugeiconsIcon icon={Cancel01Icon} strokeWidth={1.5} aria-hidden="true" />
               </Button>
             )}
           </div>
@@ -108,9 +109,19 @@ export function ChatPracticeApproval({
             )}
           >
             {interaction.status === "approved" ? (
-              <Check className="size-3.5" aria-hidden="true" />
+              <HugeiconsIcon
+                icon={Tick02Icon}
+                strokeWidth={1.5}
+                className="size-3.5"
+                aria-hidden="true"
+              />
             ) : (
-              <Clock3 className="size-3.5" aria-hidden="true" />
+              <HugeiconsIcon
+                icon={Clock01Icon}
+                strokeWidth={1.5}
+                className="size-3.5"
+                aria-hidden="true"
+              />
             )}
             {revision.trim() ? "Kirim revisimu untuk memperbarui usulan" : statusLabel}
           </span>
@@ -133,7 +144,7 @@ export function ChatPracticeApproval({
                   });
                 }}
               >
-                <Check aria-hidden="true" />
+                <HugeiconsIcon icon={Tick02Icon} strokeWidth={1.5} aria-hidden="true" />
                 {busy ? "Menyimpan…" : "Buat latihan"}
               </Button>
             </div>

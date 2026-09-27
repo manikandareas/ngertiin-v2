@@ -86,7 +86,7 @@ export function SourceDialog({
           {kind === "pdf" ? (
             <div
               {...drop.getRootProps()}
-              className={`cursor-pointer rounded-xl border border-dashed px-5 py-8 text-center focus-visible:outline-2 focus-visible:outline-ring ${drop.isDragActive ? "border-primary bg-secondary" : "border-input bg-muted/30"}`}
+              className={`cursor-pointer rounded-xl border border-dashed px-5 py-8 text-center focus-visible:outline-2 focus-visible:outline-ring ${drop.isDragActive ? "border-primary bg-secondary text-secondary-foreground [&_svg]:text-current [&_p]:text-current" : "border-input bg-muted/30"}`}
             >
               <input {...drop.getInputProps()} aria-label="Pilih PDF" />
               <HugeiconsIcon

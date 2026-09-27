@@ -1,5 +1,6 @@
+import { ArrowUpRight01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { type ChatAttachment, chatAttachmentNote } from "@ngertiin/contracts/api";
-import { ArrowUpRight } from "lucide-react";
 import { type ReactElement, useState } from "react";
 import { fileChipClassName } from "../../../components/ui/file-chip";
 import type { TokenResolver } from "../../../lib/api";
@@ -54,7 +55,12 @@ export function ChatAttachmentCard({
       >
         <ChatFileBadge filename={attachment.filename} />
         <span className="min-w-0 truncate">{attachment.filename}</span>
-        <ArrowUpRight className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+        <HugeiconsIcon
+          icon={ArrowUpRight01Icon}
+          strokeWidth={1.5}
+          className="size-3.5 shrink-0 text-muted-foreground"
+          aria-hidden="true"
+        />
       </button>
       {preview ? (
         <img

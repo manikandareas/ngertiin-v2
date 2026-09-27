@@ -1,4 +1,5 @@
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft02Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { AppShell } from "../components/app-shell";
@@ -109,7 +110,13 @@ function PracticeAttemptSession() {
           to={`/modules/${moduleId}/practice/${practiceId}`}
           className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
         >
-          <ArrowLeft className="size-4" /> Kembali ke latihan
+          <HugeiconsIcon
+            icon={ArrowLeft02Icon}
+            strokeWidth={1.5}
+            aria-hidden="true"
+            className="size-4"
+          />{" "}
+          Kembali ke latihan
         </Link>
         {practice.isPending || attempt.isPending ? (
           <p className="mt-7 text-sm text-muted-foreground">Memuat sesi…</p>

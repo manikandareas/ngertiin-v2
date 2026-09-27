@@ -1,5 +1,6 @@
+import { ArrowRight02Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import type { AdaptiveIntervention } from "@ngertiin/contracts/api";
-import { ArrowRight } from "lucide-react";
 import type { JSX } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "../../../components/ui/button";
@@ -72,19 +73,19 @@ export function AdaptiveInterventionContent({
         <Button asChild variant={finished || data.status === "failed" ? "default" : "ghost"}>
           <Link to={coreDestination ?? `/modules/${data.moduleId}/journey`}>
             {coreDestination ? coreLabel : "Kembali ke perjalanan"}
-            <ArrowRight aria-hidden="true" />
+            <HugeiconsIcon icon={ArrowRight02Icon} strokeWidth={1.5} aria-hidden="true" />
           </Link>
         </Button>
         {data.status === "offered" ? (
           <Button disabled={acceptance.isPending} onClick={() => void acceptance.accept()}>
             {acceptance.isPending ? "Menyimpan pilihan…" : "Ambil penguatan"}
-            <ArrowRight aria-hidden="true" />
+            <HugeiconsIcon icon={ArrowRight02Icon} strokeWidth={1.5} aria-hidden="true" />
           </Button>
         ) : canStart && destination ? (
           <Button asChild>
             <Link to={destination}>
               {data.status === "in_progress" ? "Lanjutkan penguatan" : "Mulai penguatan"}
-              <ArrowRight aria-hidden="true" />
+              <HugeiconsIcon icon={ArrowRight02Icon} strokeWidth={1.5} aria-hidden="true" />
             </Link>
           </Button>
         ) : null}

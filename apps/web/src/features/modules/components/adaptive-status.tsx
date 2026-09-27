@@ -1,5 +1,6 @@
+import { Alert02Icon, CheckmarkCircle02Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import type { AdaptiveIntervention, GenerationPhase } from "@ngertiin/contracts/api";
-import { CheckCircle2, TriangleAlert } from "lucide-react";
 import type { JSX } from "react";
 import { AdaptiveGenerationRetry } from "./adaptive-generation-retry";
 
@@ -93,7 +94,12 @@ export function AdaptiveStatus({ intervention: data, canStart }: AdaptiveStatusP
       ) : null}
       {data.status === "failed" ? (
         <section role="alert" className="mt-6 rounded-xl border border-destructive/30 p-6">
-          <TriangleAlert aria-hidden="true" className="mb-3 size-6 text-destructive" />
+          <HugeiconsIcon
+            icon={Alert02Icon}
+            strokeWidth={1.5}
+            aria-hidden="true"
+            className="mb-3 size-6 text-destructive"
+          />
           <h2 className="font-display text-lg font-bold">Materi belum berhasil dibuat</h2>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
             Proses belum dapat diselesaikan saat ini. Progres belajarmu tetap tersimpan.
@@ -104,7 +110,12 @@ export function AdaptiveStatus({ intervention: data, canStart }: AdaptiveStatusP
         </section>
       ) : null}
       {finished ? (
-        <CheckCircle2 aria-hidden="true" className="size-8 text-success-foreground" />
+        <HugeiconsIcon
+          icon={CheckmarkCircle02Icon}
+          strokeWidth={1.5}
+          aria-hidden="true"
+          className="size-8 text-success-foreground"
+        />
       ) : null}
     </>
   );

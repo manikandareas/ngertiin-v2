@@ -1,7 +1,7 @@
 import { useUser } from "@clerk/react";
-import { Chat01Icon } from "@hugeicons/core-free-icons";
+import { ArrowRight01Icon, Chat01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { ChevronRight } from "lucide-react";
+
 import type { ReactNode } from "react";
 import { UserAvatar } from "../../../components/user-avatar";
 import { useCurrentUser } from "../../current-user/api/use-current-user";
@@ -45,7 +45,12 @@ export function ChatPageHeader({ title, moduleId, moduleTitle, actions }: ChatPa
             >
               {moduleTitle ?? "Modul belajar"}
             </span>
-            <ChevronRight className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+            <HugeiconsIcon
+              icon={ArrowRight01Icon}
+              strokeWidth={1.5}
+              className="size-3.5 shrink-0 text-muted-foreground"
+              aria-hidden="true"
+            />
           </>
         ) : null}
         <HugeiconsIcon

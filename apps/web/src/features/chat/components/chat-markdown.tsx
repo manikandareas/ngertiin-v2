@@ -1,7 +1,8 @@
+import { BookOpen01Icon, File01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import type { ChatCitation, ChatImage } from "@ngertiin/contracts/api";
 import { code } from "@streamdown/code";
 import { createMathPlugin } from "@streamdown/math";
-import { BookOpen, FileText } from "lucide-react";
 import { useMemo } from "react";
 import {
   type Components,
@@ -119,21 +120,26 @@ export function ChatMarkdown({
         if (href?.startsWith(citationPrefix)) {
           const number = Number(href.slice(citationPrefix.length));
           const citation = Number.isInteger(number) ? citations[number - 1] : undefined;
-          const Icon = citation?.origin === "original_source" ? FileText : BookOpen;
+          const Icon = citation?.origin === "original_source" ? File01Icon : BookOpen01Icon;
           return citation ? (
             <a
               data-chat-citation=""
               href={citationHref(citation)}
               target="_blank"
               rel="noopener noreferrer"
-              className="mx-1 inline-flex h-5 max-w-[min(14rem,75vw)] items-center gap-1 rounded-full bg-muted px-2 align-middle text-[11px] font-medium leading-none text-muted-foreground no-underline transition-colors hover:bg-accent hover:text-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="mx-1 inline-flex h-5 max-w-[min(14rem,75vw)] items-center gap-1 rounded-full bg-muted px-2 align-middle text-[11px] font-medium leading-none text-muted-foreground no-underline transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               title={citation.title}
               aria-label={`Buka rujukan ${number}: ${citation.title} di tab baru`}
             >
               {citation.origin === "web" ? (
                 <ChatSourceFavicon url={citation.url} className="size-3" />
               ) : (
-                <Icon className="size-3 shrink-0" aria-hidden="true" />
+                <HugeiconsIcon
+                  icon={Icon}
+                  strokeWidth={1.5}
+                  className="size-3 shrink-0"
+                  aria-hidden="true"
+                />
               )}
               <span className="truncate">{citationLabel(citation)}</span>
             </a>

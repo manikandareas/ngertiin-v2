@@ -1,6 +1,7 @@
+import { Delete02Icon, MoreHorizontalIcon, PencilEdit01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { type ChatThread, chatTitleSchema } from "@ngertiin/contracts/api";
 import { useQueryClient } from "@tanstack/react-query";
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useRef, useState } from "react";
 import { Button } from "../../../components/ui/button";
@@ -77,7 +78,14 @@ export function ChatThreadActions({
               className="size-8 shrink-0"
               aria-label={`Aksi percakapan ${thread.title}`}
             >
-              {triggerIcon ?? <MoreHorizontal className="size-4" />}
+              {triggerIcon ?? (
+                <HugeiconsIcon
+                  icon={MoreHorizontalIcon}
+                  strokeWidth={1.5}
+                  aria-hidden="true"
+                  className="size-4"
+                />
+              )}
             </Button>
           </DropdownMenuTrigger>
         </span>
@@ -89,7 +97,13 @@ export function ChatThreadActions({
               setAction("rename");
             }}
           >
-            <Pencil className="size-4" /> Ubah judul
+            <HugeiconsIcon
+              icon={PencilEdit01Icon}
+              strokeWidth={1.5}
+              aria-hidden="true"
+              className="size-4"
+            />{" "}
+            Ubah judul
           </DropdownMenuItem>
           <DropdownMenuItem
             disabled={Boolean(thread.activeRunId)}
@@ -98,7 +112,13 @@ export function ChatThreadActions({
               setAction("delete");
             }}
           >
-            <Trash2 className="size-4" /> Hapus percakapan
+            <HugeiconsIcon
+              icon={Delete02Icon}
+              strokeWidth={1.5}
+              aria-hidden="true"
+              className="size-4"
+            />{" "}
+            Hapus percakapan
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

@@ -1,12 +1,18 @@
+import {
+  ArrowUpRight01Icon,
+  File01Icon,
+  GlobalIcon,
+  NoteEditIcon,
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import type { JourneySummary } from "@ngertiin/contracts/api";
-import { ArrowUpRight, FileText, Globe2, NotebookPen } from "lucide-react";
 import { fileChipClassName } from "../../../components/ui/file-chip";
 import { cn } from "../../../lib/utils";
 
 const sourceChipStyles = {
-  pdf: { icon: FileText, badge: "bg-source-book-spine" },
-  url: { icon: Globe2, badge: "bg-source-postcard-art-ink" },
-  text: { icon: NotebookPen, badge: "bg-source-note-ink" },
+  pdf: { icon: File01Icon, badge: "bg-source-book-spine" },
+  url: { icon: GlobalIcon, badge: "bg-source-postcard-art-ink" },
+  text: { icon: NoteEditIcon, badge: "bg-source-note-ink" },
 } as const;
 
 export function JourneySourceChip({
@@ -37,11 +43,16 @@ export function JourneySourceChip({
           style.badge,
         )}
       >
-        <Icon aria-hidden="true" className="size-3.5" />
+        <HugeiconsIcon icon={Icon} strokeWidth={1.5} aria-hidden="true" className="size-3.5" />
       </span>
       <span className="min-w-0 truncate">{source.title}</span>
       <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">{index + 1}</span>
-      <ArrowUpRight aria-hidden="true" className="size-3.5 shrink-0 text-muted-foreground" />
+      <HugeiconsIcon
+        icon={ArrowUpRight01Icon}
+        strokeWidth={1.5}
+        aria-hidden="true"
+        className="size-3.5 shrink-0 text-muted-foreground"
+      />
     </a>
   );
 }

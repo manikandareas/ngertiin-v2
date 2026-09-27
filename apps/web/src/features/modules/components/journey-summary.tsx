@@ -1,5 +1,11 @@
+import {
+  ArrowRight02Icon,
+  Clock01Icon,
+  Layers01Icon,
+  Tick02Icon,
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import type { JourneySummary as JourneyData, ModuleStatus } from "@ngertiin/contracts/api";
-import { ArrowRight, Check, Clock3, Layers } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "../../../components/ui/button";
 import { nextLearningRoute } from "../next-learning-route";
@@ -30,12 +36,22 @@ export function JourneySummary({ data, status }: { data: JourneyData; status: Mo
           }
         </span>
         <span className="flex items-center gap-2">
-          <Layers aria-hidden="true" className="size-4" />
+          <HugeiconsIcon
+            icon={Layers01Icon}
+            strokeWidth={1.5}
+            aria-hidden="true"
+            className="size-4"
+          />
           {data.progress.totalCoreNodes} node utama
         </span>
         {data.module.estimatedMinutes ? (
           <span className="flex items-center gap-2">
-            <Clock3 aria-hidden="true" className="size-4" />
+            <HugeiconsIcon
+              icon={Clock01Icon}
+              strokeWidth={1.5}
+              aria-hidden="true"
+              className="size-4"
+            />
             {data.module.estimatedMinutes} menit
           </span>
         ) : null}
@@ -80,7 +96,12 @@ export function JourneySummary({ data, status }: { data: JourneyData; status: Mo
         </p>
       ) : completed ? (
         <p className="mt-4 flex items-center gap-2 font-bold text-success-foreground">
-          <Check aria-hidden="true" className="size-5" />
+          <HugeiconsIcon
+            icon={Tick02Icon}
+            strokeWidth={1.5}
+            aria-hidden="true"
+            className="size-5"
+          />
           Semua node utama sudah selesai.
         </p>
       ) : !hasActiveNode && destination ? (
@@ -91,7 +112,7 @@ export function JourneySummary({ data, status }: { data: JourneyData; status: Mo
               : data.nextAction.type === "wait_for_adaptive"
                 ? "Lihat status pengayaan"
                 : "Lanjutkan belajar"}
-            <ArrowRight aria-hidden="true" />
+            <HugeiconsIcon icon={ArrowRight02Icon} strokeWidth={1.5} aria-hidden="true" />
           </Link>
         </Button>
       ) : null}

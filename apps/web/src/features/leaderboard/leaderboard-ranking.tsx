@@ -1,5 +1,6 @@
+import { ArrowUpRight01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import type { Leaderboard } from "@ngertiin/contracts/api";
-import { ArrowUpRight } from "lucide-react";
 import { useRef } from "react";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
@@ -36,7 +37,8 @@ export function LeaderboardRanking({ participants, currentUserId }: LeaderboardR
         </h2>
         {hasSelf && (
           <Button type="button" variant="link" size="sm" onClick={showMyPosition} className="px-0">
-            Lihat posisiku <ArrowUpRight aria-hidden="true" />
+            Lihat posisiku{" "}
+            <HugeiconsIcon icon={ArrowUpRight01Icon} strokeWidth={1.5} aria-hidden="true" />
           </Button>
         )}
       </div>
@@ -70,7 +72,8 @@ export function LeaderboardRanking({ participants, currentUserId }: LeaderboardR
                 tabIndex={person.userId === currentUserId ? -1 : undefined}
                 className={cn(
                   "scroll-m-8 border-b focus:outline-2 focus:-outline-offset-2 focus:outline-ring",
-                  person.userId === currentUserId && "bg-accent",
+                  person.userId === currentUserId &&
+                    "bg-accent text-accent-foreground [&>td]:text-current",
                 )}
               >
                 <td className="px-2 py-5 tabular-nums text-muted-foreground">{person.rank}</td>

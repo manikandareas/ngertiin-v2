@@ -1,8 +1,15 @@
-import { ChevronLeft, ChevronRight, Maximize, Minus, Plus } from "lucide-react";
+import {
+  Add01Icon,
+  ArrowLeft01Icon,
+  ArrowRight01Icon,
+  Maximize01Icon,
+  MinusSignIcon,
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { Button } from "../../components/ui/button";
 
 const toolbarButtonClassName =
-  "size-8 rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground motion-safe:active:scale-90";
+  "size-8 rounded-full text-muted-foreground hover:bg-secondary hover:text-secondary-foreground motion-safe:active:scale-90";
 
 type SourcePdfToolbarProps = {
   page: number;
@@ -33,7 +40,7 @@ export function SourcePdfToolbar({
         disabled={page <= 1}
         onClick={() => onPageChange(page - 1)}
       >
-        <ChevronLeft size={18} />
+        <HugeiconsIcon icon={ArrowLeft01Icon} strokeWidth={1.5} aria-hidden="true" size={18} />
       </Button>
       <label className="flex h-8 items-center gap-1 rounded-full bg-primary/10 px-2 text-xs font-bold tabular-nums text-primary">
         <span className="sr-only">Nomor halaman</span>
@@ -63,7 +70,7 @@ export function SourcePdfToolbar({
         disabled={page >= pages}
         onClick={() => onPageChange(page + 1)}
       >
-        <ChevronRight size={18} />
+        <HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={1.5} aria-hidden="true" size={18} />
       </Button>
       <span className="mx-1 h-4 w-px bg-border" />
       <Button
@@ -74,7 +81,7 @@ export function SourcePdfToolbar({
         disabled={zoom <= 0.5}
         onClick={() => onZoomChange(Math.max(0.5, zoom - 0.25))}
       >
-        <Minus size={18} />
+        <HugeiconsIcon icon={MinusSignIcon} strokeWidth={1.5} aria-hidden="true" size={18} />
       </Button>
       <output
         className="w-9 text-center text-[11px] font-semibold tabular-nums text-muted-foreground"
@@ -90,7 +97,7 @@ export function SourcePdfToolbar({
         disabled={zoom >= 3}
         onClick={() => onZoomChange(Math.min(3, zoom + 0.25))}
       >
-        <Plus size={18} />
+        <HugeiconsIcon icon={Add01Icon} strokeWidth={1.5} aria-hidden="true" size={18} />
       </Button>
       <Button
         variant="ghost"
@@ -102,7 +109,7 @@ export function SourcePdfToolbar({
           onZoomChange(1);
         }}
       >
-        <Maximize size={18} />
+        <HugeiconsIcon icon={Maximize01Icon} strokeWidth={1.5} aria-hidden="true" size={18} />
       </Button>
     </div>
   );

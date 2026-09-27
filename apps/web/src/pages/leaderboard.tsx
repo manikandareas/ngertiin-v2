@@ -1,4 +1,5 @@
-import { Globe } from "lucide-react";
+import { GlobalIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { AppShell } from "../components/app-shell";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
@@ -20,7 +21,7 @@ export default function LeaderboardPage() {
             </p>
           </div>
           <Badge variant="secondary" className="gap-2">
-            <Globe aria-hidden="true" />
+            <HugeiconsIcon icon={GlobalIcon} strokeWidth={1.5} aria-hidden="true" />
             Peringkat global
           </Badge>
         </header>

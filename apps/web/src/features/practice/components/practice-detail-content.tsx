@@ -1,5 +1,6 @@
+import { ArrowRight02Icon, RotateLeft01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import type { PracticeDetail } from "@ngertiin/contracts/api";
-import { ArrowRight, RotateCcw } from "lucide-react";
 import { Button } from "../../../components/ui/button";
 
 type Props = {
@@ -79,7 +80,12 @@ export function PracticeDetailContent({
             {data.failure ?? "Coba lagi dengan pengaturan yang sama."}
           </p>
           <Button className="mt-4" size="sm" disabled={busy} onClick={onRetry}>
-            <RotateCcw className="size-4" />
+            <HugeiconsIcon
+              icon={RotateLeft01Icon}
+              strokeWidth={1.5}
+              aria-hidden="true"
+              className="size-4"
+            />
             Coba lagi
           </Button>
         </section>
@@ -99,7 +105,12 @@ export function PracticeDetailContent({
             onClick={onStart}
           >
             {action}
-            <ArrowRight className="size-4" />
+            <HugeiconsIcon
+              icon={ArrowRight02Icon}
+              strokeWidth={1.5}
+              aria-hidden="true"
+              className="size-4"
+            />
           </Button>
         </section>
       ) : null}
