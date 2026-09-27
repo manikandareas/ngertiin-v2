@@ -16,6 +16,7 @@ import { SocialSettings } from "../features/settings/social-settings";
 import { SoundSettings } from "../features/settings/sound-settings";
 import { UsageSettings } from "../features/settings/usage-settings";
 import { useConnectionFeedback } from "../features/settings/use-connection-feedback";
+import { usePageTitle } from "../routes/page-metadata";
 
 const tabs = [
   { value: "account", label: "Profil & akun" },
@@ -29,6 +30,7 @@ export default function SettingsPage() {
   const [params, setParams] = useSearchParams();
   const requested = params.get("tab");
   const tab = tabs.find((item) => item.value === requested)?.value ?? "account";
+  usePageTitle(`${tabs.find((item) => item.value === tab)?.label ?? "Pengaturan"} · Pengaturan`);
   useConnectionFeedback();
   const [dirty, setDirty] = useState(false);
   const onDirty = useCallback((value: boolean) => setDirty(value), []);

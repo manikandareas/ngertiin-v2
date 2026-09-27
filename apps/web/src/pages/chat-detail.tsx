@@ -14,6 +14,7 @@ import { ChatThreadActions } from "../features/chat/components/chat-thread-actio
 import { useChatThreads } from "../features/chat/use-chat-threads";
 import { useModule } from "../features/modules/api/use-modules";
 import { ApiProblemError } from "../lib/api";
+import { usePageTitle } from "../routes/page-metadata";
 
 export default function ChatDetailPage() {
   return isClerkConfigured ? (
@@ -37,6 +38,7 @@ function ConnectedChatDetailPage() {
     refetchInterval: (query) => (query.state.data?.activeRunId ? 2000 : false),
   });
   const thread = detail.data;
+  usePageTitle(thread?.title);
   const moduleId = thread?.moduleId ?? null;
   const module = useModule(moduleId ?? undefined);
   const api = useMemo(() => chatApi(chat.getToken, moduleId), [chat.getToken, moduleId]);

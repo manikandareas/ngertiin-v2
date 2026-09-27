@@ -9,6 +9,7 @@ import { PracticeCard } from "../features/practice/components/practice-card";
 import { PracticeDetailContent } from "../features/practice/components/practice-detail-content";
 import { PracticeDetailHeader } from "../features/practice/components/practice-detail-header";
 import { practiceApi } from "../features/practice/practice-api";
+import { usePageTitle } from "../routes/page-metadata";
 
 export default function PracticeDetailPage() {
   const { moduleId, practiceId } = useParams();
@@ -44,6 +45,7 @@ export default function PracticeDetailPage() {
     }
   };
   const data = practice.data;
+  usePageTitle(data?.title);
   const firstItem = data?.items[0]?.content;
   const preview = firstItem
     ? {

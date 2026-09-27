@@ -9,6 +9,7 @@ import { useSource } from "../features/sources/api/use-sources";
 import { SourceCard } from "../features/sources/source-card";
 import { sourceMetadata, sourceTitle } from "../features/sources/source-presentation";
 import { SourceReadingContent } from "../features/sources/source-reading-content";
+import { usePageTitle } from "../routes/page-metadata";
 
 const SourcePdfViewer = lazy(() => import("../features/sources/source-pdf-viewer"));
 
@@ -26,6 +27,7 @@ function SourceDetail({ id }: { id: string | undefined }) {
     reference?.kind === "source" && reference.sourceId === id ? citation.data : undefined;
   const [dirty, setDirty] = useState(false);
   const source = query.data;
+  usePageTitle(source ? sourceTitle(source) : undefined);
   const location = useLocation();
   const returnTo = location.state?.returnTo;
   const back =

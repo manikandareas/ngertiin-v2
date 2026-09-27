@@ -7,6 +7,7 @@ import { PracticeExamAttempt } from "../features/practice/components/practice-ex
 import { PracticeFlashcardAttempt } from "../features/practice/components/practice-flashcard-attempt";
 import { PracticeQuizAttempt } from "../features/practice/components/practice-quiz-attempt";
 import { usePracticeAttempt } from "../features/practice/use-practice-attempt";
+import { usePageTitle } from "../routes/page-metadata";
 
 export default function PracticeAttemptPage() {
   const { attemptId } = useParams();
@@ -33,6 +34,7 @@ function PracticeAttemptSession() {
   } = usePracticeAttempt(practiceId, attemptId);
   const [position, setPosition] = useState(0);
   const data = practice.data;
+  usePageTitle(data?.title ? `${data.title} · Sesi latihan` : undefined);
   const session = attempt.data;
   const outcome =
     data && session ? (

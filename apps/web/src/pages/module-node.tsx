@@ -23,6 +23,7 @@ import { NodePlayerLayout } from "../features/modules/components/node-player-lay
 import { useAttemptEffects } from "../features/modules/hooks/use-attempt-effects";
 import { nextLearningRoute } from "../features/modules/next-learning-route";
 import { ApiProblemError } from "../lib/api";
+import { usePageTitle } from "../routes/page-metadata";
 
 const primaryActionClassName = "max-w-full rounded-full px-6 normal-case tracking-normal";
 
@@ -69,6 +70,7 @@ function NodePlayer({ moduleId, nodeId }: NodePlayerProps): JSX.Element {
   const [retrying, setRetrying] = useState(false);
   const moduleQuery = useModule(moduleId);
   const nodeQuery = useNode(moduleId, nodeId);
+  usePageTitle(nodeQuery.data?.node.title);
   const attemptId =
     searchParams.get("attemptId") ??
     (!retrying ? nodeQuery.data?.latestCompletedAttemptId : undefined) ??

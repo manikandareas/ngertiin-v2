@@ -8,11 +8,13 @@ import { useArchiveModule, useJourney, useModule } from "../features/modules/api
 import { JourneySummary } from "../features/modules/components/journey-summary";
 import { JourneyTrack } from "../features/modules/components/journey-track";
 import { ApiProblemError } from "../lib/api";
+import { usePageTitle } from "../routes/page-metadata";
 
 export default function ModuleJourneyPage() {
   const { moduleId } = useParams();
   const journey = useJourney(moduleId);
   const moduleQuery = useModule(moduleId);
+  usePageTitle(moduleQuery.data?.title ? `${moduleQuery.data.title} · Journey` : undefined);
   const archive = useArchiveModule(moduleId ?? "");
 
   if (journey.isPending || moduleQuery.isPending) {
