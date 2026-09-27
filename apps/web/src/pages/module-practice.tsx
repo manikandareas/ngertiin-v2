@@ -38,7 +38,13 @@ export default function ModulePracticePage() {
   const q = useDebouncedValue(search.trim(), 300);
   const practices = usePractices(moduleId, { collection, q, kind });
   const entries = practices.data?.pages.flatMap((page) => page.data) ?? [];
-  const emptyCopy = emptyMessages[search || kind ? "filtered" : collection];
+  const emptyCopy =
+    !moduleId && !search && !kind && collection === "active"
+      ? {
+          title: "Belum ada latihan",
+          description: "Pilih modul untuk membuat flashcard, kuis, atau exam pertamamu.",
+        }
+      : emptyMessages[search || kind ? "filtered" : collection];
 
   return (
     <AppShell>
@@ -46,12 +52,14 @@ export default function ModulePracticePage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Latihan</h1>
           <p className="mt-1.5 text-sm text-muted-foreground">
-            Flashcard, kuis, dan exam dari materi modul ini.
+            {moduleId
+              ? "Flashcard, kuis, dan exam dari materi modul ini."
+              : "Flashcard, kuis, dan exam dari semua modulmu."}
           </p>
         </div>
         <Button size="sm" variant="outline" className="normal-case" asChild>
-          <Link to={`/modules/${moduleId}/practice/new`}>
-            Buat latihan{" "}
+          <Link to={moduleId ? `/modules/${moduleId}/practice/new` : "/modules"}>
+            {moduleId ? "Buat latihan" : "Pilih modul"}{" "}
             <HugeiconsIcon icon={Add01Icon} strokeWidth={1.5} size={20} aria-hidden="true" />
           </Link>
         </Button>

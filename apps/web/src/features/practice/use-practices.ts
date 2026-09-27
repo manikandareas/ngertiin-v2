@@ -15,7 +15,7 @@ export function usePractices(moduleId: string | undefined, filters: PracticeFilt
   return useInfiniteQuery({
     queryKey: ["practices", moduleId, userId, filters],
     queryFn: ({ pageParam }) =>
-      api.list(moduleId ?? "", {
+      api.list(moduleId, {
         archived: filters.collection === "archived",
         kind: filters.kind || undefined,
         q: filters.q || undefined,
@@ -23,7 +23,7 @@ export function usePractices(moduleId: string | undefined, filters: PracticeFilt
       }),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (page) => page.pageInfo.nextCursor ?? undefined,
-    enabled: Boolean(moduleId && userId),
+    enabled: Boolean(userId),
     refetchInterval: (query) =>
       query.state.data?.pages.some((page) =>
         page.data.some((practice) => practice.status === "generating"),

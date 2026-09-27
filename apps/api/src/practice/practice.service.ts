@@ -370,7 +370,7 @@ export class PracticeService {
 
   async list(
     userId: string,
-    moduleId: string,
+    moduleId: string | undefined,
     query: {
       kind?: "flashcard" | "quiz" | "exam";
       status?: "generating" | "ready" | "failed";
@@ -380,12 +380,14 @@ export class PracticeService {
       limit: number;
     },
   ) {
-    const [module] = await this.db
-      .select({ id: modules.id })
-      .from(modules)
-      .where(and(eq(modules.id, moduleId), eq(modules.owner_id, userId)))
-      .limit(1);
-    if (!module) fail(404, "NOT_FOUND", "Modul tidak ditemukan.");
+    if (moduleId) {
+      const [module] = await this.db
+        .select({ id: modules.id })
+        .from(modules)
+        .where(and(eq(modules.id, moduleId), eq(modules.owner_id, userId)))
+        .limit(1);
+      if (!module) fail(404, "NOT_FOUND", "Modul tidak ditemukan.");
+    }
     const [cursor] = query.cursor
       ? await this.db
           .select({ createdAt: practice_sets.created_at, id: practice_sets.id })
@@ -394,7 +396,7 @@ export class PracticeService {
             and(
               eq(practice_sets.id, query.cursor),
               eq(practice_sets.owner_id, userId),
-              eq(practice_sets.module_id, moduleId),
+              moduleId ? eq(practice_sets.module_id, moduleId) : undefined,
             ),
           )
           .limit(1)
@@ -406,7 +408,7 @@ export class PracticeService {
       .where(
         and(
           eq(practice_sets.owner_id, userId),
-          eq(practice_sets.module_id, moduleId),
+          moduleId ? eq(practice_sets.module_id, moduleId) : undefined,
           query.kind ? eq(practice_sets.kind, query.kind) : undefined,
           query.status ? eq(practice_sets.status, query.status) : undefined,
           query.q

@@ -18,20 +18,22 @@ export const practiceApi = (token: TokenResolver) => ({
       })
     ).data,
   list: async (
-    moduleId: string,
+    moduleId: string | undefined,
     filters: {
       archived: boolean;
       kind?: "flashcard" | "quiz" | "exam";
       q?: string;
       cursor?: string;
+      limit?: number;
     },
   ) => {
     const params = new URLSearchParams({ archived: String(filters.archived) });
+    if (filters.limit) params.set("limit", String(filters.limit));
     if (filters.kind) params.set("kind", filters.kind);
     if (filters.q) params.set("q", filters.q);
     if (filters.cursor) params.set("cursor", filters.cursor);
     return requestApi(
-      `/modules/${moduleId}/practices?${params}`,
+      `${moduleId ? `/modules/${moduleId}/practices` : "/practices"}?${params}`,
       token,
       practiceListResponseSchema,
     );

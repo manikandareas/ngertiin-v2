@@ -53,6 +53,7 @@ export function AppRoutes() {
           <Route path="/chat/:threadId" element={<ChatDetailPage />} />
           <Route path="/leaderboard" element={<LeaderboardPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/practices" element={<ModulePracticePage />} />
           <Route path="/sources" element={<SourcesPage />} />
           <Route path="/sources/:sourceId" element={<SourceDetailPage />} />
           <Route path="/modules" element={<ModulesPage />} />

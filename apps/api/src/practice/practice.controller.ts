@@ -63,6 +63,18 @@ export class PracticeController {
     );
   }
 
+  @Get("practices")
+  async listRecent(
+    @Req() req: ProductRequest,
+    @Query(new ZodValidationPipe(listPracticesQuerySchema)) query: z.infer<
+      typeof listPracticesQuerySchema
+    >,
+  ) {
+    return practiceListResponseSchema.parse(
+      await this.practice.list(getLocalUserId(req), undefined, query),
+    );
+  }
+
   @Get("practices/:practiceId")
   async detail(
     @Req() req: ProductRequest,
