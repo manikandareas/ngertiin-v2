@@ -1,4 +1,4 @@
-import { ArrowRight01Icon, ArrowRightDoubleIcon } from "@hugeicons/core-free-icons";
+import { ArrowRight01Icon, ArrowUpRight01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Link } from "react-router-dom";
 import { Button } from "../../../components/ui/button";
@@ -11,21 +11,25 @@ export function DashboardModules() {
 
   return (
     <section aria-labelledby="modules-heading" className="min-w-0">
-      <header className="mb-8 flex flex-wrap items-center justify-between gap-3">
-        <h2 id="modules-heading" className="font-display text-subheading font-extrabold">
-          Terakhir diperbarui
-        </h2>
-        <Button asChild variant="link" size="sm" className="h-auto px-0 py-1">
-          <Link to="/modules">
-            Semua modul
+      <header className="mb-5">
+        <h2 id="modules-heading" className="font-display text-xl font-extrabold tracking-tight">
+          <Link
+            to="/modules"
+            className="inline-flex items-center gap-1.5 text-inherit underline-offset-4 hover:underline focus-visible:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+          >
+            Modul belajarmu
             <HugeiconsIcon
-              icon={ArrowRightDoubleIcon}
-              size={14}
-              strokeWidth={1.5}
+              icon={ArrowUpRight01Icon}
+              size={18}
+              strokeWidth={1.8}
               aria-hidden="true"
+              className="shrink-0"
             />
           </Link>
-        </Button>
+        </h2>
+        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+          Selangkah demi selangkah, lanjutkan perjalanan memahami materi.
+        </p>
       </header>
       {modules.isPending ? (
         <p role="status" className="py-9 text-center text-sm text-muted-foreground">
@@ -41,7 +45,7 @@ export function DashboardModules() {
           </Button>
         </div>
       ) : recent.length ? (
-        <ul className="grid gap-x-6 gap-y-8 sm:grid-cols-2">
+        <ul className="grid gap-x-5 gap-y-6 sm:grid-cols-2">
           {recent.map((module) => (
             <li key={module.id} className="grid min-w-0">
               <ModuleCard module={module} />

@@ -1,55 +1,51 @@
-import { Add01Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import type { Dashboard } from "@ngertiin/contracts/api";
 import type { ReactNode } from "react";
-import { Link } from "react-router-dom";
-import { Button } from "../../../components/ui/button";
+import { moduleOverviewRoute, nextLearningRoute } from "../../modules/next-learning-route";
 import { DashboardModules } from "./dashboard-modules";
+import { DashboardPractices } from "./dashboard-practices";
+import { DashboardQuickActions } from "./dashboard-quick-actions";
+import { DashboardSources } from "./dashboard-sources";
 import { DashboardStats } from "./dashboard-stats";
-import { DashboardSummary } from "./dashboard-summary";
+import { DashboardTips } from "./dashboard-tips";
+import { DashboardWelcome } from "./dashboard-welcome";
 
-export function DashboardContent({
-  data,
-  name,
-  fallback,
-}: {
-  data?: Dashboard;
-  name?: string;
-  fallback?: ReactNode;
-}) {
+export function DashboardContent({ data, fallback }: { data?: Dashboard; fallback?: ReactNode }) {
+  const resume = data?.continueLearning?.module;
+  const readyModule =
+    resume?.status === "ready" ? resume : data?.modules.find((module) => module.status === "ready");
+  const chatHref = readyModule ? `/chat?moduleId=${readyModule.id}` : "/chat";
+
   return (
     <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-background">
-      <div className="mx-auto w-full max-w-6xl px-5 pt-10 pb-14 sm:px-10 lg:px-14 lg:pt-14">
-        <header className="mb-12 flex flex-wrap items-center justify-between gap-6 sm:mb-14">
-          <div className="min-w-0">
-            <h1 className="font-display text-heading-sm font-extrabold tracking-tight sm:text-heading">
-              Ruang kecil untuk
-              <br />
-              <span className="relative isolate inline-block px-2 text-secondary-foreground before:absolute before:-inset-x-0.5 before:top-px before:-bottom-0.5 before:-z-1 before:rounded-[35%_18%_28%_15%] before:bg-secondary before:content-['']">
-                rasa penasaranmu.
-              </span>
-            </h1>
-            <p className="mt-4 max-w-lg text-sm leading-relaxed text-muted-foreground">
-              Halo{name ? `, ${name}` : " lagi"}. Mau ngerti apa hari ini?
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-5">
-            {data ? <DashboardStats stats={data.stats} /> : null}
-            <Button asChild variant="outline" size="sm">
-              <Link to="/modules/new">
-                <HugeiconsIcon icon={Add01Icon} size={18} strokeWidth={1.5} aria-hidden="true" />
-                Buat modul
-              </Link>
-            </Button>
-          </div>
-        </header>
+      <div className="mx-auto w-full max-w-[1300px] px-5 pt-7 pb-14 sm:px-8 lg:px-10">
+        <h1 className="sr-only">Beranda belajar</h1>
+        <DashboardWelcome data={data} />
         {data ? (
-          <>
-            <DashboardSummary data={data} />
-            <div className="mt-12 sm:mt-14">
-              <DashboardModules />
+          <div className="grid min-w-0 gap-7 lg:grid-cols-[minmax(0,1fr)_280px] lg:grid-rows-[auto_1fr] lg:gap-x-8 lg:gap-y-4">
+            <div className="lg:col-start-2 lg:row-start-1">
+              <DashboardStats stats={data.stats} />
             </div>
-          </>
+            <div className="grid min-w-0 content-start gap-8 lg:col-start-1 lg:row-span-2 lg:row-start-1">
+              <DashboardSources />
+              <DashboardModules />
+              <DashboardPractices />
+            </div>
+            <aside
+              aria-label="Teman belajar"
+              className="grid min-w-0 content-start gap-4 lg:col-start-2 lg:row-start-2"
+            >
+              <DashboardQuickActions moduleId={readyModule?.id} chatHref={chatHref} />
+              <DashboardTips
+                learningHref={
+                  readyModule
+                    ? (nextLearningRoute(readyModule.nextAction) ??
+                      moduleOverviewRoute(readyModule))
+                    : "/modules"
+                }
+                chatHref={chatHref}
+              />
+            </aside>
+          </div>
         ) : (
           fallback
         )}
