@@ -4,7 +4,7 @@ import { useRef } from "react";
 import { Button } from "../../components/ui/button";
 import { menuContentClassName } from "../../components/ui/menu-styles";
 import { type SourceAction, SourceActionItems } from "./source-actions";
-import { SourceItemContent } from "./source-item-content";
+import { SourceCard } from "./source-card";
 import { sourceTitle } from "./source-presentation";
 
 type SourceItemProps = {
@@ -29,12 +29,12 @@ export function SourceItem({ source, onPreview, onAction }: SourceItemProps) {
     <ContextMenu.Root>
       <ContextMenu.Trigger asChild>
         <article
-          className="min-w-0 px-3 pt-4 pb-2"
+          className="min-w-0"
           onContextMenu={(event) => {
             trigger.current = event.currentTarget.querySelector("button");
           }}
         >
-          <SourceItemContent
+          <SourceCard
             source={source}
             onPreview={onPreview}
             actions={

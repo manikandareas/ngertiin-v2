@@ -7,6 +7,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import type { Source } from "@ngertiin/contracts/api";
+import { cn } from "../../lib/utils";
 import { sourceItemMetadata, sourceOrigin, sourceTitle, statusLabels } from "./source-presentation";
 
 const paperStyles = {
@@ -40,6 +41,7 @@ const paperStyles = {
 };
 
 type SourcePaperProps = {
+  className?: string;
   source: Source;
   disabled?: boolean;
   compact?: boolean;
@@ -52,6 +54,7 @@ export function SourcePaper({
   onPreview,
   disabled = false,
   compact = false,
+  className,
 }: SourcePaperProps) {
   const title = sourceTitle(source);
   const origin = sourceOrigin(source);
@@ -60,7 +63,10 @@ export function SourcePaper({
 
   return (
     <div
-      className={`group relative isolate flex flex-col has-focus-visible:outline-2 has-focus-visible:-outline-offset-5 has-focus-visible:outline-current ${style.surface} ${compact ? `h-72 ${style.compactSpacing}` : `h-100 ${style.spacing}`}`}
+      className={cn(
+        `group relative isolate flex flex-col has-focus-visible:outline-2 has-focus-visible:-outline-offset-5 has-focus-visible:outline-current ${style.surface} ${compact ? `h-72 ${style.compactSpacing}` : `h-100 ${style.spacing}`}`,
+        className,
+      )}
     >
       {source.type === "pdf" ? (
         <span

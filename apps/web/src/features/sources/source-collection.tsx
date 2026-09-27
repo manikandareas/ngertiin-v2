@@ -126,8 +126,13 @@ export function SourceCollection() {
                       className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,16rem),1fr))] gap-4"
                     >
                       {["a", "b", "c", "d"].map((id) => (
-                        <div key={id} className="px-3 pt-4">
-                          <div className="h-100 rounded-xl bg-muted motion-safe:animate-pulse" />
+                        <div
+                          key={id}
+                          className="rounded-[18px] border bg-card p-2.5 motion-safe:animate-pulse"
+                        >
+                          <div className="h-56 rounded-xl bg-muted" />
+                          <div className="mx-1.5 mt-5 mb-3 h-4 w-4/5 rounded bg-muted" />
+                          <div className="mx-1.5 mb-3 h-3 w-1/2 rounded bg-muted" />
                         </div>
                       ))}
                     </div>

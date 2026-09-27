@@ -5,7 +5,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 
 import { useReducedMotion } from "motion/react";
 import { Button } from "../../components/ui/button";
-import { SourceItemContent } from "../sources/source-item-content";
+import { SourceCard } from "../sources/source-card";
 import type { Selection } from "./use-module-builder";
 
 export function SortableMaterial({
@@ -70,9 +70,8 @@ export function SortableMaterial({
           {item.selector ? ` · Halaman ${item.selector.pages.from}–${item.selector.pages.to}` : ""}
         </span>
       </div>
-      <div className="px-1 pt-4 pb-2">
-        <SourceItemContent
-          compact
+      <div>
+        <SourceCard
           source={item.source}
           onPreview={() => {
             window.open(`/sources/${item.source.id}`, "_blank", "noopener,noreferrer");

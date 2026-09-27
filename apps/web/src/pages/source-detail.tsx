@@ -7,7 +7,7 @@ import { Button } from "../components/ui/button";
 import { CitationContent } from "../features/chat/components/citation-content";
 import { useCitationLocation } from "../features/chat/use-citation-location";
 import { useSource } from "../features/sources/api/use-sources";
-import { SourceItemContent } from "../features/sources/source-item-content";
+import { SourceCard } from "../features/sources/source-card";
 import { sourceMetadata, sourceTitle } from "../features/sources/source-presentation";
 import { SourceReadingContent } from "../features/sources/source-reading-content";
 
@@ -67,10 +67,8 @@ function SourceDetail({ id }: { id: string | undefined }) {
         <div className="mx-auto grid max-w-7xl gap-10 px-5 py-10 sm:px-10 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-16">
           <aside className="min-w-0 lg:sticky lg:top-20 lg:self-start">
             <div className="mx-auto max-w-60 pt-4">
-              <SourceItemContent
+              <SourceCard
                 source={source}
-                compact
-                actions={null}
                 onPreview={() => document.getElementById("source-content")?.focus()}
               />
             </div>

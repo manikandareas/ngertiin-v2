@@ -16,7 +16,7 @@ import {
 } from "@dnd-kit/sortable";
 import { useReducedMotion } from "motion/react";
 import { useState } from "react";
-import { SourcePaper } from "../sources/source-paper";
+import { SourceCard } from "../sources/source-card";
 import { SortableMaterial } from "./sortable-material";
 import type { ModuleBuilderState } from "./use-module-builder";
 
@@ -74,7 +74,7 @@ export function SortableMaterials({
         items={state.selected.map((item) => item.source.id)}
         strategy={rectSortingStrategy}
       >
-        <ol className="grid grid-cols-1 gap-x-4 gap-y-8 min-[480px]:grid-cols-2 lg:grid-cols-3">
+        <ol className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,16rem),1fr))] gap-x-4 gap-y-8">
           {state.selected.map((item, index) => (
             <SortableMaterial
               key={item.source.id}
@@ -88,8 +88,8 @@ export function SortableMaterials({
       </SortableContext>
       <DragOverlay dropAnimation={reducedMotion ? null : { duration: 180, easing: "ease-out" }}>
         {active ? (
-          <div className="pointer-events-none -rotate-3 scale-104 px-1 pt-4" aria-hidden="true">
-            <SourcePaper compact source={active.source} onPreview={() => {}} disabled />
+          <div className="pointer-events-none -rotate-3 scale-104" aria-hidden="true">
+            <SourceCard source={active.source} onPreview={() => {}} disabled />
           </div>
         ) : null}
       </DragOverlay>
