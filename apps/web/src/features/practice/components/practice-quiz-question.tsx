@@ -1,5 +1,7 @@
 import type { PracticeAnswer, PracticeDetail } from "@ngertiin/contracts/api";
 import type { ReactNode, Ref } from "react";
+import { QuizChoice } from "../../../components/quiz-choice";
+import { Textarea } from "../../../components/ui/textarea";
 
 type Props = {
   item: PracticeDetail["items"][number];
@@ -17,9 +19,6 @@ const questionLabels = {
 };
 
 export function PracticeQuizQuestion({ item, answer, busy, questionRef, header, onAnswer }: Props) {
-  const optionClass =
-    "flex cursor-pointer items-center gap-3 rounded-2xl border-2 border-border bg-card p-4 text-sm leading-relaxed transition-colors hover:bg-muted has-[:checked]:border-primary has-[:checked]:bg-accent has-[:checked]:text-accent-foreground has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-ring has-[:disabled]:cursor-default sm:gap-5 sm:p-5 sm:text-base motion-reduce:transition-none";
-
   if (item.content.type === "flashcard") return null;
   return (
     <article>
@@ -42,16 +41,16 @@ export function PracticeQuizQuestion({ item, answer, busy, questionRef, header, 
       {item.content.type === "multiple_choice" ? (
         <fieldset aria-labelledby={`question-${item.id}`} className="grid gap-3" disabled={busy}>
           {item.content.options.map((option, index) => (
-            <label key={option} className={optionClass}>
+            <QuizChoice key={option}>
               <input
                 type="radio"
                 name={`answer-${item.id}`}
-                className="size-4 shrink-0 accent-primary"
+                className="size-4 shrink-0 accent-accent-foreground"
                 checked={answer?.type === "multiple_choice" && answer.optionIndex === index}
                 onChange={() => onAnswer(item.id, { type: "multiple_choice", optionIndex: index })}
               />
               <span className="min-w-0 wrap-anywhere">{option}</span>
-            </label>
+            </QuizChoice>
           ))}
         </fieldset>
       ) : null}
@@ -62,25 +61,25 @@ export function PracticeQuizQuestion({ item, answer, busy, questionRef, header, 
           disabled={busy}
         >
           {[true, false].map((value) => (
-            <label key={String(value)} className={optionClass}>
+            <QuizChoice key={String(value)}>
               <input
                 type="radio"
                 name={`answer-${item.id}`}
-                className="size-4 shrink-0 accent-primary"
+                className="size-4 shrink-0 accent-accent-foreground"
                 checked={answer?.type === "true_false" && answer.value === value}
                 onChange={() => onAnswer(item.id, { type: "true_false", value })}
               />
               <span>{value ? "Benar" : "Salah"}</span>
-            </label>
+            </QuizChoice>
           ))}
         </fieldset>
       ) : null}
       {item.content.type === "short_answer" ? (
-        <textarea
+        <Textarea
           aria-labelledby={`question-${item.id}`}
           disabled={busy}
           maxLength={4_000}
-          className="min-h-40 w-full resize-y rounded-xl border border-input bg-background p-4 leading-7 outline-none focus:border-ring focus:ring-2 focus:ring-ring/20"
+          className="min-h-40 resize-y rounded-xl bg-background p-4 leading-7"
           value={answer?.type === "short_answer" ? answer.text : ""}
           onChange={(event) =>
             onAnswer(item.id, { type: "short_answer", text: event.target.value })

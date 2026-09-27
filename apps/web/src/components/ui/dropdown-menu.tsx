@@ -33,7 +33,7 @@ export function DropdownMenuItem({
       data-slot="dropdown-menu-item"
       className={cn(
         menuItemClassName,
-        "[&_svg]:size-5 [&_svg]:shrink-0 [&_svg]:text-muted-foreground",
+        "[&_svg]:size-5 [&_svg]:shrink-0 [&_svg]:text-muted-foreground data-highlighted:[&_svg]:text-accent-foreground data-[state=open]:[&_svg]:text-accent-foreground",
         className,
       )}
       {...props}

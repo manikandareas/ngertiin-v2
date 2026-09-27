@@ -28,7 +28,7 @@ export function PracticeQuizResultQuestion({ item, answer, result }: Props): Rea
     statusClass = "bg-success-subtle text-success-foreground";
   } else if (wrong) {
     status = "× Salah";
-    statusClass = "bg-destructive/10 text-destructive";
+    statusClass = "bg-destructive-subtle text-destructive-subtle-foreground";
   } else if (result) {
     status = "◐ Sebagian benar";
     statusClass = "bg-adaptive-subtle text-adaptive-foreground";
@@ -81,8 +81,8 @@ export function PracticeQuizResultQuestion({ item, answer, result }: Props): Rea
                 key={`${item.id}-${index}`}
                 className={cn(
                   "flex flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl border-2 p-3 text-sm leading-relaxed sm:p-4",
-                  index === selected && correct && "border-success bg-success-subtle/40",
-                  index === selected && wrong && "border-destructive/50 bg-destructive/5",
+                  index === selected && correct && "border-success-subtle bg-success-subtle",
+                  index === selected && wrong && "border-transparent bg-destructive-subtle",
                 )}
               >
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted text-xs font-extrabold">
@@ -94,7 +94,7 @@ export function PracticeQuizResultQuestion({ item, answer, result }: Props): Rea
                     className={cn(
                       "ml-11 text-[11px] font-extrabold sm:ml-0",
                       correct && "text-success-foreground",
-                      wrong && "text-destructive",
+                      wrong && "text-destructive-subtle-foreground",
                     )}
                   >
                     Jawabanmu

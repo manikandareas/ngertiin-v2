@@ -46,16 +46,16 @@ export function PracticeExamQuestionMap({
             aria-current={index === position ? "step" : undefined}
             aria-label={`Soal ${index + 1}, ${hasPracticeAnswer(answers[item.id]) ? "terjawab" : "kosong"}${flagged.has(item.id) ? ", ditandai" : ""}`}
             className={cn(
-              "h-11 w-full rounded-xl text-sm text-muted-foreground shadow-none hover:bg-muted active:translate-y-0",
+              "h-11 w-full rounded-xl text-sm text-muted-foreground shadow-none hover:bg-muted hover:text-foreground active:translate-y-0",
               hasPracticeAnswer(answers[item.id]) &&
-                "border-secondary bg-secondary text-secondary-foreground hover:bg-secondary",
+                "border-secondary bg-secondary text-secondary-foreground hover:bg-secondary hover:text-secondary-foreground",
               flagged.has(item.id) &&
-                "border-adaptive/50 bg-adaptive-subtle text-adaptive-foreground hover:bg-adaptive-subtle",
+                "border-adaptive/50 bg-adaptive-subtle text-adaptive-foreground hover:bg-adaptive-subtle hover:text-adaptive-foreground",
               index === position &&
                 "border-primary ring-2 ring-primary/30 ring-offset-2 ring-offset-card",
               index === position &&
                 !flagged.has(item.id) &&
-                "bg-secondary text-secondary-foreground hover:bg-secondary",
+                "bg-secondary text-secondary-foreground hover:bg-secondary hover:text-secondary-foreground",
             )}
             onClick={() => onPositionChange(index)}
           >

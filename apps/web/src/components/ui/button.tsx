@@ -1,21 +1,21 @@
 import { Slot } from "@radix-ui/react-slot";
-import { type VariantProps, cva } from "class-variance-authority";
+import { cva, type VariantProps } from "class-variance-authority";
 import type * as React from "react";
 import { cn } from "../../lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-button border-2 border-transparent text-nav-label font-extrabold uppercase motion-safe:transition-[background-color,box-shadow,transform] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4",
+  "inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-button border-2 border-transparent text-nav-label font-extrabold uppercase motion-safe:transition-[background-color,color,box-shadow,transform] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4",
   {
     variants: {
       variant: {
         default:
           "bg-primary text-primary-foreground shadow-[0_4px_0_var(--primary-edge)] hover:bg-primary-hover active:translate-y-1 active:shadow-none",
         outline:
-          "border-border bg-background text-link shadow-[0_3px_0_var(--border)] hover:bg-accent active:translate-y-[3px] active:shadow-none",
+          "border-border bg-background text-link shadow-[0_3px_0_var(--border)] hover:bg-accent hover:text-accent-foreground active:translate-y-[3px] active:shadow-none",
         secondary: "border-border bg-muted text-foreground hover:bg-border active:bg-input/30",
-        ghost: "text-link hover:bg-accent",
+        ghost: "text-link hover:bg-accent hover:text-accent-foreground",
         link: "text-link normal-case tracking-normal underline-offset-4 hover:underline",
-        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive-hover",
       },
       size: {
         default: "h-12 px-4",

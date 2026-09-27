@@ -1,5 +1,7 @@
 import type { AssessmentAnswer, AttemptResult, PublicActivity } from "@ngertiin/contracts/api";
 import type { JSX } from "react";
+import { QuizChoice } from "../../../components/quiz-choice";
+import { Textarea } from "../../../components/ui/textarea";
 
 export type ActivityResult = Extract<
   AttemptResult["attempt"],
@@ -51,7 +53,7 @@ export function Assessment({
       />
       {result ? (
         <div
-          className={`mt-5 rounded-xl p-4 text-sm ${result.correct ? "bg-success-subtle text-success-foreground" : "bg-destructive/10 text-destructive"}`}
+          className={`mt-5 rounded-xl p-4 text-sm ${result.correct ? "bg-success-subtle text-success-foreground" : "bg-destructive-subtle text-destructive-subtle-foreground"}`}
         >
           <p className="font-semibold">
             {result.correct ? "Jawaban benar" : "Jawaban belum tepat"}
@@ -74,46 +76,40 @@ function AssessmentInput({
 }: AssessmentInputProps): JSX.Element {
   if (activity.type === "multiple_choice") {
     return (
-      <fieldset className="mt-5 space-y-2">
+      <fieldset aria-label={getPrompt(activity)} className="mt-5 space-y-2">
         {activity.content.options.map((option, optionIndex) => (
-          <label
-            className="flex cursor-pointer items-center gap-3 rounded-2xl border-2 border-border p-5 transition-colors hover:bg-muted has-[:checked]:border-primary has-[:checked]:bg-accent has-[:checked]:text-accent-foreground has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-ring"
-            key={option}
-          >
+          <QuizChoice key={option}>
             <input
               checked={Boolean(
                 answer && "optionIndex" in answer && answer.optionIndex === optionIndex,
               )}
-              className="accent-primary"
+              className="size-4 shrink-0 accent-accent-foreground"
               name={activity.id}
               onChange={() => onAnswer({ optionIndex })}
               type="radio"
               disabled={readOnly}
             />
             <span>{option}</span>
-          </label>
+          </QuizChoice>
         ))}
       </fieldset>
     );
   }
   if (activity.type === "true_false") {
     return (
-      <fieldset className="mt-5 grid grid-cols-2 gap-3">
+      <fieldset aria-label={getPrompt(activity)} className="mt-5 grid grid-cols-2 gap-3">
         {[true, false].map((value) => (
-          <label
-            className="flex cursor-pointer items-center gap-3 rounded-2xl border-2 border-border p-5 transition-colors hover:bg-muted has-[:checked]:border-primary has-[:checked]:bg-accent has-[:checked]:text-accent-foreground has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-ring"
-            key={String(value)}
-          >
+          <QuizChoice key={String(value)}>
             <input
               checked={Boolean(answer && "value" in answer && answer.value === value)}
-              className="accent-primary"
+              className="size-4 shrink-0 accent-accent-foreground"
               name={activity.id}
               onChange={() => onAnswer({ value })}
               type="radio"
               disabled={readOnly}
             />
             <span>{value ? "Benar" : "Salah"}</span>
-          </label>
+          </QuizChoice>
         ))}
       </fieldset>
     );
@@ -121,10 +117,10 @@ function AssessmentInput({
   const text = answer && "text" in answer ? answer.text : "";
   return (
     <div className="mt-5">
-      <textarea
+      <Textarea
         aria-label="Jawaban singkat"
         aria-describedby={`${activity.id}-counter`}
-        className="min-h-40 w-full resize-y rounded-xl border border-input p-4 leading-7 outline-none focus:border-ring focus:ring-2 focus:ring-ring/20"
+        className="min-h-40 resize-y rounded-xl p-4 leading-7"
         onChange={(event) => {
           if (Array.from(event.target.value).length <= 4_000) {
             onAnswer({ text: event.target.value });
