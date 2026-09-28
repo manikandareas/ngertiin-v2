@@ -360,7 +360,7 @@ Kedua workflow memakai **`workflow_dispatch`**, bukan auto-deploy setiap push. B
 ### Backend: source → GHCR → Dokploy
 
 1. Workflow `backend-images.yml` menjalankan typecheck, lint, format, `db:check`, dan validasi Compose dengan template env.
-2. Setelah validasi, matrix membangun `api`, `worker`, dan `migrate` untuk `linux/amd64` dan `linux/arm64`, lalu push GHCR.
+2. Setelah validasi, matrix membangun `api` dan `worker` untuk `linux/amd64` dan `linux/arm64`, serta `migrate` untuk `linux/amd64` sesuai arsitektur VPS production, lalu push GHCR.
 3. Image diberi full SHA commit workflow, bukan `latest`:
 
 ```text
