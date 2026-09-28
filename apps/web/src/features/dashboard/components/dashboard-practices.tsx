@@ -11,7 +11,7 @@ export function DashboardPractices() {
   const { getToken, userId } = useAuth();
   const query = useQuery({
     queryKey: ["practices", "recent", userId],
-    queryFn: () => practiceApi(getToken).list(undefined, { archived: false, limit: 2 }),
+    queryFn: () => practiceApi(getToken).list(undefined, { archived: false, limit: 3 }),
     enabled: Boolean(userId),
     refetchInterval: (query) =>
       query.state.data?.data.some((practice) => practice.status === "generating") ? 3000 : false,
@@ -58,7 +58,7 @@ export function DashboardPractices() {
           </Button>
         </div>
       ) : practices.length ? (
-        <ul className="grid gap-4 sm:grid-cols-2">
+        <ul className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
           {practices.map((practice) => (
             <li className="min-w-0" key={practice.id}>
               <PracticeCard practice={practice} />

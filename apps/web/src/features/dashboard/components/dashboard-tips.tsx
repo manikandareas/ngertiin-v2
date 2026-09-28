@@ -2,8 +2,8 @@ import {
   ArrowLeft01Icon,
   ArrowRight01Icon,
   BubbleChatIcon,
+  MegaphoneIcon,
   PlayIcon,
-  SparklesIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useState } from "react";
@@ -38,19 +38,19 @@ export function DashboardTips({
     >
       <h2
         id="dashboard-tips-heading"
-        className="flex items-center gap-2 font-display text-[15px] font-extrabold"
+        className="flex items-center gap-2 font-display text-base font-extrabold"
       >
         <HugeiconsIcon
-          icon={SparklesIcon}
+          icon={MegaphoneIcon}
           size={17}
           strokeWidth={1.5}
           aria-hidden="true"
           className="text-adaptive-foreground"
         />
-        Tahukah kamu?
+        Pengumuman
       </h2>
       <div className="mt-4" aria-live="polite" aria-atomic="true">
-        <h3 className="font-display text-[15px] leading-snug font-extrabold">{tip.title}</h3>
+        <h3 className="font-display text-[15px] leading-snug font-medium">{tip.title}</h3>
         <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{tip.description}</p>
         <div
           aria-hidden="true"

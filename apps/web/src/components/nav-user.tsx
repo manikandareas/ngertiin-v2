@@ -79,7 +79,7 @@ export function NavUser({
           aria-label={`Menu akun ${name}`}
           title={collapsed ? name : undefined}
           className={cn(
-            "flex min-h-11 w-full items-center gap-2.5 rounded-lg p-2 text-sidebar-foreground transition-colors hover:bg-sidebar-accent data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring motion-reduce:transition-none",
+            "flex min-h-11 w-full items-center gap-2.5 rounded-lg p-2 text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring motion-reduce:transition-none",
             collapsed && "justify-center px-0",
           )}
         >
