@@ -45,6 +45,8 @@ jobs:
       - run: bun run db:check
       - run: docker compose --env-file .env.production.example -f compose.production.yml --profile release config --quiet
   images:
+    # Keep these names stable: Semaphore release.py verifies them exactly.
+    name: images (${{ matrix.target }})
     needs: validate
     runs-on: ubuntu-latest
     strategy:
