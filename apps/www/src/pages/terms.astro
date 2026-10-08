@@ -1,0 +1,92 @@
+---
+import InformationLayout from "../layouts/InformationLayout.astro";
+import { contact } from "../lib/contact";
+---
+
+<InformationLayout
+  title="Syarat dan Ketentuan"
+  description="Ketentuan penggunaan Ngerti.in, tanggung jawab akun, layanan AI, langganan, dan pembatalan."
+  titleId="terms-title"
+  policy
+>
+  <section>
+    <h2>Layanan belajar berbasis AI</h2>
+    <p>
+      Ngerti.in, yang dikelola oleh {contact.businessName}, membantu pengguna mempelajari materi
+      melalui percakapan, latihan, dan Journey belajar berbasis AI. Dengan menggunakan layanan, Anda
+      menyetujui ketentuan ini.
+    </p>
+  </section>
+  <section>
+    <h2>Akun dan materi Anda</h2>
+    <p>
+      Anda bertanggung jawab atas kebenaran informasi akun, keamanan akses, dan aktivitas melalui
+      akun Anda. Segera hubungi kami jika ada penggunaan tanpa izin.
+    </p>
+    <p>
+      Anda tetap memiliki hak atas materi yang Anda unggah. Pastikan Anda memiliki hak atau izin
+      untuk menggunakan materi tersebut. Anda mengizinkan pemrosesan materi sejauh diperlukan untuk
+      menyediakan fitur yang Anda gunakan, sebagaimana dijelaskan dalam <a href="/privacy"
+        >kebijakan privasi</a
+      >.
+    </p>
+  </section>
+  <section>
+    <h2>Penggunaan yang diperbolehkan dan batas layanan</h2>
+    <p>
+      Dilarang mengunggah konten yang melanggar hukum atau hak pihak lain, menyalahgunakan data
+      pribadi, membagikan akses secara tidak sah, mencoba mengakses sistem tanpa izin, atau
+      mengganggu layanan dan menghindari batas penggunaannya.
+    </p>
+    <p>
+      Fitur dan kuota penggunaan mengikuti paket serta informasi yang ditampilkan dalam layanan.
+      Ketersediaan fitur dapat berubah seiring pengembangan dan pemeliharaan layanan.
+    </p>
+  </section>
+  <section>
+    <h2>Hasil AI dan gangguan layanan</h2>
+    <p>
+      Hasil AI dapat keliru, tidak lengkap, atau kurang sesuai dengan konteks. Periksa kembali
+      jawaban dengan sumber materi yang dapat dipercaya. Ngerti.in tidak menjamin ketepatan setiap
+      hasil atau pencapaian belajar tertentu.
+    </p>
+    <p>
+      Layanan dapat terganggu karena pemeliharaan, kendala teknis, atau penyedia pihak ketiga.
+      Laporkan kendala melalui <a href={contact.emailUrl}>{contact.email}</a>. Untuk kendala akses
+      berbayar, lihat <a href="/refund">kebijakan pengembalian dana</a>.
+    </p>
+  </section>
+  <section>
+    <h2>Langganan dan penagihan otomatis</h2>
+    <p>
+      Jika Anda membeli langganan dengan perpanjangan otomatis, langganan diperpanjang dan
+      ditagihkan kembali sampai dibatalkan. Harga, periode langganan, dan tanggal penagihan
+      mengikuti informasi yang ditampilkan saat pembelian.
+    </p>
+    <p>Pembayaran mengikuti ketentuan penyedia pembayaran yang berlaku untuk transaksi tersebut.</p>
+  </section>
+  <section id="subscription-cancellation">
+    <h2>Pembatalan perpanjangan</h2>
+    <p>
+      Ajukan pembatalan perpanjangan melalui <a href={contact.emailUrl}>{contact.email}</a> dengan menyertakan
+      email akun. Ajukan sebelum tanggal penagihan berikutnya agar tersedia waktu untuk penanganan manual.
+      Dukungan akan mengonfirmasi pembatalan melalui email.
+    </p>
+    <p>
+      Pembatalan menghentikan penagihan berikutnya. Akses tetap berlangsung sampai akhir periode
+      yang sudah dibayar, kecuali transaksi tersebut dikembalikan dananya. Pembatalan tidak otomatis
+      mengembalikan pembayaran yang sudah terjadi; transaksi tersebut mengikuti <a href="/refund"
+        >kebijakan pengembalian dana</a
+      >.
+    </p>
+  </section>
+  <section>
+    <h2>Penghentian akun</h2>
+    <p>
+      Kami dapat membatasi atau menghentikan akun jika terjadi pelanggaran ketentuan,
+      penyalahgunaan, atau ancaman terhadap keamanan layanan. Hubungi dukungan untuk meminta
+      penjelasan atau peninjauan. Anda juga dapat meminta penghentian akun melalui email; jika
+      memiliki langganan, sertakan permintaan pembatalan perpanjangan.
+    </p>
+  </section>
+</InformationLayout>

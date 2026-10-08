@@ -1,0 +1,111 @@
+---
+import InformationLayout from "../layouts/InformationLayout.astro";
+import { contact } from "../lib/contact";
+---
+
+<InformationLayout
+  title="Kebijakan Privasi"
+  description="Informasi data yang diproses Ngerti.in, tujuan penggunaan, penyedia layanan, dan permintaan akses atau penghapusan data."
+  titleId="privacy-title"
+  policy
+>
+  <section>
+    <h2>Data yang kami proses</h2>
+    <p>
+      {contact.businessName} memproses data yang diperlukan untuk menjalankan Ngerti.in, termasuk:
+    </p>
+    <ul>
+      <li>Data akun dan autentikasi, seperti identitas akun, nama, email, dan sesi masuk.</li>
+      <li>
+        Materi yang Anda unggah atau tambahkan, termasuk dokumen, catatan, tautan, serta hasil
+        pengolahannya.
+      </li>
+      <li>Percakapan, pertanyaan, jawaban AI, dan konten belajar yang dihasilkan.</li>
+      <li>
+        Aktivitas belajar, seperti progres Journey, jawaban latihan, hasil penilaian, dan penggunaan
+        kuota.
+      </li>
+      <li>
+        Informasi transaksi dan langganan yang tersedia terkait pembelian Anda, serta informasi yang
+        Anda berikan saat menghubungi dukungan.
+      </li>
+    </ul>
+  </section>
+  <section>
+    <h2>Tujuan pemrosesan</h2>
+    <p>
+      Data digunakan untuk mengelola akun, memproses materi, memberikan jawaban dan aktivitas
+      belajar, menyimpan progres, mengelola akses dan batas penggunaan, menangani transaksi serta
+      dukungan, dan menjaga keamanan serta keandalan layanan.
+    </p>
+  </section>
+  <section>
+    <h2>Penyedia layanan</h2>
+    <p>
+      Data yang diperlukan dapat diproses oleh penyedia pihak ketiga sesuai fitur yang Anda gunakan:
+    </p>
+    <ul>
+      <li>Clerk untuk autentikasi dan pengelolaan identitas akun.</li>
+      <li>
+        OpenAI untuk percakapan, pengolahan materi, pencarian informasi, representasi materi untuk
+        pencarian, serta pembuatan konten dan gambar belajar.
+      </li>
+      <li>
+        Mistral untuk membaca teks dokumen dan lampiran; TypeSafe untuk membantu perencanaan belajar
+        dan pemilihan gambar saat fitur tersebut digunakan.
+      </li>
+      <li>
+        DiceBear untuk menampilkan avatar bawaan menggunakan pengenal akun sebagai dasar gambar.
+      </li>
+      <li>
+        Firecrawl untuk mengambil isi tautan web dan mencari gambar; Wikimedia Commons dan Openverse
+        untuk pencarian gambar pendukung. Pencarian dapat menyertakan kata kunci yang disusun dari
+        materi belajar.
+      </li>
+      <li>
+        Fish Audio untuk mengubah teks materi belajar menjadi audio saat fitur suara digunakan.
+      </li>
+      <li>
+        Penyedia infrastruktur, basis data, dan penyimpanan objek untuk menyimpan data serta berkas
+        layanan.
+      </li>
+      <li>
+        Penyedia pembayaran yang digunakan pada transaksi Anda, sesuai metode pembayaran dan
+        ketentuan yang berlaku.
+      </li>
+    </ul>
+    <p>
+      Pemrosesan oleh penyedia mengikuti ketentuan dan kebijakan masing-masing penyedia. Hindari
+      memasukkan data pribadi sensitif yang tidak diperlukan ke dalam materi atau percakapan.
+    </p>
+  </section>
+  <section>
+    <h2>Penyimpanan dan keamanan</h2>
+    <p>
+      Data disimpan sesuai kebutuhan penyediaan layanan, penanganan dukungan, keamanan, dan
+      kewajiban yang berlaku. Lama penyimpanan dapat berbeda menurut jenis data dan kebutuhan
+      tersebut.
+    </p>
+    <p>
+      Kami menggunakan kontrol akses untuk membantu melindungi data. Tidak ada sistem yang
+      sepenuhnya bebas risiko; jaga keamanan akun Anda dan laporkan dugaan akses tanpa izin kepada
+      dukungan.
+    </p>
+  </section>
+  <section id="data-requests">
+    <h2>Permintaan terkait data Anda</h2>
+    <p>
+      Untuk meminta akses, koreksi, atau penghapusan data, kirim email ke <a href={contact.emailUrl}
+        >{contact.email}</a
+      > dengan email akun dan rincian permintaan. Pengelola menangani permintaan secara manual dan dapat
+      meminta verifikasi identitas sebelum memprosesnya.
+    </p>
+    <p>
+      Penghapusan memerlukan peninjauan dan pemrosesan; sebagian data mungkin perlu dipertahankan
+      untuk kewajiban yang berlaku, keamanan, atau penyelesaian transaksi. Dukungan akan menjelaskan
+      tindak lanjut permintaan Anda. Untuk menghentikan penagihan langganan, ajukan juga <a
+        href="/terms#subscription-cancellation">pembatalan perpanjangan</a
+      >.
+    </p>
+  </section>
+</InformationLayout>

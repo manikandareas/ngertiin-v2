@@ -1,8 +1,15 @@
 ---
 import "../styles/global.css";
-const title = "Ngerti.in: Ubah Materimu Jadi Alur Belajar yang Mudah Dipahami";
-const description =
-  "Ubah PDF, artikel, atau catatanmu menjadi modul belajar interaktif. Kuasai materi lebih terarah lewat alur belajar terstruktur, flashcard, kuis, dan penguatan konsep otomatis.";
+interface Props {
+  title?: string;
+  description?: string;
+  contentId?: string;
+}
+const {
+  title = "Ngerti.in: Ubah Materimu Jadi Alur Belajar yang Mudah Dipahami",
+  description = "Ubah PDF, artikel, atau catatanmu menjadi Journey belajar interaktif. Kuasai materi lebih terarah lewat alur belajar terstruktur, flashcard, kuis, dan penguatan konsep otomatis.",
+  contentId = "konten",
+} = Astro.props;
 const siteUrl = new URL(import.meta.env.PUBLIC_SITE_URL || "http://localhost:4321");
 if (!["http:", "https:"].includes(siteUrl.protocol)) {
   throw new Error("PUBLIC_SITE_URL must be an HTTP(S) URL");
@@ -10,7 +17,7 @@ if (!["http:", "https:"].includes(siteUrl.protocol)) {
 const canonical = new URL(Astro.url.pathname, siteUrl);
 const socialImage = new URL("/og-image.png", siteUrl);
 const socialImageAlt =
-  "Ngerti.in — Ubah PDF, artikel, atau catatan jadi modul belajar ringkas, flashcard, dan kuis.";
+  "Ngerti.in — Ubah PDF, artikel, atau catatan jadi Journey belajar ringkas, flashcard, dan kuis.";
 ---
 
 <!doctype html>
@@ -41,5 +48,5 @@ const socialImageAlt =
     />
     <meta name="twitter:image:alt" content={socialImageAlt} />
   </head>
-  <body><a class="skip-link" href="#konten">Lewati ke konten</a><slot /></body>
+  <body><a class="skip-link" href={`#${contentId}`}>Lewati ke konten</a><slot /></body>
 </html>

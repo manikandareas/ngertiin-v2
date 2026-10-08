@@ -1,0 +1,74 @@
+---
+import InformationLayout from "../layouts/InformationLayout.astro";
+import { contact } from "../lib/contact";
+---
+
+<InformationLayout
+  title="Kebijakan Pengembalian Dana"
+  description="Syarat dan cara mengajukan pengembalian dana Ngerti.in dalam 7 × 24 jam sejak transaksi, termasuk perpanjangan."
+  titleId="refund-title"
+  policy
+>
+  <section id="refund-eligibility">
+    <h2>Transaksi yang dapat diajukan</h2>
+    <p>
+      Pengajuan pengembalian dana kepada {contact.businessName} dapat dilakukan maksimal <strong
+        >7 × 24 jam sejak transaksi</strong
+      >, termasuk transaksi perpanjangan langganan, untuk kondisi berikut:
+    </p>
+    <ul>
+      <li>Pembayaran ganda untuk pembelian yang sama.</li><li>
+        Akses berbayar gagal diberikan setelah pembayaran berhasil.
+      </li><li>
+        Gangguan utama layanan yang tidak terselesaikan setelah dilaporkan kepada dukungan.
+      </li>
+    </ul>
+    <p>
+      Perubahan pikiran dan ketidakpuasan terhadap hasil AI tidak otomatis memenuhi syarat. Setiap
+      pengajuan ditinjau berdasarkan rincian transaksi dan kendala yang dilaporkan, dengan
+      memperhatikan ketentuan penyedia pembayaran serta hak pengguna berdasarkan ketentuan yang
+      berlaku.
+    </p>
+  </section>
+  <section>
+    <h2>Cara mengajukan</h2>
+    <p>
+      Kirim permintaan ke <a href={contact.emailUrl}>{contact.email}</a> dalam batas waktu pengajuan dengan
+      menyertakan:
+    </p>
+    <ul>
+      <li>Email akun Ngerti.in.</li><li>Referensi transaksi atau bukti pembayaran.</li><li>
+        Tanggal transaksi.
+      </li><li>Alasan pengajuan dan penjelasan kendala.</li>
+    </ul>
+    <p>
+      Pengelola meninjau permintaan secara manual, dapat meminta informasi tambahan yang diperlukan,
+      dan menyampaikan keputusan melalui email. Jangan mengirim kata sandi, kode masuk, atau rincian
+      lengkap kartu pembayaran.
+    </p>
+  </section>
+  <section>
+    <h2>Jika pengembalian dana disetujui</h2>
+    <p>
+      Pengembalian dana yang disetujui mengakhiri akses berbayar untuk transaksi terkait. Waktu dana
+      diterima kembali mengikuti metode dan penyedia pembayaran yang digunakan; konfirmasi
+      persetujuan tidak berarti dana langsung masuk.
+    </p>
+  </section>
+  <section>
+    <h2>Pembatalan perpanjangan langganan</h2>
+    <p>
+      Untuk menghentikan penagihan berikutnya, kirim permintaan pembatalan perpanjangan ke <a
+        href={contact.emailUrl}>{contact.email}</a
+      > dengan email akun. Ajukan sebelum penagihan berikutnya agar tersedia waktu untuk penanganan manual.
+      Dukungan akan mengonfirmasi pembatalan melalui email.
+    </p>
+    <p>
+      Pembatalan menghentikan penagihan berikutnya dan akses tetap tersedia sampai akhir periode
+      yang sudah dibayar, kecuali transaksi tersebut direfund. Pembatalan tidak otomatis menjadi
+      persetujuan pengembalian dana. Lihat juga <a href="/terms#subscription-cancellation"
+        >ketentuan pembatalan langganan</a
+      >.
+    </p>
+  </section>
+</InformationLayout>
