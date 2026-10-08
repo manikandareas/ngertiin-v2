@@ -44,7 +44,10 @@ export const apiEnvSchema = infrastructureEnvSchema
     CHAT_SNAPSHOT_INTERVAL_MS: z.coerce.number().int().positive().default(500),
     CHAT_IDEMPOTENCY_RETENTION_HOURS: z.coerce.number().int().positive().default(168),
     API_PORT: z.coerce.number().int().min(1).max(65_535).default(3000),
-    WEB_ORIGIN: z.string().url(),
+    WEB_ORIGIN: z
+      .string()
+      .transform((value) => value.split(",").map((origin) => origin.trim()))
+      .pipe(z.array(z.url()).min(1)),
     CLERK_SECRET_KEY: z.string().min(1),
     SOURCE_PDF_MAX_BYTES: z.coerce
       .number()

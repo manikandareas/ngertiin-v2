@@ -8,6 +8,10 @@
     {
       "pattern": "app-ngertiin.whoismanik.dev",
       "custom_domain": true
+    },
+    {
+      "pattern": "app.ngerti.in",
+      "custom_domain": true
     }
   ],
   "assets": {

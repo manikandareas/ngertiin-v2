@@ -26,11 +26,11 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     env:
-      VITE_API_URL: https://api-ngertiin.whoismanik.dev
+      VITE_API_URL: https://api.ngerti.in
       VITE_CLERK_PUBLISHABLE_KEY: ${{ vars.VITE_CLERK_PUBLISHABLE_KEY }}
-      PUBLIC_SITE_URL: https://ngertiin.whoismanik.dev
-      PUBLIC_APP_URL: https://app-ngertiin.whoismanik.dev
-      PUBLIC_ASSETS_URL: https://ngertiin-assets.whoismanik.dev
+      PUBLIC_SITE_URL: https://ngerti.in
+      PUBLIC_APP_URL: https://app.ngerti.in
+      PUBLIC_ASSETS_URL: https://assets.ngerti.in
     steps:
       - uses: actions/checkout@v4
         with:

@@ -6,6 +6,12 @@ Dokumen ini menjelaskan deployment production yang diterapkan pada **10 Septembe
 
 > Untuk rilis AI Chat, gunakan [panduan deployment chat](ai-chat/production-deploy.md). Snapshot di bawah mendahului chat: API kini menerima key OpenAI/Mistral dan PostgreSQL memerlukan pgvector sebelum migrasi `0019`.
 
+## Migrasi domain 8 Oktober 2026
+
+Konfigurasi migrasi menargetkan `https://ngerti.in` (landing), `https://app.ngerti.in` (aplikasi), `https://api.ngerti.in` (API), dan `https://assets.ngerti.in` (aset publik). Wrangler mempertahankan hostname frontend lama selama transisi. Nilai URL frontend ditetapkan pada workflow build, sedangkan `WEB_ORIGIN` Compose menerima environment Dokploy dengan default kedua origin aplikasi. Parser API menerima daftar origin yang dipisahkan koma.
+
+Pelaksanaan dashboard dan cutover belum diverifikasi. Ikuti [checklist migrasi domain](ngerti-in-domain-migration-checklist.md), termasuk pergantian publishable key setelah perubahan domain Clerk, OAuth, token deployment Cloudflare, CORS R2, readiness coordinator, dan acceptance. Tabel hostname lama di bawah adalah snapshot deployment awal; jangan menganggapnya sebagai bukti konfigurasi live saat ini.
+
 ## Daftar isi
 
 1. [Arsitektur dan alasan pemilihan](#1-arsitektur-dan-alasan-pemilihan)
