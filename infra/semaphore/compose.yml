@@ -11,7 +11,7 @@ services:
       SEMAPHORE_ADMIN_EMAIL: deploy@whoismanik.dev
       SEMAPHORE_ADMIN_PASSWORD: ${SEMAPHORE_ADMIN_PASSWORD:?Set administrator password}
       SEMAPHORE_ACCESS_KEY_ENCRYPTION: ${SEMAPHORE_ACCESS_KEY_ENCRYPTION:?Set persistent encryption key}
-      SEMAPHORE_WEB_ROOT: https://deploy.whoismanik.dev
+      SEMAPHORE_WEB_ROOT: https://deploy.ngerti.in
       SEMAPHORE_MAX_PARALLEL_TASKS: "1"
       RELEASE_CONFIG: /opt/ngertiin/release.json
       BOOTSTRAP_GITHUB_TOKEN: ${BOOTSTRAP_GITHUB_TOKEN:-}

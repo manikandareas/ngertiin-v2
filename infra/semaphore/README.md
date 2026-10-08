@@ -1,7 +1,7 @@
 # Ngerti.in Semaphore deployment
 
 Semaphore Community **2.19.12** coordinates GitHub Actions and Dokploy at
-<https://deploy.whoismanik.dev>. The application build stays on GitHub runners.
+<https://deploy.ngerti.in>. The application build stays on GitHub runners.
 One `Ngerti.in Production` project has Deploy Backend, Deploy Web, Deploy WWW,
 and Deploy All. `release_ref` defaults to `main`; the coordinator resolves it
 once to a full SHA. Git pushes do not deploy production. Installation IDs and
@@ -18,7 +18,7 @@ contains Python 3.12, Git and OpenSSH; no derived image or application build run
 is required. SQLite, configuration/encryption keys and release journals live on
 persistent volumes. The service has no Docker socket, host filesystem mount, or
 published database port. Dokploy provides Traefik routing to service `semaphore`,
-port 3000, HTTPS/Let's Encrypt, hostname `deploy.whoismanik.dev`.
+port 3000, HTTPS/Let's Encrypt, hostname `deploy.ngerti.in`.
 
 1. Create a **separate** Dokploy docker-compose resource in the production
    environment. Disable auto-deploy. Set its command to `compose -p <appName> -f docker-compose.yml up -d --force-recreate --remove-orphans` so
