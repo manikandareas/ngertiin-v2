@@ -48,7 +48,7 @@ PostgreSQL, Redis, dan background worker tetap memakai jaringan internal. Signed
 - [x] Perbarui docs/deployment.md dengan peta domain baru.
 - [x] Jalankan pemeriksaan terfokus, typecheck/build frontend, backend terkait, Wrangler dry-run, dan git diff --check.
 - [x] Review daftar file dan pastikan 49 commit fitur lokal tidak ikut.
-- [ ] Commit/push branch migrasi.
+- [x] Commit/push branch migrasi.
 - [ ] Merge perubahan migrasi setelah baseline dashboard dan kesiapan cutover terverifikasi.
 
 ## 3. Cloudflare
@@ -160,6 +160,7 @@ Workflow saat ini manual: pilih app=web kemudian app=www pada frontend-deploy.ym
 | 2026-10-08 | Persiapan lokal | Checklist dibuat; Git utama tetap main dengan 49 commit lokal dan perubahan user yang belum committed. |
 | 2026-10-08 | Source migrasi | Worktree dari origin/main; commit WWW diterapkan; URL workflow/Wrangler/env, Compose CORS, parser origin, dan dokumentasi diperbarui. |
 | 2026-10-08 | Validasi lokal | Typecheck seluruh workspace, build API/Web/WWW, kedua Wrangler dry-run, format WWW, focused Biome, parser origin, Compose dengan nilai dummy, dan git diff --check lolos. Web build memiliki warning CSS highlight dan ukuran chunk. Publishable key Clerk baru belum tersedia; build lokal bukan bukti login production. |
+| 2026-10-08 | Git remote | Branch release/ngerti-in-domain-2026-10-08 sudah dipush; commit source 1ac97cc, dengan commit WWW e683353. Belum merge/deploy production. |
 | 2026-10-08 | Computer Use | Plugin terpasang; MCP initialize/tools-list merespons. list_apps dan get_app_state Brave tidak merespons; pengguna mengonfirmasi tidak ada dialog. Dashboard, backup, domain, OAuth, dan acceptance belum diperiksa/dijalankan. |
 
 ## Referensi
