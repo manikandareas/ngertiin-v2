@@ -1,0 +1,461 @@
+---
+import Button from "./Button.astro";
+import { dashboardUrl } from "../lib/links";
+const plans = [
+  {
+    name: "Free",
+    caption: "Coba dari materimu sendiri",
+    price: "0",
+    journey: "10",
+    suffix: "langkah percobaan",
+    description: "Satu materi dulu. Rasakan belajar lewat Journey, Chat, dan Practice.",
+    features: [
+      "20 halaman percobaan",
+      "20 jawaban Chat / bulan",
+      "3 set Practice / bulan",
+      "100 MB penyimpanan",
+    ],
+  },
+  {
+    name: "Plus",
+    caption: "Untuk belajar rutin",
+    price: "59.000",
+    journey: "50",
+    suffix: "langkah Journey / bulan",
+    description: "Temani ritme belajarmu, dari materi minggu ini sampai persiapan ujian.",
+    features: [
+      "100 halaman / bulan",
+      "200 jawaban Chat / bulan",
+      "20 set Practice / bulan",
+      "1 GB penyimpanan",
+    ],
+  },
+  {
+    name: "Pro",
+    caption: "Beri rasa ingin tahumu ruang",
+    price: "149.000",
+    journey: "150",
+    suffix: "langkah Journey / bulan",
+    description: "Lebih lega untuk banyak materi dan sesi tanya jawab yang lebih intensif.",
+    features: [
+      "300 halaman / bulan",
+      "600 jawaban Chat / bulan",
+      "60 set Practice / bulan",
+      "3 GB penyimpanan",
+    ],
+  },
+];
+---
+
+<section id="pricing" class="section-space pricing" aria-labelledby="pricing-title">
+  <div class="wrap">
+    <div class="pricing-heading">
+      <div>
+        <p class="eyebrow">PAKET BELAJAR</p>
+        <h2 id="pricing-title">Mulai dari penasaran.<br /><span>Lanjut sampai paham.</span></h2>
+      </div>
+      <p>
+        Materimu, ritmemu, pilihanmu. Mulai gratis, lalu pilih ruang belajar yang sesuai
+        kebutuhanmu.
+      </p>
+    </div>
+    <p class="launch-note">
+      <span class="status-dot" aria-hidden="true"></span> Plus & Pro segera hadir. Harga dan kuota berikut
+      adalah rencana paket.
+    </p>
+    <div class="plans">
+      {
+        plans.map((plan) => (
+          <article
+            class:list={[
+              "plan",
+              { "plan-plus": plan.name === "Plus", "plan-pro": plan.name === "Pro" },
+            ]}
+            aria-labelledby={`plan-${plan.name.toLowerCase()}`}
+          >
+            <div class="plan-label">
+              <>
+                <h3 id={`plan-${plan.name.toLowerCase()}`}>{plan.name}</h3>
+                <span>
+                  {plan.name === "Free"
+                    ? "Mulai di sini"
+                    : plan.name === "Plus"
+                      ? "Ritme rutin"
+                      : "3× kapasitas Plus"}
+                </span>
+              </>
+            </div>
+            <p class="plan-caption">{plan.caption}</p>
+            <p class="price">
+              <>
+                <span class="currency">Rp</span>
+                <strong>{plan.price}</strong>
+                <span class="period">{plan.name === "Free" ? "gratis" : "/ bulan"}</span>
+              </>
+            </p>
+            <p class="plan-description">{plan.description}</p>
+            <div class="journey-capacity">
+              <>
+                <strong>{plan.journey}</strong>
+                <div>
+                  <>
+                    <span>{plan.suffix}</span>
+                    <p>
+                      {plan.name === "Free"
+                        ? "Untuk Journey pertamamu"
+                        : plan.name === "Plus"
+                          ? "Misalnya 5 Journey × 10 langkah"
+                          : "Misalnya 15 Journey × 10 langkah"}
+                    </p>
+                  </>
+                </div>
+              </>
+            </div>
+            <ul>
+              {plan.features.map((feature) => (
+                <li>
+                  <span aria-hidden="true">✓</span>
+                  {feature}
+                </li>
+              ))}
+            </ul>
+            <div class="plan-action">
+              {plan.name === "Free" ? (
+                <Button href={dashboardUrl} variant="outline">
+                  Mulai gratis <span aria-hidden="true">→</span>
+                </Button>
+              ) : (
+                <p class="coming-soon">{plan.name} segera hadir</p>
+              )}
+            </div>
+            <p class="plan-footnote">
+              {plan.name === "Free"
+                ? "Kuota percobaan tidak diisi ulang bulanan."
+                : "Rencana kuota diperbarui setiap periode bulanan."}
+            </p>
+          </article>
+        ))
+      }
+    </div>
+    <div class="shared-benefits">
+      <p><strong>Beda kapasitas.<br />Sama-sama bisa paham.</strong></p>
+      <ul>
+        <li>Chat, Practice, dan Journey di semua paket</li><li>Kualitas AI yang sama</li><li>
+          Pelajari ulang materi yang sudah tersedia
+        </li>
+      </ul>
+    </div>
+    <details class="pricing-details">
+      <summary>Langkah Journey itu apa? <span aria-hidden="true">+</span></summary>
+      <div>
+        <p>
+          Satu langkah adalah satu topik atau tujuan belajar dalam Journey, yang dapat berisi
+          materi, flashcard, dan kuis. Jumlah langkah mengikuti cakupan materimu; contoh di atas
+          bukan jumlah Journey yang pasti.
+        </p><p>
+          Setiap set Practice berisi maksimal 20 soal atau kartu. Kuota halaman menghitung halaman
+          PDF atau gambar yang diproses. Penyimpanan adalah kapasitas total akun.
+        </p>
+      </div>
+    </details>
+  </div>
+</section>
+
+<style>
+  .pricing {
+    background: var(--muted);
+  }
+  .pricing-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: end;
+    gap: 32px;
+  }
+  .pricing-heading h2 {
+    margin-top: 12px;
+  }
+  .pricing-heading h2 span {
+    color: var(--link);
+  }
+  .pricing-heading > p {
+    max-width: 34ch;
+  }
+  .launch-note {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-block: 28px 36px;
+    font-size: 14px;
+  }
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--adaptive-edge);
+    flex-shrink: 0;
+  }
+  .plans {
+    display: grid;
+    grid-template-columns: 1fr 1.16fr 1fr;
+    align-items: start;
+    gap: 20px;
+  }
+  .plan {
+    min-width: 0;
+    padding: 28px 24px;
+    border: 2px solid var(--border);
+    border-radius: var(--card-radius);
+    background: var(--background);
+    box-shadow: 0 5px 0 var(--border);
+  }
+  .plan-plus {
+    background: var(--secondary);
+    border-color: var(--primary-edge);
+    box-shadow: 0 7px 0 var(--primary-edge);
+    padding-block: 34px;
+  }
+  .plan-pro {
+    margin-top: 40px;
+  }
+  .plan-label {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .plan-label h3 {
+    font-size: 28px;
+  }
+  .plan-label > span {
+    font-size: 11px;
+    font-weight: 850;
+    color: var(--secondary-foreground);
+    background: var(--secondary);
+    padding: 5px 9px;
+    border-radius: 8px;
+  }
+  .plan-plus .plan-label > span {
+    background: var(--background);
+  }
+  .plan-pro .plan-label > span {
+    background: var(--adaptive-subtle);
+    color: var(--adaptive-ink);
+  }
+  .plan-caption {
+    margin-top: 8px;
+    font-size: 14px;
+    font-weight: 750;
+  }
+  .price {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 28px;
+    font-family: var(--font-display);
+  }
+  .currency {
+    font-size: 19px;
+    font-weight: 800;
+  }
+  .price strong {
+    font-size: clamp(32px, 3.3vw, 46px);
+    line-height: 1.1;
+    letter-spacing: -0.035em;
+    font-weight: 900;
+  }
+  .period {
+    font-family: var(--font-sans);
+    font-size: 13px;
+    margin-left: 3px;
+  }
+  .plan-description {
+    font-size: 14px;
+    min-height: 68px;
+    margin-top: 18px;
+  }
+  .journey-capacity {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-block: 2px dashed var(--border);
+    padding-block: 20px;
+    margin-block: 24px;
+  }
+  .plan-plus .journey-capacity {
+    border-color: var(--primary-edge);
+  }
+  .journey-capacity > strong {
+    font-family: var(--font-display);
+    font-size: 44px;
+    line-height: 1;
+    color: var(--link);
+    font-weight: 900;
+  }
+  .journey-capacity span {
+    font-size: 13px;
+    font-weight: 850;
+  }
+  .journey-capacity p {
+    font-size: 11px;
+    margin-top: 3px;
+  }
+  .plan ul {
+    display: grid;
+    gap: 12px;
+    font-size: 14px;
+  }
+  .plan li {
+    display: flex;
+    gap: 10px;
+    align-items: baseline;
+  }
+  .plan li > span {
+    color: var(--link);
+    font-weight: 850;
+  }
+  .plan-action {
+    margin-top: 28px;
+  }
+  .plan-action :global(.button) {
+    width: 100%;
+  }
+  .coming-soon {
+    display: grid;
+    place-items: center;
+    min-height: 56px;
+    border: 2px dashed var(--input);
+    border-radius: var(--button-radius);
+    font-weight: 800;
+    font-size: 14px;
+  }
+  .plan-plus .coming-soon {
+    border-color: var(--primary-edge);
+    color: var(--secondary-foreground);
+  }
+  .plan-footnote {
+    font-size: 11px;
+    margin-top: 16px;
+  }
+  .shared-benefits {
+    display: flex;
+    align-items: center;
+    gap: 48px;
+    padding-block: 36px;
+    margin-top: 20px;
+  }
+  .shared-benefits strong {
+    font-family: var(--font-display);
+    font-size: 22px;
+    line-height: 1.2;
+  }
+  .shared-benefits ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 24px;
+    font-size: 14px;
+  }
+  .shared-benefits li::before {
+    content: "✓";
+    margin-right: 8px;
+    color: var(--link);
+    font-weight: 850;
+  }
+  .pricing-details {
+    border-top: 2px solid var(--border);
+  }
+  summary {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding-block: 20px;
+    font-weight: 800;
+    list-style: none;
+  }
+  summary::-webkit-details-marker {
+    display: none;
+  }
+  summary > span {
+    color: var(--link);
+    font-size: 24px;
+  }
+  details[open] summary > span {
+    transform: rotate(45deg);
+  }
+  summary:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 4px;
+  }
+  .pricing-details div {
+    max-width: 75ch;
+    padding-bottom: 24px;
+    font-size: 14px;
+  }
+  .pricing-details div p + p {
+    margin-top: 12px;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    summary > span {
+      transition: transform 180ms ease-out;
+    }
+  }
+  @media (max-width: 1023px) {
+    .plans {
+      gap: 12px;
+      grid-template-columns: repeat(3, 1fr);
+    }
+    .plan {
+      padding-inline: 16px;
+    }
+    .journey-capacity {
+      align-items: start;
+      flex-direction: column;
+    }
+    .plan-description {
+      min-height: 92px;
+    }
+    .shared-benefits {
+      gap: 24px;
+    }
+  }
+  @media (max-width: 767px) {
+    .pricing-heading {
+      align-items: start;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .pricing-heading > p {
+      max-width: 48ch;
+    }
+    .plans {
+      grid-template-columns: 1fr;
+      gap: 24px;
+    }
+    .plan {
+      padding: 28px;
+    }
+    .plan-pro {
+      margin-top: 0;
+    }
+    .plan-description {
+      min-height: auto;
+    }
+    .journey-capacity {
+      flex-direction: row;
+      align-items: center;
+    }
+    .price strong {
+      font-size: 44px;
+    }
+    .shared-benefits {
+      align-items: start;
+      flex-direction: column;
+    }
+    .shared-benefits ul {
+      flex-direction: column;
+    }
+  }
+</style>

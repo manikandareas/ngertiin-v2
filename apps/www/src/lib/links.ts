@@ -8,5 +8,6 @@ export const signInUrl = new URL("/sign-in", appUrl).href;
 export const navigationLinks = [
   { href: "#cara-kerja", label: "Cara kerja" },
   { href: "#kenapa-ngertiin", label: "Kenapa Ngerti.in" },
+  { href: "#pricing", label: "Harga" },
   { href: "#story", label: "Story" },
 ] as const;
