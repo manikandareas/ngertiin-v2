@@ -29,7 +29,11 @@ import { navigationLinks, signInUrl } from "../lib/links";
     >
   </summary>
   <nav aria-label="Navigasi mobile">
-    {navigationLinks.map(({ href, label }) => <a href={href}>{label}</a>)}
+    {
+      navigationLinks.map(({ href, label }) => (
+        <a href={Astro.url.pathname === "/" ? href : `/${href}`}>{label}</a>
+      ))
+    }
     <Button href={signInUrl} variant="outline">Masuk</Button>
   </nav>
 </details>

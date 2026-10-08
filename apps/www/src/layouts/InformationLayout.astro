@@ -1,0 +1,81 @@
+---
+import Layout from "./Layout.astro";
+import Navigation from "../components/Navigation.astro";
+import Footer from "../components/Footer.astro";
+import { contact, policyEffectiveDate, policyEffectiveLabel } from "../lib/contact";
+interface Props {
+  title: string;
+  description: string;
+  titleId: string;
+  policy?: boolean;
+}
+const { title, description, titleId, policy = false } = Astro.props;
+---
+
+<Layout title={`${title} | Ngerti.in`} description={description} contentId="main-content">
+  <Navigation />
+  <main id="main-content" tabindex="-1" aria-labelledby={titleId} class="wrap py-12 sm:py-20">
+    <article class="mx-auto max-w-[720px]">
+      <header class="mb-10 border-b-2 border-border pb-8">
+        <p class="eyebrow mb-4">INFORMASI NGERTI.IN</p>
+        <h1 id={titleId} class="text-4xl sm:text-5xl">{title}</h1>
+        {
+          policy && (
+            <p class="mt-5 text-sm text-muted-foreground">
+              Berlaku mulai <time datetime={policyEffectiveDate}>{policyEffectiveLabel}</time>
+            </p>
+          )
+        }
+      </header>
+      <div class="information-content"><slot /></div>
+      {
+        policy && (
+          <aside
+            class="mt-12 border-t-2 border-border pt-6 text-sm text-muted-foreground"
+            aria-label="Kontak pengelola"
+          >
+            <p>Pengelola: {contact.businessName} (usaha individu).</p>
+            <p>{contact.address}</p>
+            <p class="mt-2">
+              Hubungi{" "}
+              <a class="underline underline-offset-4" href={contact.emailUrl}>
+                {contact.email}
+              </a>{" "}
+              untuk pertanyaan mengenai kebijakan ini.
+            </p>
+          </aside>
+        )
+      }
+    </article>
+  </main>
+  <Footer />
+</Layout>
+<style>
+  .information-content {
+    line-height: 1.8;
+    overflow-wrap: anywhere;
+  }
+  .information-content :global(section + section) {
+    margin-top: 2.5rem;
+  }
+  .information-content :global(h2) {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+  }
+  .information-content :global(p + p),
+  .information-content :global(ul) {
+    margin-top: 1rem;
+  }
+  .information-content :global(ul) {
+    list-style: disc;
+    padding-left: 1.5rem;
+  }
+  .information-content :global(li + li) {
+    margin-top: 0.5rem;
+  }
+  .information-content :global(a) {
+    color: var(--link);
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+</style>

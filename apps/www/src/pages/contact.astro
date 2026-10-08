@@ -1,0 +1,39 @@
+---
+import InformationLayout from "../layouts/InformationLayout.astro";
+import { contact } from "../lib/contact";
+---
+
+<InformationLayout
+  title="Kontak"
+  description="Hubungi Manika Technologies, pengelola Ngerti.in, untuk bantuan layanan, langganan, dan permintaan data."
+  titleId="contact-title"
+>
+  <section aria-labelledby="business-details">
+    <h2 id="business-details">Pengelola Ngerti.in</h2>
+    <p>
+      <strong>{contact.businessName}</strong> adalah nama usaha individu yang mengelola Ngerti.in.
+    </p>
+    <address class="mt-6 not-italic">
+      <p>{contact.address}</p>
+      <p>Email: <a href={contact.emailUrl}>{contact.email}</a></p>
+      <p>WhatsApp: <a href={contact.whatsappUrl}>{contact.phone}</a></p>
+    </address>
+  </section>
+  <section aria-labelledby="support-requests">
+    <h2 id="support-requests">Bantuan dan permintaan layanan</h2>
+    <p>
+      Hubungi kami melalui email untuk bantuan akun, kendala layanan, pembatalan perpanjangan
+      langganan, pengembalian dana, atau permintaan terkait data pribadi. Permintaan ditangani
+      secara manual oleh pengelola.
+    </p>
+    <p>
+      Sertakan email akun dan penjelasan kendala agar kami dapat menindaklanjuti. Jangan mengirim
+      kata sandi atau kode masuk.
+    </p>
+    <p>
+      Lihat <a href="/terms#subscription-cancellation">ketentuan pembatalan</a>, <a href="/refund"
+        >kebijakan pengembalian dana</a
+      >, dan <a href="/privacy">kebijakan privasi</a>.
+    </p>
+  </section>
+</InformationLayout>
