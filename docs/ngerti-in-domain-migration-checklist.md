@@ -2,7 +2,7 @@
 
 Tanggal: 8 Oktober 2026.
 
-Status: backend, Web, WWW, Clerk, OAuth callback, R2 dan konfigurasi coordinator sudah cutover. deploy.ngerti.in HTTPS/proxy aktif; login panel baru dan otorisasi GitHub masih menunggu pengguna. Redirect dan pemeriksaan Journey/audio selesai. Cleanup transisi serta audit integrasi eksternal tetap terpisah.
+Status: backend, Web, WWW, Clerk, OAuth callback, R2 dan konfigurasi coordinator sudah cutover. deploy.ngerti.in HTTPS/proxy aktif; login panel baru dan task #18 sudah berhasil; otorisasi GitHub masih menunggu pengguna. Redirect dan pemeriksaan Journey/audio selesai. Cleanup transisi serta audit integrasi eksternal tetap terpisah.
 
 Branch migrasi: `release/ngerti-in-domain-2026-10-08`. Worktree: `/tmp/ngertiin-domain-2026-10-08`. Perubahan source berada di worktree tersebut; workspace utama menyimpan checklist dan mempertahankan perubahan pengguna.
 Centang hanya setelah ada bukti keberhasilan. Jangan menaruh secret, token, signed URL, atau environment dump di dokumen ini.
@@ -119,7 +119,7 @@ Workflow saat ini manual: pilih app=web kemudian app=www pada frontend-deploy.ym
 - [ ] Perbarui uptime monitor, healthcheck eksternal, webhook/payment callback/email/link absolut jika digunakan.
 - [x] Setelah aplikasi stabil, tambahkan DNS/Dokploy deploy.ngerti.in untuk Semaphore.
 - [x] Ubah SEMAPHORE_WEB_ROOT=https://deploy.ngerti.in dan terapkan konfigurasi.
-- [ ] Uji login panel dan task deployment; pertahankan akses panel lama sampai berhasil.
+- [x] Uji login panel dan task deployment; pertahankan akses panel lama sampai berhasil.
 
 ## 10. Penerimaan production
 
@@ -199,9 +199,9 @@ Catatan lanjutan: domain API Dokploy baru tersimpan bersama domain lama. Deploy 
 - Landing dan empat halaman informasi HTTPS 200; canonical/OG domain baru, CTA app.ngerti.in, video/poster assets.ngerti.in.
 - Google login dan logout berhasil. Data PDF lama 82 halaman terbaca; refresh route PDF berhasil. Chat fotosintesis menghasilkan jawaban lengkap. PDF sintetis baru 748 byte diunggah, worker selesai dengan status Siap dipakai, PDF 1 halaman terbaca. Data uji ditinggalkan untuk bukti acceptance.
 - Coordinator persisten Dokploy: api_url=https://api.ngerti.in, web_url=https://app.ngerti.in, www_url=https://ngerti.in, workflow_ref=main, activation_verified=true. Setelah redeploy container 69e3aa11ac6a, active_journal=False. Ketiga release.url_ready memberi True dengan client NgertiinRelease/1.0. Probe Python urllib generik mendapat 403; client coordinator normal berhasil sehingga proteksi Cloudflare tidak dikurangi.
-- deploy.ngerti.in A ke 145.79.12.17; Dokploy semaphore port 3000 HTTPS letsencrypt, SEMAPHORE_WEB_ROOT domain baru. Deployment Done 1 detik. TLS normal /api/ping 200 sebelum proxy; proxy kini aktif, halaman login browser tampil normal. Login panel baru menunggu pengguna, domain panel lama dipertahankan.
+- deploy.ngerti.in A ke 145.79.12.17; Dokploy semaphore port 3000 HTTPS letsencrypt, SEMAPHORE_WEB_ROOT domain baru. Deployment Done 1 detik. TLS normal /api/ping 200 sebelum proxy; proxy kini aktif, halaman login browser tampil normal. Login panel baru berhasil; domain panel lama dipertahankan.
 
-Belum selesai: otorisasi/login GitHub, login/task panel baru, serta audit integrasi eksternal bila digunakan. Cleanup origin/callback/API/aset lama ditunda selama transisi.
+Belum selesai: otorisasi/login GitHub serta audit integrasi eksternal bila digunakan. Cleanup origin/callback/API/aset lama ditunda selama transisi.
 
 Pemeriksaan akhir tambahan:
 - Branding Google: authorized domain ngerti.in sudah ada. Homepage https://ngerti.in/, privacy https://ngerti.in/privacy/, terms https://ngerti.in/terms/ tersimpan (Branding changes saved). Login ulang Google menampilkan link privacy/terms baru dan kembali ke akun lama.
@@ -209,3 +209,5 @@ Pemeriksaan akhir tambahan:
 - Journey IoT lama membuka materi dan hasil assessment tersimpan; 1 dari 10 node selesai, progres 10 persen. Audio berhasil disiapkan dan diputar: browser Audio playing, posisi 0:14 dari durasi 5:04; pemutar kemudian dijeda. Refresh route node berhasil.
 
 Batas acceptance: materi/progres Journey lama, pemrosesan PDF baru dan generasi audio lolos; tidak membuat Journey baru atau mengulang assessment. Pemeriksaan readiness akhir API: status ok, postgres/redis/storage up. Pengujian UI tidak mencakup audit semua request jaringan; klaim tidak ada error CORS/mixed content berlaku pada alur yang dijalankan, bukan audit seluruh fitur.
+
+8 Oktober 2026 14:14 WITA: login pengguna di deploy.ngerti.in terverifikasi sebagai Ngerti.in Operator/Admin. Riwayat/template production tersedia. Task #18 Deploy WWW SUCCESS melalui domain panel baru, pinned SHA 76cbd7b82610a797ca61080fb62f80a4f0b29e64 (sama dengan WWW aktif sebelum uji); release 4409573cb8a0413ab11d45347122db62, GitHub run 37736488446. Landing HTTPS 200 setelah task selesai; API readiness postgres/redis/storage up dan Semaphore /api/ping pong.
